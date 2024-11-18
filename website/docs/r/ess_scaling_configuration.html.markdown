@@ -148,6 +148,7 @@ The following arguments are supported:
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
 * `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [`data_disk`](#data_disk) below for details.
 * `instance_pattern_info` - (Optional, Available since v1.177.0) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types.  See [`instance_pattern_info`](#instance_pattern_info) below for details.
+* `network_interfaces` - (Optional, Available since v1.235.0) Specify NetworkInterfaces.N to configure primary and secondary ENIs. In this case, specify at least one primary ENI. If you set NetworkInterfaces.N.InstanceType to Primary, a primary ENI is configured. If you set NetworkInterfaces.N.InstanceType to Secondary or leave the parameter empty, a secondary ENI is configured. See [`network_interfaces`](#network_interfaces) below for details.
 * `instance_type_override` - (Optional, Available since v1.216.0) specify the weight of instance type.  See [`instance_type_override`](#instance_type_override) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
@@ -194,6 +195,15 @@ The datadisk mapping supports the following:
 * `description` - (Optional, Available since v1.92.0) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as data disk.
+
+### `network_interfaces`
+
+The networkInterfaces mapping supports the following:
+
+* `instance_type` - (Optional, Available since v1.235.0) The ENI type. If you specify NetworkInterfaces.N, specify at least one primary ENI. You cannot specify SecurityGroupId or SecurityGroupIds.N. Valid values: Primary, Secondary.
+* `network_interface_traffic_mode` - (Optional, Available since v1.235.0) The communication mode of the ENI. Valid values: Standard, HighPerformance. 
+* `ipv6_address_count` - (Optional, Available since v1.235.0) The number of randomly generated IPv6 addresses that you want to assign to primary ENI N.
+* `security_group_ids` - (Optional, Available since v1.235.0) The ID of security group N to which ENI N belongs.
 
 ### `instance_pattern_info`
 

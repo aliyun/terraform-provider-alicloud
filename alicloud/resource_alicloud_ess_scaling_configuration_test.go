@@ -1401,6 +1401,47 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}`, EcsInstanceCommonTestCase, name)
 }
 
+func resourceEssScalingConfiguration_NetworkInterfaces(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+    resource "alicloud_vpc" "vpc" {
+      cidr_block = "192.168.0.0/16"
+      vpc_name   = var.name
+      ipv6_isp    = "BGP"
+      enable_ipv6  = "true"
+	}
+	resource "alicloud_vswitch" "vswtich" {
+      vpc_id       = "${alicloud_vpc.vpc.id}"
+      zone_id      = "${data.alicloud_zones.default.zones.0.id}"
+      vswitch_name = var.name
+      cidr_block   = "192.168.10.0/24"
+	  ipv6_cidr_block_mask = "8"
+    } 
+	resource "alicloud_security_group" "default1" {
+	  name   = "${var.name}"
+	  vpc_id = "${alicloud_vpc.vpc.id}"
+	}
+	data "alicloud_images" "default1" {
+		name_regex  = "^aliyun.*vhd"
+  		most_recent = true
+  		owners      = "system"
+	}
+    data "alicloud_instance_types" "c6" {
+        instance_type_family = "ecs.sn1ne"
+    }
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.vswtich.id}"]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
 func resourceEssScalingConfigurationConfigMutilDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
@@ -1620,6 +1661,115 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_pattern_info.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.ipi"
+
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^aliyun.*vhd",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfiguration_NetworkInterfaces)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default1.id}",
+					"force_delete":         "true",
+					"system_disk_category": "cloud_ssd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"active": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"active": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": REMOVEKEY,
+					"network_interfaces": []map[string]interface{}{
+						{
+							"instance_type":                  "Primary",
+							"ipv6_address_count":             "1",
+							"network_interface_traffic_mode": "Standard",
+							"security_group_ids":             []string{"${alicloud_security_group.default1.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id":    "",
+						"network_interfaces.#": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"instance_type":                  "Primary",
+							"ipv6_address_count":             "1",
+							"network_interface_traffic_mode": "Standard",
+							"security_group_ids":             []string{"${alicloud_security_group.default1.id}"},
+						},
+						{
+							"instance_type":                  "Secondary",
+							"network_interface_traffic_mode": "HighPerformance",
+							"security_group_ids":             []string{"${alicloud_security_group.default1.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interfaces.#": "2",
 					}),
 				),
 			},

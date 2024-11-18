@@ -116,6 +116,38 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional:      true,
 				MaxItems:      16,
 			},
+			"network_interfaces": {
+				Optional:      true,
+				Type:          schema.TypeSet,
+				ConflictsWith: []string{"security_group_id"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"Primary", "Secondary"}, false),
+						},
+						"network_interface_traffic_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"Standard", "HighPerformance"}, false),
+						},
+						"ipv6_address_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"security_group_ids": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
+					},
+				},
+			},
 			"scaling_configuration_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -158,7 +190,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      DiskCloudEfficiency,
-				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency", "cloud_essd_xc1"}, false),
 			},
 			"security_enhancement_strategy": {
 				Type:         schema.TypeString,
@@ -682,6 +714,25 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		}
 		request["InstancePatternInfo"] = instancePatternInfosMaps
 	}
+	if v, ok := d.GetOk("network_interfaces"); ok {
+		networkInterfacesMaps := make([]map[string]interface{}, 0)
+		networkInterfaces := v.(*schema.Set).List()
+		for _, rew := range networkInterfaces {
+			networkInterfacesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				networkInterfacesMap["InstanceType"] = instanceType
+			}
+			if networkInterfaceTrafficMode, ok := item["network_interface_traffic_mode"].(string); ok && networkInterfaceTrafficMode != "" {
+				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
+			}
+			networkInterfacesMap["Ipv6AddressCount"] = item["ipv6_address_count"].(int)
+			networkInterfacesMap["SecurityGroupIds"] = item["security_group_ids"]
+			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
+		}
+		request["NetworkInterfaces"] = networkInterfacesMaps
+	}
 	request["IoOptimized"] = string(IOOptimized)
 
 	if d.Get("is_outdated").(bool) == true {
@@ -822,8 +873,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("internet_max_bandwidth_in") {
-		request["InternetMaxBandwidthIn"] = d.Get("internet_max_bandwidth_in")
-		update = true
+		if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
+			request["InternetMaxBandwidthIn"] = v
+			update = true
+		}
 	}
 
 	if d.HasChange("internet_max_bandwidth_out") {
@@ -930,11 +983,33 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	hasChangeSecurityGroupId := d.HasChange("security_group_id")
 	hasChangeSecurityGroupIds := d.HasChange("security_group_ids")
-	if hasChangeSecurityGroupId || hasChangeSecurityGroupIds || d.Get("override").(bool) {
+	hasChangeNetworkInterfaces := d.HasChange("network_interfaces")
+	d.GetOk("network_interfaces")
+	if hasChangeSecurityGroupId || hasChangeSecurityGroupIds || hasChangeNetworkInterfaces || d.Get("override").(bool) {
 		securityGroupId := d.Get("security_group_id").(string)
 		securityGroupIds := d.Get("security_group_ids").([]interface{})
-		if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
+		v, ok := d.GetOk("network_interfaces")
+		networkInterfaces := make([]map[string]interface{}, 0)
+		if ok {
+			for _, e := range v.(*schema.Set).List() {
+				pack := e.(map[string]interface{})
+				securityGroupIdsFormat := pack["security_group_ids"]
+				securityGroupIds := toStringArray(securityGroupIdsFormat)
+				networkInterface := map[string]interface{}{
+					"InstanceType":                pack["instance_type"].(string),
+					"NetworkInterfaceTrafficMode": pack["network_interface_traffic_mode"].(string),
+					"Ipv6AddressCount":            strconv.Itoa(pack["ipv6_address_count"].(int)),
+					"SecurityGroupIds":            &securityGroupIds,
+				}
+				networkInterfaces = append(networkInterfaces, networkInterface)
+			}
+			request["NetworkInterfaces"] = networkInterfaces
+		}
+		if securityGroupId == "" && len(networkInterfaces) == 0 && (securityGroupIds == nil || len(securityGroupIds) == 0) {
 			return fmt.Errorf("securityGroupId or securityGroupIds must be assigned")
+		}
+		if len(networkInterfaces) > 0 {
+			request["NetworkInterfaces"] = networkInterfaces
 		}
 		if securityGroupIds != nil && len(securityGroupIds) > 0 {
 			sgs := expandStringList(securityGroupIds)
@@ -1347,7 +1422,28 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			return WrapError(err)
 		}
 	}
-
+	if v := response["NetworkInterfaces"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["NetworkInterface"].([]interface{}) {
+			r := i.(map[string]interface{})
+			var arr1 []string
+			if r["SecurityGroupIds"] != nil {
+				j := r["SecurityGroupIds"].(map[string]interface{})
+				arr1 = toStringArray(j["SecurityGroupId"])
+			}
+			l := map[string]interface{}{
+				"instance_type":                  r["InstanceType"],
+				"network_interface_traffic_mode": r["NetworkInterfaceTrafficMode"],
+				"ipv6_address_count":             r["Ipv6AddressCount"],
+				"security_group_ids":             &arr1,
+			}
+			result = append(result, l)
+		}
+		err := d.Set("network_interfaces", result)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
 	return nil
 }
 
