@@ -1156,7 +1156,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_autoscaling_config":                                 resourceAlicloudCSAutoscalingConfig(),
 			"alicloud_cr_namespace":                                          resourceAlicloudCRNamespace(),
 			"alicloud_cr_repo":                                               resourceAlicloudCRRepo(),
-			"alicloud_cr_ee_instance":                                        resourceAlicloudCrEEInstance(),
+			"alicloud_cr_ee_instance":                                        resourceAliCloudCrInstance(),
 			"alicloud_cr_ee_namespace":                                       resourceAliCloudCrEENamespace(),
 			"alicloud_cr_ee_repo":                                            resourceAliCloudCrEERepo(),
 			"alicloud_cr_ee_sync_rule":                                       resourceAliCloudCrEESyncRule(),
