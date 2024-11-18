@@ -35,7 +35,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${data.alicloud_wafv3_instances.default.ids.0}",
+					"instance_id": "${alicloud_wafv3_instance.default.id}",
 					"listen": []map[string]interface{}{
 						{
 							"https_ports":         []string{"443"},
@@ -275,7 +275,7 @@ LILJ+e7bLw8RrM0HfgFnl8c=
 EOF
 }
 
-data "alicloud_wafv3_instances" "default" {}
+resource "alicloud_wafv3_instance" "default" {}
 
 locals {
   certificate_id = join("-", [alicloud_ssl_certificates_service_certificate.default.id, "%s"])

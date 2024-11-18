@@ -123,7 +123,7 @@ func testAccCheckAliCloudWafv3DomainSourceConfig(rand int, attrMap map[string]st
   		default = "tftest%d.tftest.top"
 	}
 
-	data "alicloud_wafv3_instances" "default" {
+	resource "alicloud_wafv3_instance" "default" {
 	}
 
 	resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -184,7 +184,7 @@ EOF
 	}
 
 	resource "alicloud_wafv3_domain" "default" {
-  		instance_id = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id = alicloud_wafv3_instance.default.id
   		domain      = var.name
   		access_type = "share"
   		listen {
@@ -229,7 +229,7 @@ EOF
 	}
 
 	data "alicloud_wafv3_domains" "default" {
-  		instance_id    = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id    = alicloud_wafv3_instance.default.id
   		enable_details = true
 		%s
 	}

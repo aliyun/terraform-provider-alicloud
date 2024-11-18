@@ -89,8 +89,6 @@ variable "name" {
 	default = "tf-testAccWafCertificate-%d"
 }
 
-data "alicloud_waf_instances" "default" {}
-
 resource "alicloud_wafv3_instance" "default" {
 }
 

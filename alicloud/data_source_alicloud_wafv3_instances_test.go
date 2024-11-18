@@ -56,7 +56,10 @@ variable "name" {
 	default = "tf-testAccWafv3Instance%d"
 }
 
+resource "alicloud_wafv3_instance" "default" {}
+
 data "alicloud_wafv3_instances" "default" {
+    depends_on = [alicloud_wafv3_instance.default]
 %s
 }
 `, rand, strings.Join(pairs, "\n   "))
