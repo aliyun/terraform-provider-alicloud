@@ -1269,7 +1269,9 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 	d.Set("system_disk_category", response["SystemDiskCategory"])
 	d.Set("security_enhancement_strategy", response["SecurityEnhancementStrategy"])
-	d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
+	if response["InternetMaxBandwidthIn"] != nil {
+		d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
+	}
 	d.Set("internet_max_bandwidth_out", response["InternetMaxBandwidthOut"])
 
 	d.Set("credit_specification", response["CreditSpecification"])

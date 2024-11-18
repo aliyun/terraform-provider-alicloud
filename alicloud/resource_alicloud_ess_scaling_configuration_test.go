@@ -965,7 +965,7 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":                "${alicloud_ess_scaling_group.default.id}",
-					"image_id":                        "${data.alicloud_images.default2.images.0.id}",
+					"image_id":                        "aliyun_3_9_x64_20G_alibase_20231219.vhd",
 					"instance_type":                   "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":               "${alicloud_security_group.default.id}",
 					"security_enhancement_strategy":   "Deactive",
@@ -1070,7 +1070,7 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default2.images.0.id}",
+					"image_id":          "aliyun_3_9_x64_20G_alibase_20231219.vhd",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -1703,7 +1703,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
-					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
 					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
