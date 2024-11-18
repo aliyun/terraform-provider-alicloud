@@ -414,7 +414,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"db_node_num": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     IntInSlice([]int{1, 2}),
+				ValidateFunc:     IntBetween(1, 16),
 				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
 			},
 			"parameter_group_id": {
