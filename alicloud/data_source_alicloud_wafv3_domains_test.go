@@ -114,12 +114,16 @@ func testAccCheckAliCloudWafv3DomainSourceConfig(rand int, attrMap map[string]st
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
+	casRegion := "cn-hangzhou"
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) == "international" {
+		casRegion = "ap-southeast-1"
+	}
 	config := fmt.Sprintf(`
 	variable "name" {
   		default = "tftest%d.tftest.top"
 	}
 
-	data "alicloud_wafv3_instances" "default" {
+	resource "alicloud_wafv3_instance" "default" {
 	}
 
 	resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -180,7 +184,7 @@ EOF
 	}
 
 	resource "alicloud_wafv3_domain" "default" {
-  		instance_id = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id = alicloud_wafv3_instance.default.id
   		domain      = var.name
   		access_type = "share"
   		listen {
@@ -225,10 +229,10 @@ EOF
 	}
 
 	data "alicloud_wafv3_domains" "default" {
-  		instance_id    = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id    = alicloud_wafv3_instance.default.id
   		enable_details = true
 		%s
 	}
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, casRegion, strings.Join(pairs, "\n   "))
 	return config
 }
