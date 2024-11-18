@@ -102,8 +102,12 @@ The following arguments are supported:
   256 characters in length and cannot start with http:// or https://.
 * `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict
   with `security_group_ids`.
-* `container_group_name` - (Optional) The name of the container group. which must contain 2-128 characters (
-  English), starting with numbers, English lowercase letters , and can contain number, and hypens `-`.
+* `container_group_name` - (Optional) The name series of the elastic container instances created from the scaling configuration. If you want to use an ordered instance name, specify the value for this parameter in the following format: name_prefix(AUTO_INCREMENT)[begin_number,bits]name_suffix.
+  name_prefix: the prefix of the hostname.
+  (AUTO_INCREMENT): the sort method. This is a static field.
+  begin_number: the start value of the sequential values. Valid values: 0 to 999999.
+  bits: the number of digits in sequential values. Valid values: 1 to 6. If the number of digits in the specified begin_number value is greater than the value of the bits field, the bits field is automatically set to 6.
+  name_suffix: the suffix of the hostname. This field is optional.
 * `restart_policy` - (Optional) The restart policy of the container group. Default to `Always`.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container group.
 * `memory` - (Optional) The amount of memory resources allocated to the container group.

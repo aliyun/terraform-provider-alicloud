@@ -57,9 +57,9 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"container_group_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,126}[a-z0-9]$`), "It must be 2 to 128 characters in length and can contain lowercase letters, digits, and hyphens (-). It must start with a letter or a digit.")},
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"restart_policy": {
 				Type:     schema.TypeString,
 				Optional: true,
