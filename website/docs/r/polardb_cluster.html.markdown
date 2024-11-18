@@ -211,7 +211,7 @@ The following arguments are supported:
   -> **NOTE:** This parameter takes effect only if you do not set `creation_option` to CreateGdnStandby and you set `db_type` to MySQL and `db_version` to 8.0. To enable X-Engine on a node, make sure that the memory of the node is greater than or equal to 8 GB in size.
 * `loose_xengine_use_memory_pct` - (Optional, Available since v1.232.0) Set the ratio to enable the X-Engine storage engine. Valid values: 10 to 90.
   -> **NOTE:** When the parameter `loose_xengine` is ON, `loose_xengine_use_memory_pct` takes effect.
-* `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: `1`. Valid values are `1`, `2`.
+* `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: `1`. Valid values are `1`, `2`. From version 1.235.0, Valid values for PolarDB for MySQL Standard Edition: `1` to `8`. Valid values for PolarDB for MySQL Enterprise Edition: `1` to `16`.
 * `parameter_group_id` - (Optional, Available since 1.210.0) The ID of the parameter template
   -> **NOTE:** You can call the [DescribeParameterGroups](https://www.alibabacloud.com/help/en/polardb/latest/describeparametergroups) operation to query the details of all parameter templates of a specified region, such as the ID of a parameter template.
 * `lower_case_table_names`  - (Optional, ForceNew, Computed, Available since 1.210.0)  Specifies whether the table names are case-sensitive. Default value: `1`.  Valid values are `1`, `0`.
