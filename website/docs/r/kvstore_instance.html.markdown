@@ -1,15 +1,15 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instance"
 sidebar_current: "docs-alicloud-resource-kvstore-instance"
 description: |-
-  Provides an ApsaraDB Redis / Memcache instance resource.
+  Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) classic instance resource.
 ---
 
 # alicloud_kvstore_instance
 
-Provides an ApsaraDB Redis / Memcache instance resource. A DB instance is an isolated database environment in the cloud. It support be associated with IP whitelists and backup configuration which are separate resource providers. For information about Alicloud KVStore DBInstance more and how to use it, see [What is Resource Alicloud KVStore DBInstance](https://www.alibabacloud.com/help/en/tair/latest/api-r-kvstore-2015-01-01-createinstance).
+Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) classic instance resource. A DB instance is an isolated database environment in the cloud. It support be associated with IP whitelists and backup configuration which are separate resource providers. For information about Alicloud KVStore DBInstance more and how to use it, see [What is Resource Alicloud KVStore DBInstance](https://www.alibabacloud.com/help/en/tair/latest/api-r-kvstore-2015-01-01-createinstance).
 
 -> **NOTE:** Available since v1.14.0.
 

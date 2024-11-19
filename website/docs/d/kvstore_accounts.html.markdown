@@ -1,15 +1,15 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_accounts"
 sidebar_current: "docs-alicloud-datasource-kvstore-accounts"
 description: |-
-  Provides a list of KVStore Accounts to the user.
+  Provides a list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Accounts to the user.
 ---
 
-# alicloud\_kvstore\_accounts
+# alicloud_kvstore_accounts
 
-This data source provides the KVStore Accounts of the current Alibaba Cloud user.
+This data source provides the Tair (Redis OSS-Compatible) And Memcache (KVStore) Accounts of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.102.0+.
 
@@ -33,7 +33,7 @@ The following arguments are supported:
 
 * `account_name` - (Optional, ForceNew) The name of the account.
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
-* `status` - (Optional, ForceNew) The status of KVStore Account. Valid Values: `"Available` `Unavailable`
+* `status` - (Optional, ForceNew) The status of Tair (Redis OSS-Compatible) And Memcache (KVStore) Account. Valid Values: `"Available` `Unavailable`
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference

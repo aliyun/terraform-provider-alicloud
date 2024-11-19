@@ -1,17 +1,17 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_backup_policy"
 sidebar_current: "docs-alicloud-resource-kvstore-backup-policy"
 description: |-
-  Provides a backup policy for ApsaraDB Redis / Memcache instance resource.
+  Provides a backup policy for Tair (Redis OSS-Compatible) And Memcache (KVStore) resource.
 ---
 
 # alicloud_kvstore_backup_policy
 
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.104.0`. Please use resource [alicloud_kvstore_instance](https://www.terraform.io/docs/providers/alicloud/r/kvstore_instance).
 
-Provides a backup policy for ApsaraDB Redis / Memcache instance resource. 
+Provides a backup policy for Tair (Redis OSS-Compatible) And Memcache (KVStore) resource. 
 
 ## Example Usage
 

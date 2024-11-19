@@ -1,15 +1,15 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_audit_log_config"
 sidebar_current: "docs-alicloud-resource-kvstore-audit-log-config"
 description: |-
-  Provides a Alicloud Redis And Memcache (KVStore) Audit Log Config resource.
+  Provides a Alicloud Tair (Redis OSS-Compatible) And Memcache (KVStore) Audit Log Config resource.
 ---
 
 # alicloud_kvstore_audit_log_config
 
-Provides a Redis And Memcache (KVStore) Audit Log Config resource.
+Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Audit Log Config resource.
 
 -> **NOTE:** Available since v1.130.0.
 
@@ -103,7 +103,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Redis And Memcache (KVStore) Audit Log Config can be imported using the id, e.g.
+Tair (Redis OSS-Compatible) And Memcache (KVStore) Audit Log Config can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_kvstore_audit_log_config.example <instance_id>
