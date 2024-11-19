@@ -112,6 +112,10 @@ The following arguments are supported:
 * `backup_time` - (Optional, Available since v1.42.0) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `backup_retention_period` - (Optional, Int, Available since v1.213.1) The retention period of full backups.
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Int, Available since v1.235.0) The backup retention policy configured for the instance. Valid values:
+  - `0`: All backup sets are immediately deleted when the instance is released.
+  - `1 `: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
+  - `2 `: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
 * `enable_backup_log` - (Optional, Int, Available since v1.230.1) Specifies whether to enable the log backup feature. Valid values:
   - `0`: The log backup feature is disabled.
   - `1 `: The log backup feature is enabled.

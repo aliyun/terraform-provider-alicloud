@@ -188,6 +188,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"backup_retention_policy_on_cluster_deletion": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"enable_backup_log": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -570,6 +574,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
+	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
 	d.Set("enable_backup_log", formatInt(backupPolicy["EnableBackupLog"]))
 	d.Set("log_backup_retention_period", formatInt(backupPolicy["LogBackupRetentionPeriod"]))
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
@@ -1055,7 +1060,7 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
 		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
@@ -1063,6 +1068,7 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
 		d.SetPartial("backup_retention_period")
+		d.SetPartial("backup_retention_policy_on_cluster_deletion")
 		d.SetPartial("enable_backup_log")
 		d.SetPartial("log_backup_retention_period")
 		d.SetPartial("snapshot_backup_type")

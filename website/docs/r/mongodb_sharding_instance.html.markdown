@@ -109,6 +109,10 @@ The following arguments are supported:
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Int, Available since v1.235.0) The backup retention policy configured for the instance. Valid values:
+  - `0`: All backup sets are immediately deleted when the instance is released.
+  - `1 `: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
+  - `2 `: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
 * `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.

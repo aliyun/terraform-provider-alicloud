@@ -731,6 +731,10 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["BackupRetentionPeriod"] = v
 	}
 
+	if v, ok := d.GetOkExists("backup_retention_policy_on_cluster_deletion"); ok {
+		request["BackupRetentionPolicyOnClusterDeletion"] = v
+	}
+
 	if v, ok := d.GetOkExists("enable_backup_log"); ok {
 		request["EnableBackupLog"] = v
 	}
