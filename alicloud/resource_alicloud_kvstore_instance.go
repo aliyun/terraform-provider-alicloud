@@ -1762,21 +1762,39 @@ func resourceAliCloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 		return nil
 	}
 
-	request := r_kvstore.CreateDeleteInstanceRequest()
-	request.InstanceId = d.Id()
-	request.RegionId = client.RegionId
-	if v, ok := d.GetOk("global_instance_id"); ok {
-		request.GlobalInstanceId = v.(string)
+	var response map[string]interface{}
+	conn, err := client.NewRedisClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-		return r_kvstoreClient.DeleteInstance(request)
+	action := "DeleteInstance"
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   client.RegionId,
+	}
+	if v, ok := d.GetOk("global_instance_id"); ok {
+		request["GlobalInstanceId"] = v.(string)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NoCodeRegexRetry(err) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{"Released"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, r_kvstoreService.KvstoreInstanceDeletedStateRefreshFunc(d.Id(), []string{}))
