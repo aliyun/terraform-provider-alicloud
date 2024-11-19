@@ -50,14 +50,13 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorNodePoolNotFound", "ErrorClusterNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Nodepool", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})
@@ -90,10 +89,10 @@ func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, fail
 func (s *AckServiceV2) DescribeAsyncNodepoolDescribeTaskInfo(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
-	task_id, err := jsonpath.Get("$.body.task_id", res)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
+	task_id, err := jsonpath.Get("$.body.task_id", res)
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
@@ -119,12 +118,11 @@ func (s *AckServiceV2) DescribeAsyncNodepoolDescribeTaskInfo(d *schema.ResourceD
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -138,7 +136,6 @@ func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.Resour
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)

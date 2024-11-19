@@ -45,8 +45,8 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 			},
 			"cis_enabled": {
 				Type:       schema.TypeBool,
@@ -160,7 +160,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity"}, false),
+				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu"}, false),
 			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
@@ -415,8 +415,8 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"node_pool_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ExactlyOneOf: []string{"node_pool_name", "name"},
+				Computed:     true,
 			},
 			"on_demand_base_capacity": {
 				Type:         schema.TypeInt,
@@ -437,14 +437,14 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 				ValidateFunc:     StringInSlice([]string{"Month"}, false),
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
 			},
 			"platform": {
 				Type:         schema.TypeString,
@@ -511,7 +511,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:          schema.TypeList,
 				Optional:      true,
 				Computed:      true,
-				ConflictsWith: []string{"instances", "node_count", "desired_size"},
+				ConflictsWith: []string{"instances", "node_count"},
 				MaxItems:      1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -563,8 +563,8 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				DiffSuppressFunc: csNodepoolScalingPolicyDiffSuppressFunc,
 				ValidateFunc:     StringInSlice([]string{"release", "recycle"}, false),
+				DiffSuppressFunc: csNodepoolScalingPolicyDiffSuppressFunc,
 			},
 			"security_group_id": {
 				Type:       schema.TypeString,
@@ -1413,9 +1413,9 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", action, AlibabaCloudSdkGoERROR)
@@ -1812,7 +1812,6 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("cluster_id", parts[0])
-	d.Set("node_pool_id", parts[1])
 
 	d.Set("name", d.Get("node_pool_name"))
 	return nil
@@ -1826,6 +1825,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	var body map[string]interface{}
 	update := false
 	d.Partial(true)
+
 	parts := strings.Split(d.Id(), ":")
 	ClusterId := parts[0]
 	NodepoolId := parts[1]
@@ -2389,14 +2389,14 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ackServiceV2 := AckServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -2535,14 +2535,14 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ackServiceV2 := AckServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -2609,9 +2609,9 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -2621,7 +2621,7 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	ackServiceV2 := AckServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
