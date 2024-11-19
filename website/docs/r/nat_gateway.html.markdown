@@ -109,42 +109,62 @@ You can resume managing the subscription nat gateway via the AlibabaCloud Consol
 The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-* `spec` - (Deprecated from 1.7.1, Removed from v1.121.0) It has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.
 * `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://help.aliyun.com/document_detail/203500.html).
-* `name` - (Optional,  Deprecated from v1.121.0+) Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.
 * `nat_gateway_name` - (Optional, Available since v1.121.0) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
 * `dry_run` - (Optional) Specifies whether to only precheck this request. Default value: `false`.
 * `force` - (Optional) Specifies whether to forcefully delete the NAT gateway.
-* `bandwidth_packages` - (Removed from v1.121.0) A list of bandwidth packages for the nat gatway. Only support nat gateway created before 00:00 on November 4, 2017. Available since v1.13.0+ and v1.7.1-. See [`bandwidth_packages`](#bandwidth_packages) below.
-* `instance_charge_type` - (Optional, ForceNew,  Deprecated from v1.121.0+) Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.
 * `payment_type` - (Optional, ForceNew, Available since v1.121.0) The billing method of the NAT gateway. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
 * `period` - (Optional, Available since v1.45.0) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console. **NOTE:** International station only supports `Subscription`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `nat_type` - (Optional, Available since v1.102.0) The type of NAT gateway. Valid values: `Normal` and `Enhanced`. **NOTE:** From 1.137.0+,  The `Normal` has been deprecated.
+* `nat_type` - (Optional, Available since v1.102.0) The type of NAT gateway. Valid values: `Enhanced`. **NOTE:** From version 1.137.0, `nat_type` cannot be set to `Normal`.
 * `vswitch_id` - (Optional, Available since v1.102.0) The id of VSwitch.
-* `internet_charge_type` - (Optional, ForceNew, Available since v1.121.0) The internet charge type. Valid values `PayByLcu` and `PayBySpec`. The `PayByLcu` is only support enhanced NAT. **NOTE:** From 1.137.0+, The `PayBySpec` has been deprecated. 
+* `internet_charge_type` - (Optional, ForceNew, Available since v1.121.0) The internet charge type. Valid values `PayByLcu`. The `PayByLcu` is only support enhanced NAT. **NOTE:** From version 1.137.0, `internet_charge_type` cannot be set to `PayBySpec`.
 * `tags` - (Optional, Available since v1.121.0) The tags of NAT gateway.
-* `deletion_protection` - (Optional, Available since v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
+* `deletion_protection` - (Optional, Available since v1.124.4) Whether enable the deletion protection or not. Default value: `false`.
   - true: Enable deletion protection.
   - false: Disable deletion protection.
 * `network_type` - (Optional, Available since v1.136.0) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway.
 * `eip_bind_mode` - (Optional, Available since v1.184.0) The EIP binding mode of the NAT gateway. Default value: `MULTI_BINDED`. Valid values:
   - `MULTI_BINDED`: Multi EIP network card visible mode.
   - `NAT`: EIP normal mode, compatible with IPv4 gateway.
-* `bandwidth_package_ids` - (Removed from v1.121.0) The ID of the bandwidth package.
+* `icmp_reply_enabled` - (Optional, Bool, Available since v1.235.0) Specifies whether to enable ICMP retrieval. Default value: `true`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `private_link_enabled` - (Optional, ForceNew, Bool, Available since v1.235.0) Specifies whether to enable PrivateLink. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `access_mode` - (Optional, ForceNew, Set, Available since v1.235.0) The access mode for reverse access to the VPC NAT gateway. See [`access_mode`](#access_mode) below.
+* `name` - (Optional, ForceNew, Deprecated since v1.121.0) Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.
+* `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.121.0) Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.
+* `spec` - (Removed since v1.121.0) The specification of the nat gateway. **NOTE:** Field `spec` has been deprecated from provider version 1.7.1, and it has been removed from provider version 1.121.0. New field `specification` instead.
+* `bandwidth_package_ids` - (Removed since v1.121.0) The ID of the bandwidth package. **NOTE:** Field `bandwidth_package_ids` has been removed from provider version 1.121.0.
+* `bandwidth_packages` - (Removed since v1.121.0) A list of bandwidth packages for the nat gatway. See [`bandwidth_packages`](#bandwidth_packages) below.
+
+-> **NOTE:** Field `bandwidth_packages` has been removed from provider version 1.121.0.
 
 -> **NOTE:** From version 1.194.0, `eip_bind_mode` can be modified. If the `eip_bind_mode` parameter is set to `MULTI_BINDED` when the NAT gateway is created, you can change the value of this parameter from `MULTI_BINDED` to `NAT`. If the `eip_bind_mode` parameter is set to `NAT` when the NAT gateway is created, you cannot change the value of this parameter from `NAT` to `MULTI_BINDED`.
 
--> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
+-> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance.
+
+### `access_mode`
+
+The access_mode supports the following:
+
+* `mode_value` - (Optional, ForceNew) The mode of Access. Valid values:
+  - `route`: Route mode.
+  - `tunnel`: Tunnel mode.
+**NOTE:** If `mode_value` is specified, `private_link_enabled` must be set to `true`.
+* `tunnel_type` - (Optional, ForceNew) The type of Tunnel. Valid values: `geneve`. **NOTE:** `tunnel_type` takes effect only if `mode_value` is set to `tunnel`.
 
 ### `bandwidth_packages`
+
 The bandwidth_packages mapping supports the following:
 
-* `ip_count` - (Required) The IP number of the current bandwidth package. Its value range from 1 to 50.
-* `bandwidth` - (Required) The bandwidth value of the current bandwidth package. Its value range from 5 to 5000.
-* `zone` - (Optional) The AZ for the current bandwidth. If this value is not specified, Terraform will set a random AZ.
-* `public_ip_addresses` - (Computer) The public ip for bandwidth package. the public ip count equal `ip_count`, multi ip would complex with ",", such as "10.0.0.1,10.0.0.2".
+* `ip_count` - (Removed since v1.121.0) The IP number of the current bandwidth package. **NOTE:** Field `ip_count` has been removed from provider version 1.121.0.
+* `bandwidth` - (Removed since v1.121.0) The bandwidth value of the current bandwidth package. **NOTE:** Field `bandwidth` has been removed from provider version 1.121.0.
+* `zone` - (Removed since v1.121.0) The AZ for the current bandwidth. **NOTE:** Field `zone` has been removed from provider version 1.121.0.
+* `public_ip_addresses` - (Removed since v1.121.0) The public ip for bandwidth package. **NOTE:** Field `public_ip_addresses` has been removed from provider version 1.121.0.
 
 ## Attributes Reference
 
