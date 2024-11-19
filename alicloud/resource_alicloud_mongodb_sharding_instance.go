@@ -151,6 +151,10 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"backup_retention_policy_on_cluster_deletion": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"tde_status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -529,6 +533,7 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
+	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
 
 	tdeInfo, err := ddsService.DescribeMongoDBShardingTDEInfo(d.Id())
 	if err != nil {
@@ -980,13 +985,14 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("resource_group_id")
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") {
 		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
 
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
+		d.SetPartial("backup_retention_policy_on_cluster_deletion")
 	}
 
 	if d.HasChange("tde_status") {

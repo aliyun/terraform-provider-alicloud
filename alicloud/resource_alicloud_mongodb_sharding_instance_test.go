@@ -590,6 +590,16 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_policy_on_cluster_deletion": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_policy_on_cluster_deletion": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ShardingInstance",
@@ -699,6 +709,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"backup_time":          "11:00Z-12:00Z",
 					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
+					"backup_retention_policy_on_cluster_deletion": "1",
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -748,6 +759,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"resource_group_id":    CHECKSET,
 						"backup_time":          "11:00Z-12:00Z",
 						"backup_period.#":      "3",
+						"backup_retention_policy_on_cluster_deletion": "1",
 						"mongo_list.#":         "2",
 						"shard_list.#":         "2",
 						"config_server_list.#": "1",
