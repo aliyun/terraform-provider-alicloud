@@ -33,11 +33,21 @@ variable "name" {
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
 }
+
 resource "alicloud_cen_transit_router" "default" {
   cen_id                     = alicloud_cen_instance.default.id
-  transit_router_description = "desd"
+  transit_router_description = var.name
   transit_router_name        = var.name
 }
+
+resource "alicloud_cen_transit_router_cidr" "default" {
+  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  cidr                     = "192.168.0.0/16"
+  transit_router_cidr_name = var.name
+  description              = var.name
+  publish_cidr_route       = true
+}
+
 data "alicloud_cen_transit_router_available_resources" "default" {}
 
 resource "alicloud_vpn_customer_gateway" "default" {
@@ -46,6 +56,7 @@ resource "alicloud_vpn_customer_gateway" "default" {
   asn                   = "45014"
   description           = var.name
 }
+
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
   network_type        = "public"
@@ -58,7 +69,7 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
     ike_version  = "ikev2"
     ike_mode     = "main"
     ike_lifetime = 86400
-    psk          = "tf-testvpn2"
+    psk          = "tf-examplevpn2"
     ike_pfs      = "group1"
     remote_id    = "testbob2"
     local_id     = "testalice2"
@@ -87,15 +98,6 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   enable_nat_traversal = true
   vpn_attachment_name  = var.name
 }
-
-resource "alicloud_cen_transit_router_cidr" "default" {
-  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
-  cidr                     = "192.168.0.0/16"
-  transit_router_cidr_name = var.name
-  description              = var.name
-  publish_cidr_route       = true
-}
-
 resource "alicloud_cen_transit_router_vpn_attachment" "default" {
   auto_publish_route_enabled            = false
   transit_router_attachment_description = var.name
@@ -108,11 +110,12 @@ resource "alicloud_cen_transit_router_vpn_attachment" "default" {
   }
 }
 
+
 resource "alicloud_vpn_gateway_vco_route" "default" {
-  route_dest        = "192.168.12.0/24"
   next_hop          = alicloud_cen_transit_router_vpn_attachment.default.vpn_id
   vpn_connection_id = alicloud_cen_transit_router_vpn_attachment.default.vpn_id
-  weight            = 100
+  weight            = "100"
+  route_dest        = "192.168.10.0/24"
 }
 ```
 
@@ -124,6 +127,7 @@ The following arguments are supported:
 * `next_hop` - (Required, ForceNew) The next hop of the destination route.
 * `vpn_connection_id` - (Required, ForceNew) The id of the vpn attachment.
 * `route_dest` - (Required, ForceNew) The destination network segment of the destination route.
+* `overlay_mode` - (Optional, ForceNew, Available since v1.235.0) The tunneling protocol. Set the value to Ipsec, which specifies the IPsec tunneling protocol.
 
 ## Attributes Reference
 

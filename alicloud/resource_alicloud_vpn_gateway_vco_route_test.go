@@ -46,6 +46,7 @@ func TestAccAlicloudVPNGatewayVcoRoute_basic0(t *testing.T) {
 					"next_hop":          "${alicloud_cen_transit_router_vpn_attachment.default.vpn_id}",
 					"vpn_connection_id": "${alicloud_cen_transit_router_vpn_attachment.default.vpn_id}",
 					"weight":            "100",
+					"overlay_mode":      "Ipsec",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,9 +58,10 @@ func TestAccAlicloudVPNGatewayVcoRoute_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"overlay_mode"},
 			},
 		},
 	})
@@ -82,6 +84,14 @@ resource "alicloud_cen_transit_router" "default" {
 	transit_router_description = "desd"
 	transit_router_name = var.name
 }
+resource "alicloud_cen_transit_router_cidr" "default" {
+  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  cidr                     = "192.168.0.0/16"
+  transit_router_cidr_name = var.name
+  description              = var.name
+  publish_cidr_route       = true
+}
+
 data "alicloud_cen_transit_router_available_resources" "default" {}
 resource "alicloud_vpn_customer_gateway" "default" {
   name        = "${var.name}"
@@ -135,7 +145,7 @@ resource "alicloud_cen_transit_router_vpn_attachment" "default" {
 	transit_router_attachment_description = var.name
 	transit_router_attachment_name = var.name
 	cen_id = alicloud_cen_transit_router.default.cen_id
-	transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+	transit_router_id = alicloud_cen_transit_router_cidr.default.transit_router_id
 	vpn_id = alicloud_vpn_gateway_vpn_attachment.default.id
 	zone {
 		zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0

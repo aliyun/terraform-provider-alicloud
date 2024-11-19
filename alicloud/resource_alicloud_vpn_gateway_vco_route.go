@@ -51,6 +51,11 @@ func resourceAlicloudVpnGatewayVcoRoute() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"overlay_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -69,6 +74,9 @@ func resourceAlicloudVpnGatewayVcoRouteCreate(d *schema.ResourceData, meta inter
 	request["NextHop"] = d.Get("next_hop")
 	request["RouteDest"] = d.Get("route_dest")
 	request["VpnConnectionId"] = d.Get("vpn_connection_id")
+	if v, ok := d.GetOk("overlay_mode"); ok {
+		request["OverlayMode"] = v
+	}
 	request["ClientToken"] = buildClientToken("CreateVcoRouteEntry")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
