@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_express_connect_router_vbr_child_instance
 
-Provides a Express Connect Router Express Connect Router Vbr Child Instance resource. Leased Line Gateway VBR sub-instance.
+Provides a Express Connect Router Express Connect Router Vbr Child Instance resource.
 
 For information about Express Connect Router Express Connect Router Vbr Child Instance and how to use it, see [What is Express Connect Router Vbr Child Instance](https://next.api.alibabacloud.com/api/ExpressConnectRouter/2023-09-01/AttachExpressConnectRouterChildInstance).
 
@@ -17,12 +17,6 @@ For information about Express Connect Router Express Connect Router Vbr Child In
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_express_connect_router_vbr_child_instance&exampleId=0032239e-111f-a619-ea6a-5d6f876f283f888d35a7&activeTab=example&spm=docs.r.express_connect_router_vbr_child_instance.0.0032239e11&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -65,9 +59,13 @@ resource "alicloud_express_connect_router_vbr_child_instance" "default" {
 
 The following arguments are supported:
 * `child_instance_id` - (Required, ForceNew) The ID of the leased line gateway subinstance.
-* `child_instance_owner_id` - (Optional, ForceNew) The ID of the subinstance of the leased line gateway.
-* `child_instance_region_id` - (Required, ForceNew) Region of the leased line gateway sub-instance.
-* `child_instance_type` - (Required, ForceNew) The type of leased line gateway sub-instance, Valid values: `VBR`.
+* `child_instance_owner_id` - (Optional, ForceNew, Computed, Int) The ID of the Alibaba Cloud account (primary account) to which the VBR instance belongs.
+
+-> **NOTE:**  This parameter is required if you want to load a cross-account network instance.
+
+* `child_instance_region_id` - (Required, ForceNew) Region of the leased line gateway sub-instance
+* `child_instance_type` - (Required, ForceNew) The type of the network instance. Value: `VBR`: VBR instance.
+* `description` - (Optional, Available since v1.235.0) Resource attribute fields that represent descriptive information
 * `ecr_id` - (Required, ForceNew) ID of the representative leased line gateway instance.
 
 ## Attributes Reference
@@ -82,6 +80,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router Vbr Child Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router Vbr Child Instance.
+* `update` - (Defaults to 5 mins) Used when update the Express Connect Router Vbr Child Instance.
 
 ## Import
 

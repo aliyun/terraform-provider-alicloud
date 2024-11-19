@@ -18,12 +18,14 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstance() 
 	return &schema.Resource{
 		Create: resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceCreate,
 		Read:   resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceRead,
+		Update: resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceUpdate,
 		Delete: resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -33,17 +35,12 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstance() 
 				ForceNew:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "The ID of the leased line gateway subinstance."),
 			},
-			"child_instance_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "The ID of the leased line gateway subinstance."),
-			},
 			"child_instance_owner_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "The ID of the subinstance of the leased line gateway."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "The ID of the Alibaba Cloud account (primary account) to which the VBR instance belongs.> This parameter is required if you want to load a cross-account network instance."),
 			},
 			"child_instance_region_id": {
 				Type:         schema.TypeString,
@@ -51,9 +48,19 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstance() 
 				ForceNew:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "Region of the leased line gateway sub-instance"),
 			},
+			"child_instance_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "The type of the network instance. Value: **VBR**: VBR instance."),
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"ecr_id": {
 				Type:     schema.TypeString,
@@ -88,8 +95,11 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceCre
 	request["ClientToken"] = buildClientToken(action)
 
 	request["ChildInstanceRegionId"] = d.Get("child_instance_region_id")
-	if v, ok := d.GetOk("child_instance_owner_id"); ok {
+	if v, ok := d.GetOkExists("child_instance_owner_id"); ok {
 		request["ChildInstanceOwnerId"] = v
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -103,9 +113,9 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceCre
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_express_connect_router_vbr_child_instance", action, AlibabaCloudSdkGoERROR)
@@ -136,19 +146,81 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceRea
 		return WrapError(err)
 	}
 
-	d.Set("child_instance_owner_id", objectRaw["ChildInstanceOwnerId"])
-	d.Set("child_instance_region_id", objectRaw["ChildInstanceRegionId"])
-	d.Set("create_time", objectRaw["GmtCreate"])
-	d.Set("status", objectRaw["Status"])
-	d.Set("child_instance_id", objectRaw["ChildInstanceId"])
-	d.Set("ecr_id", objectRaw["EcrId"])
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("ecr_id", parts[0])
-	d.Set("child_instance_id", parts[1])
-	d.Set("child_instance_type", parts[2])
+	if objectRaw["ChildInstanceOwnerId"] != nil {
+		d.Set("child_instance_owner_id", objectRaw["ChildInstanceOwnerId"])
+	}
+	if objectRaw["ChildInstanceRegionId"] != nil {
+		d.Set("child_instance_region_id", objectRaw["ChildInstanceRegionId"])
+	}
+	if objectRaw["GmtCreate"] != nil {
+		d.Set("create_time", objectRaw["GmtCreate"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["ChildInstanceId"] != nil {
+		d.Set("child_instance_id", objectRaw["ChildInstanceId"])
+	}
+	if objectRaw["ChildInstanceType"] != nil {
+		d.Set("child_instance_type", objectRaw["ChildInstanceType"])
+	}
+	if objectRaw["EcrId"] != nil {
+		d.Set("ecr_id", objectRaw["EcrId"])
+	}
 
 	return nil
+}
+
+func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyExpressConnectRouterChildInstance"
+	conn, err := client.NewExpressconnectrouterClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["EcrId"] = parts[0]
+	request["ChildInstanceId"] = parts[1]
+	request["ChildInstanceType"] = parts[2]
+
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceRead(d, meta)
 }
 
 func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceDelete(d *schema.ResourceData, meta interface{}) error {
@@ -184,21 +256,22 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceDel
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.AssociationId", "ResourceNotFound.ChildInstanceId", "ResourceNotFound.EcrId"}) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.AssociationId", "ResourceNotFound.ChildInstanceId", "ResourceNotFound.EcrId"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	expressConnectRouterServiceV2 := ExpressConnectRouterServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"0"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(d, response, "$.TotalCount", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"0"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectRouterServiceV2.DescribeAsyncExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(d, response, "$.TotalCount", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
+
 	return nil
 }

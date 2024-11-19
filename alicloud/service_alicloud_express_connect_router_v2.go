@@ -507,6 +507,7 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribeExpressConnectRouterExpressConnectRouterVbrChildInstance <<< Encapsulated get interface for ExpressConnectRouter ExpressConnectRouterVbrChildInstance.
 
 func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConnectRouterVbrChildInstance(id string) (object map[string]interface{}, err error) {
@@ -545,14 +546,13 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.EcrId"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVbrChildInstance", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -568,16 +568,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["ChildInstanceId"] != parts[1] {
+		if fmt.Sprint(item["ChildInstanceId"]) != parts[1] {
 			continue
 		}
-		if item["ChildInstanceType"] != parts[2] {
+		if fmt.Sprint(item["ChildInstanceType"]) != parts[2] {
 			continue
 		}
-		if item["ChildInstanceType"] != "VBR" {
+		if fmt.Sprint(item["ChildInstanceType"]) != "VBR" {
 			continue
 		}
-		if item["EcrId"] != parts[0] {
+		if fmt.Sprint(item["EcrId"]) != parts[0] {
 			continue
 		}
 		return item, nil
@@ -598,6 +598,13 @@ func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouter
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -607,7 +614,7 @@ func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouter
 	}
 }
 
-func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeExpressConnectRouterChildInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterVbrChildInstanceDescribeExpressConnectRouterChildInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	var request map[string]interface{}
@@ -624,10 +631,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeExpressConnectRoute
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
-	request["ChildInstanceId"] = parts[1]
-	request["ChildInstanceType"] = parts[2]
 	request["EcrId"] = parts[0]
+	request["ChildInstanceId"] = parts[1]
+
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
@@ -644,12 +650,11 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeExpressConnectRoute
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -657,16 +662,22 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeExpressConnectRoute
 
 func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAsyncDescribeExpressConnectRouterChildInstance(d, res)
+		object, err := s.DescribeAsyncExpressConnectRouterVbrChildInstanceDescribeExpressConnectRouterChildInstance(d, res)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

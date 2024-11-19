@@ -39,6 +39,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstance_bas
 					"child_instance_id":        "${alicloud_express_connect_virtual_border_router.defaultydbbk3.id}",
 					"child_instance_region_id": "cn-hangzhou",
 					"ecr_id":                   "${alicloud_express_connect_router_express_connect_router.defaultAAlhUy.id}",
+					"description":              "Initial Description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -46,6 +47,17 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstance_bas
 						"child_instance_id":        CHECKSET,
 						"child_instance_region_id": CHECKSET,
 						"ecr_id":                   CHECKSET,
+						"description":              "Initial Description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "Updated Description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "Updated Description",
 					}),
 				),
 			},
