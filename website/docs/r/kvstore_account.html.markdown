@@ -1,17 +1,17 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_account"
 sidebar_current: "docs-alicloud-resource-kvstore-account"
 description: |-
-  Provides a Alicloud KVStore Account resource.
+  Provides a Alicloud Tair (Redis OSS-Compatible) And Memcache (KVStore) Account resource.
 ---
 
 # alicloud_kvstore_account
 
-Provides a KVStore Account resource.
+Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Account resource.
 
-For information about KVStore Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/doc-detail/95973.htm).
+For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/doc-detail/95973.htm).
 
 -> **NOTE:** Available since v1.66.0.
 
@@ -84,8 +84,8 @@ The following arguments are supported:
 * `account_password` - (Optional, Sensitive) The password of the account. The password must be 8 to 32 characters in length. It must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `!@ # $ % ^ & * ( ) _ + - =`. You have to specify one of `account_password` and `kms_encrypted_password` fields.
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs (The engine version of instance must be 4.0 or 4.0+).
-* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a KVStore account. If the `account_password` is filled in, this field will be ignored.
-* `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a KVStore account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a Tair (Redis OSS-Compatible) And Memcache (KVStore) account. If the `account_password` is filled in, this field will be ignored.
+* `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a Tair (Redis OSS-Compatible) And Memcache (KVStore) account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `account_type` - (Optional, ForceNew) Privilege type of account.
     - Normal: Common privilege.
     Default to Normal.
@@ -98,7 +98,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Account. The value is formatted `<instance_id>:<account_name>`.
-* `status` - The status of KVStore Account.
+* `status` - The status of Tair (Redis OSS-Compatible) And Memcache (KVStore) Account.
 
 ## Timeouts
 
@@ -111,7 +111,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-KVStore account can be imported using the id, e.g.
+Tair (Redis OSS-Compatible) And Memcache (KVStore) account can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_kvstore_account.example <instance_id>:<account_name>

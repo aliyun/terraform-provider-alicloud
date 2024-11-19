@@ -1,15 +1,15 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_connections"
 sidebar_current: "docs-alicloud-datasource-kvstore-connections"
 description: |-
-    Query the public IP of the specified KVStore DBInstance.
+    Query the public IP of the specified Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance.
 ---
 
-# alicloud\_kvstore\_connections
+# alicloud_kvstore_connections
 
-This data source can query the public IP of the specified KVStore DBInstance.
+This data source can query the public IP of the specified Tair (Redis OSS-Compatible) And Memcache (KVStore).
  
 -> **NOTE:** Available in v1.101.0+.
 
@@ -31,14 +31,14 @@ output "connection_string" {
 
 The following arguments are supported:
 
-* `ids` - (Required) A list of KVStore DBInstance ids, only support one item.
+* `ids` - (Required) A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance ids, only support one item.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` -  A list of KVStore DBInstance ids.
+* `ids` -  A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance ids.
 * `connections` - Public network details of the specified resource. contains the following attributes:
   * `connection_string` - The connection string of the instance.
   * `db_instance_net_type` - The network type of the instance.

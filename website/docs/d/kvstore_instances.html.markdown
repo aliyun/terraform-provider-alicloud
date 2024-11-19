@@ -1,5 +1,5 @@
 ---
-subcategory: "Redis And Memcache (KVStore)"
+subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instances"
 sidebar_current: "docs-alicloud-datasource-kvstore-instances"
