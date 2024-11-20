@@ -480,6 +480,7 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 * `cloudsso` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud SSO endpoints.
 
 * `edas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EDAS endpoints.
+* `dmsenterprise` - - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DMS Enterprise endpoints.
 
 ## Testing
 
