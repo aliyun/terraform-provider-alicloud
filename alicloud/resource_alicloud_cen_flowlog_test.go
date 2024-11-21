@@ -240,3 +240,361 @@ func resourceCenFlowlogConfigDependence(name string) string {
 	}
 `, name)
 }
+
+// Test Cen FlowLog. >>> Resource test cases, automatically generated.
+// Case attachment flowlog资源测试_副本1730702969870 8645
+func TestAccAliCloudCenFlowLog_basic8645(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_flowlog.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenFlowLogMap8645)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenFlowLog")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scenflowlog%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenFlowLogBasicDependence8645)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                       "Active",
+					"flow_log_name":                name,
+					"description":                  "tr flowlog",
+					"log_store_name":               "${alicloud_log_store.default.logstore_name}",
+					"project_name":                 "${alicloud_log_store.default.project_name}",
+					"log_format_string":            "$${srcaddr}$${dstaddr}$${bytes}",
+					"cen_id":                       "${alicloud_cen_instance.defaultc5kxyC.id}",
+					"interval":                     "60",
+					"transit_router_id":            "${alicloud_cen_transit_router.defaultVw2U9u.transit_router_id}",
+					"transit_router_attachment_id": "${alicloud_cen_transit_router_vpc_attachment.defaultW6LSKa.transit_router_attachment_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                       "Active",
+						"flow_log_name":                name,
+						"description":                  "tr flowlog",
+						"log_store_name":               CHECKSET,
+						"project_name":                 CHECKSET,
+						"log_format_string":            "${srcaddr}${dstaddr}${bytes}",
+						"cen_id":                       CHECKSET,
+						"interval":                     "60",
+						"transit_router_id":            CHECKSET,
+						"transit_router_attachment_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name": name + "_update",
+					"description":   "flowlog-resource-test-1",
+					"interval":      "600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name": name + "_update",
+						"description":   "flowlog-resource-test-1",
+						"interval":      "600",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenFlowLogMap8645 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudCenFlowLogBasicDependence8645(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultc5kxyC" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "defaultVw2U9u" {
+  cen_id = alicloud_cen_instance.defaultc5kxyC.id
+}
+
+resource "alicloud_vpc" "defaultpybqKI" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = format("%%s2", var.name)
+}
+
+resource "alicloud_vswitch" "defaultlOw4Ns" {
+  vpc_id     = alicloud_vpc.defaultpybqKI.id
+  cidr_block = "172.16.1.0/24"
+  zone_id    = "cn-hangzhou-h"
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+  description  = "terraform-example"
+}
+
+resource "alicloud_log_store" "default" {
+  project_name          = alicloud_log_project.default.project_name
+  logstore_name         = var.name
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
+resource "alicloud_cen_transit_router_vpc_attachment" "defaultW6LSKa" {
+  vpc_id = alicloud_vpc.defaultpybqKI.id
+  cen_id = alicloud_cen_transit_router.defaultVw2U9u.cen_id
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultlOw4Ns.id
+    zone_id    = alicloud_vswitch.defaultlOw4Ns.zone_id
+  }
+}
+
+
+`, name)
+}
+
+// Case tr flowlog资源测试_副本1730797018057 8667
+func TestAccAliCloudCenFlowLog_basic8667(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_flowlog.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenFlowLogMap8667)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenFlowLog")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scenflowlog%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenFlowLogBasicDependence8667)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":            "Active",
+					"flow_log_name":     name,
+					"description":       "tr flowlog",
+					"log_store_name":    "${alicloud_log_store.default.logstore_name}",
+					"project_name":      "${alicloud_log_store.default.project_name}",
+					"log_format_string": "$${srcaddr}$${dstaddr}$${bytes}",
+					"cen_id":            "${alicloud_cen_instance.defaultc5kxyC.id}",
+					"interval":          "60",
+					"transit_router_id": "${alicloud_cen_transit_router.defaultVw2U9u.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":            "Active",
+						"flow_log_name":     name,
+						"description":       "tr flowlog",
+						"log_store_name":    CHECKSET,
+						"project_name":      CHECKSET,
+						"log_format_string": "${srcaddr}${dstaddr}${bytes}",
+						"cen_id":            CHECKSET,
+						"interval":          "60",
+						"transit_router_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name": name + "_update",
+					"description":   "flowlog-resource-test-1",
+					"interval":      "600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name": name + "_update",
+						"description":   "flowlog-resource-test-1",
+						"interval":      "600",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Inactive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Inactive",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenFlowLogMap8667 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudCenFlowLogBasicDependence8667(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultc5kxyC" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "defaultVw2U9u" {
+  cen_id = alicloud_cen_instance.defaultc5kxyC.id
+}
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+  description  = "terraform-example"
+}
+
+resource "alicloud_log_store" "default" {
+  project_name          = alicloud_log_project.default.project_name
+  logstore_name         = var.name
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
+`, name)
+}
+
+// Test Cen FlowLog. <<< Resource test cases, automatically generated.
