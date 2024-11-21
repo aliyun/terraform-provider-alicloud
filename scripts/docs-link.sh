@@ -75,7 +75,7 @@ for index in "${!example_codes[@]}"; do
   spm="docs.r.${file_name}.${index}.${sha1_hash:0:10}"
   example_id="${sha1_hash:0:8}-${sha1_hash:8:4}-${sha1_hash:12:4}-${sha1_hash:16:4}-${sha1_hash:20:20}"
 
-  link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/api-tools\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a>\n<\/div><\/div>"
+  link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a>\n<\/div><\/div>"
   link_section="$link_section\n\n\`\`\`terraform"
   $SED "s/\`\`\`terraform${index}/$link_section/g" "$file_path"
 done
