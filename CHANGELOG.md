@@ -1,4 +1,30 @@
 ## 1.235.0 (Unreleased)
+
+- **New Resource:** `alicloud_rds_custom_deployment_set` [GH-7884]
+- **New Resource:** `alicloud_rds_custom` [GH-7884]
+
+ENHANCEMENTS:
+
+- service: Added retry strategy for redis resources. [GH-7883]
+- resource/alicloud_cs_managed_kubernetes: remove ForceNew for resource_group_id. [GH-7867]
+- resource/alicloud_ecs_image_component: add new component_version. [GH-7869]
+- resource/alicloud_ess_scaling_configuration: add attribute network_interfaces. [GH-7870]
+- resource/alicloud_ess_eci_scaling_configuration: update container_group_name constraint. [GH-7871]
+- resource/alicloud_cr_ee_instance: add new attributes default_oss_bucket, image_scanner and resource_group_id. [GH-7874]
+- resource/alicloud_kvstore_instance: add try for delete operation. [GH-7876]
+- resource/alicloud_nat_gateway: Added the field icmp_reply_enabled, private_link_enabled, access_mode. [GH-7877]
+- resource/alicloud_express_connect_router_vbr_child_instance: add new attribute description. [GH-7878]
+- resource/alicloud_mongodb_instance: Added the field backup_retention_policy_on_cluster_deletion; resource/alicloud_mongodb_sharding_instance: Added the field backup_retention_policy_on_cluster_deletion. [GH-7880]
+- resource/alicloud_vpn_gateway_vco_route: add new attribute overlay_mode. [GH-7881]
+- resource/alicloud_cen_flowlog: add new attribute interval, log_format_string. [GH-7886]
+- resource/alicloud_privatelink_vpc_endpoint_connection: add try code; resource/alicloud_privatelink_vpc_endpoint_service_resource: add new attribute region_id. [GH-7887]
+- resource/alicloud_cen_transit_router_ecr_attachment: add retry code. [GH-7888]
+- resource/alicloud_privatelink_vpc_endpoint_service: add new attribue region_id. [GH-7889]
+- docs: Improved subcategory for Redis. [GH-7875]
+- docs: adds endpoint key dmsenterprise for dms service. [GH-7882]
+- docs: Improves description for oss_bucket_cname_token. [GH-7890]
+- testcase: Fixed alicloud_dts_synchronization_job test case. [GH-7885]
+
 ## 1.234.0 (November 14, 2024)
 
 - **New Resource:** `alicloud_vpc_ipam_ipam`. ([#7848](https://github.com/aliyun/terraform-provider-alicloud/issues/7848))
