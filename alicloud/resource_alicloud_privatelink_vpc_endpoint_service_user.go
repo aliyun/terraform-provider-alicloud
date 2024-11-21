@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -62,9 +63,9 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUserCreate(d *schema.ResourceD
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["UserId"] = d.Get("user_id")
-	query["ServiceId"] = d.Get("service_id")
-	query["RegionId"] = client.RegionId
+	request["UserId"] = d.Get("user_id")
+	request["ServiceId"] = d.Get("service_id")
+	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("user_arn"); ok {
@@ -93,7 +94,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUserCreate(d *schema.ResourceD
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service_user", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["ServiceId"], query["UserId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["ServiceId"], request["UserId"]))
 
 	return resourceAliCloudPrivateLinkVpcEndpointServiceUserRead(d, meta)
 }
@@ -140,10 +141,9 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUserDelete(d *schema.ResourceD
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["UserId"] = parts[1]
-	query["ServiceId"] = parts[0]
-	query["RegionId"] = client.RegionId
-
+	request["UserId"] = parts[1]
+	request["ServiceId"] = parts[0]
+	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("user_arn"); ok {
@@ -160,7 +160,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUserDelete(d *schema.ResourceD
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

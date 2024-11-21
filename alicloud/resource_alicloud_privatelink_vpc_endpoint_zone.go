@@ -42,6 +42,10 @@ func resourceAliCloudPrivateLinkVpcEndpointZone() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -73,25 +77,25 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["EndpointId"] = d.Get("endpoint_id")
-	query["ZoneId"] = d.Get("zone_id")
-	query["RegionId"] = client.RegionId
+	request["EndpointId"] = d.Get("endpoint_id")
+	request["ZoneId"] = d.Get("zone_id")
+	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("eni_ip"); ok {
 		request["ip"] = v
 	}
+	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	if query["ZoneId"] == "" {
+	if request["ZoneId"] == "" {
 		vpcService := VpcService{client}
 		vsw, err := vpcService.DescribeVswitch(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		query["ZoneId"] = vsw["ZoneId"]
+		request["ZoneId"] = vsw["ZoneId"]
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -99,7 +103,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -113,7 +117,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zone", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["EndpointId"], query["ZoneId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["EndpointId"], request["ZoneId"]))
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneStatus", []string{}))
@@ -140,6 +144,9 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneRead(d *schema.ResourceData, meta
 
 	if objectRaw["EniIp"] != nil {
 		d.Set("eni_ip", objectRaw["EniIp"])
+	}
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
 	}
 	if objectRaw["ZoneStatus"] != nil {
 		d.Set("status", objectRaw["ZoneStatus"])
@@ -175,10 +182,9 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["EndpointId"] = parts[0]
-	query["ZoneId"] = parts[1]
-	query["RegionId"] = client.RegionId
-
+	request["EndpointId"] = parts[0]
+	request["ZoneId"] = parts[1]
+	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -192,7 +198,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

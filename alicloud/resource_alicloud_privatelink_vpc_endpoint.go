@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -133,8 +132,33 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOk("vpc_endpoint_name"); ok {
 		request["EndpointName"] = v
+	}
+	if v, ok := d.GetOk("endpoint_type"); ok {
+		request["EndpointType"] = v
+	}
+	if v, ok := d.GetOkExists("zone_private_ip_address_count"); ok {
+		request["ZonePrivateIpAddressCount"] = v
+	}
+	if v, ok := d.GetOk("security_group_ids"); ok {
+		securityGroupIdMapsArray := v.(*schema.Set).List()
+		request["SecurityGroupId"] = securityGroupIdMapsArray
+	}
+
+	if v, ok := d.GetOk("policy_document"); ok {
+		request["PolicyDocument"] = v
+	}
+	if v, ok := d.GetOkExists("protected_enabled"); ok {
+		request["ProtectedEnabled"] = v
 	}
 	request["VpcId"] = d.Get("vpc_id")
 	if v, ok := d.GetOk("service_name"); ok {
@@ -143,36 +167,11 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("endpoint_description"); ok {
 		request["EndpointDescription"] = v
 	}
-	if v, ok := d.GetOk("service_id"); ok {
-		request["ServiceId"] = v
-	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
-	}
-	if v, ok := d.GetOk("endpoint_type"); ok {
-		request["EndpointType"] = v
-	}
-	if v, ok := d.GetOk("zone_private_ip_address_count"); ok {
-		request["ZonePrivateIpAddressCount"] = v
-	}
-	if v, ok := d.GetOkExists("protected_enabled"); ok {
-		request["ProtectedEnabled"] = v
-	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request["Tags"] = tagsMap
-	}
-
-	if v, ok := d.GetOk("security_group_ids"); ok {
-		securityGroupIdMaps := v.(*schema.Set).List()
-		request["SecurityGroupId"] = securityGroupIdMaps
-	}
-
-	if v, ok := d.GetOk("policy_document"); ok {
-		request["PolicyDocument"] = v
+	if v, ok := d.GetOk("service_id"); ok {
+		request["ServiceId"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -186,9 +185,9 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint", action, AlibabaCloudSdkGoERROR)
@@ -260,6 +259,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
+
 	action := "UpdateVpcEndpointAttribute"
 	conn, err := client.NewPrivatelinkClient()
 	if err != nil {
@@ -267,9 +267,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["EndpointId"] = d.Id()
+	request["EndpointId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
+	if !d.IsNewResource() && d.HasChange("policy_document") {
+		update = true
+		request["PolicyDocument"] = d.Get("policy_document")
+	}
+
 	if !d.IsNewResource() && d.HasChange("vpc_endpoint_name") {
 		update = true
 		request["EndpointName"] = d.Get("vpc_endpoint_name")
@@ -283,9 +288,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("policy_document") {
+	if d.HasChange("address_ip_version") {
 		update = true
-		request["PolicyDocument"] = d.Get("policy_document")
+		request["AddressIpVersion"] = d.Get("address_ip_version")
 	}
 
 	if update {
@@ -295,15 +300,15 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -316,11 +321,15 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ResourceId"] = d.Id()
-	query["ResourceRegionId"] = client.RegionId
+	request["ResourceId"] = d.Id()
+
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["ResourceGroupId"] = d.Get("resource_group_id")
+	}
+	request["ResourceGroupId"] = d.Get("resource_group_id")
+	if !d.IsNewResource() && d.HasChange("region_id") {
+		update = true
+		request["ResourceRegionId"] = d.Get("region_id")
 	}
 
 	request["ResourceType"] = "VpcEndpoint"
@@ -337,9 +346,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -392,9 +401,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -429,15 +438,15 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -467,9 +476,8 @@ func resourceAliCloudPrivateLinkVpcEndpointDelete(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["EndpointId"] = d.Id()
+	request["EndpointId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -483,18 +491,18 @@ func resourceAliCloudPrivateLinkVpcEndpointDelete(d *schema.ResourceData, meta i
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+		if IsExpectedErrors(err, []string{"EndpointNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -505,6 +513,7 @@ func resourceAliCloudPrivateLinkVpcEndpointDelete(d *schema.ResourceData, meta i
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 
