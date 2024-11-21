@@ -20,7 +20,7 @@ import (
 )
 
 // Currently, Private network slb can only be created through the console.
-func TestAccAliCloudPrivatelinkVpcEndpointServiceResource_basic(t *testing.T) {
+func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service_resource.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceResourceMap)

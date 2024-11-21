@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_privatelink_vpc_endpoint_service_resource
 
-Provides a Private Link Vpc Endpoint Service Resource resource. Endpoint service resource.
+Provides a Private Link Vpc Endpoint Service Resource resource.
+
+Endpoint service resource.
 
 For information about Private Link Vpc Endpoint Service Resource and how to use it, see [What is Vpc Endpoint Service Resource](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-attachresourcetovpcendpointservice).
 
@@ -17,12 +19,6 @@ For information about Private Link Vpc Endpoint Service Resource and how to use 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_privatelink_vpc_endpoint_service_resource&exampleId=f5cf7ac8-4ff3-f926-314e-3f45599f33ee5bbbed0e&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_service_resource.0.f5cf7ac84f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -79,13 +75,13 @@ resource "alicloud_privatelink_vpc_endpoint_service_resource" "example" {
 
 The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
-  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `resource_id` - (Required, ForceNew) The service resource ID.
 * `resource_type` - (Required, ForceNew) Service resource type, value:
-  - **slb**: indicates that the service resource type is Classic Load Balancer (CLB).
-  - **alb**: indicates that the service resource type is Application Load Balancer (ALB).
-  - **nlb**: indicates that the service resource type is Network Load Balancer (NLB).
+  - `slb`: indicates that the service resource type is Classic Load Balancer (CLB).
+  - `alb`: indicates that the service resource type is Application Load Balancer (ALB).
+  - `nlb`: indicates that the service resource type is Network Load Balancer (NLB).
 * `service_id` - (Required, ForceNew) The endpoint service ID.
 * `zone_id` - (Optional, ForceNew, Computed, Available since v1.212.0) The ID of the zone to which the service resource belongs. (valid when the resource type is nlb/alb).
 
@@ -93,6 +89,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<resource_id>:<zone_id>`.
+* `region_id` - The ID of the region where the service resource is deployed.
 
 ## Timeouts
 

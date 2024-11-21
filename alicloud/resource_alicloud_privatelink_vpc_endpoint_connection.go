@@ -69,40 +69,38 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionCreate(d *schema.ResourceDa
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["ServiceId"] = d.Get("service_id")
-	query["EndpointId"] = d.Get("endpoint_id")
+	request["EndpointId"] = d.Get("endpoint_id")
+	request["ServiceId"] = d.Get("service_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOkExists("bandwidth"); ok && v.(int) > 0 {
+		request["Bandwidth"] = v
+	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
-	}
-	if v, ok := d.GetOk("bandwidth"); ok {
-		request["Bandwidth"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointConnectionOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_connection", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["ServiceId"], query["EndpointId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["ServiceId"], request["EndpointId"]))
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Connected"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointConnectionStateRefreshFunc(d.Id(), "ConnectionStatus", []string{}))
@@ -127,10 +125,18 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionRead(d *schema.ResourceData
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", objectRaw["Bandwidth"])
-	d.Set("status", objectRaw["ConnectionStatus"])
-	d.Set("endpoint_id", objectRaw["EndpointId"])
-	d.Set("service_id", objectRaw["ServiceId"])
+	if objectRaw["Bandwidth"] != nil {
+		d.Set("bandwidth", objectRaw["Bandwidth"])
+	}
+	if objectRaw["ConnectionStatus"] != nil {
+		d.Set("status", objectRaw["ConnectionStatus"])
+	}
+	if objectRaw["EndpointId"] != nil {
+		d.Set("endpoint_id", objectRaw["EndpointId"])
+	}
+	if objectRaw["ServiceId"] != nil {
+		d.Set("service_id", objectRaw["ServiceId"])
+	}
 
 	return nil
 }
@@ -141,6 +147,7 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateVpcEndpointConnectionAttribute"
 	conn, err := client.NewPrivatelinkClient()
@@ -149,36 +156,34 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ServiceId"] = parts[0]
-	query["EndpointId"] = parts[1]
+	request["EndpointId"] = parts[1]
+	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
 	if d.HasChange("bandwidth") {
 		update = true
 		request["Bandwidth"] = d.Get("bandwidth")
 	}
 
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -205,10 +210,9 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionDelete(d *schema.ResourceDa
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["ServiceId"] = parts[0]
-	query["EndpointId"] = parts[1]
+	request["EndpointId"] = parts[1]
+	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -222,18 +226,18 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionDelete(d *schema.ResourceDa
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointConnectionOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointConnectionNotFound"}) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -244,5 +248,6 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionDelete(d *schema.ResourceDa
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

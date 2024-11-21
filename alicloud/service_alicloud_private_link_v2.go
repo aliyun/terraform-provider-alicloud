@@ -317,6 +317,7 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceUserStateRefreshFunc
 }
 
 // DescribePrivateLinkVpcEndpointServiceUser >>> Encapsulated.
+
 // DescribePrivateLinkVpcEndpointServiceResource <<< Encapsulated get interface for PrivateLink VpcEndpointServiceResource.
 
 func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id string) (object map[string]interface{}, err error) {
@@ -332,7 +333,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ServiceId"] = parts[0]
+	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -348,10 +349,9 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceResource", id)), NotFoundMsg, response)
@@ -371,10 +371,10 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["ResourceId"] != parts[1] {
+		if fmt.Sprint(item["ResourceId"]) != parts[1] {
 			continue
 		}
-		if len(parts) == 3 && item["ZoneId"] != parts[2] {
+		if len(parts) == 3 && fmt.Sprint(item["ZoneId"]) != parts[2] {
 			continue
 		}
 		return item, nil
@@ -394,6 +394,14 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceResourceStateRefresh
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -511,8 +519,8 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointConnection(id strin
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["EndpointId"] = parts[1]
-	query["ServiceId"] = parts[0]
+	request["EndpointId"] = parts[1]
+	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -528,10 +536,9 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointConnection(id strin
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -565,6 +572,14 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointConnectionStateRefreshFunc(
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
