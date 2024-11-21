@@ -327,8 +327,8 @@ github.com/aliyun/credentials-go v1.3.0/go.mod h1:8jKYhQuDawt8x2+fusqa1Y6mPxemTs
 github.com/aliyun/credentials-go v1.3.1/go.mod h1:8jKYhQuDawt8x2+fusqa1Y6mPxemTsBEN04dgcAcYz0=
 github.com/aliyun/credentials-go v1.3.6/go.mod h1:1LxUuX7L5YrZUWzBrRyk0SwSdH4OmPrib8NVePL3fxM=
 github.com/aliyun/credentials-go v1.3.10/go.mod h1:Jm6d+xIgwJVLVWT561vy67ZRP4lPTQxMbEYRuT2Ti1U=
-github.com/aliyun/credentials-go v1.3.11 h1:8CjGRa0wAoNC0zGMar+PRushZkd1n4xdijpdV4vlCho=
-github.com/aliyun/credentials-go v1.3.11/go.mod h1:Jm6d+xIgwJVLVWT561vy67ZRP4lPTQxMbEYRuT2Ti1U=
+github.com/aliyun/credentials-go v1.4.3 h1:N3iHyvHRMyOwY1+0qBLSf3hb5JFiOujVSVuEpgeGttY=
+github.com/aliyun/credentials-go v1.4.3/go.mod h1:Jm6d+xIgwJVLVWT561vy67ZRP4lPTQxMbEYRuT2Ti1U=
 github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050 h1:E4jdnYzB1G/DiTVHychdLOnak4w/TlKd4ZHM8wZDs58=
 github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050/go.mod h1:rYnxfOnoHRZ2QGKREUOESel1hmRe0frzF2RLpcDVtTU=
 github.com/andybalholm/brotli v1.0.1/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=

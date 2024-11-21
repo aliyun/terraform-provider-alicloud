@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 )
@@ -34,7 +35,7 @@ func (b *CLIProfileCredentialsProviderBuilder) Build() (provider *CLIProfileCred
 		b.provider.profileName = os.Getenv("ALIBABA_CLOUD_PROFILE")
 	}
 
-	if os.Getenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED") == "true" {
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED")) == "true" {
 		err = errors.New("the CLI profile is disabled")
 		return
 	}
@@ -59,10 +60,13 @@ type profile struct {
 	RoleSessionName string `json:"ram_session_name"`
 	DurationSeconds int    `json:"expired_seconds"`
 	StsRegion       string `json:"sts_region"`
+	EnableVpc       bool   `json:"enable_vpc"`
 	SourceProfile   string `json:"source_profile"`
 	RoleName        string `json:"ram_role_name"`
 	OIDCTokenFile   string `json:"oidc_token_file"`
 	OIDCProviderARN string `json:"oidc_provider_arn"`
+	Policy          string `json:"policy"`
+	ExternalId      string `json:"external_id"`
 }
 
 type configuration struct {
@@ -132,6 +136,9 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithRoleSessionName(p.RoleSessionName).
 			WithDurationSeconds(p.DurationSeconds).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
+			WithPolicy(p.Policy).
+			WithExternalId(p.ExternalId).
 			Build()
 	case "EcsRamRole":
 		credentialsProvider, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName(p.RoleName).Build()
@@ -141,8 +148,10 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithOIDCProviderARN(p.OIDCProviderARN).
 			WithRoleArn(p.RoleArn).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
 			WithDurationSeconds(p.DurationSeconds).
 			WithRoleSessionName(p.RoleSessionName).
+			WithPolicy(p.Policy).
 			Build()
 	case "ChainableRamRoleArn":
 		previousProvider, err1 := provider.getCredentialsProvider(conf, p.SourceProfile)
@@ -156,6 +165,9 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithRoleSessionName(p.RoleSessionName).
 			WithDurationSeconds(p.DurationSeconds).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
+			WithPolicy(p.Policy).
+			WithExternalId(p.ExternalId).
 			Build()
 	default:
 		err = fmt.Errorf("unsupported profile mode '%s'", p.Mode)
@@ -198,11 +210,16 @@ func (provider *CLIProfileCredentialsProvider) GetCredentials() (cc *Credentials
 		return
 	}
 
+	providerName := innerCC.ProviderName
+	if providerName == "" {
+		providerName = provider.innerProvider.GetProviderName()
+	}
+
 	cc = &Credentials{
 		AccessKeyId:     innerCC.AccessKeyId,
 		AccessKeySecret: innerCC.AccessKeySecret,
 		SecurityToken:   innerCC.SecurityToken,
-		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.innerProvider.GetProviderName()),
+		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 	}
 
 	return
