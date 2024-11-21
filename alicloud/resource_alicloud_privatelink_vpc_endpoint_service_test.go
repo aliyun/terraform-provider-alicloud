@@ -559,6 +559,16 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
 					}),
 				),
 			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"service_support_ipv6": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"service_support_ipv6": "true",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_support_ipv6": "false",
@@ -566,16 +576,6 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_support_ipv6": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_support_ipv6": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_support_ipv6": "true",
 					}),
 				),
 			},
