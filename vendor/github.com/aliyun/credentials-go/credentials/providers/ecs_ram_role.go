@@ -2,6 +2,7 @@ package providers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -17,6 +18,8 @@ type ECSRAMRoleCredentialsProvider struct {
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
+	// for http options
+	httpOptions *HttpOptions
 }
 
 type ECSRAMRoleCredentialsProviderBuilder struct {
@@ -39,9 +42,19 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithDisableIMDSv1(disableIM
 	return builder
 }
 
+func (builder *ECSRAMRoleCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.httpOptions = httpOptions
+	return builder
+}
+
 const defaultMetadataTokenDuration = 21600 // 6 hours
 
 func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRoleCredentialsProvider, err error) {
+
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ECS_METADATA_DISABLED")) == "true" {
+		err = errors.New("IMDS credentials is disabled")
+		return
+	}
 
 	// 设置 roleName 默认值
 	if builder.provider.roleName == "" {
@@ -49,7 +62,7 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 	}
 
 	if !builder.provider.disableIMDSv1 {
-		builder.provider.disableIMDSv1 = os.Getenv("ALIBABA_CLOUD_IMDSV1_DISABLED") == "true"
+		builder.provider.disableIMDSv1 = strings.ToLower(os.Getenv("ALIBABA_CLOUD_IMDSV1_DISABLED")) == "true"
 	}
 
 	provider = builder.provider
@@ -75,14 +88,27 @@ func (provider *ECSRAMRoleCredentialsProvider) needUpdateCredential() bool {
 
 func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, err error) {
 	req := &httputil.Request{
-		Method:         "GET",
-		Protocol:       "http",
-		Host:           "100.100.100.200",
-		Path:           "/latest/meta-data/ram/security-credentials/",
-		ConnectTimeout: 5 * time.Second,
-		ReadTimeout:    5 * time.Second,
-		Headers:        map[string]string{},
+		Method:   "GET",
+		Protocol: "http",
+		Host:     "100.100.100.200",
+		Path:     "/latest/meta-data/ram/security-credentials/",
+		Headers:  map[string]string{},
 	}
+
+	connectTimeout := 1 * time.Second
+	readTimeout := 1 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
+		req.Proxy = provider.httpOptions.Proxy
+	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
 
 	metadataToken, err := provider.getMetadataToken()
 	if err != nil {
@@ -117,14 +143,27 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 	}
 
 	req := &httputil.Request{
-		Method:         "GET",
-		Protocol:       "http",
-		Host:           "100.100.100.200",
-		Path:           "/latest/meta-data/ram/security-credentials/" + roleName,
-		ConnectTimeout: 5 * time.Second,
-		ReadTimeout:    5 * time.Second,
-		Headers:        map[string]string{},
+		Method:   "GET",
+		Protocol: "http",
+		Host:     "100.100.100.200",
+		Path:     "/latest/meta-data/ram/security-credentials/" + roleName,
+		Headers:  map[string]string{},
 	}
+
+	connectTimeout := 1 * time.Second
+	readTimeout := 1 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
+		req.Proxy = provider.httpOptions.Proxy
+	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
 
 	metadataToken, err := provider.getMetadataToken()
 	if err != nil {
@@ -209,9 +248,23 @@ func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken
 		Headers: map[string]string{
 			"X-aliyun-ecs-metadata-token-ttl-seconds": strconv.Itoa(defaultMetadataTokenDuration),
 		},
-		ConnectTimeout: 5 * time.Second,
-		ReadTimeout:    5 * time.Second,
 	}
+
+	connectTimeout := 1 * time.Second
+	readTimeout := 1 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
+		req.Proxy = provider.httpOptions.Proxy
+	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
+
 	res, _err := httpDo(req)
 	if _err != nil {
 		if provider.disableIMDSv1 {

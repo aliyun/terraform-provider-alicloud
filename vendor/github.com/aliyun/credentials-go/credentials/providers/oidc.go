@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
@@ -15,14 +16,17 @@ import (
 )
 
 type OIDCCredentialsProvider struct {
-	oidcProviderARN     string
-	oidcTokenFilePath   string
-	roleArn             string
-	roleSessionName     string
-	durationSeconds     int
-	policy              string
-	stsRegionId         string
-	stsEndpoint         string
+	oidcProviderARN   string
+	oidcTokenFilePath string
+	roleArn           string
+	roleSessionName   string
+	durationSeconds   int
+	policy            string
+	// for sts endpoint
+	stsRegionId string
+	enableVpc   bool
+	stsEndpoint string
+
 	lastUpdateTimestamp int64
 	expirationTimestamp int64
 	sessionCredentials  *sessionCredentials
@@ -67,6 +71,11 @@ func (b *OIDCCredentialsProviderBuilder) WithDurationSeconds(durationSeconds int
 
 func (b *OIDCCredentialsProviderBuilder) WithStsRegionId(regionId string) *OIDCCredentialsProviderBuilder {
 	b.provider.stsRegionId = regionId
+	return b
+}
+
+func (b *OIDCCredentialsProviderBuilder) WithEnableVpc(enableVpc bool) *OIDCCredentialsProviderBuilder {
+	b.provider.enableVpc = enableVpc
 	return b
 }
 
@@ -126,10 +135,17 @@ func (b *OIDCCredentialsProviderBuilder) Build() (provider *OIDCCredentialsProvi
 	}
 
 	if b.provider.stsEndpoint == "" {
+		if !b.provider.enableVpc {
+			b.provider.enableVpc = strings.ToLower(os.Getenv("ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED")) == "true"
+		}
+		prefix := "sts"
+		if b.provider.enableVpc {
+			prefix = "sts-vpc"
+		}
 		if b.provider.stsRegionId != "" {
-			b.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", b.provider.stsRegionId)
+			b.provider.stsEndpoint = fmt.Sprintf("%s.%s.aliyuncs.com", prefix, b.provider.stsRegionId)
 		} else if region := os.Getenv("ALIBABA_CLOUD_STS_REGION"); region != "" {
-			b.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", region)
+			b.provider.stsEndpoint = fmt.Sprintf("%s.%s.aliyuncs.com", prefix, region)
 		} else {
 			b.provider.stsEndpoint = "sts.aliyuncs.com"
 		}
@@ -147,11 +163,20 @@ func (provider *OIDCCredentialsProvider) getCredentials() (session *sessionCrede
 		Headers:  map[string]string{},
 	}
 
-	if provider.httpOptions != nil {
-		req.ConnectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Second
-		req.ReadTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+	connectTimeout := 5 * time.Second
+	readTimeout := 10 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
 		req.Proxy = provider.httpOptions.Proxy
 	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
 
 	queries := make(map[string]string)
 	queries["Version"] = "2015-04-01"

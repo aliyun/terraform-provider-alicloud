@@ -17,6 +17,7 @@ import (
 
 type Request struct {
 	Method         string // http request method
+	URL            string // http url
 	Protocol       string // http or https
 	Host           string // http host
 	ReadTimeout    time.Duration
@@ -31,6 +32,9 @@ type Request struct {
 
 func (req *Request) BuildRequestURL() string {
 	httpUrl := fmt.Sprintf("%s://%s%s", req.Protocol, req.Host, req.Path)
+	if req.URL != "" {
+		httpUrl = req.URL
+	}
 
 	querystring := utils.GetURLFormedMap(req.Queries)
 	if querystring != "" {
@@ -60,6 +64,9 @@ func Do(req *Request) (res *Response, err error) {
 	querystring := utils.GetURLFormedMap(req.Queries)
 	// do request
 	httpUrl := fmt.Sprintf("%s://%s%s?%s", req.Protocol, req.Host, req.Path, querystring)
+	if req.URL != "" {
+		httpUrl = req.URL
+	}
 
 	var body io.Reader
 	if req.Method == "GET" {
@@ -87,10 +94,10 @@ func Do(req *Request) (res *Response, err error) {
 	httpClient := &http.Client{}
 
 	if req.ReadTimeout != 0 {
-		httpClient.Timeout = req.ReadTimeout
+		httpClient.Timeout = req.ReadTimeout + req.ConnectTimeout
 	}
 
-	transport := &http.Transport{}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if req.Proxy != "" {
 		var proxy *url.URL
 		proxy, err = url.Parse(req.Proxy)

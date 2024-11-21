@@ -39,14 +39,18 @@ func NewDefaultCredentialsProvider() (provider *DefaultCredentialsProvider) {
 	}
 
 	// Add IMDS
-	if os.Getenv("ALIBABA_CLOUD_ECS_METADATA") != "" {
-		ecsRamRoleProvider, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName(os.Getenv("ALIBABA_CLOUD_ECS_METADATA")).Build()
-		if err == nil {
-			providers = append(providers, ecsRamRoleProvider)
-		}
+	ecsRamRoleProvider, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	if err == nil {
+		providers = append(providers, ecsRamRoleProvider)
 	}
 
-	// TODO: ALIBABA_CLOUD_CREDENTIALS_URI check
+	// credentials uri
+	if os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI") != "" {
+		credentialsUriProvider, err := NewURLCredentialsProviderBuilderBuilder().Build()
+		if err == nil {
+			providers = append(providers, credentialsUriProvider)
+		}
+	}
 
 	return &DefaultCredentialsProvider{
 		providerChain: providers,
@@ -57,14 +61,20 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 	if provider.lastUsedProvider != nil {
 		inner, err1 := provider.lastUsedProvider.GetCredentials()
 		if err1 != nil {
+			err = err1
 			return
+		}
+
+		providerName := inner.ProviderName
+		if providerName == "" {
+			providerName = provider.lastUsedProvider.GetProviderName()
 		}
 
 		cc = &Credentials{
 			AccessKeyId:     inner.AccessKeyId,
 			AccessKeySecret: inner.AccessKeySecret,
 			SecurityToken:   inner.SecurityToken,
-			ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.lastUsedProvider.GetProviderName()),
+			ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 		}
 		return
 	}
@@ -80,11 +90,15 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 		}
 
 		if inner != nil {
+			providerName := inner.ProviderName
+			if providerName == "" {
+				providerName = p.GetProviderName()
+			}
 			cc = &Credentials{
 				AccessKeyId:     inner.AccessKeyId,
 				AccessKeySecret: inner.AccessKeySecret,
 				SecurityToken:   inner.SecurityToken,
-				ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), p.GetProviderName()),
+				ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 			}
 			return
 		}
