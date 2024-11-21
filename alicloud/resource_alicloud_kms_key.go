@@ -51,6 +51,7 @@ func resourceAliCloudKmsKey() *schema.Resource {
 			"dkms_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"protection_level": {
