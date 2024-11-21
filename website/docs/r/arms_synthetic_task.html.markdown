@@ -19,7 +19,7 @@ For information about ARMS Synthetic Task and how to use it, see [What is Synthe
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_synthetic_task&exampleId=fb00a731-b3e0-d235-c299-5b5a5dff4cf8034fd07c&activeTab=example&spm=docs.r.arms_synthetic_task.0.fb00a731b3&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_synthetic_task&exampleId=fb00a731-b3e0-d235-c299-5b5a5dff4cf8034fd07c&activeTab=example&spm=docs.r.arms_synthetic_task.0.fb00a731b3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

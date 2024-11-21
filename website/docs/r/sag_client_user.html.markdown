@@ -22,7 +22,7 @@ For information about Sag ClientUser and how to use it, see [What is Sag ClientU
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sag_client_user&exampleId=f3d00586-5ad9-704f-034a-d39935efd9bccd8508f7&activeTab=example&spm=docs.r.sag_client_user.0.f3d005865a&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_sag_client_user&exampleId=f3d00586-5ad9-704f-034a-d39935efd9bccd8508f7&activeTab=example&spm=docs.r.sag_client_user.0.f3d005865a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

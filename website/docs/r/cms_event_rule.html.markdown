@@ -20,7 +20,7 @@ For information about Cloud Monitor Service Event Rule and how to use it, see [W
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_event_rule&exampleId=0d4c7024-3112-8273-2782-101ae743de50af352f78&activeTab=example&spm=docs.r.cms_event_rule.0.0d4c702431&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cms_event_rule&exampleId=0d4c7024-3112-8273-2782-101ae743de50af352f78&activeTab=example&spm=docs.r.cms_event_rule.0.0d4c702431&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

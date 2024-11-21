@@ -20,7 +20,7 @@ For information about Ehpc Job Template and how to use it, see [What is Job Temp
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ehpc_job_template&exampleId=1a8bbe0f-24d6-0e5f-5518-208979dbe11b845cdbb2&activeTab=example&spm=docs.r.ehpc_job_template.0.1a8bbe0f24&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ehpc_job_template&exampleId=1a8bbe0f-24d6-0e5f-5518-208979dbe11b845cdbb2&activeTab=example&spm=docs.r.ehpc_job_template.0.1a8bbe0f24&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

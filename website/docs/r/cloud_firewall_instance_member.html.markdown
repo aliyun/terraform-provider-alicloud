@@ -20,7 +20,7 @@ For information about Cloud Firewall Instance Member and how to use it, see [Wha
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_instance_member&exampleId=3548ac26-5b3c-ab03-0909-25f42801a7ce7bd210cb&activeTab=example&spm=docs.r.cloud_firewall_instance_member.0.3548ac265b&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_instance_member&exampleId=3548ac26-5b3c-ab03-0909-25f42801a7ce7bd210cb&activeTab=example&spm=docs.r.cloud_firewall_instance_member.0.3548ac265b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

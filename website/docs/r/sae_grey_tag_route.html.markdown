@@ -20,7 +20,7 @@ For information about Serverless App Engine (SAE) GreyTagRoute and how to use it
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sae_grey_tag_route&exampleId=f179c69d-6d59-a475-5298-f0bc58ef5da5d7adb488&activeTab=example&spm=docs.r.sae_grey_tag_route.0.f179c69d6d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_sae_grey_tag_route&exampleId=f179c69d-6d59-a475-5298-f0bc58ef5da5d7adb488&activeTab=example&spm=docs.r.sae_grey_tag_route.0.f179c69d6d&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

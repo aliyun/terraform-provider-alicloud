@@ -20,7 +20,7 @@ Provides a RAM password policy configuration for entire account. Only one resour
 Empty resource sets defaults values for every property.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ram_account_password_policy&exampleId=772b64b2-8eac-128d-4256-a5f8426c917abd021d0d&activeTab=example&spm=docs.r.ram_account_password_policy.0.772b64b28e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_account_password_policy&exampleId=772b64b2-8eac-128d-4256-a5f8426c917abd021d0d&activeTab=example&spm=docs.r.ram_account_password_policy.0.772b64b28e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -32,7 +32,7 @@ resource "alicloud_ram_account_password_policy" "default" {
 ```
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ram_account_password_policy&exampleId=40321819-41a0-f510-bf0d-f33c5071c5c62ce865d5&activeTab=example&spm=docs.r.ram_account_password_policy.1.4032181941&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_account_password_policy&exampleId=40321819-41a0-f510-bf0d-f33c5071c5c62ce865d5&activeTab=example&spm=docs.r.ram_account_password_policy.1.4032181941&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

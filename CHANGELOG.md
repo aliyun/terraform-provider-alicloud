@@ -1,29 +1,35 @@
-## 1.235.0 (Unreleased)
+## 1.236.0 (Unreleased)
+## 1.235.0 (November 21, 2024)
 
-- **New Resource:** `alicloud_rds_custom_deployment_set` [GH-7884]
-- **New Resource:** `alicloud_rds_custom` [GH-7884]
+- **New Resource:** `alicloud_rds_custom_deployment_set` ([#7884](https://github.com/aliyun/terraform-provider-alicloud/issues/7884))
+- **New Resource:** `alicloud_rds_custom` ([#7884](https://github.com/aliyun/terraform-provider-alicloud/issues/7884))
 
 ENHANCEMENTS:
 
-- service: Added retry strategy for redis resources. [GH-7883]
-- resource/alicloud_cs_managed_kubernetes: remove ForceNew for resource_group_id. [GH-7867]
-- resource/alicloud_ecs_image_component: add new component_version. [GH-7869]
-- resource/alicloud_ess_scaling_configuration: add attribute network_interfaces. [GH-7870]
-- resource/alicloud_ess_eci_scaling_configuration: update container_group_name constraint. [GH-7871]
-- resource/alicloud_cr_ee_instance: add new attributes default_oss_bucket, image_scanner and resource_group_id. [GH-7874]
-- resource/alicloud_kvstore_instance: add try for delete operation. [GH-7876]
-- resource/alicloud_nat_gateway: Added the field icmp_reply_enabled, private_link_enabled, access_mode. [GH-7877]
-- resource/alicloud_express_connect_router_vbr_child_instance: add new attribute description. [GH-7878]
-- resource/alicloud_mongodb_instance: Added the field backup_retention_policy_on_cluster_deletion; resource/alicloud_mongodb_sharding_instance: Added the field backup_retention_policy_on_cluster_deletion. [GH-7880]
-- resource/alicloud_vpn_gateway_vco_route: add new attribute overlay_mode. [GH-7881]
-- resource/alicloud_cen_flowlog: add new attribute interval, log_format_string. [GH-7886]
-- resource/alicloud_privatelink_vpc_endpoint_connection: add try code; resource/alicloud_privatelink_vpc_endpoint_service_resource: add new attribute region_id. [GH-7887]
-- resource/alicloud_cen_transit_router_ecr_attachment: add retry code. [GH-7888]
-- resource/alicloud_privatelink_vpc_endpoint_service: add new attribue region_id. [GH-7889]
-- docs: Improved subcategory for Redis. [GH-7875]
-- docs: adds endpoint key dmsenterprise for dms service. [GH-7882]
-- docs: Improves description for oss_bucket_cname_token. [GH-7890]
-- testcase: Fixed alicloud_dts_synchronization_job test case. [GH-7885]
+- client: Upgrades the credentials sdk to 1.4.3 and fixes the http proxy does not work issue. ([#7896](https://github.com/aliyun/terraform-provider-alicloud/issues/7896))
+- service: Added retry strategy for redis resources. ([#7883](https://github.com/aliyun/terraform-provider-alicloud/issues/7883))
+- resource/alicloud_cs_managed_kubernetes: remove ForceNew for resource_group_id. ([#7867](https://github.com/aliyun/terraform-provider-alicloud/issues/7867))
+- resource/alicloud_ecs_image_component: add new component_version. ([#7869](https://github.com/aliyun/terraform-provider-alicloud/issues/7869))
+- resource/alicloud_ess_scaling_configuration: add attribute network_interfaces. ([#7870](https://github.com/aliyun/terraform-provider-alicloud/issues/7870))
+- resource/alicloud_ess_eci_scaling_configuration: update container_group_name constraint. ([#7871](https://github.com/aliyun/terraform-provider-alicloud/issues/7871))
+- resource/alicloud_polardb_cluster: modify db_node_num range. ([#7872](https://github.com/aliyun/terraform-provider-alicloud/issues/7872))
+- resource/alicloud_cr_ee_instance: add new attributes default_oss_bucket, image_scanner and resource_group_id. ([#7874](https://github.com/aliyun/terraform-provider-alicloud/issues/7874))
+- resource/alicloud_kvstore_instance: add try for delete operation. ([#7876](https://github.com/aliyun/terraform-provider-alicloud/issues/7876))
+- resource/alicloud_nat_gateway: Added the field icmp_reply_enabled, private_link_enabled, access_mode. ([#7877](https://github.com/aliyun/terraform-provider-alicloud/issues/7877))
+- resource/alicloud_express_connect_router_vbr_child_instance: add new attribute description. ([#7878](https://github.com/aliyun/terraform-provider-alicloud/issues/7878))
+- resource/alicloud_mongodb_instance: Added the field backup_retention_policy_on_cluster_deletion; resource/alicloud_mongodb_sharding_instance: Added the field backup_retention_policy_on_cluster_deletion. ([#7880](https://github.com/aliyun/terraform-provider-alicloud/issues/7880))
+- resource/alicloud_vpn_gateway_vco_route: add new attribute overlay_mode. ([#7881](https://github.com/aliyun/terraform-provider-alicloud/issues/7881))
+- resource/alicloud_cen_flowlog: add new attribute interval, log_format_string. ([#7886](https://github.com/aliyun/terraform-provider-alicloud/issues/7886))
+- resource/alicloud_privatelink_vpc_endpoint_connection: add try code; resource/alicloud_privatelink_vpc_endpoint_service_resource: add new attribute region_id. ([#7887](https://github.com/aliyun/terraform-provider-alicloud/issues/7887))
+- resource/alicloud_cen_transit_router_ecr_attachment: add retry code. ([#7888](https://github.com/aliyun/terraform-provider-alicloud/issues/7888))
+- resource/alicloud_privatelink_vpc_endpoint_service: add new attribue region_id. ([#7889](https://github.com/aliyun/terraform-provider-alicloud/issues/7889))
+- resource/alicloud_redis_tair_instance: add new attribute connection_string_prefix. ([#7891](https://github.com/aliyun/terraform-provider-alicloud/issues/7891))
+- resource/alicloud_privatelink_vpc_endpoint*: add retry code. ([#7893](https://github.com/aliyun/terraform-provider-alicloud/issues/7893))
+- resource/alicloud_kms_key: mark dkms_instance_id as Computed. ([#7894](https://github.com/aliyun/terraform-provider-alicloud/issues/7894))
+- docs: Improved subcategory for Redis. ([#7875](https://github.com/aliyun/terraform-provider-alicloud/issues/7875))
+- docs: adds endpoint key dmsenterprise for dms service. ([#7882](https://github.com/aliyun/terraform-provider-alicloud/issues/7882))
+- docs: Improves description for oss_bucket_cname_token. ([#7890](https://github.com/aliyun/terraform-provider-alicloud/issues/7890))
+- testcase: Fixed alicloud_dts_synchronization_job test case. ([#7885](https://github.com/aliyun/terraform-provider-alicloud/issues/7885))
 
 ## 1.234.0 (November 14, 2024)
 

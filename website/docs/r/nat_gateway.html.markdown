@@ -26,7 +26,7 @@ Basic usage
 
 - create enhanced nat gateway
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nat_gateway&exampleId=db0b3938-fe52-60c0-dbbc-5d69bbc282dbcb073981&activeTab=example&spm=docs.r.nat_gateway.0.db0b3938fe&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nat_gateway&exampleId=db0b3938-fe52-60c0-dbbc-5d69bbc282dbcb073981&activeTab=example&spm=docs.r.nat_gateway.0.db0b3938fe&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -64,7 +64,7 @@ resource "alicloud_nat_gateway" "default" {
 -> **NOTE:** You must set `nat_type` to `Enhanced` and set `vswitch_id`.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nat_gateway&exampleId=690738fa-c76a-212e-6a46-8df639ab287a9e7e8b40&activeTab=example&spm=docs.r.nat_gateway.1.690738fac7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nat_gateway&exampleId=690738fa-c76a-212e-6a46-8df639ab287a9e7e8b40&activeTab=example&spm=docs.r.nat_gateway.1.690738fac7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

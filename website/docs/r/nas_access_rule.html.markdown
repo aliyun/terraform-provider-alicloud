@@ -19,7 +19,7 @@ For information about NAS Access Rule and how to use it, see [What is Access Rul
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nas_access_rule&exampleId=a173801b-1e04-f167-4152-54456b0837be7cead684&activeTab=example&spm=docs.r.nas_access_rule.0.a173801b1e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_access_rule&exampleId=a173801b-1e04-f167-4152-54456b0837be7cead684&activeTab=example&spm=docs.r.nas_access_rule.0.a173801b1e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

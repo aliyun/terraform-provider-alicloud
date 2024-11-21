@@ -23,7 +23,7 @@ Basic Usage
 create a pay-as-you-go instance
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_instance&exampleId=6adc2c91-ffcd-d93f-6b09-9ee9035d294d9c9e777d&activeTab=example&spm=docs.r.cloud_firewall_instance.0.6adc2c91ff&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_instance&exampleId=6adc2c91-ffcd-d93f-6b09-9ee9035d294d9c9e777d&activeTab=example&spm=docs.r.cloud_firewall_instance.0.6adc2c91ff&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -36,7 +36,7 @@ resource "alicloud_cloud_firewall_instance" "PayAsYouGo" {
 
 create a subscription instance
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_instance&exampleId=8bf5e4ee-d6d4-0b01-fbb3-3164539c417910842f3a&activeTab=example&spm=docs.r.cloud_firewall_instance.1.8bf5e4eed6&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_instance&exampleId=8bf5e4ee-d6d4-0b01-fbb3-3164539c417910842f3a&activeTab=example&spm=docs.r.cloud_firewall_instance.1.8bf5e4eed6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

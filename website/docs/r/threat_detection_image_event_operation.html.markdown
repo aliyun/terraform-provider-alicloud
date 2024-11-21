@@ -19,7 +19,7 @@ For information about Threat Detection Image Event Operation and how to use it, 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_threat_detection_image_event_operation&exampleId=4bdcbc07-86f9-3aa8-6b42-ded5ef3e19a8bd3c7c06&activeTab=example&spm=docs.r.threat_detection_image_event_operation.0.4bdcbc0786&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_threat_detection_image_event_operation&exampleId=4bdcbc07-86f9-3aa8-6b42-ded5ef3e19a8bd3c7c06&activeTab=example&spm=docs.r.threat_detection_image_event_operation.0.4bdcbc0786&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

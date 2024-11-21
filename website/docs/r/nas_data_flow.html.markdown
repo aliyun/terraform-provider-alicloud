@@ -20,7 +20,7 @@ For information about File Storage (NAS) Data Flow and how to use it, see [What 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nas_data_flow&exampleId=6ff8d26a-7906-f0c9-065c-7bfc0d61b9d2412e48cb&activeTab=example&spm=docs.r.nas_data_flow.0.6ff8d26a79&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_data_flow&exampleId=6ff8d26a-7906-f0c9-065c-7bfc0d61b9d2412e48cb&activeTab=example&spm=docs.r.nas_data_flow.0.6ff8d26a79&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

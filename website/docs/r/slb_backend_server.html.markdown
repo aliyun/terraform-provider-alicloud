@@ -16,7 +16,7 @@ Add a group of backend servers (ECS or ENI instance) to the Server Load Balancer
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_slb_backend_server&exampleId=6a67a5d7-eaa1-8639-5767-c28204091ffd76966ef1&activeTab=example&spm=docs.r.slb_backend_server.0.6a67a5d7ea&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_backend_server&exampleId=6a67a5d7-eaa1-8639-5767-c28204091ffd76966ef1&activeTab=example&spm=docs.r.slb_backend_server.0.6a67a5d7ea&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -19,7 +19,7 @@ For information about VPC Gateway Endpoint Route Table Attachment and how to use
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_gateway_endpoint_route_table_attachment&exampleId=db033002-40d1-c87d-a761-070c73e33159cf51d2a8&activeTab=example&spm=docs.r.vpc_gateway_endpoint_route_table_attachment.0.db03300240&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_gateway_endpoint_route_table_attachment&exampleId=db033002-40d1-c87d-a761-070c73e33159cf51d2a8&activeTab=example&spm=docs.r.vpc_gateway_endpoint_route_table_attachment.0.db03300240&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

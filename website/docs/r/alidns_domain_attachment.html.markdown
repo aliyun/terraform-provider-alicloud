@@ -16,7 +16,7 @@ Provides bind the domain name to the Alidns instance resource.
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_alidns_domain_attachment&exampleId=e14db959-f1fa-2e75-dfc2-433b7b48d98b3f2729cb&activeTab=example&spm=docs.r.alidns_domain_attachment.0.e14db959f1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_alidns_domain_attachment&exampleId=e14db959-f1fa-2e75-dfc2-433b7b48d98b3f2729cb&activeTab=example&spm=docs.r.alidns_domain_attachment.0.e14db959f1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,7 +20,7 @@ For information about SelectDB DBCluster and how to use it, see [What is DBClust
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_selectdb_db_cluster&exampleId=f90da21a-f1e4-6b65-bfd8-cc9d2d4c9d04e84407e0&activeTab=example&spm=docs.r.selectdb_db_cluster.0.f90da21af1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_selectdb_db_cluster&exampleId=f90da21a-f1e4-6b65-bfd8-cc9d2d4c9d04e84407e0&activeTab=example&spm=docs.r.selectdb_db_cluster.0.f90da21af1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

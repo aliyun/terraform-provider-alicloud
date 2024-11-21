@@ -20,7 +20,7 @@ For information about Simple Application Server Instance and how to use it, see 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_simple_application_server_instance&exampleId=e8653110-c705-9b88-ae31-9f257ba9092308ccdc5a&activeTab=example&spm=docs.r.simple_application_server_instance.0.e8653110c7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_simple_application_server_instance&exampleId=e8653110-c705-9b88-ae31-9f257ba9092308ccdc5a&activeTab=example&spm=docs.r.simple_application_server_instance.0.e8653110c7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

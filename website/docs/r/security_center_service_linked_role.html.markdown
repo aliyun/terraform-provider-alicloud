@@ -22,7 +22,7 @@ For information about Security Center Service Role and how to use it, see [What 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_security_center_service_linked_role&exampleId=4b8f0b70-e60f-b1bd-ef5e-9782b94bcebb07945dbd&activeTab=example&spm=docs.r.security_center_service_linked_role.0.4b8f0b70e6&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_center_service_linked_role&exampleId=4b8f0b70-e60f-b1bd-ef5e-9782b94bcebb07945dbd&activeTab=example&spm=docs.r.security_center_service_linked_role.0.4b8f0b70e6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

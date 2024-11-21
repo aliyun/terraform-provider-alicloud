@@ -18,7 +18,7 @@ Provides a Bastion Host Host Attachment resource to add host into one host group
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_host_attachment&exampleId=822d5c4a-7af2-dec5-6578-c9ab48363d139623a701&activeTab=example&spm=docs.r.bastionhost_host_attachment.0.822d5c4a7a&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_bastionhost_host_attachment&exampleId=822d5c4a-7af2-dec5-6578-c9ab48363d139623a701&activeTab=example&spm=docs.r.bastionhost_host_attachment.0.822d5c4a7a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

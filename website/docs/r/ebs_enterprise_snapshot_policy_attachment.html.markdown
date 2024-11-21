@@ -19,7 +19,7 @@ For information about EBS Enterprise Snapshot Policy Attachment and how to use i
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ebs_enterprise_snapshot_policy_attachment&exampleId=643a03f0-92b5-eeec-e55c-ee20a6897859d54529ba&activeTab=example&spm=docs.r.ebs_enterprise_snapshot_policy_attachment.0.643a03f092&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ebs_enterprise_snapshot_policy_attachment&exampleId=643a03f0-92b5-eeec-e55c-ee20a6897859d54529ba&activeTab=example&spm=docs.r.ebs_enterprise_snapshot_policy_attachment.0.643a03f092&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

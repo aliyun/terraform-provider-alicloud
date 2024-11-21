@@ -20,7 +20,7 @@ For information about SMS Short Url and how to use it, see [What is Short Url](h
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sms_short_url&exampleId=fc3f9e23-7e93-5f5c-0732-78dbe89fa072bccdfb79&activeTab=example&spm=docs.r.sms_short_url.0.fc3f9e237e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_sms_short_url&exampleId=fc3f9e23-7e93-5f5c-0732-78dbe89fa072bccdfb79&activeTab=example&spm=docs.r.sms_short_url.0.fc3f9e237e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

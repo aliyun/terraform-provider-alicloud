@@ -20,7 +20,7 @@ For information about CMS Alarm Contact Group and how to use it, see [What is Al
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_alarm_contact_group&exampleId=a45f08a7-074d-736f-0881-2bbb7b81f5385c3a8fc7&activeTab=example&spm=docs.r.cms_alarm_contact_group.0.a45f08a707&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cms_alarm_contact_group&exampleId=a45f08a7-074d-736f-0881-2bbb7b81f5385c3a8fc7&activeTab=example&spm=docs.r.cms_alarm_contact_group.0.a45f08a707&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

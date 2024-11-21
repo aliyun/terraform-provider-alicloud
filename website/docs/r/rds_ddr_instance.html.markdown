@@ -22,7 +22,7 @@ Because the generation time of the disaster recovery set is uncertain, the query
 ### Create an RDS instance based on the remote disaster recovery set
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_rds_ddr_instance&exampleId=a6fc5b56-b9bd-39a0-52d8-30c6c67349f849fe0fa4&activeTab=example&spm=docs.r.rds_ddr_instance.0.a6fc5b56b9&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=a6fc5b56-b9bd-39a0-52d8-30c6c67349f849fe0fa4&activeTab=example&spm=docs.r.rds_ddr_instance.0.a6fc5b56b9&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -106,7 +106,7 @@ resource "alicloud_rds_ddr_instance" "default" {
 ### Create RDS instance according to the recovery time point of remote disaster recovery
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_rds_ddr_instance&exampleId=f2acaba7-6c8c-2823-c1d8-1c4e5658901224039095&activeTab=example&spm=docs.r.rds_ddr_instance.1.f2acaba76c&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_ddr_instance&exampleId=f2acaba7-6c8c-2823-c1d8-1c4e5658901224039095&activeTab=example&spm=docs.r.rds_ddr_instance.1.f2acaba76c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

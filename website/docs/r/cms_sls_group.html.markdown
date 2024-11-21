@@ -20,7 +20,7 @@ For information about Cloud Monitor Service Sls Group and how to use it, see [Wh
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_sls_group&exampleId=2bcfe684-0054-dde6-466c-1c3de8d06c1648e8ad59&activeTab=example&spm=docs.r.cms_sls_group.0.2bcfe68400&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cms_sls_group&exampleId=2bcfe684-0054-dde6-466c-1c3de8d06c1648e8ad59&activeTab=example&spm=docs.r.cms_sls_group.0.2bcfe68400&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

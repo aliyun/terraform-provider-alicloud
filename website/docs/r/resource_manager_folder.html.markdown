@@ -21,7 +21,7 @@ For information about Resource Manager Foler and how to use it, see [What is Res
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_resource_manager_folder&exampleId=87cafec5-c4eb-0dd1-ca5d-a76fd768ef0e90677803&activeTab=example&spm=docs.r.resource_manager_folder.0.87cafec5c4&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_resource_manager_folder&exampleId=87cafec5-c4eb-0dd1-ca5d-a76fd768ef0e90677803&activeTab=example&spm=docs.r.resource_manager_folder.0.87cafec5c4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

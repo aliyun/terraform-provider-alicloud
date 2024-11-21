@@ -21,7 +21,7 @@ Provides an ALIKAFKA topic resource, see [What is Alikafka topic ](https://www.a
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_alikafka_topic&exampleId=5d022a37-694a-dbde-15f1-c57d901ec512d1e4c7c8&activeTab=example&spm=docs.r.alikafka_topic.0.5d022a3769&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_alikafka_topic&exampleId=5d022a37-694a-dbde-15f1-c57d901ec512d1e4c7c8&activeTab=example&spm=docs.r.alikafka_topic.0.5d022a3769&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,7 +20,7 @@ For information about ECS Network Interface Permission and how to use it, see [W
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_network_interface_permission&exampleId=2a7df141-e78e-51e0-5330-16a0934f7158ca1040f0&activeTab=example&spm=docs.r.ecs_network_interface_permission.0.2a7df141e7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_network_interface_permission&exampleId=2a7df141-e78e-51e0-5330-16a0934f7158ca1040f0&activeTab=example&spm=docs.r.ecs_network_interface_permission.0.2a7df141e7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

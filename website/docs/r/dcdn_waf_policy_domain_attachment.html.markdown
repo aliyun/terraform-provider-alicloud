@@ -20,7 +20,7 @@ For information about DCDN Waf Policy Domain Attachment and how to use it, see [
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dcdn_waf_policy_domain_attachment&exampleId=2c02cf02-a544-d842-c633-f8e4f31a84c4a1eedca5&activeTab=example&spm=docs.r.dcdn_waf_policy_domain_attachment.0.2c02cf02a5&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dcdn_waf_policy_domain_attachment&exampleId=2c02cf02-a544-d842-c633-f8e4f31a84c4a1eedca5&activeTab=example&spm=docs.r.dcdn_waf_policy_domain_attachment.0.2c02cf02a5&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

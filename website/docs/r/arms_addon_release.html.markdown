@@ -19,7 +19,7 @@ For information about ARMS Addon Release and how to use it, see [What is Addon R
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_addon_release&exampleId=2fd51354-9f62-72d2-fd2f-fe4dbe3fb92e86c56d77&activeTab=example&spm=docs.r.arms_addon_release.0.2fd513549f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_addon_release&exampleId=2fd51354-9f62-72d2-fd2f-fe4dbe3fb92e86c56d77&activeTab=example&spm=docs.r.arms_addon_release.0.2fd513549f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

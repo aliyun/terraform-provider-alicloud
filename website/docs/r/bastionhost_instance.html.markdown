@@ -25,7 +25,7 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_instance&exampleId=2781e605-de83-d24d-2811-754044d92d63d7257b56&activeTab=example&spm=docs.r.bastionhost_instance.0.2781e605de&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_bastionhost_instance&exampleId=2781e605-de83-d24d-2811-754044d92d63d7257b56&activeTab=example&spm=docs.r.bastionhost_instance.0.2781e605de&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -66,7 +66,7 @@ resource "alicloud_bastionhost_instance" "default" {
 ```
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_instance&exampleId=2cb4cc04-7299-a5cd-3df8-b702a244c58880de2a97&activeTab=example&spm=docs.r.bastionhost_instance.1.2cb4cc0472&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_bastionhost_instance&exampleId=2cb4cc04-7299-a5cd-3df8-b702a244c58880de2a97&activeTab=example&spm=docs.r.bastionhost_instance.1.2cb4cc0472&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,7 +20,7 @@ which is widely applicable to scenarios such as data regularization, enrichment,
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_etl&exampleId=5e28831c-93b5-23d6-9643-1c420cbad89739d36582&activeTab=example&spm=docs.r.log_etl.0.5e28831c93&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_log_etl&exampleId=5e28831c-93b5-23d6-9643-1c420cbad89739d36582&activeTab=example&spm=docs.r.log_etl.0.5e28831c93&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

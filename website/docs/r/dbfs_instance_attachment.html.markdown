@@ -20,7 +20,7 @@ For information about Database File System (DBFS) Instance Attachment and how to
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dbfs_instance_attachment&exampleId=19ef4447-bdd7-f205-8d51-549b9a0e179d56a136ad&activeTab=example&spm=docs.r.dbfs_instance_attachment.0.19ef4447bd&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dbfs_instance_attachment&exampleId=19ef4447-bdd7-f205-8d51-549b9a0e179d56a136ad&activeTab=example&spm=docs.r.dbfs_instance_attachment.0.19ef4447bd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

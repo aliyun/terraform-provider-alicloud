@@ -19,7 +19,7 @@ For information about WAFV3 Defense Template and how to use it, see [What is Def
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_wafv3_defense_template&exampleId=4885bb2d-ced3-0337-0228-cfd2963930d65749a9f7&activeTab=example&spm=docs.r.wafv3_defense_template.0.4885bb2dce&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_defense_template&exampleId=4885bb2d-ced3-0337-0228-cfd2963930d65749a9f7&activeTab=example&spm=docs.r.wafv3_defense_template.0.4885bb2dce&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

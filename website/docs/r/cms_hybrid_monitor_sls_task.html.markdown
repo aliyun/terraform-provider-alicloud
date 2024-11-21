@@ -20,7 +20,7 @@ For information about Cloud Monitor Service Hybrid Monitor Sls Task and how to u
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_hybrid_monitor_sls_task&exampleId=1889b555-04b8-1245-2111-5e323084845c1c708dc9&activeTab=example&spm=docs.r.cms_hybrid_monitor_sls_task.0.1889b55504&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cms_hybrid_monitor_sls_task&exampleId=1889b555-04b8-1245-2111-5e323084845c1c708dc9&activeTab=example&spm=docs.r.cms_hybrid_monitor_sls_task.0.1889b55504&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

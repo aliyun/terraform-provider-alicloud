@@ -16,7 +16,7 @@ Provides a PolarDB cluster backup policy resource and used to configure cluster 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_polardb_backup_policy&exampleId=f5565a5b-5785-c4dd-9d94-fc3aba351fc27569cf8d&activeTab=example&spm=docs.r.polardb_backup_policy.0.f5565a5b57&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_backup_policy&exampleId=f5565a5b-5785-c4dd-9d94-fc3aba351fc27569cf8d&activeTab=example&spm=docs.r.polardb_backup_policy.0.f5565a5b57&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

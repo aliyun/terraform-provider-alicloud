@@ -20,7 +20,7 @@ For information about ECI Virtual Node and how to use it, see [What is Virtual N
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_eci_virtual_node&exampleId=a3803358-0917-e69e-2bcc-e7580c32d772d71ffc4d&activeTab=example&spm=docs.r.eci_virtual_node.0.a380335809&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_eci_virtual_node&exampleId=a3803358-0917-e69e-2bcc-e7580c32d772d71ffc4d&activeTab=example&spm=docs.r.eci_virtual_node.0.a380335809&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

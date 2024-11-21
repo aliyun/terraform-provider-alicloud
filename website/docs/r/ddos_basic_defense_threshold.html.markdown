@@ -20,7 +20,7 @@ For information about Ddos Basic Antiddos and how to use it, see [What is Defens
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ddos_basic_defense_threshold&exampleId=5cd3a082-346b-a1e9-fe9b-9bec014af3baeee821a1&activeTab=example&spm=docs.r.ddos_basic_defense_threshold.0.5cd3a08234&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddos_basic_defense_threshold&exampleId=5cd3a082-346b-a1e9-fe9b-9bec014af3baeee821a1&activeTab=example&spm=docs.r.ddos_basic_defense_threshold.0.5cd3a08234&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,7 +20,7 @@ databases.
 Create a PolarDB MySQL cluster
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_polardb_cluster&exampleId=14aedf61-7507-af1c-c239-50c54127fb66a22cd321&activeTab=example&spm=docs.r.polardb_cluster.0.14aedf6175&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=14aedf61-7507-af1c-c239-50c54127fb66a22cd321&activeTab=example&spm=docs.r.polardb_cluster.0.14aedf6175&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -69,7 +69,7 @@ When enabling TDE encryption, it is necessary to ensure that there is an AliyunR
 Note: If there is only the role AliyunRDSSInceEncryptionDefaultRole under the account, this example may not be applicable.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_polardb_cluster&exampleId=ad8f542a-4a74-b8d8-7a2c-228ccb357ce050ece07e&activeTab=example&spm=docs.r.polardb_cluster.1.ad8f542a4a&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=ad8f542a-4a74-b8d8-7a2c-228ccb357ce050ece07e&activeTab=example&spm=docs.r.polardb_cluster.1.ad8f542a4a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

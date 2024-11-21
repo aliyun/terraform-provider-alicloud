@@ -15,7 +15,7 @@ Provides a ESS notification resource. More about Ess notification, see [Autoscal
 
 ## Example Usage
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ess_notification&exampleId=fe3c3b2f-ea6b-d24a-9794-0d7fa7e6b29730b47675&activeTab=example&spm=docs.r.ess_notification.0.fe3c3b2fea&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_notification&exampleId=fe3c3b2f-ea6b-d24a-9794-0d7fa7e6b29730b47675&activeTab=example&spm=docs.r.ess_notification.0.fe3c3b2fea&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

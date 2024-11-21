@@ -19,7 +19,7 @@ For information about NAS Auto Snapshot Policy and how to use it, see [What is A
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nas_auto_snapshot_policy&exampleId=3b2734b5-d239-3b5a-1f90-4607655ceda98588432b&activeTab=example&spm=docs.r.nas_auto_snapshot_policy.0.3b2734b5d2&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_auto_snapshot_policy&exampleId=3b2734b5-d239-3b5a-1f90-4607655ceda98588432b&activeTab=example&spm=docs.r.nas_auto_snapshot_policy.0.3b2734b5d2&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

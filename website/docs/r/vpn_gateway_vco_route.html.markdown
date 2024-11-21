@@ -20,7 +20,7 @@ For information about VPN Gateway Vco Route and how to use it, see [What is Vco 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpn_gateway_vco_route&exampleId=c4f194ba-d02f-5158-9968-7f30ba2ec3dc3e529942&activeTab=example&spm=docs.r.vpn_gateway_vco_route.0.c4f194bad0&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_gateway_vco_route&exampleId=3d1265dd-30c8-daa3-0644-734d27564779427514c8&activeTab=example&spm=docs.r.vpn_gateway_vco_route.0.3d1265dd30&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

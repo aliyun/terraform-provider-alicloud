@@ -16,7 +16,7 @@ Provides a PolarDB database resource. A database deployed in a PolarDB cluster. 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_polardb_database&exampleId=150536ad-ef26-da12-83db-3ddff47dbf191e1a5755&activeTab=example&spm=docs.r.polardb_database.0.150536adef&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_database&exampleId=150536ad-ef26-da12-83db-3ddff47dbf191e1a5755&activeTab=example&spm=docs.r.polardb_database.0.150536adef&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

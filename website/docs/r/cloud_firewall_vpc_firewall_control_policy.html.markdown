@@ -20,7 +20,7 @@ For information about Cloud Firewall Vpc Firewall Control Policy and how to use 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_vpc_firewall_control_policy&exampleId=6c065235-0ee8-66b0-1ddf-c9ee5c40e5e0f9ad03f2&activeTab=example&spm=docs.r.cloud_firewall_vpc_firewall_control_policy.0.6c0652350e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_vpc_firewall_control_policy&exampleId=6c065235-0ee8-66b0-1ddf-c9ee5c40e5e0f9ad03f2&activeTab=example&spm=docs.r.cloud_firewall_vpc_firewall_control_policy.0.6c0652350e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

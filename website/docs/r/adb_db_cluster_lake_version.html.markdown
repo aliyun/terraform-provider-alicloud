@@ -20,7 +20,7 @@ For information about AnalyticDB for MySQL (ADB) DB Cluster Lake Version and how
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_adb_db_cluster_lake_version&exampleId=44a0d0ac-5708-e0a7-dcbd-889815af140cbc29256a&activeTab=example&spm=docs.r.adb_db_cluster_lake_version.0.44a0d0ac57&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_adb_db_cluster_lake_version&exampleId=44a0d0ac-5708-e0a7-dcbd-889815af140cbc29256a&activeTab=example&spm=docs.r.adb_db_cluster_lake_version.0.44a0d0ac57&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

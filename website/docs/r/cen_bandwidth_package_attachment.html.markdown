@@ -18,7 +18,7 @@ Provides a CEN bandwidth package attachment resource. The resource can be used t
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_bandwidth_package_attachment&exampleId=39c912f8-fb25-6bdb-4fa2-81d45687b48ba60f1a62&activeTab=example&spm=docs.r.cen_bandwidth_package_attachment.0.39c912f8fb&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_bandwidth_package_attachment&exampleId=39c912f8-fb25-6bdb-4fa2-81d45687b48ba60f1a62&activeTab=example&spm=docs.r.cen_bandwidth_package_attachment.0.39c912f8fb&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

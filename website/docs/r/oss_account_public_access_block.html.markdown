@@ -19,7 +19,7 @@ For information about OSS Account Public Access Block and how to use it, see [Wh
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_account_public_access_block&exampleId=4fd29403-b452-6737-a26a-3f322f57e97bd53854d4&activeTab=example&spm=docs.r.oss_account_public_access_block.0.4fd29403b4&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_account_public_access_block&exampleId=4fd29403-b452-6737-a26a-3f322f57e97bd53854d4&activeTab=example&spm=docs.r.oss_account_public_access_block.0.4fd29403b4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

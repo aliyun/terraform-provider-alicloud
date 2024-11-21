@@ -20,7 +20,7 @@ For information about Threat Detection Baseline Strategy and how to use it, see 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_threat_detection_baseline_strategy&exampleId=1975341a-56d8-9ff0-627e-9afc19a8a3cd52b1de21&activeTab=example&spm=docs.r.threat_detection_baseline_strategy.0.1975341a56&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_threat_detection_baseline_strategy&exampleId=1975341a-56d8-9ff0-627e-9afc19a8a3cd52b1de21&activeTab=example&spm=docs.r.threat_detection_baseline_strategy.0.1975341a56&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

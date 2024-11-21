@@ -20,7 +20,7 @@ For information about Serverless Workflow Schedule and how to use it, see [What 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fnf_schedule&exampleId=d3753d0e-4558-f0b5-2acb-5d75c171d1be1a93fe3d&activeTab=example&spm=docs.r.fnf_schedule.0.d3753d0e45&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_fnf_schedule&exampleId=d3753d0e-4558-f0b5-2acb-5d75c171d1be1a93fe3d&activeTab=example&spm=docs.r.fnf_schedule.0.d3753d0e45&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,6 +20,12 @@ For information about CEN Flow Log and how to use it, see [What is Flow Log](htt
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_flowlog&exampleId=efefd3ba-1366-1815-787a-eea6b0b57f21758b6048&activeTab=example&spm=docs.r.cen_flowlog.0.efefd3ba13&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 # Create a cen flowlog resource and use it to publish a route entry pointing to an ECS.
 resource "alicloud_cen_instance" "default" {

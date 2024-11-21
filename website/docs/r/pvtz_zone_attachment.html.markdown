@@ -20,7 +20,7 @@ Provides vpcs bound to Alicloud Private Zone resource.
 Using `vpc_ids` to attach being in same region several vpc instances to a private zone
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=02f04c34-15d7-20e1-1003-a4e6d3e74d3fc6ac4d63&activeTab=example&spm=docs.r.pvtz_zone_attachment.0.02f04c3415&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=02f04c34-15d7-20e1-1003-a4e6d3e74d3fc6ac4d63&activeTab=example&spm=docs.r.pvtz_zone_attachment.0.02f04c3415&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -48,7 +48,7 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 Using `vpcs` to attach being in same region several vpc instances to a private zone
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=3bd0e378-5295-5e66-2129-51bd7780f5511d3f6ebd&activeTab=example&spm=docs.r.pvtz_zone_attachment.1.3bd0e37852&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=3bd0e378-5295-5e66-2129-51bd7780f5511d3f6ebd&activeTab=example&spm=docs.r.pvtz_zone_attachment.1.3bd0e37852&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -82,7 +82,7 @@ Using `vpcs` to attach being in different regions several vpc instances to a pri
 
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=fa7a7da7-a003-aa6f-1e19-5fd998e8b3727ed6e2ef&activeTab=example&spm=docs.r.pvtz_zone_attachment.2.fa7a7da7a0&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pvtz_zone_attachment&exampleId=fa7a7da7-a003-aa6f-1e19-5fd998e8b3727ed6e2ef&activeTab=example&spm=docs.r.pvtz_zone_attachment.2.fa7a7da7a0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

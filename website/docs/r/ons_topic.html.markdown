@@ -20,7 +20,7 @@ For more information about how to use it, see [RocketMQ Topic Management API](ht
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ons_topic&exampleId=51c8c410-42ff-d122-f626-491fa574ed62726e2f4c&activeTab=example&spm=docs.r.ons_topic.0.51c8c41042&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ons_topic&exampleId=51c8c410-42ff-d122-f626-491fa574ed62726e2f4c&activeTab=example&spm=docs.r.ons_topic.0.51c8c41042&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

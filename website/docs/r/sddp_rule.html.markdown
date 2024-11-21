@@ -20,7 +20,7 @@ For information about Data Security Center Rule and how to use it, see [What is 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sddp_rule&exampleId=3ff14e92-ed84-7505-2c85-ab6ba64d03964c1879c9&activeTab=example&spm=docs.r.sddp_rule.0.3ff14e92ed&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_sddp_rule&exampleId=3ff14e92-ed84-7505-2c85-ab6ba64d03964c1879c9&activeTab=example&spm=docs.r.sddp_rule.0.3ff14e92ed&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

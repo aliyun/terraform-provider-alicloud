@@ -20,7 +20,7 @@ For information about Microservice Engine (MSE) Znode and how to use it, see [Wh
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_mse_znode&exampleId=10e5f0d2-bd79-1768-9372-4bd99a4bf87e8e4c8235&activeTab=example&spm=docs.r.mse_znode.0.10e5f0d2bd&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_mse_znode&exampleId=10e5f0d2-bd79-1768-9372-4bd99a4bf87e8e4c8235&activeTab=example&spm=docs.r.mse_znode.0.10e5f0d2bd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

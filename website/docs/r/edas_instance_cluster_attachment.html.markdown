@@ -19,7 +19,7 @@ Provides an EDAS instance cluster attachment resource, see [What is EDAS Instanc
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_edas_instance_cluster_attachment&exampleId=2f892ae6-8656-f488-10d5-806421c51d104f786c6e&activeTab=example&spm=docs.r.edas_instance_cluster_attachment.0.2f892ae686&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_edas_instance_cluster_attachment&exampleId=2f892ae6-8656-f488-10d5-806421c51d104f786c6e&activeTab=example&spm=docs.r.edas_instance_cluster_attachment.0.2f892ae686&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

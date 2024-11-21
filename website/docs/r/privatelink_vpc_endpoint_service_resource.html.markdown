@@ -20,6 +20,12 @@ For information about Private Link Vpc Endpoint Service Resource and how to use 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_privatelink_vpc_endpoint_service_resource&exampleId=f5cf7ac8-4ff3-f926-314e-3f45599f33ee5bbbed0e&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_service_resource.0.f5cf7ac84f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf_example"
@@ -89,7 +95,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<resource_id>:<zone_id>`.
-* `region_id` - The ID of the region where the service resource is deployed.
+* `region_id` - (Available since v1.235.0) The ID of the region where the service resource is deployed.
 
 ## Timeouts
 

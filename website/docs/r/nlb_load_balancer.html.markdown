@@ -21,7 +21,7 @@ For information about NLB Load Balancer and how to use it, see [What is Load Bal
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_load_balancer&exampleId=ada6281a-e49c-7006-e3a0-ae8127c7c4adab8a3626&activeTab=example&spm=docs.r.nlb_load_balancer.0.ada6281ae4&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_load_balancer&exampleId=ada6281a-e49c-7006-e3a0-ae8127c7c4adab8a3626&activeTab=example&spm=docs.r.nlb_load_balancer.0.ada6281ae4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -74,7 +74,7 @@ resource "alicloud_nlb_load_balancer" "default" {
 DualStack Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_load_balancer&exampleId=88623514-c3ba-382c-6b47-7af1e5b6755195da00c9&activeTab=example&spm=docs.r.nlb_load_balancer.1.88623514c3&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_load_balancer&exampleId=88623514-c3ba-382c-6b47-7af1e5b6755195da00c9&activeTab=example&spm=docs.r.nlb_load_balancer.1.88623514c3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
