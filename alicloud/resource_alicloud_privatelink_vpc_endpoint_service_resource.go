@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -30,6 +31,10 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResource() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"resource_id": {
 				Type:     schema.TypeString,
@@ -70,42 +75,40 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceCreate(d *schema.Resou
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["ResourceId"] = d.Get("resource_id")
-	query["ServiceId"] = d.Get("service_id")
-	query["ZoneId"] = d.Get("zone_id")
+	request["ResourceId"] = d.Get("resource_id")
+	request["ServiceId"] = d.Get("service_id")
+	request["ZoneId"] = d.Get("zone_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["ResourceType"] = d.Get("resource_type")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	request["ResourceType"] = d.Get("resource_type")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service_resource", action, AlibabaCloudSdkGoERROR)
 	}
 
 	if d.Get("resource_type") == "slb" {
-		d.SetId(fmt.Sprintf("%v:%v", query["ServiceId"], query["ResourceId"]))
+		d.SetId(fmt.Sprintf("%v:%v", request["ServiceId"], request["ResourceId"]))
 	} else {
-		d.SetId(fmt.Sprintf("%v:%v:%v", query["ServiceId"], query["ResourceId"], query["ZoneId"]))
+		d.SetId(fmt.Sprintf("%v:%v:%v", request["ServiceId"], request["ResourceId"], request["ZoneId"]))
 	}
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
@@ -131,18 +134,21 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceRead(d *schema.Resourc
 		return WrapError(err)
 	}
 
-	d.Set("resource_type", objectRaw["ResourceType"])
-	d.Set("resource_id", objectRaw["ResourceId"])
-	d.Set("zone_id", objectRaw["ZoneId"])
-	parts, err := ParseResourceIds(d.Id())
-	if err != nil {
-		return WrapError(err)
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
 	}
-	d.Set("resource_id", parts[1])
+	if objectRaw["ResourceType"] != nil {
+		d.Set("resource_type", objectRaw["ResourceType"])
+	}
+	if objectRaw["ResourceId"] != nil {
+		d.Set("resource_id", objectRaw["ResourceId"])
+	}
+	if objectRaw["ZoneId"] != nil {
+		d.Set("zone_id", objectRaw["ZoneId"])
+	}
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("service_id", parts[0])
-	if len(parts) == 3 {
-		d.Set("zone_id", parts[2])
-	}
 
 	return nil
 }
@@ -165,19 +171,18 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(d *schema.Resou
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["ResourceId"] = parts[1]
-	query["ServiceId"] = parts[0]
+	request["ResourceId"] = parts[1]
+	request["ServiceId"] = parts[0]
 	if len(parts) == 3 {
-		query["ZoneId"] = parts[2]
+		request["ZoneId"] = parts[2]
 	}
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
-	request["ResourceType"] = d.Get("resource_type")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	request["ResourceType"] = d.Get("resource_type")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -186,18 +191,18 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(d *schema.Resou
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointServiceConnectionDependence"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointServiceConnectionDependence"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -208,5 +213,6 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(d *schema.Resou
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

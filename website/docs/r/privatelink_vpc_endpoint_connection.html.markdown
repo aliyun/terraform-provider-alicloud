@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_privatelink_vpc_endpoint_connection
 
-Provides a Private Link Vpc Endpoint Connection resource. vpc endpoint connection.
+Provides a Private Link Vpc Endpoint Connection resource.
+
+vpc endpoint connection.
 
 For information about Private Link Vpc Endpoint Connection and how to use it, see [What is Vpc Endpoint Connection](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-enablevpcendpointzoneconnection).
 
@@ -17,12 +19,6 @@ For information about Private Link Vpc Endpoint Connection and how to use it, se
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_privatelink_vpc_endpoint_connection&exampleId=0847e1ba-7d2d-7ade-4392-292c3d8b7fdae9806382&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_connection.0.0847e1ba7d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -85,9 +81,11 @@ resource "alicloud_privatelink_vpc_endpoint_connection" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Optional, Computed) The bandwidth of the endpoint connection. Valid values: 100 to 10240. Unit: Mbit/s.Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
+* `bandwidth` - (Optional, Computed, Int) The bandwidth of the endpoint connection. Valid values: 1024 to 10240. Unit: Mbit/s.
+
+  Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
-  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `endpoint_id` - (Required, ForceNew) The endpoint ID.
 * `service_id` - (Required, ForceNew) The endpoint service ID.
