@@ -14,17 +14,11 @@ Provides a CEN Transit Router Ecr Attachment resource.
 
 For information about CEN Transit Router Ecr Attachment and how to use it, see [What is Transit Router Ecr Attachment](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available since v1.226.0.
+-> **NOTE:** Available since v1.235.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_transit_router_ecr_attachment&exampleId=b0293050-cd45-48b8-eb7a-8a7cb88bc18f3e198ae4&activeTab=example&spm=docs.r.cen_transit_router_ecr_attachment.0.b0293050cd&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -36,7 +30,7 @@ provider "alicloud" {
 }
 
 variable "asn" {
-  default = "4200000666"
+  default = "4200000667"
 }
 
 resource "alicloud_express_connect_router_express_connect_router" "defaultO8Hcfx" {
@@ -79,7 +73,7 @@ resource "alicloud_cen_transit_router_ecr_attachment" "default" {
 The following arguments are supported:
 * `cen_id` - (Optional, ForceNew) CenId
 * `ecr_id` - (Required, ForceNew) EcrId
-* `ecr_owner_id` - (Optional, ForceNew) EcrOwnerId
+* `ecr_owner_id` - (Optional, ForceNew, Int) EcrOwnerId
 * `tags` - (Optional, Map) The tag of the resource
 * `transit_router_attachment_description` - (Optional) TransitRouterAttachmentDescription
 * `transit_router_ecr_attachment_name` - (Optional) TransitRouterAttachmentName

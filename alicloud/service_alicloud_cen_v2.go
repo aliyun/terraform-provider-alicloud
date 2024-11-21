@@ -194,6 +194,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribeCenTransitRouterEcrAttachment <<< Encapsulated get interface for Cen TransitRouterEcrAttachment.
 
 func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object map[string]interface{}, err error) {
@@ -208,12 +209,8 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	parts, err1 := ParseResourceId(id, 2)
-	if err1 != nil {
-		return nil, WrapError(err1)
-	}
-	query["TransitRouterAttachmentId"] = parts[1]
-	query["RegionId"] = client.RegionId
+	request["TransitRouterAttachmentId"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -228,11 +225,10 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -251,7 +247,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 		if item["ResourceType"] != "ECR" {
 			continue
 		}
-		if item["TransitRouterAttachmentId"] != id {
+		if fmt.Sprint(item["TransitRouterAttachmentId"]) != id {
 			continue
 		}
 		return item, nil
@@ -264,13 +260,20 @@ func (s *CenServiceV2) CenTransitRouterEcrAttachmentStateRefreshFunc(id string, 
 		object, err := s.DescribeCenTransitRouterEcrAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return object, "", nil
+				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

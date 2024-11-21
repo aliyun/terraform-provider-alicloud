@@ -85,7 +85,7 @@ func resourceAliCloudCenTransitRouterEcrAttachmentCreate(d *schema.ResourceData,
 	request["ClientToken"] = buildClientToken(action)
 
 	request["EcrId"] = d.Get("ecr_id")
-	if v, ok := d.GetOk("ecr_owner_id"); ok {
+	if v, ok := d.GetOkExists("ecr_owner_id"); ok {
 		request["EcrOwnerId"] = v
 	}
 	if v, ok := d.GetOk("cen_id"); ok {
@@ -111,15 +111,15 @@ func resourceAliCloudCenTransitRouterEcrAttachmentCreate(d *schema.ResourceData,
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "InvalidStatus.ResourceStatus", "IncorrectStatus.TransitRouter", "IncorrectStatus.EcrResource"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_ecr_attachment", action, AlibabaCloudSdkGoERROR)
@@ -187,6 +187,7 @@ func resourceAliCloudCenTransitRouterEcrAttachmentUpdate(d *schema.ResourceData,
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
 	action := "UpdateTransitRouterEcrAttachmentAttribute"
 	conn, err := client.NewCenClient()
 	if err != nil {
@@ -194,7 +195,8 @@ func resourceAliCloudCenTransitRouterEcrAttachmentUpdate(d *schema.ResourceData,
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = d.Id()
+	request["TransitRouterAttachmentId"] = d.Id()
+
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("transit_router_ecr_attachment_name") {
 		update = true
@@ -213,15 +215,15 @@ func resourceAliCloudCenTransitRouterEcrAttachmentUpdate(d *schema.ResourceData,
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.TransitRouterAttachment"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -253,7 +255,7 @@ func resourceAliCloudCenTransitRouterEcrAttachmentDelete(d *schema.ResourceData,
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = d.Id()
+	request["TransitRouterAttachmentId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
 
@@ -265,24 +267,28 @@ func resourceAliCloudCenTransitRouterEcrAttachmentDelete(d *schema.ResourceData,
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.EcrResource"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	cenServiceV2 := CenServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cenServiceV2.CenTransitRouterEcrAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cenServiceV2.CenTransitRouterEcrAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
