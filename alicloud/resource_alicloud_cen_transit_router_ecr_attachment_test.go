@@ -165,7 +165,7 @@ variable "region" {
 }
 
 variable "asn" {
-  default = "4200000666"
+  default = "4200000667"
 }
 
 resource "alicloud_express_connect_router_express_connect_router" "defaultO8Hcfx" {
