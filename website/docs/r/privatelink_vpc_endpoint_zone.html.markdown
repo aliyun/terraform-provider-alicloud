@@ -100,6 +100,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<endpoint_id>:<zone_id>`.
 * `status` - The state of the zone. 
+* `region_id` - The ID of the region to which the endpoint service belongs.
 
 ## Timeouts
 
