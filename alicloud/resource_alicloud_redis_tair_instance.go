@@ -51,6 +51,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"connection_string_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -124,6 +128,7 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"param_sentinel_compat_enable": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"password": {
 				Type:      schema.TypeString,
@@ -156,6 +161,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"recover_config_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -339,6 +348,9 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("recover_config_mode"); ok {
 		request["RecoverConfigMode"] = v
 	}
+	if v, ok := d.GetOk("connection_string_prefix"); ok {
+		request["ConnectionStringPrefix"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -416,6 +428,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["Port"] != nil {
 		d.Set("port", objectRaw["Port"])
+	}
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
 	}
 	if objectRaw["ResourceGroupId"] != nil {
 		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
@@ -496,6 +511,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
+	}
 	if objectRaw["SecurityGroupId"] != nil {
 		d.Set("security_group_id", objectRaw["SecurityGroupId"])
 	}
@@ -531,6 +549,7 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
+
 	action := "ModifyInstanceAttribute"
 	conn, err := client.NewRedisClient()
 	if err != nil {
