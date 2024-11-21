@@ -42,7 +42,7 @@ The following arguments are supported:
   - `SIGN/VERIFY`: Generates or verifies a digital signature.
 * `origin` - (Optional, ForceNew) The key material origin. Default value: `Aliyun_KMS`. Valid values: `Aliyun_KMS`, `EXTERNAL`.
 * `key_spec`   - (Optional, ForceNew) The specification of the key. Default value: `Aliyun_AES_256`. Valid values: `Aliyun_AES_256`, `Aliyun_AES_128`, `Aliyun_AES_192`, `Aliyun_SM4`, `RSA_2048`, `RSA_3072`, `EC_P256`, `EC_P256K`, `EC_SM2`.
-* `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The ID of the KMS instance.
+* `dkms_instance_id` - (Optional, Computed, ForceNew, Available since v1.183.0) The ID of the KMS instance.
 * `protection_level` - (Optional, ForceNew) The protection level of the key. Default value: `SOFTWARE`. Valid values: `SOFTWARE`, `HSM`.
 * `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`.
 * `rotation_interval` - (Optional) The period of automatic key rotation. The following units are supported: d (day), h (hour), m (minute), and s (second). For example, you can use either 7d or 604800s to specify a seven-day interval.
