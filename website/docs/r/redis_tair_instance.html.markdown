@@ -20,12 +20,6 @@ For information about Redis Tair Instance and how to use it, see [What is Tair I
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_redis_tair_instance&exampleId=620b10c9-7933-f986-971f-30e49bed804e188829d7&activeTab=example&spm=docs.r.redis_tair_instance.0.620b10c979&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -84,6 +78,7 @@ The following arguments are supported:
 
   If your instance is a cloud-native cluster instance, we recommend that you use DescribeClusterBackupList to query the backup set ID of the cluster instance. Then, set the ClusterBackupId request parameter to the backup set ID to clone the cluster instance. This eliminates the need to specify the backup set ID of each shard.
 * `cluster_backup_id` - (Optional, Available since v1.224.0) This parameter is supported for specific new cluster instances. You can query the backup set ID by calling the DescribeClusterBackupList operation. If this parameter is supported, you can specify the backup set ID. In this case, you do not need to specify the BackupId parameter. If this parameter is not supported, set the BackupId parameter to the IDs of backup sets in all shards of the source instance, separated by commas (,).
+* `connection_string_prefix` - (Optional, Available since v1.235.0) The prefix of the endpoint the instance, which must consist of lowercase letters and numbers and start with a lowercase letter.
 * `effective_time` - (Optional) The time when to change the configurations. Default value: Immediately. Valid values: Immediately (The configurations are immediately changed), MaintainTime (The configurations are changed within the maintenance window).
 * `engine_version` - (Optional, Computed) Database version. Default value: 1.0.
 
@@ -117,7 +112,7 @@ The following arguments are supported:
 
   The default data synchronization mode is asynchronous replication. To modify the data synchronization mode, refer to https://www.alibabacloud.com/help/en/redis/user-guide/modify-the-synchronization-mode-of-a-persistent-memory-optimized-instance 。
 * `param_semisync_repl_timeout` - (Optional, Computed, Available since v1.233.1) The degradation threshold time of the semi-synchronous replication mode. This parameter value is required only when semi-synchronous replication is enabled. The unit is milliseconds, and the range is 10ms to 60000ms. The default value is 500ms. Please refer to: https://www.alibabacloud.com/help/en/redis/user-guide/modify-the-synchronization-mode-of-a-persistent-memory-optimized-instance。
-* `param_sentinel_compat_enable` - (Optional, Available since v1.233.1) sentinel compatibility mode, applicable to instances in the cluster architecture proxy connection mode or read/write splitting architecture. For more information about the parameters, see https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance. The value is 0 or 1. The default value is 0.
+* `param_sentinel_compat_enable` - (Optional, Computed, Available since v1.233.1) sentinel compatibility mode, applicable to instances in the cluster architecture proxy connection mode or read/write splitting architecture. For more information about the parameters, see https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance. The value is 0 or 1. The default value is 0.
 * `password` - (Optional) The password that is used to connect to the instance. The password must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include ! @ # $ % ^ & * ( ) _ + - =
 * `payment_type` - (Optional, Computed) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default Subscription.
 * `period` - (Optional, Int) The subscription duration. Unit: months. Valid values: 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24,36, and 60. This parameter is required only if you set the PaymentType parameter to Subscription.
@@ -163,6 +158,7 @@ The following attributes are exported:
 * `create_time` - The time when the instance was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `max_connections` - The maximum number of connections supported by the instance.
 * `network_type` - The network type of the instance.  CLASSIC(classic network), VPC.
+* `region_id` - Region Id
 * `status` - The status of the resource
 * `tair_instance_id` - The ID of the resource.
 

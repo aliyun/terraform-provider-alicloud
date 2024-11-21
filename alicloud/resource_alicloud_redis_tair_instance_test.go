@@ -1946,19 +1946,20 @@ func TestAccAliCloudRedisTairInstance_basic8729(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":           "PayAsYouGo",
-					"instance_type":          "tair_rdb",
-					"zone_id":                "${var.zone_id}",
-					"instance_class":         "tair.rdb.1g",
-					"vswitch_id":             "${alicloud_vswitch.defaultVSwitch.id}",
-					"vpc_id":                 "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"password":               "123456Tf",
-					"engine_version":         "6.0",
-					"port":                   "6379",
-					"security_ip_group_name": "test",
-					"security_ips":           "127.0.0.3,127.0.0.4",
-					"vpc_auth_mode":          "Open",
+					"payment_type":             "PayAsYouGo",
+					"instance_type":            "tair_rdb",
+					"zone_id":                  "${var.zone_id}",
+					"instance_class":           "tair.rdb.1g",
+					"vswitch_id":               "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                   "${alicloud_vpc.defaultVpc.id}",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":                 "123456Tf",
+					"engine_version":           "6.0",
+					"port":                     "6379",
+					"security_ip_group_name":   "test",
+					"security_ips":             "127.0.0.3,127.0.0.4",
+					"vpc_auth_mode":            "Open",
+					"connection_string_prefix": "test202411",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2012,7 +2013,7 @@ func TestAccAliCloudRedisTairInstance_basic8729(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
 			},
 		},
 	})
@@ -2132,7 +2133,7 @@ func TestAccAliCloudRedisTairInstance_basic8732(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
 			},
 		},
 	})
