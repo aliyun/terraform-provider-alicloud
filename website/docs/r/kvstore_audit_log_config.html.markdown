@@ -84,7 +84,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) Instance ID, Call the Describeinstances Get.
 * `retention` - (Optional) Audit Log Retention Period Value: 1~365. 
   
--> **NOTE**: When the Instance dbaudit Value Is Set to True, This Parameter Entry into Force. The Parameter Setting of the Current Region of All an Apsaradb for Redis Instance for a Data Entry into Force.
+-> **NOTE:** When the Instance dbaudit Value Is Set to True, This Parameter Entry into Force. The Parameter Setting of the Current Region of All a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance for a Data Entry into Force.
 
 ## Attributes Reference
 

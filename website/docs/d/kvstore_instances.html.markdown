@@ -4,13 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instances"
 sidebar_current: "docs-alicloud-datasource-kvstore-instances"
 description: |-
-    Provides a collection of kvstore instances according to the specified filters.
+  Provides a list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instances to the user.
 ---
 
 # alicloud_kvstore_instances
 
-The `alicloud_kvstore_instances` data source provides a collection of kvstore instances available in Alicloud account.
-Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
+This data source provides the Tair (Redis OSS-Compatible) And Memcache (KVStore) Instances of the current Alibaba Cloud user.
+
+-> **NOTE:** Available since v1.15.0.
 
 ## Example Usage
 
@@ -28,24 +29,24 @@ output "first_instance_name" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
-* `ids` - (Optional, Available 1.52.2+) A list of KVStore DBInstance IDs.
+* `ids` - (Optional, Available since v1.52.2) A list of KVStore DBInstance IDs.
 * `instance_type` - (Optional) The engine type of the KVStore DBInstance. Options are `Memcache`, and `Redis`. If no value is specified, all types are returned.
 * `status` - (Optional) The status of the KVStore DBInstance. Valid values: `Changing`, `CleaningUpExpiredData`, `Creating`, `Flushing`, `HASwitching`, `Inactive`, `MajorVersionUpgrading`, `Migrating`, `NetworkModifying`, `Normal`, `Rebooting`, `SSLModifying`, `Transforming`, `ZoneMigrating`.
-* `instance_class`- (Optional) Type of the applied ApsaraDB for Redis instance. For more information, see [Instance type table](https://help.aliyun.com/zh/redis/developer-reference/instance-types).
+* `instance_class`- (Optional) Type of the applied Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance. For more information, see [Instance type table](https://help.aliyun.com/zh/redis/developer-reference/instance-types).
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
-* `architecture_type` - (Optional, Available in 1.101.0+) The type of the architecture. Valid values: `cluster`, `standard` and `SplitRW`.
-* `edition_type` - (Optional, Available in 1.101.0+) Used to retrieve instances belong to specified `vswitch` resources.  Valid values: `Enterprise`, `Community`.
-* `engine_version` - (Optional, Available in 1.101.0+) The engine version. Valid values: `2.8`, `4.0`, `5.0`, `6.0`, `7.0`.
-* `expired` - (Optional, Available in 1.101.0+) The expiration status of the instance.
-* `global_instance` - (Optional, Available in 1.101.0+) Whether to create a distributed cache.
-* `network_type` - (Optional, Available in 1.101.0+) The type of the network. Valid values: `CLASSIC`, `VPC`.
-* `payment_type` - (Optional, Available in 1.101.0+) The payment type. Valid values: `PostPaid`, `PrePaid`.
-* `resource_group_id` - (Optional, Available in 1.101.0+) The ID of the resource group.
-* `search_key` - (Optional, Available in 1.101.0+) The name of the instance.
-* `zone_id` - (Optional, Available in 1.101.0+) The ID of the zone.
-* `enable_details` - (Optional, Available in 1.101.0+) Default to `false`. Set it to true can output more details.
+* `architecture_type` - (Optional, Available since v1.101.0) The type of the architecture. Valid values: `cluster`, `standard` and `SplitRW`.
+* `edition_type` - (Optional, Available since v1.101.0) Used to retrieve instances belong to specified `vswitch` resources.  Valid values: `Enterprise`, `Community`.
+* `engine_version` - (Optional, Available since v1.101.0) The engine version. Valid values: `2.8`, `4.0`, `5.0`, `6.0`, `7.0`.
+* `expired` - (Optional, Available since v1.101.0) The expiration status of the instance.
+* `global_instance` - (Optional, Available since v1.101.0) Whether to create a distributed cache.
+* `network_type` - (Optional, Available since v1.101.0) The type of the network. Valid values: `CLASSIC`, `VPC`.
+* `payment_type` - (Optional, Available since v1.101.0) The payment type. Valid values: `PostPaid`, `PrePaid`.
+* `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group.
+* `search_key` - (Optional, Available since v1.101.0) The name of the instance.
+* `zone_id` - (Optional, Available since v1.101.0) The ID of the zone.
+* `enable_details` - (Optional, Available since v1.101.0) Default to `false`. Set it to true can output more details.
 * `output_file` - (Optional) The name of file that can save the collection of instances after running `terraform plan`.
 
 ## Attributes Reference
@@ -68,12 +69,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `max_connections` - Instance connection quantity limit. Unit: count.
   * `status` - Status of the instance.
   * `instance_type` - (Optional) Database type. Valid Values: `Memcache`, `Redis`. If no value is specified, all types are returned.
-  * `instance_class`- (Optional) Type of the applied ApsaraDB for instance.
+  * `instance_class`- (Optional) Type of the applied Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance.
   For more information, see [Instance type table](https://www.alibabacloud.com/help/en/redis/product-overview/overview-4).
   * `vpc_id` - VPC ID the instance belongs to.
   * `vswitch_id` - VSwitch ID the instance belongs to.
   * `private_ip` - Private IP address of the instance.
-  * `capacity` - Capacity of the applied ApsaraDB for the instance. Unit: MB.
+  * `capacity` - Capacity of the applied Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance. Unit: MB.
   * `bandwidth` - Instance bandwidth limit. Unit: Mbit/s.
   * `config` - The parameter configuration of the instance.
   * `connection_mode` - The connection mode of the instance.
@@ -93,7 +94,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `create_time` - Creation time of the instance.
   * `user_name` - The username of the instance.
   * `connection_domain` - Instance connection domain (only Intranet access supported).
-  * `secondary_zone_id` - (Optional, Available in 1.128.0+) The ID of the secondary zone to which you want to migrate the ApsaraDB for Redis instance.
-
-    
-    
+  * `secondary_zone_id` - (Optional, Available since v1.128.0) The ID of the secondary zone to which you want to migrate the Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance.
+  

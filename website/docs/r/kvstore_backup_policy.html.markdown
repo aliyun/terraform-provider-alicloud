@@ -66,7 +66,7 @@ resource "alicloud_kvstore_backup_policy" "default" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The id of ApsaraDB for Redis or Memcache intance.
+* `instance_id` - (Required, ForceNew) The id of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance.
 * `backup_time` - (Optional) Backup time, in the format of HH:mmZ- HH:mm Z
 * `backup_period` - (Optional) Backup Cycle. Allowed values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 
@@ -75,13 +75,13 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The id of the backup policy.
-* `instance_id` - The id of ApsaraDB for Redis or Memcache intance.
+* `instance_id` - The id of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance.
 * `backup_time` - Backup time, in the format of HH:mmZ- HH:mm Z
 * `backup_period` - Backup Cycle. Allowed values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 
 ## Import
 
-KVStore backup policy can be imported using the id, e.g.
+Tair (Redis OSS-Compatible) And Memcache (KVStore) backup policy can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_kvstore_backup_policy.example r-abc12345678
