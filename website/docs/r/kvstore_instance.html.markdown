@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instance"
 sidebar_current: "docs-alicloud-resource-kvstore-instance"
 description: |-
-  Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) classic instance resource.
+  Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance resource.
 ---
 
 # alicloud_kvstore_instance
 
-Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) classic instance resource. A DB instance is an isolated database environment in the cloud. It support be associated with IP whitelists and backup configuration which are separate resource providers. For information about Alicloud KVStore DBInstance more and how to use it, see [What is Resource Alicloud KVStore DBInstance](https://www.alibabacloud.com/help/en/tair/latest/api-r-kvstore-2015-01-01-createinstance).
+Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance resource. A DB instance is an isolated database environment in the cloud. It support be associated with IP whitelists and backup configuration which are separate resource providers. For information about Alicloud KVStore DBInstance more and how to use it, see [What is Resource Alicloud KVStore DBInstance](https://www.alibabacloud.com/help/en/tair/latest/api-r-kvstore-2015-01-01-createinstance).
 
 -> **NOTE:** Available since v1.14.0.
 
@@ -199,12 +199,12 @@ The following arguments are supported:
 * `password`- (Optional, Sensitive) The password of the KVStore DBInstance. The password that is used to connect to the instance. The password must be 8 to 32 characters in length and must contain at least three of the following character types: uppercase letters, lowercase letters, special characters, and digits. Special characters include: `! @ # $ % ^ & * ( ) _ + - =`
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `instance_class` - (Optional) Type of the applied ApsaraDB for Redis instance. It can be retrieved by data source [`alicloud_kvstore_instance_classes`](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes)
+* `instance_class` - (Optional) Type of the applied Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance. It can be retrieved by data source [`alicloud_kvstore_instance_classes`](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes)
   or referring to help-docs [Instance type table](https://www.alibabacloud.com/help/doc-detail/26350.htm).
 * `capacity` - (Optional, ForceNew, Int, Available since v1.101.0) The storage capacity of the KVStore DBInstance. Unit: MB.
 * `availability_zone` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `zone_id` instead.
 * `zone_id` - (Optional, Available since v1.101.0) The ID of the zone.
-* `secondary_zone_id` - (Optional, Available since v1.128.0) The ID of the secondary zone to which you want to migrate the ApsaraDB for Redis instance.
+* `secondary_zone_id` - (Optional, Available since v1.128.0) The ID of the secondary zone to which you want to migrate the Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance.
   -> **NOTE:** If you specify this parameter, the master node and replica node of the instance can be deployed in different zones and disaster recovery is implemented across zones. The instance can withstand failures in data centers.
 * `instance_charge_type` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `payment_type` instead.
 * `payment_type` - (Optional, Available since v1.101.0) The billing method of the KVStore DBInstance. Valid values: `PrePaid`, `PostPaid`. Default value: `PostPaid`.
@@ -241,7 +241,7 @@ The following arguments are supported:
 * `ssl_enable`- (Optional, Available since v1.101.0) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`.
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
-* `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create an ApsaraDB for Redis instance in a dedicated cluster.
+* `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create a Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance in a dedicated cluster.
 * `coupon_no`- (Optional, Available since v1.101.0) The coupon code. **NOTE:** The default value `youhuiquan_promotion_option_id_for_blank` removed since v1.216.0, this can cause your status file to change even if it has not been modified, so please review your change plan before apply change plan.
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
 * `auto_use_coupon`- (Optional, Bool, ForceNew, Available since v1.101.0) Specifies whether to use a coupon. Default value: `false`.
