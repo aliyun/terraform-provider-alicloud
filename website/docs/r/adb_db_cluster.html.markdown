@@ -87,6 +87,7 @@ The following arguments are supported:
 * `elastic_io_resource_size` - (Optional, Available since v1.207.0) The specifications of a single elastic resource node. Default Value: `8Core64GB`. Valid values:
   - `8Core64GB`: If you set `elastic_io_resource_size` to `8Core64GB`, the specifications of an EIU are 24 cores and 192 GB memory.
   - `12Core96GB`: If you set `elastic_io_resource_size` to `12Core96GB`, the specifications of an EIU are 36 cores and 288 GB memory.
+  - `16Core128GB`: (Available since v1.237.0)If you set `elastic_io_resource_size` to `16Core128GB`, the specifications of an EIU are 48 cores and 384 GB memory.
 * `disk_performance_level` - (Optional, Available since v1.207.0) The ESSD performance level. Default Value: `PL1`. Valid values: `PL1`, `PL2`, `PL3`.
 * `disk_encryption` - (Optional, ForceNew, Bool, Available since v1.219.0) Specifies whether to enable disk encryption. Default Value: `false`. Valid values: `true`, `false`.
 * `kms_id` - (Optional, ForceNew, Available since v1.219.0) The Key Management Service (KMS) ID that is used for disk encryption. `kms_id` is valid only when `disk_encryption` is set to `true`.
