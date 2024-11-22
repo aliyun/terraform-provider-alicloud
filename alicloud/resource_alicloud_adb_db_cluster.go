@@ -171,7 +171,7 @@ func resourceAliCloudAdbDbCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"8Core64GB", "12Core96GB"}, false),
+				ValidateFunc: StringInSlice([]string{"8Core64GB", "12Core96GB", "16Core128GB"}, false),
 			},
 			"disk_performance_level": {
 				Type:         schema.TypeString,
