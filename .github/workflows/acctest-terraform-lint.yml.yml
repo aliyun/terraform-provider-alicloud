@@ -32,6 +32,6 @@ jobs:
           golangci_lint_flags: '--tests=false --timeout=25m --disable-all -E errcheck'
           tool_name: errcheck
           level: info
-          reviewdog_version: 'v0.18.1'
+          reviewdog_version: 'v0.20.2'
           golangci_lint_version: 'v1.59.1'
 

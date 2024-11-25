@@ -100,6 +100,11 @@ variable "name" {
  default = "%v"
 }
 
+resource "alicloud_arms_alert_robot" "default" {
+  alert_robot_name = var.name
+  robot_type       = "dingding"
+  robot_addr       = "https://oapi.dingtalk.com/robot/send?access_token=1c704e23"
+}
 resource "alicloud_arms_alert_contact" "default" {
   alert_contact_name = var.name
   email              = "${var.name}@aaa.com"
@@ -116,8 +121,7 @@ resource "alicloud_arms_dispatch_rule" "default" {
     group_wait_time = 5
     group_interval  = 15
     repeat_interval = 100
-    grouping_fields = [
-      "alertname"]
+    grouping_fields = ["alertname"]
   }
   label_match_expression_grid {
     label_match_expression_groups {
@@ -131,6 +135,11 @@ resource "alicloud_arms_dispatch_rule" "default" {
 
   notify_rules {
     notify_objects {
+      notify_object_id = alicloud_arms_alert_robot.default.id
+      notify_type      = "ARMS_ROBOT"
+      name             = var.name
+    }
+    notify_objects {
       notify_object_id = alicloud_arms_alert_contact.default.id
       notify_type      = "ARMS_CONTACT"
       name             = var.name
@@ -140,7 +149,9 @@ resource "alicloud_arms_dispatch_rule" "default" {
       notify_type      = "ARMS_CONTACT_GROUP"
       name             = var.name
     }
-    notify_channels = ["dingTalk", "wechat"]
+    notify_channels   = ["dingTalk", "wechat"]
+    notify_start_time = "00:00"
+    notify_end_time   = "23:59"
   }
 }
 `, name)
