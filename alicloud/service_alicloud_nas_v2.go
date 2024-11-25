@@ -185,54 +185,116 @@ func (s *NasServiceV2) NasAccessGroupStateRefreshFunc(id string, field string, f
 // DescribeNasFileSystem <<< Encapsulated get interface for Nas FileSystem.
 
 func (s *NasServiceV2) DescribeNasFileSystem(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeFileSystems"
+
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"FileSystemId": id,
+		"PageSize":     PageSizeLarge,
+		"PageNumber":   1,
+	}
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "Resource.NotFound", "InvalidFileSystemStatus.Ordering"}) {
+				return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.FileSystems.FileSystem", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems.FileSystem", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["FileSystemId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+func (s *NasServiceV2) DescribeGetRecycleBinAttribute(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "DescribeFileSystems"
+	action := "GetRecycleBinAttribute"
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["FileSystemId"] = id
+	request["FileSystemId"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidFileSystemStatus.Ordering"}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Resource.NotFound", "InvalidFileSystem.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.FileSystems.FileSystem[*]", response)
+	v, err := jsonpath.Get("$.RecycleBinAttribute", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems.FileSystem[*]", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RecycleBinAttribute", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return v.(map[string]interface{}), nil
 }
 func (s *NasServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -247,6 +309,7 @@ func (s *NasServiceV2) DescribeListTagResources(id string) (object map[string]in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "filesystem"
 	runtime := util.RuntimeOptions{}
@@ -262,19 +325,59 @@ func (s *NasServiceV2) DescribeListTagResources(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResourceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
+}
+func (s *NasServiceV2) DescribeDescribeNfsAcl(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeNfsAcl"
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["FileSystemId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Acl", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Acl", response)
+	}
+
+	return v.(map[string]interface{}), nil
 }
 
 func (s *NasServiceV2) NasFileSystemStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -282,7 +385,7 @@ func (s *NasServiceV2) NasFileSystemStateRefreshFunc(id string, field string, fa
 		object, err := s.DescribeNasFileSystem(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return object, "", nil
+				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
@@ -328,6 +431,7 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
@@ -338,7 +442,6 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -346,9 +449,9 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -364,6 +467,7 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
@@ -377,7 +481,6 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -385,15 +488,14 @@ func (s *NasServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
