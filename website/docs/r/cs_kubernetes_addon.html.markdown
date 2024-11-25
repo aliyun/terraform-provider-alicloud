@@ -59,7 +59,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
     # config = "{\"IngressDashboardEnabled\":\"true\"}
     config = jsonencode(
       {
-        IngressDashboardEnabled = true
+        IngressDashboardEnabled = "true"
       }
     )
     # The default value of this parameter is false.Some addon will be installed by default to facilitate users to manage the cluster. If you do not need to install these addons when creating a cluster, you can set disabled=true.
