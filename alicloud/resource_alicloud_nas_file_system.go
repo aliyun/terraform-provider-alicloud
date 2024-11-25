@@ -1,86 +1,153 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
-	"log"
-	"time"
-
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"log"
+	"time"
 )
 
-func resourceAlicloudNasFileSystem() *schema.Resource {
+func resourceAliCloudNasFileSystem() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudNasFileSystemCreate,
-		Read:   resourceAlicloudNasFileSystemRead,
-		Update: resourceAlicloudNasFileSystemUpdate,
-		Delete: resourceAlicloudNasFileSystemDelete,
+		Create: resourceAliCloudNasFileSystemCreate,
+		Read:   resourceAliCloudNasFileSystemRead,
+		Update: resourceAliCloudNasFileSystemUpdate,
+		Delete: resourceAliCloudNasFileSystemDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"storage_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					"Capacity",
-					"Performance",
-					"standard",
-					"advance",
-					"advance_100",
-					"advance_200",
-				}, false),
-			},
-			"protocol_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					"NFS",
-					"SMB",
-					"cpfs",
-				}, false),
-			},
-			"vpc_id": {
-				Type:     schema.TypeString,
+			"capacity": {
+				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
-			"vswitch_id": {
+			"create_time": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Computed: true,
 			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"encrypt_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
-				Default:      0,
+				ValidateFunc: IntInSlice([]int{0, 1, 2}),
 			},
 			"file_system_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard", "cpfs"}, false),
-				Default:      "standard",
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"standard", "extreme", "cpfs"}, false),
 			},
-			"capacity": {
-				Type:     schema.TypeInt,
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"protocol_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"NFS", "SMB", "cpfs"}, false),
+			},
+			"recycle_bin": {
+				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+						},
+						"reserved_days": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(0, 180),
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								if v, ok := d.GetOk("recycle_bin.0.status"); ok && v.(string) == "Enable" {
+									return false
+								}
+								return true
+							},
+						},
+						"size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"secondary_size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"enable_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"nfs_acl": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium"}, false),
+			},
+			"tags": tagsSchema(),
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -88,40 +155,42 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
-			"kms_key_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateFileSystem"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ProtocolType"] = d.Get("protocol_type")
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 	if v, ok := d.GetOk("file_system_type"); ok {
 		request["FileSystemType"] = v
 	}
+	if v, ok := d.GetOkExists("capacity"); ok {
+		request["Capacity"] = v
+	}
 	request["StorageType"] = d.Get("storage_type")
-	request["EncryptType"] = d.Get("encrypt_type")
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	if v, ok := d.GetOk("capacity"); ok {
-		request["Capacity"] = v
-	}
-	if v, ok := d.GetOk("kms_key_id"); ok {
-		request["KmsKeyId"] = v
+	request["ProtocolType"] = d.Get("protocol_type")
+	if v, ok := d.GetOkExists("encrypt_type"); ok {
+		request["EncryptType"] = v
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
@@ -129,183 +198,510 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+	if v, ok := d.GetOk("kms_key_id"); ok {
+		request["KmsKeyId"] = v
 	}
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	request["DryRun"] = "false"
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("snapshot_id"); ok {
+		request["SnapshotId"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_file_system", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["FileSystemId"]))
-	// Creating an extreme/cpfs filesystem is asynchronous, so you need to block and wait until the creation is complete
-	if d.Get("file_system_type") == "extreme" || d.Get("file_system_type") == "cpfs" {
-		nasService := NasService{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, nasService.DescribeNasFileSystemStateRefreshFunc(d.Id(), "Pending", []string{"Stopped", "Stopping", "Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
+
+	nasServiceV2 := NasServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nasServiceV2.NasFileSystemStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudNasFileSystemUpdate(d, meta)
+
+	return resourceAliCloudNasFileSystemUpdate(d, meta)
 }
 
-func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
-	conn, err := client.NewNasClient()
+	nasServiceV2 := NasServiceV2{client}
+
+	objectRaw, err := nasServiceV2.DescribeNasFileSystem(d.Id())
 	if err != nil {
-		return WrapError(err)
-	}
-	var response map[string]interface{}
-	d.Partial(true)
-
-	if d.HasChange("tags") {
-		if err := nasService.SetResourceTags(d, "filesystem"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
-	}
-
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudNasFileSystemRead(d, meta)
-	}
-	if d.HasChange("description") {
-		request := map[string]interface{}{
-			"RegionId":     client.RegionId,
-			"FileSystemId": d.Id(),
-			"Description":  d.Get("description"),
-		}
-		action := "ModifyFileSystem"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("description")
-	}
-	if d.HasChange("capacity") {
-		request := map[string]interface{}{
-			"RegionId":     client.RegionId,
-			"FileSystemId": d.Id(),
-			"Capacity":     d.Get("capacity"),
-		}
-		action := "UpgradeFileSystem"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, nasService.DescribeNasFileSystemStateRefreshFunc(d.Id(), "Pending", []string{"Stopped", "Stopping", "Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("capacity")
-	}
-	d.Partial(false)
-	return resourceAlicloudNasFileSystemRead(d, meta)
-}
-
-func resourceAlicloudNasFileSystemRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
-	object, err := nasService.DescribeNasFileSystem(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_nas_file_system nasService.DescribeNasFileSystem Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_nas_file_system DescribeNasFileSystem Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("description", object["Description"])
-	d.Set("protocol_type", object["ProtocolType"])
-	d.Set("storage_type", object["StorageType"])
-	d.Set("encrypt_type", object["EncryptType"])
-	d.Set("file_system_type", object["FileSystemType"])
-	d.Set("capacity", object["Capacity"])
-	d.Set("zone_id", object["ZoneId"])
-	d.Set("kms_key_id", object["KMSKeyId"])
+	if objectRaw["Capacity"] != nil {
+		d.Set("capacity", objectRaw["Capacity"])
+	}
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["EncryptType"] != nil {
+		d.Set("encrypt_type", objectRaw["EncryptType"])
+	}
+	if objectRaw["FileSystemType"] != nil {
+		d.Set("file_system_type", objectRaw["FileSystemType"])
+	}
+	if objectRaw["KMSKeyId"] != nil {
+		d.Set("kms_key_id", objectRaw["KMSKeyId"])
+	}
+	if objectRaw["ProtocolType"] != nil {
+		d.Set("protocol_type", objectRaw["ProtocolType"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["StorageType"] != nil {
+		d.Set("storage_type", objectRaw["StorageType"])
+	}
+	if objectRaw["QuorumVswId"] != nil {
+		d.Set("vswitch_id", objectRaw["QuorumVswId"])
+	}
+	if objectRaw["VpcId"] != nil {
+		d.Set("vpc_id", objectRaw["VpcId"])
+	}
+	if objectRaw["ZoneId"] != nil {
+		d.Set("zone_id", objectRaw["ZoneId"])
+	}
 
-	tagResp, _ := nasService.ListTagResources(d.Id(), "filesystem")
-	d.Set("tags", tagsToMap(tagResp))
+	checkValue00 := d.Get("file_system_type")
+	if checkValue00 == "standard" {
+
+		objectRaw, err = nasServiceV2.DescribeGetRecycleBinAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		recycleBinMaps := make([]map[string]interface{}, 0)
+		recycleBinMap := make(map[string]interface{})
+
+		recycleBinMap["enable_time"] = objectRaw["EnableTime"]
+		recycleBinMap["reserved_days"] = objectRaw["ReservedDays"]
+		recycleBinMap["secondary_size"] = objectRaw["SecondarySize"]
+		recycleBinMap["size"] = objectRaw["Size"]
+		recycleBinMap["status"] = objectRaw["Status"]
+
+		recycleBinMaps = append(recycleBinMaps, recycleBinMap)
+		if err := d.Set("recycle_bin", recycleBinMaps); err != nil {
+			return err
+		}
+
+	}
+	objectRaw, err = nasServiceV2.DescribeListTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	checkValue01 := d.Get("protocol_type")
+	if checkValue00 == "standard" && checkValue01 == "NFS" {
+
+		objectRaw, err = nasServiceV2.DescribeDescribeNfsAcl(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		nfsAclMaps := make([]map[string]interface{}, 0)
+		nfsAclMap := make(map[string]interface{})
+
+		nfsAclMap["enabled"] = objectRaw["Enabled"]
+
+		nfsAclMaps = append(nfsAclMaps, nfsAclMap)
+		if err := d.Set("nfs_acl", nfsAclMaps); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteFileSystem"
+	nasServiceV2 := NasServiceV2{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "ModifyFileSystem"
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"FileSystemId": d.Id(),
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["FileSystemId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "UpgradeFileSystem"
+	conn, err = client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["FileSystemId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if !d.IsNewResource() && d.HasChange("capacity") {
+		update = true
+	}
+	request["Capacity"] = d.Get("capacity")
+	request["DryRun"] = "false"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		nasServiceV2 := NasServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nasServiceV2.NasFileSystemStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ChangeResourceGroup"
+	conn, err = client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "filesystem"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("recycle_bin.0.status") {
+		objectRaw, err := nasServiceV2.DescribeGetRecycleBinAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("recycle_bin.0.status").(string)
+
+		if objectRaw["Status"].(string) != target {
+			if target == "Enable" {
+				action := "EnableRecycleBin"
+				conn, err := client.NewNasClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["FileSystemId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+
+			if target == "Disable" {
+				action := "DisableAndCleanRecycleBin"
+				conn, err := client.NewNasClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["FileSystemId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+	}
+
+	if d.HasChange("recycle_bin.0.reserved_days") {
+		action = "UpdateRecycleBinAttribute"
+		conn, err = client.NewNasClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["FileSystemId"] = d.Id()
+		request["RegionId"] = client.RegionId
+
+		if reservedDays, ok := d.GetOkExists("recycle_bin.0.reserved_days"); ok {
+			request["ReservedDays"] = reservedDays
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("nfs_acl.0.enabled") {
+		objectRaw, err := nasServiceV2.DescribeDescribeNfsAcl(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("nfs_acl.0.enabled").(bool)
+
+		if objectRaw["Enabled"].(bool) != target {
+			if target == true {
+				action := "EnableNfsAcl"
+				conn, err := client.NewNasClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["FileSystemId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+
+			if target == false {
+				action := "DisableNfsAcl"
+				conn, err := client.NewNasClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["FileSystemId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
+
+	if d.HasChange("tags") {
+		nasServiceV2 := NasServiceV2{client}
+		if err := nasServiceV2.SetResourceTags(d, "filesystem"); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceAliCloudNasFileSystemRead(d, meta)
+}
+
+func resourceAliCloudNasFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteFileSystem"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["FileSystemId"] = d.Id()
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	if d.Get("file_system_type") == "cpfs" {
-		nasService := NasService{client}
-		stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, nasService.DescribeNasFileSystemStateRefreshFunc(d.Id(), "Running", []string{"Pending"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
+	nasServiceV2 := NasServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nasServiceV2.NasFileSystemStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
