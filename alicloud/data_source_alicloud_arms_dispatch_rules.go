@@ -66,10 +66,6 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"group_id": {
-										Type:     schema.TypeInt,
-										Computed: true,
-									},
 									"group_wait_time": {
 										Type:     schema.TypeInt,
 										Computed: true,
@@ -164,6 +160,14 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
+									"notify_start_time": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"notify_end_time": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 								},
 							},
 						},
@@ -181,10 +185,17 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "ListDispatchRule"
-	request := make(map[string]interface{})
+	action := "ListNotificationPolicies"
+	request := map[string]interface{}{
+		"Page":     1,
+		"Size":     PageSizeXLarge,
+		"IsDetail": true,
+	}
 	if v, ok := d.GetOk("dispatch_rule_name"); ok {
 		request["Name"] = v
+	}
+	if v, ok := d.GetOk("enable_details"); ok {
+		request["IsDetail"] = v
 	}
 	request["RegionId"] = client.RegionId
 	var objects []map[string]interface{}
@@ -229,9 +240,9 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_dispatch_rules", action, AlibabaCloudSdkGoERROR)
 	}
-	resp, err := jsonpath.Get("$.DispatchRules", response)
+	resp, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DispatchRules", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PageBean.NotificationPolicies", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -240,7 +251,7 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 			continue
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(item["RuleId"])]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["Id"])]; !ok {
 				continue
 			}
 		}
@@ -251,8 +262,8 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                 fmt.Sprint(object["RuleId"]),
-			"dispatch_rule_id":   fmt.Sprint(object["RuleId"]),
+			"id":                 fmt.Sprint(object["Id"]),
+			"dispatch_rule_id":   fmt.Sprint(object["Id"]),
 			"dispatch_rule_name": object["Name"],
 			"status":             object["State"],
 		}
@@ -262,73 +273,60 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 			s = append(s, mapping)
 			continue
 		}
-		id := fmt.Sprint(object["RuleId"])
-		armsService := ArmsService{client}
-		getResp, err := armsService.DescribeArmsDispatchRule(id)
-		if err != nil {
-			return WrapError(err)
-		}
-		if groupRulesList, ok := getResp["GroupRules"]; ok && groupRulesList != nil {
-			groupRulesMaps := make([]map[string]interface{}, 0)
-			for _, groupRulesListItem := range groupRulesList.([]interface{}) {
-				if groupRulesItemMap, ok := groupRulesListItem.(map[string]interface{}); ok {
-					groupRulesMap := make(map[string]interface{}, 0)
-					groupRulesMap["group_interval"] = groupRulesItemMap["GroupInterval"]
-					groupRulesMap["group_wait_time"] = groupRulesItemMap["GroupWaitTime"]
-					groupRulesMap["group_id"] = groupRulesItemMap["GroupId"]
-					groupRulesMap["grouping_fields"] = groupRulesItemMap["GroupingFields"]
-					groupRulesMap["repeat_interval"] = groupRulesItemMap["RepeatInterval"]
-					groupRulesMaps = append(groupRulesMaps, groupRulesMap)
-				}
+		if groupRule, ok := object["GroupRule"]; ok && groupRule != nil {
+			groupRuleMaps := make([]map[string]interface{}, 0)
+			if groupRuleItemMap, ok := groupRule.(map[string]interface{}); ok {
+				groupRuleMap := make(map[string]interface{}, 0)
+				groupRuleMap["group_interval"] = groupRuleItemMap["GroupInterval"]
+				groupRuleMap["group_wait_time"] = groupRuleItemMap["GroupWait"]
+				groupRuleMap["grouping_fields"] = groupRuleItemMap["GroupingFields"]
+				groupRuleMap["repeat_interval"] = object["RepeatInterval"]
+				groupRuleMaps = append(groupRuleMaps, groupRuleMap)
 			}
-			mapping["group_rules"] = groupRulesMaps
+			mapping["group_rules"] = groupRuleMaps
 		}
-		if labelMatchExpressionGrid, ok := getResp["LabelMatchExpressionGrid"]; ok && labelMatchExpressionGrid != nil {
-			labelMatchExpressionGridMaps := make([]map[string]interface{}, 0)
-			labelMatchExpressionGridMap := make(map[string]interface{})
-
-			labelMatchExpressionGroupsMaps := make([]map[string]interface{}, 0)
-			if v, ok := labelMatchExpressionGrid.(map[string]interface{})["LabelMatchExpressionGroups"]; ok && v != nil {
-				for _, labelMatchExpressionGroups := range v.([]interface{}) {
-					labelMatchExpressionGroupsMap := make(map[string]interface{})
-					labelMatchExpressionsMaps := make([]map[string]interface{}, 0)
-					if v, ok := labelMatchExpressionGroups.(map[string]interface{})["LabelMatchExpressions"]; ok && v != nil {
-						for _, labelMatchExpressions := range v.([]interface{}) {
-							labelMatchExpressionsArg := labelMatchExpressions.(map[string]interface{})
-							labelMatchExpressionsMap := make(map[string]interface{}, 0)
-							labelMatchExpressionsMap["operator"] = labelMatchExpressionsArg["Operator"]
-							labelMatchExpressionsMap["key"] = labelMatchExpressionsArg["Key"]
-							labelMatchExpressionsMap["value"] = labelMatchExpressionsArg["Value"]
-							labelMatchExpressionsMaps = append(labelMatchExpressionsMaps, labelMatchExpressionsMap)
-						}
+		if matchingRulesList, ok := object["MatchingRules"]; ok && matchingRulesList != nil {
+			matchingRulesMap := make(map[string]interface{}, 0)
+			matchingRulesMaps := make([]map[string]interface{}, 0)
+			for _, matchingRulesListItem := range matchingRulesList.([]interface{}) {
+				matchingRulesListItemArg := matchingRulesListItem.(map[string]interface{})
+				if matchingConditionsList, ok := matchingRulesListItemArg["MatchingConditions"]; ok && matchingConditionsList != nil {
+					matchingConditionsMaps := make([]map[string]interface{}, 0)
+					for _, matchingConditionsListItem := range matchingConditionsList.([]interface{}) {
+						matchingConditionsMap := make(map[string]interface{}, 0)
+						matchingConditionsArg := matchingConditionsListItem.(map[string]interface{})
+						matchingConditionsMap["operator"] = matchingConditionsArg["Operator"]
+						matchingConditionsMap["key"] = matchingConditionsArg["Key"]
+						matchingConditionsMap["value"] = matchingConditionsArg["Value"]
+						matchingConditionsMaps = append(matchingConditionsMaps, matchingConditionsMap)
 					}
-					labelMatchExpressionGroupsMap["label_match_expressions"] = labelMatchExpressionsMaps
-					labelMatchExpressionGroupsMaps = append(labelMatchExpressionGroupsMaps, labelMatchExpressionGroupsMap)
+					matchingRulesMap["label_match_expressions"] = matchingConditionsMaps
+					matchingRulesMaps = append(matchingRulesMaps, matchingRulesMap)
 				}
 			}
-			labelMatchExpressionGridMap["label_match_expression_groups"] = labelMatchExpressionGroupsMaps
-			labelMatchExpressionGridMaps = append(labelMatchExpressionGridMaps, labelMatchExpressionGridMap)
-			mapping["label_match_expression_grid"] = labelMatchExpressionGridMaps
+			mapping["label_match_expression_grid"] = []map[string]interface{}{
+				{"label_match_expression_groups": matchingRulesMaps},
+			}
 		}
 
-		if notifyRulesList, ok := getResp["NotifyRules"]; ok && notifyRulesList != nil {
+		if notifyRuleItem, ok := object["NotifyRule"]; ok && notifyRuleItem != nil {
 			notifyRulesMaps := make([]map[string]interface{}, 0)
-			for _, notifyRulesListItem := range notifyRulesList.([]interface{}) {
-				if notifyRulesItemMap, ok := notifyRulesListItem.(map[string]interface{}); ok {
-					notifyRulesMap := make(map[string]interface{}, 0)
-					notifyObjectsMaps := make([]map[string]interface{}, 0)
-					for _, notifyObjects := range notifyRulesItemMap["NotifyObjects"].([]interface{}) {
-						notifyObjectsArg := notifyObjects.(map[string]interface{})
-						notifyObjectsMap := make(map[string]interface{}, 0)
-						notifyObjectsMap["notify_type"] = convertArmsDispatchRuleNotifyTypeResponse(notifyObjectsArg["NotifyType"])
-						notifyObjectsMap["notify_object_id"] = notifyObjectsArg["NotifyObjectId"]
-						notifyObjectsMap["name"] = notifyObjectsArg["Name"]
-						notifyObjectsMaps = append(notifyObjectsMaps, notifyObjectsMap)
-					}
-					notifyRulesMap["notify_objects"] = notifyObjectsMaps
-					notifyRulesMap["notify_channels"] = notifyRulesItemMap["NotifyChannels"]
-					notifyRulesMaps = append(notifyRulesMaps, notifyRulesMap)
+			if notifyRuleItemMap, ok := notifyRuleItem.(map[string]interface{}); ok {
+				notifyRulesMap := make(map[string]interface{}, 0)
+				notifyObjectsMaps := make([]map[string]interface{}, 0)
+				for _, notifyObjects := range notifyRuleItemMap["NotifyObjects"].([]interface{}) {
+					notifyObjectsArg := notifyObjects.(map[string]interface{})
+					notifyObjectsMap := make(map[string]interface{}, 0)
+					notifyObjectsMap["notify_type"] = convertArmsDispatchRuleNotifyTypeResponse(notifyObjectsArg["NotifyObjectType"])
+					notifyObjectsMap["notify_object_id"] = notifyObjectsArg["NotifyObjectId"]
+					notifyObjectsMap["name"] = notifyObjectsArg["NotifyObjectName"]
+					notifyObjectsMaps = append(notifyObjectsMaps, notifyObjectsMap)
 				}
+				notifyRulesMap["notify_objects"] = notifyObjectsMaps
+				notifyRulesMap["notify_channels"] = notifyRuleItemMap["NotifyChannels"]
+				notifyRulesMap["notify_start_time"] = notifyRuleItemMap["NotifyStartTime"]
+				notifyRulesMap["notify_end_time"] = notifyRuleItemMap["NotifyEndTime"]
+				notifyRulesMaps = append(notifyRulesMaps, notifyRulesMap)
 			}
 			mapping["notify_rules"] = notifyRulesMaps
 		}
