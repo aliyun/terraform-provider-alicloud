@@ -39,7 +39,7 @@ func testSweepEcdAdConnectorOfficeSite(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -117,11 +117,11 @@ func testSweepEcdAdConnectorOfficeSite(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
+func TestAccAliCloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_ad_connector_office_site.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDAdConnectorOfficeSiteMap0)
+	ra := resourceAttrInit(resourceId, AliCloudECDAdConnectorOfficeSiteMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcdAdConnectorOfficeSite")
@@ -129,7 +129,7 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secdadconnectorofficesite%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDAdConnectorOfficeSiteBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECDAdConnectorOfficeSiteBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -144,14 +144,14 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 					"cidr_block":                    "10.0.0.0/12",
 					"dns_address":                   []string{"127.0.0.2"},
 					"sub_domain_name":               "child.example1234.com",
-					"ad_connector_office_site_name": "${var.name}",
+					"ad_connector_office_site_name": name,
 					"bandwidth":                     "100",
 					"enable_internet_access":        "true",
 					"domain_name":                   "example1234.com",
 					"enable_admin_access":           "true",
 					"mfa_enabled":                   "true",
 					"domain_password":               "YourPassword1234",
-					"cen_id":                        "${alicloud_cen_instance.default.id}",
+					"cen_id":                        "${data.alicloud_cen_instances.default.instances.0.id}",
 					"desktop_access_type":           "INTERNET",
 					"domain_user_name":              "Administrator",
 				}),
@@ -184,33 +184,11 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudECDAdConnectorOfficeSiteMap0 = map[string]string{
-	"dns_address.#":       CHECKSET,
-	"desktop_access_type": CHECKSET,
-	"protocol_type":       NOSET,
-	"verify_code":         NOSET,
-	"status":              CHECKSET,
-	"ad_hostname":         NOSET,
-	"cen_owner_id":        NOSET,
-}
-
-func AlicloudECDAdConnectorOfficeSiteBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-resource "alicloud_cen_instance" "default" {
-	cen_instance_name = "${var.name}"
-	protection_level = "REDUCED"
-}
-`, name)
-}
-
-func TestAccAlicloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
+func TestAccAliCloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_ad_connector_office_site.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDAdConnectorOfficeSiteMap1)
+	ra := resourceAttrInit(resourceId, AliCloudECDAdConnectorOfficeSiteMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcdAdConnectorOfficeSite")
@@ -218,7 +196,7 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secdadconnectorofficesite%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDAdConnectorOfficeSiteBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECDAdConnectorOfficeSiteBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -229,10 +207,10 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ad_connector_office_site_name": "${var.name}",
+					"ad_connector_office_site_name": name,
 					"cidr_block":                    "10.0.0.0/12",
 					"domain_name":                   "example1234.com",
-					"cen_id":                        "${alicloud_cen_instance.default.id}",
+					"cen_id":                        "${data.alicloud_cen_instances.default.instances.0.id}",
 					"dns_address":                   []string{"127.0.0.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -255,7 +233,17 @@ func TestAccAlicloudECDAdConnectorOfficeSite_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudECDAdConnectorOfficeSiteMap1 = map[string]string{
+var AliCloudECDAdConnectorOfficeSiteMap0 = map[string]string{
+	"dns_address.#":       CHECKSET,
+	"desktop_access_type": CHECKSET,
+	"protocol_type":       NOSET,
+	"verify_code":         NOSET,
+	"status":              CHECKSET,
+	"ad_hostname":         NOSET,
+	"cen_owner_id":        NOSET,
+}
+
+var AliCloudECDAdConnectorOfficeSiteMap1 = map[string]string{
 	"cen_owner_id":        NOSET,
 	"dns_address.#":       CHECKSET,
 	"desktop_access_type": CHECKSET,
@@ -265,7 +253,19 @@ var AlicloudECDAdConnectorOfficeSiteMap1 = map[string]string{
 	"ad_hostname":         NOSET,
 }
 
-func TestUnitAlicloudECDAdConnectorOfficeSite(t *testing.T) {
+func AliCloudECDAdConnectorOfficeSiteBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_cen_instances" "default" {
+  		name_regex = "no-deleting-cen"
+	}
+`, name)
+}
+
+func TestUnitAliCloudECDAdConnectorOfficeSite(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_office_site"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_office_site"].Schema).Data(nil, nil)
