@@ -516,7 +516,13 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
 	request.ScalingRuleId = &[]string{id}
-	request.ShowAlarmRules = "true"
+	request.ShowAlarmRules = "false"
+	if strings.Contains(id, COLON_SEPARATED) {
+		parts, _ := ParseResourceId(id, 2)
+		request.ScalingRuleId = &[]string{parts[1]}
+		request.ShowAlarmRules = requests.Boolean(parts[0])
+		id = parts[1]
+	}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingRules(request)

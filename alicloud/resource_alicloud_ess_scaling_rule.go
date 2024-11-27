@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -202,18 +203,15 @@ func resourceAliyunEssScalingRuleCreate(d *schema.ResourceData, meta interface{}
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.CreateScalingRuleResponse)
-	d.SetId(response.ScalingRuleId)
-
+	_, ok := d.GetOk("alarm_dimension")
+	d.SetId(fmt.Sprint("false", ":", response.ScalingRuleId))
+	if ok {
+		d.SetId(fmt.Sprint("true", ":", response.ScalingRuleId))
+	}
 	return resourceAliyunEssScalingRuleRead(d, meta)
 }
 
 func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) error {
-
-	//Compatible with older versions id
-	if strings.Contains(d.Id(), COLON_SEPARATED) {
-		parts, _ := ParseResourceId(d.Id(), 2)
-		d.SetId(parts[1])
-	}
 
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
