@@ -1,18 +1,18 @@
 ---
-subcategory: "P A I Workspace"
+subcategory: "PAI Workspace"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_pai_workspace_workspace"
 description: |-
-  Provides a Alicloud P A I Workspace Workspace resource.
+  Provides a Alicloud PAI Workspace Workspace resource.
 ---
 
 # alicloud_pai_workspace_workspace
 
-Provides a P A I Workspace Workspace resource.
+Provides a PAI Workspace Workspace resource.
 
 
 
-For information about P A I Workspace Workspace and how to use it, see [What is Workspace](https://www.alibabacloud.com/help/en/).
+For information about PAI Workspace Workspace and how to use it, see [What is Workspace](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.233.0.
 
@@ -85,7 +85,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-P A I Workspace Workspace can be imported using the id, e.g.
+PAI Workspace Workspace can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_pai_workspace_workspace.example <id>
