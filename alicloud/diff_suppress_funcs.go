@@ -758,6 +758,13 @@ func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	return true
 }
 
+func SqlCollectorStatusDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("sql_collector_status"); ok && strings.ToLower(v.(string)) == "enabled" {
+		return false
+	}
+	return true
+}
+
 func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if new == "" {
 		return true

@@ -357,10 +357,10 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 			},
 			"sql_collector_config_value": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntInSlice([]int{30, 180, 365, 1095, 1825}),
-				Default:      30,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntInSlice([]int{30, 180, 365, 1095, 1825}),
+				DiffSuppressFunc: SqlCollectorStatusDiffSuppressFunc,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
