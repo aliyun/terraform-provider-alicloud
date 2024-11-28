@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -81,3 +82,77 @@ func (s *PaiWorkspaceServiceV2) PaiWorkspaceWorkspaceStateRefreshFunc(id string,
 }
 
 // DescribePaiWorkspaceWorkspace >>> Encapsulated.
+// DescribePaiWorkspaceDataset <<< Encapsulated get interface for PaiWorkspace Dataset.
+
+func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	DatasetId := id
+	action := fmt.Sprintf("/api/v1/datasets/%s", DatasetId)
+	conn, err := client.NewPaiworkspaceClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	request["DatasetId"] = id
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"201300003"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Dataset", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	return response, nil
+}
+
+func (s *PaiWorkspaceServiceV2) PaiWorkspaceDatasetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePaiWorkspaceDataset(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribePaiWorkspaceDataset >>> Encapsulated.
