@@ -140,6 +140,25 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_tags": []map[string]interface{}{
+						{
+							"tag_key":   "tag-key2",
+							"tag_value": "tag-value2",
+						},
+						{
+							"tag_key":   "tag-key3",
+							"tag_value": "tag-value3",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_tags.#": "2",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

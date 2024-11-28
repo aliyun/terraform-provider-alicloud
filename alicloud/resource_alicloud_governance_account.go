@@ -49,12 +49,10 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 						"tag_key": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"tag_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -230,6 +228,7 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
 	action := "EnrollAccount"
 	conn, err := client.NewGovernanceClient()
 	if err != nil {
@@ -239,6 +238,25 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 	query = make(map[string]interface{})
 	request["AccountUid"] = d.Id()
 	request["RegionId"] = client.RegionId
+	if d.HasChange("account_tags") {
+		update = true
+		if v, ok := d.GetOk("account_tags"); ok || d.HasChange("account_tags") {
+			tagMapsArray := make([]interface{}, 0)
+			for _, dataLoop := range v.([]interface{}) {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Value"] = dataLoopTmp["tag_value"]
+				dataLoopMap["Key"] = dataLoopTmp["tag_key"]
+				tagMapsArray = append(tagMapsArray, dataLoopMap)
+			}
+			tagMapsJson, err := json.Marshal(tagMapsArray)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Tag"] = string(tagMapsJson)
+		}
+	}
+
 	if d.HasChange("baseline_id") {
 		update = true
 	}
