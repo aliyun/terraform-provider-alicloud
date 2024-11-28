@@ -144,7 +144,7 @@ func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta inter
 		mapping["baseline_name"] = objectRaw["BaselineName"]
 		mapping["description"] = objectRaw["Description"]
 
-		ids = append(ids, fmt.Sprint(mapping["BaselineId"]))
+		ids = append(ids, fmt.Sprint(mapping["baseline_id"]))
 		names = append(names, objectRaw["BaselineName"])
 		s = append(s, mapping)
 	}

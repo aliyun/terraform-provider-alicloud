@@ -20,12 +20,6 @@ For information about Governance Account and how to use it, see [What is Account
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_governance_account&exampleId=bafb2fc6-f2e3-9029-f2d2-1e21385b8fba7daab3c6&activeTab=example&spm=docs.r.governance_account.0.bafb2fc6f2&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -84,13 +78,15 @@ The following arguments are supported:
 
   If the registration application is applied to an existing account, this parameter does not need to be filled in.
 * `payer_account_id` - (Optional, Int) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
+
 * `default_domain_name` - (Optional, Available since v1.231.0) The domain name is used to qualify the login name of RAM users and RAM roles.
 
+                    
 ### `account_tags`
 
 The account_tags supports the following:
-* `tag_key` - (Optional, ForceNew, Available since v1.233.1) The key of the tags
-* `tag_value` - (Optional, ForceNew, Available since v1.233.1) The value of the tags
+* `tag_key` - (Optional, Available since v1.233.1) The key of the tags
+* `tag_value` - (Optional) The value of the tags
 
 ## Attributes Reference
 
