@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -11,16 +12,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCdnRealTimeLogDelivery() *schema.Resource {
+func resourceAliCloudCdnRealTimeLogDelivery() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCdnRealTimeLogDeliveryCreate,
-		Read:   resourceAlicloudCdnRealTimeLogDeliveryRead,
-		Delete: resourceAlicloudCdnRealTimeLogDeliveryDelete,
+		Create: resourceAliCloudCdnRealTimeLogDeliveryCreate,
+		Read:   resourceAliCloudCdnRealTimeLogDeliveryRead,
+		Update: resourceAliCloudCdnRealTimeLogDeliveryUpdate,
+		Delete: resourceAliCloudCdnRealTimeLogDeliveryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(2 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"domain": {
@@ -31,42 +35,58 @@ func resourceAlicloudCdnRealTimeLogDelivery() *schema.Resource {
 			"logstore": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"project": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"sls_region": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCdnRealTimeLogDeliveryCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCdnRealTimeLogDeliveryCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateRealTimeLogDelivery"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewCdnClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["Domain"] = d.Get("domain")
-	request["Logstore"] = d.Get("logstore")
-	request["Project"] = d.Get("project")
-	request["Region"] = d.Get("sls_region")
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("domain"); ok {
+		query["Domain"] = v
+	}
+
+	if v, ok := d.GetOk("project"); ok {
+		query["Project"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("logstore"); ok {
+		query["Logstore"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("sls_region"); ok {
+		query["Region"] = StringPointer(v.(string))
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
@@ -77,52 +97,223 @@ func resourceAlicloudCdnRealTimeLogDeliveryCreate(d *schema.ResourceData, meta i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cdn_real_time_log_delivery", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["Domain"]))
+	d.SetId(fmt.Sprint(query["Domain"]))
 
-	return resourceAlicloudCdnRealTimeLogDeliveryRead(d, meta)
+	return resourceAliCloudCdnRealTimeLogDeliveryUpdate(d, meta)
 }
-func resourceAlicloudCdnRealTimeLogDeliveryRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCdnRealTimeLogDeliveryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cdnService := CdnService{client}
-	object, err := cdnService.DescribeCdnRealTimeLogDelivery(d.Id())
+	cdnServiceV2 := CdnServiceV2{client}
+
+	objectRaw, err := cdnServiceV2.DescribeCdnRealTimeLogDelivery(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cdn_real_time_log_delivery cdnService.DescribeCdnRealTimeLogDelivery Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cdn_real_time_log_delivery DescribeCdnRealTimeLogDelivery Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
+	if objectRaw["Logstore"] != nil {
+		d.Set("logstore", objectRaw["Logstore"])
+	}
+	if objectRaw["Project"] != nil {
+		d.Set("project", objectRaw["Project"])
+	}
+	if objectRaw["Region"] != nil {
+		d.Set("sls_region", objectRaw["Region"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+
 	d.Set("domain", d.Id())
-	d.Set("logstore", object["Logstore"])
-	d.Set("project", object["Project"])
-	d.Set("sls_region", object["Region"])
-	d.Set("status", object["Status"])
+
 	return nil
 }
-func resourceAlicloudCdnRealTimeLogDeliveryDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCdnRealTimeLogDeliveryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteRealtimeLogDelivery"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	if d.HasChange("status") {
+		cdnServiceV2 := CdnServiceV2{client}
+		object, err := cdnServiceV2.DescribeCdnRealTimeLogDelivery(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("status").(string)
+		if object["Status"].(string) != target {
+			if target == "online" {
+				action := "EnableRealtimeLogDelivery"
+				conn, err := client.NewCdnClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["Domain"] = d.Id()
+
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				cdnServiceV2 := CdnServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cdnServiceV2.CdnRealTimeLogDeliveryStateRefreshFunc(d.Id(), "Status", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+
+			}
+			if target == "offline" {
+				action := "DisableRealtimeLogDelivery"
+				conn, err := client.NewCdnClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["Domain"] = d.Id()
+
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				cdnServiceV2 := CdnServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cdnServiceV2.CdnRealTimeLogDeliveryStateRefreshFunc(d.Id(), "Status", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+
+			}
+		}
+	}
+
+	action := "ModifyRealtimeLogDelivery"
 	conn, err := client.NewCdnClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"Domain": d.Id(),
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Domain"] = d.Id()
+
+	if d.HasChange("project") {
+		update = true
+	}
+	if v, ok := d.GetOk("project"); ok {
+		query["Project"] = StringPointer(v.(string))
 	}
 
-	request["Logstore"] = d.Get("logstore")
-	request["Project"] = d.Get("project")
-	request["Region"] = d.Get("sls_region")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if d.HasChange("logstore") {
+		update = true
+	}
+	if v, ok := d.GetOk("logstore"); ok {
+		query["Logstore"] = StringPointer(v.(string))
+	}
+
+	if d.HasChange("sls_region") {
+		update = true
+	}
+	if v, ok := d.GetOk("sls_region"); ok {
+		query["Region"] = StringPointer(v.(string))
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudCdnRealTimeLogDeliveryRead(d, meta)
+}
+
+func resourceAliCloudCdnRealTimeLogDeliveryDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteRealtimeLogDelivery"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewCdnClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query["Domain"] = d.Id()
+
+	if v, ok := d.GetOk("project"); ok {
+		query["Project"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("logstore"); ok {
+		query["Logstore"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("sls_region"); ok {
+		query["Region"] = StringPointer(v.(string))
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,8 +324,13 @@ func resourceAlicloudCdnRealTimeLogDeliveryDelete(d *schema.ResourceData, meta i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
