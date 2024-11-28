@@ -264,3 +264,59 @@ func (s *EcsServiceV2) EcsImageStateRefreshFunc(id string, field string, failSta
 }
 
 // DescribeEcsImage >>> Encapsulated.
+
+// DescribeEcsAutoSnapshotPolicy <<< Encapsulated get interface for Ecs AutoSnapshotPolicy.
+
+func (s *EcsServiceV2) DescribeEcsAutoSnapshotPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeAutoSnapshotPolicyEx"
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AutoSnapshotPolicyId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.AutoSnapshotPolicies.AutoSnapshotPolicy[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
+	if currentStatus == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+// DescribeEcsAutoSnapshotPolicy >>> Encapsulated.
