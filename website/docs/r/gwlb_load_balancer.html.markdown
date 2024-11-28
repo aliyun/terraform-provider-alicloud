@@ -20,12 +20,6 @@ For information about GWLB Load Balancer and how to use it, see [What is Load Ba
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_gwlb_load_balancer&exampleId=048e6dcc-c045-2c92-6171-abb5ccd48e62d426865e&activeTab=example&spm=docs.r.gwlb_load_balancer.0.048e6dccc0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -83,33 +77,38 @@ resource "alicloud_gwlb_load_balancer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `address_ip_version` - (Optional, ForceNew, Computed) The protocol version. Value:
-  - Ipv4: Ipv4 type
-* `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. 
-* `load_balancer_name` - (Optional) The name of the Gateway Load Balancer instance.
+* `address_ip_version` - (Optional, ForceNew, Computed) The IP version. Valid values:
 
-  It must be 2 to 128 English or Chinese characters in length. It must start with a letter or a Chinese character and can contain digits, half-width periods (.), underscores (_), and dashes (-).
-* `resource_group_id` - (Optional, Computed) The ID of the resource group
-* `tags` - (Optional, Map) The list of tags.
-* `vpc_id` - (Required, ForceNew) The ID of the VPC which the Gateway Load Balancer instance belongs.
-* `zone_mappings` - (Required, Set) The List of zones and vSwitches mapped. You must add at least one zone and a maximum of 20 zones. If the current region supports two or more zones, we recommend that you add two or more zones. See [`zone_mappings`](#zone_mappings) below.
+  - `Ipv4`: IPv4 (default)
+* `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
+
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
+  - `false` (default): performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `load_balancer_name` - (Optional) The GWLB instance name.
+
+  The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group.
+* `tags` - (Optional, Map) The tag keys. You can specify at most 20 tags in each call.
+* `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID.
+* `zone_mappings` - (Required, Set) The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones. See [`zone_mappings`](#zone_mappings) below.
 
 ### `zone_mappings`
 
 The zone_mappings supports the following:
-* `vswitch_id` - (Required) The ID of the vSwitch that corresponds to the zone. Each zone can use only one vSwitch and subnet.
-* `zone_id` - (Required) The ID of the zone to which the Gateway Load Balancer instance belongs.
+* `vswitch_id` - (Required) The ID of the vSwitch in the zone. You can specify only one vSwitch (subnet) in each zone of a GWLB instance.
+* `zone_id` - (Required) The zone ID. You can call the DescribeZones operation to query the most recent zone list.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The resource creation time, in Greenwich Mean Time, in the format of **yyyy-MM-ddTHH:mm:ssZ**.
-* `status` - The status of the Gateway load Balancer instance. Value:, indicating that the instance listener will no longer forward traffic.
-* `zone_mappings` - The List of zones and vSwitches mapped. You must add at least one zone and a maximum of 20 zones. If the current region supports two or more zones, we recommend that you add two or more zones.
-  * `load_balancer_addresses` - The addresses of the Gateway Load Balancer instance.
-    * `eni_id` - The ID of the ENI.
-    * `private_ipv4_address` - IPv4 private network address.
+* `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
+* `status` - The GWLB instance status. 
+
+* `zone_mappings` - The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones.
+  * `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
+    * `eni_id` - The ID of the elastic network interface (ENI) used by the GWLB instance.
+    * `private_ipv4_address` - The private IPv4 address.
 
 ## Timeouts
 
