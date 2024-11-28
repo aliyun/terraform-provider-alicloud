@@ -537,7 +537,7 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterAckConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -549,13 +549,15 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"payment_type":      "PayAsYouGo",
-					"cluster_type":      "DATAFLOW",
-					"release_version":   "EMR-5.10.0",
-					"cluster_name":      name,
-					"deploy_mode":       "NORMAL",
-					"applications":      []string{"HADOOP-COMMON", "HDFS", "YARN"},
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"payment_type":         "PayAsYouGo",
+					"cluster_type":         "DATAFLOW",
+					"release_version":      "EMR-5.10.0",
+					"cluster_name":         name,
+					"deploy_mode":          "NORMAL",
+					"log_collect_strategy": "{\\\"open\\\":[\\\"all\\\"],\\\"close\\\":[\\\"\\\"]}",
+					"deletion_protection":  "true",
+					"applications":         []string{"HADOOP-COMMON", "HDFS", "YARN"},
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":               "${alicloud_vpc.default.id}",
@@ -579,6 +581,17 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 									"node_select_type": "CLUSTER",
 								},
 							},
+						},
+					},
+					"application_configs": []map[string]interface{}{
+						{
+							"application_name":   "HDFS",
+							"config_file_name":   "hdfs-site.xml",
+							"config_item_key":    "dfs.client.block.write.retries",
+							"config_item_value":  "3",
+							"config_scope":       "NODE_GROUP",
+							"config_description": "The number of retries for writing blocks to the data nodes, before we signal failure to the application.",
+							"node_group_name":    "emr-core",
 						},
 					},
 					"node_groups": []map[string]interface{}{
@@ -645,104 +658,68 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name":      name,
-						"cluster_type":      "DATAFLOW",
-						"payment_type":      "PayAsYouGo",
-						"release_version":   "EMR-5.10.0",
-						"deploy_mode":       "NORMAL",
-						"security_mode":     "NORMAL",
-						"tags.%":            "2",
-						"tags.Created":      "TF",
-						"tags.For":          "acceptance test",
-						"node_attributes.#": "1",
-						"applications.#":    "3",
-						"node_groups.#":     "2",
+						"cluster_name":          name,
+						"cluster_type":          "DATAFLOW",
+						"payment_type":          "PayAsYouGo",
+						"release_version":       "EMR-5.10.0",
+						"deploy_mode":           "NORMAL",
+						"security_mode":         "NORMAL",
+						"log_collect_strategy":  "{\"open\":[\"all\"],\"close\":[\"\"]}",
+						"deletion_protection":   "true",
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "acceptance test",
+						"node_attributes.#":     "1",
+						"applications.#":        "3",
+						"node_groups.#":         "2",
+						"application_configs.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bootstrap_scripts": []map[string]interface{}{
+					"application_configs": []map[string]interface{}{
 						{
-							"script_name":             "bssName02",
-							"script_path":             "oss://emr/tf-test/ts2.sh",
-							"script_args":             "--b=a",
-							"execution_moment":        "BEFORE_INSTALL",
-							"execution_fail_strategy": "FAILED_CONTINUE",
-							"node_selector": []map[string]interface{}{
-								{
-									"node_select_type": "CLUSTER",
-								},
-							},
-						},
-					},
-					"node_groups": []map[string]interface{}{
-						{
-							"node_group_type":      "MASTER",
-							"node_group_name":      "emr-master",
-							"payment_type":         "PayAsYouGo",
-							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-							"instance_types":       []string{"ecs.g7.xlarge"},
-							"node_count":           "1",
-							"with_public_ip":       "false",
-							"graceful_shutdown":    "false",
-							"spot_instance_remedy": "false",
-							"system_disk": []map[string]interface{}{
-								{
-									"category":          "cloud_essd",
-									"size":              "80",
-									"performance_level": "PL0",
-									"count":             "1",
-								},
-							},
-							"data_disks": []map[string]interface{}{
-								{
-									"category":          "cloud_essd",
-									"size":              "80",
-									"performance_level": "PL0",
-									"count":             "3",
-								},
-							},
-						},
-						{
-							"node_group_type":         "CORE",
-							"node_group_name":         "emr-core",
-							"payment_type":            "PayAsYouGo",
-							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
-							"instance_types":          []string{"ecs.g7.xlarge"},
-							"node_count":              "2",
-							"with_public_ip":          "false",
-							"deployment_set_strategy": "CLUSTER",
-							"graceful_shutdown":       "false",
-							"spot_instance_remedy":    "false",
-							"system_disk": []map[string]interface{}{
-								{
-									"category":          "cloud_essd",
-									"size":              "80",
-									"performance_level": "PL0",
-									"count":             "1",
-								},
-							},
-							"data_disks": []map[string]interface{}{
-								{
-									"category":          "cloud_essd",
-									"size":              "80",
-									"count":             "3",
-									"performance_level": "PL0",
-								},
-							},
+							"application_name":   "YARN",
+							"config_file_name":   "yarn-site.xml",
+							"config_item_key":    "yarn.resourcemanager.nodemanagers.heartbeat-interval-ms",
+							"config_item_value":  "1000",
+							"config_scope":       "CLUSTER",
+							"config_description": "The heart-beat interval in milliseconds for every NodeManager in the cluster.",
+							"node_group_name":    "emr-master",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bootstrap_scripts.#":             "1",
-						"bootstrap_scripts.0.script_name": "bssName02",
+						"application_configs.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log_collect_strategy": "{\\\"open\\\":[\\\"\\\"],\\\"close\\\":[\\\"all\\\"]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_collect_strategy": "{\"open\":[\"\"],\"close\":[\"all\"]}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_collect_strategy": "{\\\"open\\\":[\\\"\\\"],\\\"close\\\":[\\\"all\\\"]}",
+					"deletion_protection":  "false",
 					"bootstrap_scripts": []map[string]interface{}{
 						{
 							"script_name":             "bssName02",
@@ -815,18 +792,155 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 								},
 							},
 						},
+						{
+							"node_group_type":         "TASK",
+							"node_group_name":         "emr-task-1",
+							"payment_type":            "PayAsYouGo",
+							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":          []string{"ecs.g7.xlarge"},
+							"node_count":              "0",
+							"with_public_ip":          "false",
+							"deployment_set_strategy": "CLUSTER",
+							"graceful_shutdown":       "false",
+							"spot_instance_remedy":    "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+							"ack_config": []map[string]interface{}{
+								{
+									"ack_instance_id": "${alicloud_cs_managed_kubernetes.k8s.id}",
+									"node_selectors": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+									},
+									"tolerations": []map[string]interface{}{
+										{
+											"key":      "app",
+											"value":    "emr",
+											"operator": "Equal",
+											"effect":   "NoSchedule",
+										},
+									},
+									"namespace":      "emr-ack",
+									"request_cpu":    "4.0",
+									"request_memory": "8.0",
+									"limit_cpu":      "4.0",
+									"limit_memory":   "8.0",
+									"custom_annotations": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+									},
+									"custom_labels": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+									},
+									"pvcs": []map[string]interface{}{
+										{
+											"data_disk_storage_class": "alicloud-disk-essd",
+											"data_disk_size":          "40",
+											"name":                    "emrkube",
+											"path":                    "/mnt/disk/emrkube",
+										},
+									},
+									"volumes": []map[string]interface{}{
+										{
+											"name": "emrkube",
+											"path": "/var/lib/data/disk/emrkube",
+											"type": "",
+										},
+									},
+									"volume_mounts": []map[string]interface{}{
+										{
+											"name": "emrkube",
+											"path": "/mnt/disk/emrkube",
+										},
+									},
+									"pre_start_command": []string{"echo this is a test."},
+									"node_affinity":     "requiredDuringSchedulingIgnoredDuringExecution:\\n  nodeSelectorTerms:\\n  - matchExpressions:\\n    - key: app\\n      operator: In\\n      values:\\n      - emracs\\n",
+									"pod_anti_affinity": "requiredDuringSchedulingIgnoredDuringExecution:\\n- labelSelector:\\n    matchExpressions:\\n    - key: product\\n      operator: In\\n      values:\\n      - emr\\n  topologyKey: kubernetes.io/hostname\\n",
+									"pod_affinity":      "requiredDuringSchedulingIgnoredDuringExecution:\\n- labelSelector:\\n    matchExpressions:\\n    - key: app\\n      operator: In\\n      values:\\n      - emracs\\n  topologyKey: kubernetes.io/hostname\\n",
+								},
+							},
+						},
+						{
+							"node_group_type":         "TASK",
+							"node_group_name":         "emr-task-2",
+							"payment_type":            "PayAsYouGo",
+							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":          []string{"ecs.g7.xlarge"},
+							"node_count":              "0",
+							"with_public_ip":          "false",
+							"deployment_set_strategy": "CLUSTER",
+							"graceful_shutdown":       "false",
+							"spot_instance_remedy":    "false",
+							"node_resize_strategy":    "COST_OPTIMIZED",
+							"spot_strategy":           "SpotAsPriceGo",
+							"spot_bid_prices": []map[string]interface{}{
+								{
+									"instance_type": "ecs.g7.xlarge",
+									"bid_price":     "1",
+								},
+							},
+							"cost_optimized_config": []map[string]interface{}{
+								{
+									"on_demand_base_capacity":                  "1",
+									"on_demand_percentage_above_base_capacity": "50",
+									"spot_instance_pools":                      "1",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"deletion_protection":                  "false",
+						"log_collect_strategy":                 "{\"open\":[\"\"],\"close\":[\"all\"]}",
 						"bootstrap_scripts.#":                  "1",
 						"bootstrap_scripts.0.script_name":      "bssName02",
 						"bootstrap_scripts.0.execution_moment": "BEFORE_INSTALL",
+						"node_groups.#":                        "4",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log_collect_strategy": "{\\\"open\\\":[\\\"\\\"],\\\"close\\\":[\\\"all\\\"]}",
+					"deletion_protection":  "false",
 					"bootstrap_scripts": []map[string]interface{}{
 						{
 							"script_name":             "bssName02",
@@ -898,13 +1012,166 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 								},
 							},
 						},
+						{
+							"node_group_type":         "TASK",
+							"node_group_name":         "emr-task-1",
+							"payment_type":            "PayAsYouGo",
+							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":          []string{"ecs.g7.xlarge"},
+							"node_count":              "0",
+							"with_public_ip":          "false",
+							"deployment_set_strategy": "CLUSTER",
+							"graceful_shutdown":       "false",
+							"spot_instance_remedy":    "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+							"ack_config": []map[string]interface{}{
+								{
+									"ack_instance_id": "${alicloud_cs_managed_kubernetes.k8s.id}",
+									"node_selectors": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+										{
+											"key":   "product",
+											"value": "ack",
+										},
+									},
+									"tolerations": []map[string]interface{}{
+										{
+											"key":      "app",
+											"value":    "emr",
+											"operator": "Equal",
+											"effect":   "NoSchedule",
+										},
+										{
+											"key":      "product",
+											"value":    "ack",
+											"operator": "Equal",
+											"effect":   "NoSchedule",
+										},
+									},
+									"namespace":      "emr-ack",
+									"request_cpu":    "4.0",
+									"request_memory": "8.0",
+									"limit_cpu":      "4.0",
+									"limit_memory":   "8.0",
+									"custom_annotations": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+										{
+											"key":   "product",
+											"value": "ack",
+										},
+									},
+									"custom_labels": []map[string]interface{}{
+										{
+											"key":   "app",
+											"value": "emr",
+										},
+										{
+											"key":   "product",
+											"value": "ack",
+										},
+									},
+									"pvcs": []map[string]interface{}{
+										{
+											"data_disk_storage_class": "alicloud-disk-essd",
+											"data_disk_size":          "40",
+											"name":                    "emrkube",
+											"path":                    "/mnt/disk/emrkube",
+										},
+									},
+									"volumes": []map[string]interface{}{
+										{
+											"name": "emrkube",
+											"path": "/var/lib/data/disk/emrkube",
+											"type": "",
+										},
+									},
+									"volume_mounts": []map[string]interface{}{
+										{
+											"name": "emrkube",
+											"path": "/mnt/disk/emrkube",
+										},
+									},
+									"pre_start_command": []string{"echo this is a test."},
+									"node_affinity":     "requiredDuringSchedulingIgnoredDuringExecution:\\n  nodeSelectorTerms:\\n  - matchExpressions:\\n    - key: app\\n      operator: In\\n      values:\\n      - emrack\\n",
+									"pod_anti_affinity": "requiredDuringSchedulingIgnoredDuringExecution:\\n- labelSelector:\\n    matchExpressions:\\n    - key: app\\n      operator: In\\n      values:\\n      - emr\\n  topologyKey: kubernetes.io/hostname\\n",
+									"pod_affinity":      "requiredDuringSchedulingIgnoredDuringExecution:\\n- labelSelector:\\n    matchExpressions:\\n    - key: app\\n      operator: In\\n      values:\\n      - emrack\\n  topologyKey: kubernetes.io/hostname\\n",
+								},
+							},
+						},
+						{
+							"node_group_type":         "TASK",
+							"node_group_name":         "emr-task-2",
+							"payment_type":            "PayAsYouGo",
+							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":          []string{"ecs.g7.xlarge"},
+							"node_count":              "0",
+							"with_public_ip":          "false",
+							"deployment_set_strategy": "CLUSTER",
+							"graceful_shutdown":       "false",
+							"spot_instance_remedy":    "false",
+							"node_resize_strategy":    "PRIORITY",
+							"spot_strategy":           "SpotWithPriceLimit",
+							"spot_bid_prices": []map[string]interface{}{
+								{
+									"instance_type": "ecs.g7.xlarge",
+									"bid_price":     "2",
+								},
+							},
+							"cost_optimized_config": []map[string]interface{}{
+								{
+									"on_demand_base_capacity":                  "2",
+									"on_demand_percentage_above_base_capacity": "70",
+									"spot_instance_pools":                      "2",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"deletion_protection":                  "false",
+						"log_collect_strategy":                 "{\"open\":[\"\"],\"close\":[\"all\"]}",
 						"bootstrap_scripts.#":                  "1",
 						"bootstrap_scripts.0.script_name":      "bssName02",
 						"bootstrap_scripts.0.execution_moment": "BEFORE_INSTALL",
+						"node_groups.#":                        "4",
 					}),
 				),
 			},
@@ -912,7 +1179,7 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"node_groups"},
+				ImportStateVerifyIgnore: []string{"node_groups", "application_configs"},
 			},
 		},
 	})
@@ -1766,4 +2033,13 @@ func resourceEmrV2ClusterCommonConfigDependence(name string) string {
 		default = "%s"
 	}
 	`, EmrV2CommonTestCase, name)
+}
+
+func resourceEmrV2ClusterAckConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
+	}
+	`, EmrV2AckConfigTestCase, name)
 }
