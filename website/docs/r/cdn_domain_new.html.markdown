@@ -2,28 +2,23 @@
 subcategory: "CDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cdn_domain_new"
-sidebar_current: "docs-alicloud-resource-cdn-domain-new"
 description: |-
   Provides a Alicloud CDN Domain resource.
 ---
 
 # alicloud_cdn_domain_new
 
-Provides a CDN Domain resource. CDN domain name.
+Provides a CDN Domain resource.
 
-For information about CDN Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/cdn/developer-reference/api-cdn-2018-05-10-addcdndomain).
+CDN domain name.
+
+For information about CDN Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/alibaba-cloud-cdn/latest/api-doc-cdn-2018-05-10-api-doc-addcdndomain).
 
 -> **NOTE:** Available since v1.34.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cdn_domain_new&exampleId=79d927d9-05a3-f704-17a1-82b30ad6d691fcb6716b&activeTab=example&spm=docs.r.cdn_domain_new.0.79d927d905&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "random_integer" "default" {
@@ -49,18 +44,20 @@ resource "alicloud_cdn_domain_new" "default" {
 
 The following arguments are supported:
 * `cdn_type` - (Required, ForceNew) Cdn type of the accelerated domain. Valid values are `web`, `download`, `video`.
-* `certificate_config` - (Optional) Certificate configuration. See [`certificate_config`](#certificate_config) below.
-* `check_url` - (Optional, ForceNew, Available since v1.206.0) Health test URL.
+* `certificate_config` - (Optional, Computed, List) Certificate configuration See [`certificate_config`](#certificate_config) below.
+* `check_url` - (Optional, Available since v1.206.0) Health test URL.
 * `domain_name` - (Required, ForceNew) Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
-* `resource_group_id` - (Optional, Available since v1.67.0) The ID of the resource group.
-* `scope` - (Optional, ForceNew) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users. Value:
-  - **domestic**: Mainland China only.
-  - **overseas**: Global (excluding Mainland China).
-  - **global**: global.
-The default value is **domestic**.
-* `sources` - (Required) The source address list of the accelerated domain. Defaults to null. See [`sources`](#sources) below.
-* `tags` - (Optional, Map, Available since v1.55.2) The tag of the resource.
+* `env` - (Optional, Available since v1.236.0) Whether to issue a certificate in grayscale. Value: staging: issued certificate in grayscale. Not passing or passing any other value is a formal certificate.
+* `resource_group_id` - (Optional, Computed, Available since v1.67.0) The ID of the resource group.
+* `scope` - (Optional, Computed) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users. Value:
+  - `domestic`: Mainland China only.
+  - `overseas`: Global (excluding Mainland China).
+  - `global`: global.
 
+  The default value is `domestic`.
+* `sources` - (Required, Set) The source address list of the accelerated domain. Defaults to null. See [`sources`](#sources) below.
+* `status` - (Optional, Computed) The status of the resource, valid values: `online`, `offline`.
+* `tags` - (Optional, Map, Available since v1.55.2) The tag of the resource
 
 ### `certificate_config`
 
@@ -78,36 +75,33 @@ The certificate_config supports the following:
 * `server_certificate_status` - (Optional) Whether the HTTPS certificate is enabled. Value:
   - **on**(default): enabled. 
   - **off** : not enabled.
-* `force_set` - (Removed) The force set of the security certificate.
 
 ### `sources`
 
-The sources support the following:
+The sources supports the following:
 * `content` - (Optional) The address of source. Valid values can be ip or doaminName. Each item's `content` can not be repeated.
-* `port` - (Optional) The port of source. Valid values are `443` and `80`. Default value is `80`.
-* `priority` - (Optional) Priority of the source. Valid values are `0` and `100`. Default value is `20`.
+* `port` - (Optional, Computed, Int) The port of source. Valid values are `443` and `80`. Default value is `80`.
+* `priority` - (Optional, Computed, Int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.
 * `type` - (Optional) The type of the source. Valid values are `ipaddr`, `domain` and `oss`.
-* `weight` - (Optional) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`. .
-
+* `weight` - (Optional, Computed, Int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`. 
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource. It same as the `domain_name`.
+* `id` - The ID of the resource supplied above.
 * `cname` - The CNAME domain name corresponding to the accelerated domain name.
-* `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Domain.
-* `delete` - (Defaults to 5 mins) Used when delete the Domain.
-* `update` - (Defaults to 5 mins) Used when update the Domain.
+* `create` - (Defaults to 15 mins) Used when create the Domain.
+* `delete` - (Defaults to 15 mins) Used when delete the Domain.
+* `update` - (Defaults to 15 mins) Used when update the Domain.
 
 ## Import
 
 CDN Domain can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cdn_domain.example <id>
+$ terraform import alicloud_cdn_domain_new.example <id>
 ```

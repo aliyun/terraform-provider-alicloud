@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -19,7 +20,6 @@ type CdnServiceV2 struct {
 // DescribeCdnDomain <<< Encapsulated get interface for Cdn Domain.
 
 func (s *CdnServiceV2) DescribeCdnDomain(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -31,12 +31,13 @@ func (s *CdnServiceV2) DescribeCdnDomain(id string) (object map[string]interface
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	request["DomainName"] = id
 
-	query["DomainName"] = id
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -45,12 +46,12 @@ func (s *CdnServiceV2) DescribeCdnDomain(id string) (object map[string]interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -62,8 +63,7 @@ func (s *CdnServiceV2) DescribeCdnDomain(id string) (object map[string]interface
 
 	return v.(map[string]interface{}), nil
 }
-func (s *CdnServiceV2) DescribeDescribeDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
-
+func (s *CdnServiceV2) DescribeDomainDescribeDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -75,12 +75,13 @@ func (s *CdnServiceV2) DescribeDescribeDomainCertificateInfo(id string) (object 
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	request["DomainName"] = id
 
-	query["DomainName"] = id
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -89,12 +90,12 @@ func (s *CdnServiceV2) DescribeDescribeDomainCertificateInfo(id string) (object 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -105,13 +106,12 @@ func (s *CdnServiceV2) DescribeDescribeDomainCertificateInfo(id string) (object 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *CdnServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
-
+func (s *CdnServiceV2) DescribeDomainListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -123,13 +123,15 @@ func (s *CdnServiceV2) DescribeListTagResources(id string) (object map[string]in
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "DOMAIN"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -138,12 +140,12 @@ func (s *CdnServiceV2) DescribeListTagResources(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -161,7 +163,16 @@ func (s *CdnServiceV2) CdnDomainStateRefreshFunc(id string, field string, failSt
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -182,6 +193,7 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -197,17 +209,19 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -215,9 +229,9 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -231,8 +245,9 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
@@ -241,10 +256,11 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -252,15 +268,14 @@ func (s *CdnServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
