@@ -472,6 +472,7 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 
 func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -495,7 +496,8 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 					"db_cluster_category": "MixedStorage",
 					"description":         name,
 					"mode":                "flexible",
-					"compute_resource":    "32Core128GB",
+					"compute_resource":    "32Core128GBNEW",
+					"elastic_io_resource": "1",
 					"vswitch_id":          "${local.vswitch_id}",
 					"enable_ssl":          "true",
 				}),
@@ -504,34 +506,36 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 						"db_cluster_category": "MixedStorage",
 						"description":         name,
 						"mode":                "flexible",
-						"compute_resource":    "32Core128GB",
+						"compute_resource":    "32Core128GBNEW",
+						"elastic_io_resource": "1",
 						"vswitch_id":          CHECKSET,
 						"enable_ssl":          "true",
 						"db_node_class":       "E32",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"compute_resource": "48Core192GB",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compute_resource": "48Core192GB",
-						"db_node_count":    CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"elastic_io_resource": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"elastic_io_resource": "1",
-					}),
-				),
-			},
+			// API does not support updating elastic_io_resource when compute_resource is 32Core128GBNEW
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"compute_resource": "48Core192GBNEW",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"compute_resource": "48Core192GBNEW",
+			//			"db_node_count":    CHECKSET,
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"elastic_io_resource": "2",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"elastic_io_resource": "2",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name + "update",
@@ -584,31 +588,6 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"compute_resource":    "64Core256GB",
-					"elastic_io_resource": "2",
-					"description":         name,
-					"maintain_time":       "01:00Z-02:00Z",
-					"security_ips":        []string{"10.168.1.13"},
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compute_resource":    "64Core256GB",
-						"elastic_io_resource": "2",
-						"description":         name,
-						"maintain_time":       "01:00Z-02:00Z",
-						"security_ips.#":      "1",
-						"tags.%":              "2",
-						"tags.Created":        "TF-update",
-						"tags.For":            "test-update",
 					}),
 				),
 			},
