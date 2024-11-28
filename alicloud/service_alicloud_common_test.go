@@ -1169,6 +1169,119 @@ resource "alicloud_ram_role" "default" {
 }
 `
 
+const EmrV2AckConfigTestCase = `
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+data "alicloud_kms_keys" "default" {
+	status = "Enabled"
+}
+
+data "alicloud_zones" "default" {
+	available_instance_type = "ecs.g7.xlarge"
+}
+
+resource "alicloud_vpc" "default" {
+    vpc_name   = "${var.name}"
+    cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "vswitches" {
+    count      = 2
+    vpc_id     = join("", alicloud_vpc.default.*.id)
+    cidr_block = ["10.1.0.0/16", "10.2.0.0/16"][count.index]
+    zone_id    = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "terway_vswitches" {
+    count      = 2
+    vpc_id     = join("", alicloud_vpc.default.*.id)
+    cidr_block = ["10.4.0.0/16", "10.5.0.0/16"][count.index]
+    zone_id    = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "default" {
+    vpc_id = "${alicloud_vpc.default.id}"
+    cidr_block = "10.6.0.0/16"
+    zone_id = "${data.alicloud_zones.default.zones.0.id}"
+    vswitch_name = "${var.name}"
+}
+
+resource "alicloud_ecs_key_pair" "default" {
+    key_pair_name = "${var.name}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_ram_role" "default" {
+    name        = var.name
+    document    = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com",
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force       = true
+}
+
+resource "alicloud_cs_managed_kubernetes" "k8s" {
+	name               = "${var.name}"
+	cluster_spec       = "ack.pro.small"
+	worker_vswitch_ids = split(",", join(",", alicloud_vswitch.vswitches.*.id))
+	pod_vswitch_ids    = split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
+	new_nat_gateway    = true
+	node_cidr_mask     = 24
+	proxy_mode         = "ipvs"
+	service_cidr       = "192.168.0.0/16"
+
+    addons {
+        name = "terway-eniip"
+    }
+    addons {
+        name = "csi-plugin"
+    }
+    addons {
+        name = "csi-provisioner"
+    }
+    addons {
+        name = "logtail-ds"
+        config = jsonencode({
+            IngressDashboardEnabled = "true"
+      })
+    }
+    addons {
+        name = "nginx-ingress-controller"
+        config = jsonencode({
+            IngressSlbNetworkType = "internet"
+        })
+    }
+    addons {
+        name = "arms-prometheus"
+    }
+    addons {
+        name = "ack-node-problem-detector"
+        config = jsonencode({
+        })
+    }
+}
+`
+
 const EmrHadoopClusterTestCase = `
 data "alicloud_emr_main_versions" "default" {
 	cluster_type = ["HADOOP"]

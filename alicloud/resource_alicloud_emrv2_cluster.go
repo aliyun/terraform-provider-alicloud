@@ -5,6 +5,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -101,6 +102,10 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"deploy_mode": {
 				Type:         schema.TypeString,
@@ -233,7 +238,6 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"deployment_set_strategy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ForceNew:     true,
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"NONE", "CLUSTER", "NODE_GROUP"}, false),
 						},
@@ -280,6 +284,11 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						"spot_strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
+						},
 						"spot_bid_prices": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -299,25 +308,21 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"vswitch_ids": {
 							Type:     schema.TypeSet,
 							Optional: true,
-							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"with_public_ip": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							ForceNew: true,
 							Computed: true,
 						},
 						"additional_security_group_ids": {
 							Type:     schema.TypeSet,
 							Optional: true,
-							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"instance_types": {
 							Type:     schema.TypeSet,
 							Required: true,
-							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"node_count": {
@@ -394,7 +399,6 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"cost_optimized_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
-							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"on_demand_base_capacity": {
@@ -599,6 +603,188 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						"ack_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"ack_instance_id": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"node_selectors": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"value": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"tolerations": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"value": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"operator": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"effect": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"namespace": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"request_cpu": {
+										Type:     schema.TypeFloat,
+										Required: true,
+									},
+									"request_memory": {
+										Type:     schema.TypeFloat,
+										Required: true,
+									},
+									"limit_cpu": {
+										Type:     schema.TypeFloat,
+										Required: true,
+									},
+									"limit_memory": {
+										Type:     schema.TypeFloat,
+										Required: true,
+									},
+									"custom_labels": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"value": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"custom_annotations": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"value": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"pvcs": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"path": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"data_disk_storage_class": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"data_disk_size": {
+													Type:     schema.TypeInt,
+													Required: true,
+												},
+											},
+										},
+									},
+									"volumes": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"path": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"type": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+											},
+										},
+									},
+									"volume_mounts": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"path": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+											},
+										},
+									},
+									"pre_start_command": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"pod_affinity": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"pod_anti_affinity": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"node_affinity": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+							MaxItems: 1,
+						},
 					},
 				},
 				MinItems: 1,
@@ -690,7 +876,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	action := "CreateCluster"
+	action := "RunCluster"
 	conn, err := client.NewEmrClient()
 	if err != nil {
 		return WrapError(err)
@@ -723,7 +909,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 				subscriptionConfigMap["AutoPayOrder"] = true
 			}
 
-			createClusterRequest["SubscriptionConfig"] = subscriptionConfigMap
+			createClusterRequest["SubscriptionConfig"] = convertMapToJsonStringIgnoreError(subscriptionConfigMap)
 		}
 	}
 
@@ -751,13 +937,17 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 		createClusterRequest["LogCollectStrategy"] = v.(string)
 	}
 
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		createClusterRequest["DeletionProtection"] = v
+	}
+
 	applications := make([]map[string]interface{}, 0)
 	if apps, ok := d.GetOk("applications"); ok {
 		for _, application := range apps.(*schema.Set).List() {
 			applications = append(applications, map[string]interface{}{"ApplicationName": application.(string)})
 		}
 	}
-	createClusterRequest["Applications"] = applications
+	createClusterRequest["Applications"], _ = convertListMapToJsonString(applications)
 
 	applicationConfigs := make([]map[string]interface{}, 0)
 	if appConfigs, ok := d.GetOk("application_configs"); ok {
@@ -788,7 +978,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 			applicationConfigs = append(applicationConfigs, applicationConfig)
 		}
 	}
-	createClusterRequest["ApplicationConfigs"] = applicationConfigs
+	createClusterRequest["ApplicationConfigs"], _ = convertListMapToJsonString(applicationConfigs)
 
 	if v, ok := d.GetOk("node_attributes"); ok {
 		nodeAttributes := v.(*schema.Set).List()
@@ -803,7 +993,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 				"DataDiskEncrypted": nodeAttributesSource["data_disk_encrypted"],
 				"DataDiskKMSKeyId":  nodeAttributesSource["data_disk_kms_key_id"],
 			}
-			createClusterRequest["NodeAttributes"] = nodeAttributesSourceMap
+			createClusterRequest["NodeAttributes"] = convertMapToJsonStringIgnoreError(nodeAttributesSourceMap)
 		}
 	}
 
@@ -826,6 +1016,9 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 			}
 			if v, ok := kv["node_resize_strategy"]; ok && v.(string) != "" {
 				nodeGroup["NodeResizeStrategy"] = v.(string)
+			}
+			if v, ok := kv["spot_strategy"]; ok && v.(string) != "" {
+				nodeGroup["SpotStrategy"] = v.(string)
 			}
 			if v, ok := kv["subscription_config"]; ok {
 				subscriptionConfigs := v.(*schema.Set).List()
@@ -973,10 +1166,18 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					nodeGroup["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(scalingPolicies[0].(map[string]interface{}))
 				}
 			}
+			if v, ok := kv["ack_config"]; ok {
+				ackConfig := v.([]interface{})
+				if len(ackConfig) == 1 {
+					nodeGroup["AckConfig"] = adaptAckConfigRequest(ackConfig[0].(map[string]interface{}))
+					nodeGroup["IaaSType"] = "K8S"
+					delete(nodeGroup, "InstanceTypes")
+				}
+			}
 			nodeGroups = append(nodeGroups, nodeGroup)
 		}
 	}
-	createClusterRequest["NodeGroups"] = nodeGroups
+	createClusterRequest["NodeGroups"], _ = convertListMapToJsonString(nodeGroups)
 
 	if scripts, ok := d.GetOk("bootstrap_scripts"); ok {
 		bootstrapScripts := make([]map[string]interface{}, 0)
@@ -1048,7 +1249,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 			}
 			bootstrapScripts = append(bootstrapScripts, bootstrapScript)
 		}
-		createClusterRequest["BootstrapScripts"] = bootstrapScripts
+		createClusterRequest["BootstrapScripts"], _ = convertListMapToJsonString(bootstrapScripts)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -1059,7 +1260,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 				"Value": value,
 			})
 		}
-		createClusterRequest["Tags"] = tags
+		createClusterRequest["Tags"], _ = convertListMapToJsonString(tags)
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -1116,14 +1317,8 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("deploy_mode", object["DeployMode"])
 	d.Set("security_mode", object["SecurityMode"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
-
-	if v, ok := d.GetOk("log_collect_strategy"); ok && v.(string) != "" {
-		logCollectStrategy := v.(string)
-		if value, exists := object["LogCollectStrategy"]; exists && value.(string) != "" {
-			logCollectStrategy = value.(string)
-		}
-		d.Set("log_collect_strategy", logCollectStrategy)
-	}
+	d.Set("log_collect_strategy", object["LogCollectStrategy"])
+	d.Set("deletion_protection", object["DeletionProtection"])
 
 	if _, ok := object["SubscriptionConfig"]; ok {
 		sc := d.Get("subscription_config").(*schema.Set).List()
@@ -1205,6 +1400,14 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 			applications = append(applications, app)
 		}
 		d.Set("applications", applications)
+	}
+
+	if v, ok := d.GetOk("application_configs"); ok && len(v.(*schema.Set).List()) > 0 {
+		var applicationConfigs []map[string]interface{}
+		for _, ac := range v.(*schema.Set).List() {
+			applicationConfigs = append(applicationConfigs, ac.(map[string]interface{}))
+		}
+		d.Set("application_configs", applicationConfigs)
 	}
 
 	action = "ListScripts"
@@ -1319,10 +1522,12 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 	}
 	if v != nil && len(v.([]interface{})) > 0 {
 		oldNodeGroupsMap := map[string]map[string]interface{}{}
+		indexNodeGroupMap := map[string]int{}
 		if oldNodeGroups, ok := d.GetOk("node_groups"); ok {
-			for _, item := range oldNodeGroups.([]interface{}) {
+			for index, item := range oldNodeGroups.([]interface{}) {
 				oldNodeGroup := item.(map[string]interface{})
 				oldNodeGroupsMap[oldNodeGroup["node_group_name"].(string)] = oldNodeGroup
+				indexNodeGroupMap[oldNodeGroup["node_group_name"].(string)] = index
 			}
 		}
 
@@ -1507,18 +1712,6 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 				}
 			}
 
-			if v, ok := nodeGroupMap["SpotBidPrices"]; ok && len(v.([]interface{})) > 0 {
-				var spotBidPrices []map[string]interface{}
-				for _, item := range v.([]interface{}) {
-					spotBidPricesMap := item.(map[string]interface{})
-					spotBidPrices = append(spotBidPrices, map[string]interface{}{
-						"instance_type": spotBidPricesMap["InstanceType"],
-						"bid_price":     formatInt(spotBidPricesMap["BidPrice"]),
-					})
-				}
-				nodeGroup["spot_bid_prices"] = spotBidPrices
-			}
-
 			if v, ok := nodeGroupMap["VSwitchIds"]; ok && len(v.([]interface{})) > 0 {
 				var vSwitchIDs []string
 				for _, item := range v.([]interface{}) {
@@ -1543,6 +1736,131 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 				nodeGroup["instance_types"] = instanceTypes
 			}
 
+			if v, ok := nodeGroupMap["AckConfig"]; ok && len(v.(map[string]interface{})) > 0 {
+				var ackConfigs []map[string]interface{}
+				ackConfig := map[string]interface{}{}
+				m := v.(map[string]interface{})
+				ackConfig["ack_instance_id"] = m["AckInstanceId"]
+				if value, exists := m["NodeSelectors"]; exists && len(value.([]interface{})) > 0 {
+					var nodeSelectors []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						nodeSelectors = append(nodeSelectors, map[string]interface{}{
+							"key":   ackConfigValue.(map[string]interface{})["Key"],
+							"value": ackConfigValue.(map[string]interface{})["Value"],
+						})
+					}
+					ackConfig["node_selectors"] = nodeSelectors
+				}
+				if value, exists := m["Tolerations"]; exists && len(value.([]interface{})) > 0 {
+					var tolerations []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						tolerations = append(tolerations, map[string]interface{}{
+							"key":      ackConfigValue.(map[string]interface{})["Key"],
+							"value":    ackConfigValue.(map[string]interface{})["Value"],
+							"operator": ackConfigValue.(map[string]interface{})["Operator"],
+							"effect":   ackConfigValue.(map[string]interface{})["Effect"],
+						})
+					}
+					ackConfig["tolerations"] = tolerations
+				}
+				if value, exists := m["Namespace"]; exists && value.(string) != "" {
+					ackConfig["namespace"] = value
+				}
+				if value, exists := m["RequestCpu"]; exists {
+					ackConfig["request_cpu"] = value
+				}
+				if value, exists := m["RequestMemory"]; exists {
+					ackConfig["request_memory"] = value
+				}
+				if value, exists := m["LimitCpu"]; exists {
+					ackConfig["limit_cpu"] = value
+				}
+				if value, exists := m["LimitMemory"]; exists {
+					ackConfig["limit_memory"] = value
+				}
+				if value, exists := m["CustomLabels"]; exists && len(value.([]interface{})) > 0 {
+					var customLabels []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						customLabels = append(customLabels, map[string]interface{}{
+							"key":   ackConfigValue.(map[string]interface{})["Key"],
+							"value": ackConfigValue.(map[string]interface{})["Value"],
+						})
+					}
+					ackConfig["custom_labels"] = customLabels
+				}
+				if value, exists := m["CustomAnnotations"]; exists && len(value.([]interface{})) > 0 {
+					var customAnnotations []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						customAnnotations = append(customAnnotations, map[string]interface{}{
+							"key":   ackConfigValue.(map[string]interface{})["Key"],
+							"value": ackConfigValue.(map[string]interface{})["Value"],
+						})
+					}
+					ackConfig["custom_annotations"] = customAnnotations
+				}
+				if value, exists := m["Pvcs"]; exists && len(value.([]interface{})) > 0 {
+					var pvcs []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						pvcs = append(pvcs, map[string]interface{}{
+							"name":                    ackConfigValue.(map[string]interface{})["Name"],
+							"path":                    ackConfigValue.(map[string]interface{})["Path"],
+							"data_disk_storage_class": ackConfigValue.(map[string]interface{})["DataDiskStorageClass"],
+							"data_disk_size":          ackConfigValue.(map[string]interface{})["DataDiskSize"],
+						})
+					}
+					ackConfig["pvcs"] = pvcs
+				}
+				if value, exists := m["Volumes"]; exists && len(value.([]interface{})) > 0 {
+					var volumes []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						volumes = append(volumes, map[string]interface{}{
+							"name": ackConfigValue.(map[string]interface{})["Name"],
+							"path": ackConfigValue.(map[string]interface{})["Path"],
+							"type": ackConfigValue.(map[string]interface{})["Type"],
+						})
+					}
+					ackConfig["volumes"] = volumes
+				}
+				if value, exists := m["VolumeMounts"]; exists && len(value.([]interface{})) > 0 {
+					var volumeMounts []map[string]interface{}
+					for _, ackConfigValue := range value.([]interface{}) {
+						volumeMounts = append(volumeMounts, map[string]interface{}{
+							"name": ackConfigValue.(map[string]interface{})["Name"],
+							"path": ackConfigValue.(map[string]interface{})["Path"],
+						})
+					}
+					ackConfig["volume_mounts"] = volumeMounts
+				}
+				if value, exists := m["PreStartCommand"]; exists && len(value.([]interface{})) > 0 {
+					var preStartCommands []string
+					for _, ackConfigValue := range value.([]interface{}) {
+						preStartCommands = append(preStartCommands, ackConfigValue.(string))
+					}
+					ackConfig["pre_start_command"] = preStartCommands
+				}
+				if value, exists := m["PodAffinity"]; exists && value.(string) != "" {
+					ackConfig["pod_affinity"] = value
+				}
+				if value, exists := m["PodAntiAffinity"]; exists && value.(string) != "" {
+					ackConfig["pod_anti_affinity"] = value
+				}
+				if value, exists := m["NodeAffinity"]; exists && value.(string) != "" {
+					ackConfig["node_affinity"] = value
+				}
+				ackConfigs = append(ackConfigs, ackConfig)
+				nodeGroup["ack_config"] = ackConfigs
+
+				if ong, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
+					if instValue, instExists := ong["instance_types"]; instExists {
+						var instanceTypes []string
+						for _, item := range instValue.(*schema.Set).List() {
+							instanceTypes = append(instanceTypes, item.(string))
+						}
+						nodeGroup["instance_types"] = instanceTypes
+					}
+				}
+			}
+
 			if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
 				if v, ok := oldNodeGroup["deployment_set_strategy"]; ok && v.(string) != "" {
 					deploymentSetStrategy := v.(string)
@@ -1555,11 +1873,19 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 
 			if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
 				if v, ok := oldNodeGroup["node_resize_strategy"]; ok && v.(string) != "" {
-					nodeResizeStrategy := v.(string)
-					if nrs, nrsExists := nodeGroupMap["NodeResizeStrategy"]; nrsExists && nrs.(string) != "" {
-						nodeResizeStrategy = nrs.(string)
+					nodeGroup["node_resize_strategy"] = v.(string)
+				}
+
+				if v, ok := oldNodeGroup["spot_strategy"]; ok && v.(string) != "" {
+					nodeGroup["spot_strategy"] = v.(string)
+				}
+
+				if v, ok := oldNodeGroup["cost_optimized_config"]; ok && len(v.(*schema.Set).List()) > 0 {
+					var costOptimizedConfig []map[string]interface{}
+					for _, coc := range v.(*schema.Set).List() {
+						costOptimizedConfig = append(costOptimizedConfig, coc.(map[string]interface{}))
 					}
-					nodeGroup["node_resize_strategy"] = nodeResizeStrategy
+					nodeGroup["cost_optimized_config"] = costOptimizedConfig
 				}
 			}
 
@@ -1608,19 +1934,11 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 				nodeGroup["data_disks"] = dataDisks
 			}
 
-			if v, ok := nodeGroupMap["CostOptimizedConfig"]; ok {
-				costOptimizedConfigMap := v.(map[string]interface{})
-				nodeGroup["cost_optimized_config"] = []map[string]interface{}{
-					{
-						"on_demand_base_capacity":                  formatInt(costOptimizedConfigMap["OnDemandBaseCapacity"]),
-						"on_demand_percentage_above_base_capacity": formatInt(costOptimizedConfigMap["OnDemandPercentageAboveBaseCapacity"]),
-						"spot_instance_pools":                      formatInt(costOptimizedConfigMap["SpotInstancePools"]),
-					},
-				}
-			}
-
 			nodeGroups = append(nodeGroups, nodeGroup)
 		}
+		sort.Slice(nodeGroups, func(i, j int) bool {
+			return indexNodeGroupMap[nodeGroups[i]["node_group_name"].(string)] < indexNodeGroupMap[nodeGroups[j]["node_group_name"].(string)]
+		})
 
 		d.Set("node_groups", nodeGroups)
 	}
@@ -1648,7 +1966,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	if d.HasChange("cluster_name") || d.HasChange("log_collect_strategy") {
+	if d.HasChange("cluster_name") || d.HasChange("log_collect_strategy") || d.HasChange("deletion_protection") {
 		action := "UpdateClusterAttribute"
 		request := map[string]interface{}{
 			"ClusterId": d.Id(),
@@ -1659,6 +1977,9 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		}
 		if d.HasChange("log_collect_strategy") && d.Get("log_collect_strategy").(string) != "" {
 			request["LogCollectStrategy"] = d.Get("log_collect_strategy")
+		}
+		if d.HasChange("deletion_protection") {
+			request["DeletionProtection"] = d.Get("deletion_protection")
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -1855,12 +2176,42 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 						}
 					}
 				}
+				if !reflect.DeepEqual(originNodeGroupMap[nodeGroupName]["ack_config"], newNodeGroup["ack_config"]) && "K8S" == oldNodeGroup["IaaSType"] {
+					ackConfigs := newNodeGroup["ack_config"].([]interface{})
+					if len(ackConfigs) > 0 {
+						updateNodeGroupAttributesRequest := map[string]interface{}{
+							"RegionId":    client.RegionId,
+							"ClusterId":   d.Id(),
+							"NodeGroupId": oldNodeGroup["NodeGroupId"],
+							"AckConfig":   adaptAckConfigRequest(ackConfigs[0].(map[string]interface{})),
+						}
+						action = "UpdateNodeGroupAttributes"
+						err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+							response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, updateNodeGroupAttributesRequest, &runtime)
+							if err != nil {
+								if NeedRetry(err) {
+									wait()
+									return resource.RetryableError(err)
+								}
+								return resource.NonRetryableError(err)
+							}
+							return nil
+						})
+						addDebug(action, response, updateNodeGroupAttributesRequest)
+						if err != nil {
+							return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						}
+					}
+				}
 
 				newNodeCount := formatInt(newNodeGroup["node_count"])
 				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
 
 				// increase nodes
 				if oldNodeCount < newNodeCount {
+					if "MASTER" == newNodeGroup["node_group_type"].(string) {
+						return WrapError(Error("EMR cluster can not increase the node group type of ['MASTER']."))
+					}
 					count := newNodeCount - oldNodeCount
 					increaseNodesGroup := map[string]interface{}{}
 					increaseNodesGroup["RegionId"] = client.RegionId
@@ -2001,6 +2352,9 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				if value, exists := newNodeGroup["node_resize_strategy"]; exists && value.(string) != "" {
 					nodeGroupParam["NodeResizeStrategy"] = value.(string)
 				}
+				if value, exists := newNodeGroup["spot_strategy"]; exists && value.(string) != "" {
+					nodeGroupParam["SpotStrategy"] = value.(string)
+				}
 				vSwitchIDList := newNodeGroup["vswitch_ids"].(*schema.Set).List()
 				if len(vSwitchIDList) > 0 {
 					var vSwitchIDs []string
@@ -2026,6 +2380,11 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 						instanceTypes = append(instanceTypes, instanceType.(string))
 					}
 					nodeGroupParam["InstanceTypes"] = instanceTypes
+				}
+				if value, exists := newNodeGroup["ack_config"]; exists && len(value.([]interface{})) > 0 {
+					nodeGroupParam["AckConfig"] = adaptAckConfigRequest(value.([]interface{})[0].(map[string]interface{}))
+					nodeGroupParam["IaaSType"] = "K8S"
+					delete(nodeGroupParam, "InstanceTypes")
 				}
 
 				addSecurityGroupIDList := newNodeGroup["additional_security_group_ids"].(*schema.Set).List()
@@ -2727,4 +3086,149 @@ func adaptAutoScalingPolicyRequest(r map[string]interface{}) map[string]interfac
 		scalingPolicy["scalingRules"] = scalingRules
 	}
 	return scalingPolicy
+}
+
+func adaptAckConfigRequest(r map[string]interface{}) map[string]interface{} {
+	ackConfig := map[string]interface{}{}
+	if value, exists := r["ack_instance_id"]; exists {
+		ackConfig["AckInstanceId"] = value
+	}
+	if value, exists := r["node_selectors"]; exists {
+		nodeSelectors := value.(*schema.Set).List()
+		if len(nodeSelectors) > 0 {
+			var nodeSelectorsReq []map[string]interface{}
+			for _, ns := range nodeSelectors {
+				nodeSelectorsReq = append(nodeSelectorsReq, map[string]interface{}{
+					"Key":   ns.(map[string]interface{})["key"],
+					"Value": ns.(map[string]interface{})["value"],
+				})
+			}
+			ackConfig["NodeSelectors"] = nodeSelectorsReq
+		}
+	}
+	if value, exists := r["tolerations"]; exists {
+		tolerations := value.([]interface{})
+		if len(tolerations) > 0 {
+			var tolerationsReq []map[string]interface{}
+			for _, t := range tolerations {
+				toleration := t.(map[string]interface{})
+				tolerationsReq = append(tolerationsReq, map[string]interface{}{
+					"Key":      toleration["key"],
+					"Value":    toleration["value"],
+					"Operator": toleration["operator"],
+					"Effect":   toleration["effect"],
+				})
+			}
+			ackConfig["Tolerations"] = tolerationsReq
+		}
+	}
+	if value, exists := r["namespace"]; exists {
+		ackConfig["Namespace"] = value
+	}
+	if value, exists := r["request_cpu"]; exists {
+		ackConfig["RequestCpu"] = value
+	}
+	if value, exists := r["request_memory"]; exists {
+		ackConfig["RequestMemory"] = value
+	}
+	if value, exists := r["limit_cpu"]; exists {
+		ackConfig["LimitCpu"] = value
+	}
+	if value, exists := r["limit_memory"]; exists {
+		ackConfig["LimitMemory"] = value
+	}
+	if value, exists := r["custom_labels"]; exists {
+		customLabels := value.(*schema.Set).List()
+		if len(customLabels) > 0 {
+			var customLabelsReq []map[string]interface{}
+			for _, cl := range customLabels {
+				customLabel := cl.(map[string]interface{})
+				customLabelsReq = append(customLabelsReq, map[string]interface{}{
+					"Key":   customLabel["key"],
+					"Value": customLabel["value"],
+				})
+			}
+			ackConfig["CustomLabels"] = customLabelsReq
+		}
+	}
+	if value, exists := r["custom_annotations"]; exists {
+		customAnnotations := value.(*schema.Set).List()
+		if len(customAnnotations) > 0 {
+			var customAnnotationsReq []map[string]interface{}
+			for _, ca := range customAnnotations {
+				customAnnotation := ca.(map[string]interface{})
+				customAnnotationsReq = append(customAnnotationsReq, map[string]interface{}{
+					"Key":   customAnnotation["key"],
+					"Value": customAnnotation["value"],
+				})
+			}
+			ackConfig["CustomAnnotations"] = customAnnotationsReq
+		}
+	}
+	if value, exists := r["pvcs"]; exists {
+		pvcs := value.([]interface{})
+		if len(pvcs) > 0 {
+			var pvcsReq []map[string]interface{}
+			for _, pvc := range pvcs {
+				pvcMap := pvc.(map[string]interface{})
+				pvcsReq = append(pvcsReq, map[string]interface{}{
+					"DataDiskStorageClass": pvcMap["data_disk_storage_class"],
+					"DataDiskSize":         pvcMap["data_disk_size"],
+					"Path":                 pvcMap["path"],
+					"Name":                 pvcMap["name"],
+				})
+			}
+			ackConfig["Pvcs"] = pvcsReq
+		}
+	}
+	if value, exists := r["volumes"]; exists {
+		volumes := value.([]interface{})
+		if len(volumes) > 0 {
+			var volumesReq []map[string]interface{}
+			for _, vl := range volumes {
+				volume := vl.(map[string]interface{})
+				volumesReq = append(volumesReq, map[string]interface{}{
+					"Name": volume["name"],
+					"Path": volume["path"],
+					"Type": volume["type"],
+				})
+			}
+			ackConfig["Volumes"] = volumesReq
+		}
+	}
+	if value, exists := r["volume_mounts"]; exists {
+		volumeMounts := value.([]interface{})
+		if len(volumeMounts) > 0 {
+			var volumeMountsReq []map[string]interface{}
+			for _, vm := range volumeMounts {
+				volumeMount := vm.(map[string]interface{})
+				volumeMountsReq = append(volumeMountsReq, map[string]interface{}{
+					"Name": volumeMount["name"],
+					"Path": volumeMount["path"],
+				})
+			}
+			ackConfig["VolumeMounts"] = volumeMountsReq
+		}
+	}
+	if value, exists := r["pre_start_command"]; exists {
+		preStartCommand := value.([]interface{})
+		if len(preStartCommand) > 0 {
+			var preStartCommandReq []string
+			for _, prc := range preStartCommand {
+				preStartCommandReq = append(preStartCommandReq, prc.(string))
+			}
+			ackConfig["PreStartCommand"] = preStartCommandReq
+		}
+	}
+	if value, exists := r["pod_affinity"]; exists {
+		ackConfig["PodAffinity"] = value
+	}
+	if value, exists := r["pod_anti_affinity"]; exists {
+		ackConfig["PodAntiAffinity"] = value
+	}
+	if value, exists := r["node_affinity"]; exists {
+		ackConfig["NodeAffinity"] = value
+	}
+
+	return ackConfig
 }

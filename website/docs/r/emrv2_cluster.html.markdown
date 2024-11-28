@@ -191,6 +191,7 @@ The following arguments are supported:
 * `cluster_name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
 * `deploy_mode` - (Optional, ForceNew) The deploy mode of EMR cluster. Supported value: NORMAL or HA.
 * `log_collect_strategy` - (Optional, Available since v1.219.0) The log collect strategy of EMR cluster. 
+* `deletion_protection` - (Optional, Available since v1.236.0) The deletion protection of EMR cluster.
 * `security_mode` - (Optional) The security mode of EMR cluster. Supported value: NORMAL or KERBEROS.
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
 * `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
@@ -244,18 +245,20 @@ The node_groups mapping supports the following:
 * `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
 * `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance. See [`spot_bid_prices`](#node_groups-spot_bid_prices) below.
-* `vswitch_ids` - (Optional, ForceNew) Global vSwitch ids, you can also specify it in node group. **NOTE:** From version 1.230.1, `vswitch_ids` can not be modified.
-* `with_public_ip` - (Optional, ForceNew) Whether the node has a public IP address enabled. **NOTE:** From version 1.230.1, `with_public_ip` can not be modified.
-* `additional_security_group_ids` - (Optional, ForceNew) Additional security Group IDS for Cluster, you can also specify this key for each node group. **NOTE:** From version 1.230.1, `additional_security_group_ids` can not be modified.
-* `instance_types` - (Required, ForceNew) Host Ecs instance types. **NOTE:** From version 1.230.1, `instance_types` can not be modified.
+* `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group. **NOTE:** From version 1.236.0, `vswitch_ids` can be modified.
+* `with_public_ip` - (Optional) Whether the node has a public IP address enabled. **NOTE:** From version 1.236.0, `with_public_ip` can be modified.
+* `additional_security_group_ids` - (Optional) Additional security Group IDS for Cluster, you can also specify this key for each node group. **NOTE:** From version 1.236.0, `additional_security_group_ids` can be modified.
+* `instance_types` - (Required) Host Ecs instance types. **NOTE:** From version 1.236.0, `instance_types` can be modified.
 * `node_count` - (Required) Host Ecs number in this node group.
 * `system_disk` - (Required) Host Ecs system disk information in this node group. See [`system_disk`](#node_groups-system_disk) below.
 * `data_disks` - (Required) Host Ecs data disks information in this node group. See [`data_disks`](#node_groups-data_disks) below.
 * `graceful_shutdown` - (Optional) Enable emr cluster of task node graceful decommission, ’true’ or ‘false’ .
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
-* `cost_optimized_config` - (Optional, ForceNew) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below. **NOTE:** From version 1.230.1, `cost_optimized_config` can not be modified.
-* `deployment_set_strategy` - (Optional, ForceNew, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP. **NOTE:** From version 1.230.1, `deployment_set_strategy` can not be modified.
+* `spot_strategy` - (Optional, Available since v1.236.0) The spot strategy configuration of emr cluster. Valid values: `NoSpot`, `SpotWithPriceLimit`, `SpotAsPriceGo`.
+* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below. **NOTE:** From version 1.236.0, `cost_optimized_config` can be modified.
+* `deployment_set_strategy` - (Optional, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP. **NOTE:** From version 1.236.0, `deployment_set_strategy` can be modified.
 * `auto_scaling_policy` - (Optional, Available since v1.227.0) The node group auto scaling policy for emr cluster. See [`auto_scaling_policy`](#node_groups-auto_scaling_policy) below.
+* `ack_config` - (Optional, Available since v1.236.0) The node group of ack configuration for emr cluster to deploying on kubernetes. See [`ack_config`](#node_groups-ack_config) below.
 * `node_resize_strategy` - (Optional, Available since v1.219.0) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
 
 ### `node_groups-subscription_config`
@@ -308,6 +311,82 @@ The auto_scaling_policy mapping supports the following:
 
 * `scaling_rules` - (Optional) The scaling rules of auto scaling policy. See [`scaling_rules`](#node_groups-auto_scaling_policy-scaling_rules) below.
 * `constraints` - (Optional) The constraints of auto scaling policy. See [`constraints`](#node_groups-auto_scaling_policy-constraints) below.
+
+### `node_groups-ack_config`
+
+The ack_config mapping supports the following:
+
+* `ack_instance_id` - (Required) The ack cluster instance id.
+* `node_selectors` - (Optional) The ack cluster node selectors for job pods scheduling. See [`node_selectors`](#node_groups-ack_config-node_selectors) below.
+* `tolerations` - (Optional) The ack cluster tolerations. See [`tolerations`](#node_groups-ack_config-tolerations) below.
+* `namespace` - (Required) The ack cluster namespace.
+* `request_cpu` - (Required) The job pod resource of request cpu.
+* `request_memory` - (Required) The job pod resource of request memory.
+* `limit_cpu` - (Required) The job pod resource of limit cpu.
+* `limit_memory` - (Required) The job pod resource of limit memory.
+* `custom_labels` - (Optional) The ack cluster custom labels. See [`custom_labels`](#node_groups-ack_config-custom_labels) below.
+* `custom_annotations` - (Optional) The ack cluster custom annotations. See [`custom_annotations`](#node_groups-ack_config-custom_annotations) below.
+* `pvcs` - (Optional) The ack cluster persistent volume claim. See [`pvcs`](#node_groups-ack_config-pvcs) below.
+* `volumes` - (Optional) The ack cluster volumes. See [`volumes`](#node_groups-ack_config-volumes) below.
+* `volume_mounts` - (Optional) The ack cluster volume mounts. See [`volume_mounts`](#node_groups-ack_config-volume_mounts) below.
+* `pre_start_command` - (Optional) The job pod pre start command.
+* `pod_affinity` - (Optional) The job pod affinity.
+* `pod_anti_affinity` - (Optional) The job pod anti-affinity.
+* `node_affinity` - (Optional) The ack cluster node affinity.
+
+### `node_groups-ack_config-node_selectors`
+
+The node_selectors mapping supports the following:
+
+* `key` - (Required) The key of ack cluster node selector.
+* `value` - (Optional) The value of ack cluster node selector.
+
+### `node_groups-ack_config-tolerations`
+
+The tolerations mapping supports the following:
+
+* `key` - (Optional) The key of ack cluster tolerations.
+* `value` - (Optional) The value of ack cluster tolerations.
+* `operator` - (Optional) The operator of ack cluster tolerations.
+* `effect` - (Optional) The effect of ack cluster tolerations.
+
+### `node_groups-ack_config-custom_labels`
+
+The custom_labels mapping supports the following:
+
+* `key` - (Required) The key of ack cluster custom labels.
+* `value` - (Optional) The value of ack cluster custom labels.
+
+### `node_groups-ack_config-custom_annotations`
+
+The custom_annotations mapping supports the following:
+
+* `key` - (Required) The key of ack cluster custom labels.
+* `value` - (Optional) The value of ack cluster custom labels.
+
+### `node_groups-ack_config-pvcs`
+
+The pvcs mapping supports the following:
+
+* `name` - (Required) The name of ack cluster job pod persistent volume claim.
+* `path` - (Required) The path of ack cluster job pod persistent volume claim.
+* `data_disk_storage_class` - (Required) The ack cluster job pod data disk storage class of persistent volume claim.
+* `data_disk_size` - (Required) The ack cluster job pod data disk size of persistent volume claim.
+
+### `node_groups-ack_config-volumes`
+
+The volumes mapping supports the following:
+
+* `name` - (Required) The name of ack cluster job pod volumes.
+* `path` - (Required) The path of ack cluster job pod volumes.
+* `type` - (Required) The ack cluster job pod volumes type.
+
+### `node_groups-ack_config-volume_mounts`
+
+The volume_mounts mapping supports the following:
+
+* `name` - (Required) The name of ack cluster job pod volume mounts.
+* `path` - (Required) The path of ack cluster job pod volume mounts.
 
 ### `node_groups-auto_scaling_policy-scaling_rules`
 
@@ -384,7 +463,7 @@ The bootstrap_scripts mapping supports the following:
 * `script_args` - (Required) The bootstrap script args, e.g. "--a=b".
 * `priority` - (Deprecated since v1.227.0) The bootstrap scripts priority.
 * `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ .
-* `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ .
+* `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCK’ or ‘FAILED_CONTINUE’ .
 * `node_selector` - (Required) The bootstrap scripts execution target. See [`node_selector`](#bootstrap_scripts-node_selector) below.
 
 ### `bootstrap_scripts-node_selector`
