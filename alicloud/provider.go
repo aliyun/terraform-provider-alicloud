@@ -873,6 +873,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_pai_workspace_code_source":                            resourceAliCloudPaiWorkspaceCodeSource(),
+			"alicloud_pai_workspace_default_workspace":                      resourceAliCloudPaiWorkspaceDefaultWorkspace(),
 			"alicloud_pai_workspace_run":                                    resourceAliCloudPaiWorkspaceRun(),
 			"alicloud_pai_workspace_datasetversion":                         resourceAliCloudPaiWorkspaceDatasetversion(),
 			"alicloud_pai_workspace_experiment":                             resourceAliCloudPaiWorkspaceExperiment(),
