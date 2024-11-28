@@ -11,6 +11,7 @@ import (
 
 func TestAccAliCloudAdbResourceGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_resource_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbResourceGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -82,6 +83,7 @@ func TestAccAliCloudAdbResourceGroup_basic0(t *testing.T) {
 
 func TestAccAliCloudAdbResourceGroup_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_resource_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbResourceGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -152,7 +154,7 @@ func AliCloudAdbResourceGroupBasicDependence0(name string) string {
 	}
 
 	resource "alicloud_adb_db_cluster" "default" {
-  		compute_resource    = "32Core128GB"
+  		compute_resource    = "32Core128GBNEW"
   		db_cluster_category = "MixedStorage"
   		description         = var.name
   		elastic_io_resource = 1
