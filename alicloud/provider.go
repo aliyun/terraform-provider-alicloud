@@ -166,6 +166,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_gwlb_zones":             dataSourceAliCloudGwlbZones(),
 			"alicloud_gpdb_data_backups":      dataSourceAliCloudGpdbDataBackups(),
 			"alicloud_gpdb_log_backups":       dataSourceAliCloudGpdbLogbackups(),
 			"alicloud_governance_baselines":   dataSourceAliCloudGovernanceBaselines(),
