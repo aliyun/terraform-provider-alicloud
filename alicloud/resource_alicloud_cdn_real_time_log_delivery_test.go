@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCDNRealTimeLogDelivery_basic0(t *testing.T) {
+func TestAccAliCloudCDNRealTimeLogDelivery_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cdn_real_time_log_delivery.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDNRealTimeLogDeliveryMap0)
@@ -177,7 +177,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryCreate(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -194,7 +194,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryCreate(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -211,7 +211,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryCreate(dCreate, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -229,7 +229,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryDelete(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -246,7 +246,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryDelete(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -263,7 +263,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryDelete(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -280,7 +280,7 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryRead(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -296,8 +296,139 @@ func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCdnRealTimeLogDeliveryRead(d, rawClient)
+		err := resourceAliCloudCdnRealTimeLogDeliveryRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+func TestAccAliCloudCdnRealTimeLogDelivery_basic9189_modify(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cdn_real_time_log_delivery.default"
+	ra := resourceAttrInit(resourceId, AlicloudCdnRealTimeLogDeliveryMap9189)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCdnRealTimeLogDelivery")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scdnrealtimelogdelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnRealTimeLogDeliveryBasicDependence9189)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"project":    "${alicloud_log_project.slsPoject.name}",
+					"logstore":   "${alicloud_log_store.logstore.name}",
+					"domain":     "${alicloud_cdn_domain_new.domain.domain_name}",
+					"sls_region": defaultRegionToTest,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"project":  CHECKSET,
+						"logstore": CHECKSET,
+						"domain":   CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"project":    "${alicloud_log_project.updateProject.name}",
+					"logstore":   "${alicloud_log_store.updateLogstore.name}",
+					"sls_region": "${data.alicloud_regions.current_regions.regions.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"project":  CHECKSET,
+						"logstore": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "online",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "online",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "online",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCdnRealTimeLogDeliveryMap9189 = map[string]string{}
+
+func AlicloudCdnRealTimeLogDeliveryBasicDependence9189(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_regions" "current_regions" {
+  current = true
+}
+
+resource "alicloud_log_project" "slsPoject" {
+  description = "test"
+  name        = var.name
+}
+
+resource "alicloud_log_store" "logstore" {
+  retention_period = "60"
+  shard_count      = "2"
+  project          = alicloud_log_project.slsPoject.name
+  name             = format("%%s1", var.name)
+}
+
+resource "alicloud_cdn_domain_new" "domain" {
+  domain_name = format("%%s.example.com", var.name)
+  cdn_type = "web"
+  scope = "overseas"
+  sources {
+	 content = "www.aliyuntest.com"
+	 type = "domain"
+	 priority = 20
+	 port = 80
+	 weight = 10
+  }
+}
+
+resource "alicloud_log_project" "updateProject" {
+  description = "test"
+  name        = format("%%s3", var.name)
+}
+
+resource "alicloud_log_store" "updateLogstore" {
+  retention_period = "60"
+  shard_count      = "2"
+  project          = alicloud_log_project.updateProject.name
+  name             = format("%%s4", var.name)
+}
+
+
+`, name)
 }

@@ -2,7 +2,6 @@
 subcategory: "CDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cdn_real_time_log_delivery"
-sidebar_current: "docs-alicloud-resource-cdn-real-time-log-delivery"
 description: |-
   Provides a Alicloud CDN Real Time Log Delivery resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a CDN Real Time Log Delivery resource.
 
+Accelerate domain name real-time log push.
+
 For information about CDN Real Time Log Delivery and how to use it, see [What is Real Time Log Delivery](https://www.alibabacloud.com/help/en/cdn/developer-reference/api-cdn-2018-05-10-createrealtimelogdelivery).
 
 -> **NOTE:** Available since v1.134.0.
@@ -18,12 +19,6 @@ For information about CDN Real Time Log Delivery and how to use it, see [What is
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cdn_real_time_log_delivery&exampleId=63f84f4b-707f-6281-1841-733021627c67951707c1&activeTab=example&spm=docs.r.cdn_real_time_log_delivery.0.63f84f4b70&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "random_integer" "default" {
@@ -74,31 +69,34 @@ resource "alicloud_cdn_real_time_log_delivery" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `domain` - (Required, ForceNew) The accelerated domain name for which you want to disable real-time log delivery. You can specify multiple domain names and separate them with commas (,).
+* `logstore` - (Required) The ID of the region where the Log Service project is deployed. You can specify multiple region IDs and separate them with commas (,).
 
-* `domain` - (Required, ForceNew) The accelerated domain name for which you want to configure real-time log delivery. You can specify multiple domain names and separate them with commas (,).
-* `logstore` - (Required, ForceNew) The name of the Logstore that collects log data from Alibaba Cloud Content Delivery Network (CDN) in real time.
-* `project` - (Required, ForceNew) The name of the Log Service project that is used for real-time log delivery.
-* `sls_region` - (Required, ForceNew) The region where the Log Service project is deployed.
+  For more information about regions, see [Regions that support real-time log delivery](https://www.alibabacloud.com/help/en/doc-detail/144883.html).
+* `project` - (Required) The name of the Logstore that collects log data from Alibaba Cloud CDN in real time. You can specify multiple Logstore names and separate them with commas (,).
+* `sls_region` - (Required) The ID of the region where the Log Service project is deployed. For more information, see [Regions that support real-time log delivery](https://www.alibabacloud.com/help/en/doc-detail/144883.html).
+* `status` - (Optional, Computed) Resource attribute fields that represent the status of the resource.
 
--> **NOTE:** If your Project and Logstore services already exist, if you continue to create existing content, the created content will overwrite your existing indexes and custom reports. Please be careful to create your existing services to avoid affecting your online services after coverage.
+  Value:
+  - offline
+  - online
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Real Time Log Delivery. Its value is same as `domain`.
-* `status` - The status of the real-time log delivery feature. Valid Values: `online` and `offline`.
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 2 mins) Used when create the Real Time Log Delivery.
+* `create` - (Defaults to 5 mins) Used when create the Real Time Log Delivery.
+* `delete` - (Defaults to 5 mins) Used when delete the Real Time Log Delivery.
+* `update` - (Defaults to 5 mins) Used when update the Real Time Log Delivery.
 
 ## Import
 
 CDN Real Time Log Delivery can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cdn_real_time_log_delivery.example <domain>
+$ terraform import alicloud_cdn_real_time_log_delivery.example <id>
 ```
