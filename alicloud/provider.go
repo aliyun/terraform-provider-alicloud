@@ -872,6 +872,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_pai_workspace_code_source":                            resourceAliCloudPaiWorkspaceCodeSource(),
 			"alicloud_pai_workspace_run":                                    resourceAliCloudPaiWorkspaceRun(),
 			"alicloud_pai_workspace_datasetversion":                         resourceAliCloudPaiWorkspaceDatasetversion(),
 			"alicloud_pai_workspace_experiment":                             resourceAliCloudPaiWorkspaceExperiment(),
