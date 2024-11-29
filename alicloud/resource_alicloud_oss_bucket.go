@@ -28,9 +28,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			"bucket": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: StringLenBetween(3, 63),
-				Default:      resource.PrefixedUniqueId("tf-oss-bucket-"),
 			},
 
 			"acl": {
@@ -485,7 +485,11 @@ func resourceAlicloudOssBucket() *schema.Resource {
 
 func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := map[string]string{"bucketName": d.Get("bucket").(string)}
+	bucketName, ok := d.Get("bucket").(string)
+	if !ok || bucketName == "" {
+		bucketName = resource.PrefixedUniqueId("tf-oss-bucket-")
+	}
+	request := map[string]string{"bucketName": bucketName}
 	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		requestInfo = ossClient
@@ -507,7 +511,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	req := Request{
-		d.Get("bucket").(string),
+		bucketName,
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
 		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 		oss.ACL(oss.ACLType(d.Get("acl").(string))),
@@ -1715,7 +1719,7 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 			if IsExpectedErrors(err, []string{"BucketNotEmpty"}) {
 				if d.Get("force_destroy").(bool) {
 					raw, er := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))
+						bucket, _ := ossClient.Bucket(d.Id())
 						lor, err := bucket.ListObjectVersions()
 						if err != nil {
 							return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "ListObjectVersions", AliyunOssGoSdk)
