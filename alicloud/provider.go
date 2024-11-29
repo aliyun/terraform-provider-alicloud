@@ -345,7 +345,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbase_instance_types":                             dataSourceAlicloudHBaseInstanceTypes(),
 			"alicloud_adb_clusters":                                     dataSourceAlicloudAdbDbClusters(),
 			"alicloud_adb_zones":                                        dataSourceAlicloudAdbZones(),
-			"alicloud_cen_flowlogs":                                     dataSourceAlicloudCenFlowlogs(),
+			"alicloud_cen_flowlogs":                                     dataSourceAliCloudCenFlowLogs(),
 			"alicloud_kms_aliases":                                      dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":                              dataSourceAlicloudDnsDomainTxtGuid(),
 			"alicloud_edas_service":                                     dataSourceAlicloudEdasService(),

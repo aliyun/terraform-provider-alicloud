@@ -11,9 +11,9 @@ import (
 	"fmt"
 )
 
-func SkipTestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
+func TestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
 	// flow log has been offline
-	t.Skip("From January 30, 2022, the cloud enterprise network will take the old console flow log function offline. If you need to continue to use the flow log function, you can enter the new version console to use the flow log function of the enterprise version forwarding router. The Enterprise Edition Forwarding Router Flow Log feature provides the same capabilities as the Legacy Console Flow Log feature")
+	// t.Skip("From January 30, 2022, the cloud enterprise network will take the old console flow log function offline. If you need to continue to use the flow log function, you can enter the new version console to use the flow log function of the enterprise version forwarding router. The Enterprise Edition Forwarding Router Flow Log feature provides the same capabilities as the Legacy Console Flow Log feature")
 	rand := acctest.RandIntRange(1000000, 99999999)
 	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
@@ -102,31 +102,41 @@ func testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand int, attrMap map[strin
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	  default = "tf-testAcc%sCenFlowlogsDataSource-%d"
+	  default = "tf-testacc%s-%d"
 	}
-resource "alicloud_cen_instance" "default" {
-	name = "${var.name}"
-	description = "tf-testAccCenConfigDescription"
+
+resource "alicloud_cen_instance" "defaultc5kxyC" {
+  cen_instance_name = var.name
 }
-resource "alicloud_log_project" "default"{
-	name = "${lower(var.name)}"
-	description = "create by terraform"
+
+resource "alicloud_cen_transit_router" "defaultVw2U9u" {
+  cen_id = alicloud_cen_instance.defaultc5kxyC.id
 }
-resource "alicloud_log_store" "default"{
-	project = "${alicloud_log_project.default.name}"
-	name = "${lower(var.name)}"
-	retention_period = 3650
-	shard_count = 3
-	auto_split = true
-	max_split_shard_count = 60
-	append_meta = true
+
+resource "alicloud_log_project" "default" {
+  project_name = var.name
+  description  = "terraform-example"
 }
+
+resource "alicloud_log_store" "default" {
+  project_name          = alicloud_log_project.default.project_name
+  logstore_name         = var.name
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
 resource "alicloud_cen_flowlog" "default" {
-	cen_id = "${alicloud_cen_instance.default.id}"
-	project_name = "${alicloud_log_project.default.name}"
-	log_store_name = "${alicloud_log_store.default.name}"
-	flow_log_name = "${var.name}"
-	description = "${var.name}"
+  project_name = "${alicloud_log_store.default.project_name}"
+  flow_log_name = "tf-testacceu-central-1cenflowlog41302_update"
+  log_format_string = "$${srcaddr}$${dstaddr}$${bytes}"
+  cen_id = "${alicloud_cen_instance.defaultc5kxyC.id}"
+  log_store_name = "${alicloud_log_store.default.logstore_name}"
+  interval = "600"
+  status = "Active"
+  transit_router_id = "${alicloud_cen_transit_router.defaultVw2U9u.transit_router_id}"
+  description = "flowlog-resource-test-1"
 }
 
 data "alicloud_cen_flowlogs" "default" {
