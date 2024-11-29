@@ -20,6 +20,12 @@ For information about PAI Workspace Dataset and how to use it, see [What is Data
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pai_workspace_dataset&exampleId=caf71eae-dca2-b3f0-c0c9-cb5cf346198eb76d3014&activeTab=example&spm=docs.r.pai_workspace_dataset.0.caf71eaedc&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"

@@ -20,7 +20,7 @@ For information about File Storage (NAS) File System and how to use it, see [Wha
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=f5f5e208-95b8-0c3e-c75b-1e859e5cc773ab263762&activeTab=example&spm=docs.r.nas_file_system.0.f5f5e20895&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=e4c2e56e-d616-5a3d-e56d-56aa3caacf29cd5c0a18&activeTab=example&spm=docs.r.nas_file_system.0.e4c2e56ed6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -56,7 +56,7 @@ resource "alicloud_nas_file_system" "default" {
 ```
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=484fb7e1-829c-f8c1-e36c-d2b66549afe95c24478d&activeTab=example&spm=docs.r.nas_file_system.1.484fb7e182&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=885d0f59-42ad-8160-74b4-50f7111eefa2dab57eb3&activeTab=example&spm=docs.r.nas_file_system.1.885d0f5942&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -86,7 +86,7 @@ resource "alicloud_nas_file_system" "default" {
 ```
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=ff389e9e-bbb3-6c5d-47f6-7f9bfd68c6144140711d&activeTab=example&spm=docs.r.nas_file_system.2.ff389e9ebb&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=4bc7a8c0-d1e0-9272-5fd8-6cb2114f23ef4aa7fce3&activeTab=example&spm=docs.r.nas_file_system.2.4bc7a8c0d1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

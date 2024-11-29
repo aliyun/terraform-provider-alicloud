@@ -20,7 +20,7 @@ This resource will help you to manage addon in Kubernetes Cluster, see [What is 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_addon&exampleId=802cb43b-0665-96ca-5356-fc6755186de00979d82d&activeTab=example&spm=docs.r.cs_kubernetes_addon.0.802cb43b06&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_addon&exampleId=10c0d82e-ea4b-da2e-f004-27e6e9ae89e1a5236d82&activeTab=example&spm=docs.r.cs_kubernetes_addon.0.10c0d82eea&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -1,32 +1,33 @@
-## 1.236.0 (Unreleased)
+## 1.237.0 (Unreleased)
+## 1.236.0 (November 29, 2024)
 
-- **New Resource:** `alicloud_pai_workspace_dataset` [GH-7915]
-- **New Resource:** `alicloud_pai_workspace_experiment` [GH-7916]
-- **New Resource:** `alicloud_pai_workspace_datasetversion` [GH-7920]
-- **New Resource:** `alicloud_pai_workspace_run` [GH-7921]
-- **New Resource:** `alicloud_pai_workspace_code_source` [GH-7923]
-- **New Data Source:** `alicloud_gwlb_zones` [GH-7924]
+- **New Resource:** `alicloud_pai_workspace_dataset` ([#7915](https://github.com/aliyun/terraform-provider-alicloud/issues/7915))
+- **New Resource:** `alicloud_pai_workspace_experiment` ([#7916](https://github.com/aliyun/terraform-provider-alicloud/issues/7916))
+- **New Resource:** `alicloud_pai_workspace_datasetversion` ([#7920](https://github.com/aliyun/terraform-provider-alicloud/issues/7920))
+- **New Resource:** `alicloud_pai_workspace_run` ([#7921](https://github.com/aliyun/terraform-provider-alicloud/issues/7921))
+- **New Resource:** `alicloud_pai_workspace_code_source` ([#7923](https://github.com/aliyun/terraform-provider-alicloud/issues/7923))
+- **New Data Source:** `alicloud_gwlb_zones` ([#7924](https://github.com/aliyun/terraform-provider-alicloud/issues/7924))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in import. [GH-7873]
-- resource/alicloud_cs_kubernetes_node_pool: image_type support Ubuntu. [GH-7879]
-- resource/alicloud_emrv2_cluster: support ack_config, spot_strategy in node_groups and deletion_protection in emr cluster. [GH-7902]
-- resource/alicloud_nas_file_system: Refactored the resource alicloud_nas_file_system; Added the field create_time, recycle_bin, nfs_acl, resource_group_id, snapshot_id, status. [GH-7903]
-- resource/alicloud_ess_scaling_rule: optimize query rule. [GH-7910]
-- resource/alicloud_governance_account: support modify account_tags; data-source/alicloud_governance_baselines: fix bug while read ids. [GH-7913]
-- resource/alicloud_cdn_domain_new: add new attribute env and support modify status. [GH-7914]
-- resource/alicloud_ecs_auto_snapshot_policy: Refactored the resource alicloud_ecs_auto_snapshot_policy; Added the field auto_snapshot_policy_name, copy_encryption_configuration, resource_group_id, create_time, region_id; Deprecated the field name. [GH-7918]
-- resource/alicloud_cdn_real_time_log_delivery: support modify logstore, project, sls_region and status. [GH-7919]
-- data-source/alicloud_cen_flowlogs: add new attributes flow_log_version, interval, log_format_string etc. [GH-7926]
-- docs: improved description for redis. [GH-7900]
-- docs: fix cs_kubernetes_addon example. [GH-7901]
-- docs: Fix invalid subcategory for PAI workspace. [GH-7912]
-- docs: Improves description for gwlb. [GH-7922]
-- docs: add available version of image_type for alicloud_cs_kubernetes_node_pool. [GH-7927]
-- testcase: Fixed alicloud_ga_listener test case. [GH-7905]
-- testcase: Fixed alicloud_ecd_ad_connector_directory test case. [GH-7906]
-- testcase: Fixed alicloud_ecd_ad_connector_office_site test case. [GH-7907]
+- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in import. ([#7873](https://github.com/aliyun/terraform-provider-alicloud/issues/7873))
+- resource/alicloud_cs_kubernetes_node_pool: image_type support Ubuntu. ([#7879](https://github.com/aliyun/terraform-provider-alicloud/issues/7879))
+- resource/alicloud_emrv2_cluster: support ack_config, spot_strategy in node_groups and deletion_protection in emr cluster. ([#7902](https://github.com/aliyun/terraform-provider-alicloud/issues/7902))
+- resource/alicloud_nas_file_system: Refactored the resource alicloud_nas_file_system; Added the field create_time, recycle_bin, nfs_acl, resource_group_id, snapshot_id, status. ([#7903](https://github.com/aliyun/terraform-provider-alicloud/issues/7903))
+- resource/alicloud_ess_scaling_rule: optimize query rule. ([#7910](https://github.com/aliyun/terraform-provider-alicloud/issues/7910))
+- resource/alicloud_governance_account: support modify account_tags; data-source/alicloud_governance_baselines: fix bug while read ids. ([#7913](https://github.com/aliyun/terraform-provider-alicloud/issues/7913))
+- resource/alicloud_cdn_domain_new: add new attribute env and support modify status. ([#7914](https://github.com/aliyun/terraform-provider-alicloud/issues/7914))
+- resource/alicloud_ecs_auto_snapshot_policy: Refactored the resource alicloud_ecs_auto_snapshot_policy; Added the field auto_snapshot_policy_name, copy_encryption_configuration, resource_group_id, create_time, region_id; Deprecated the field name. ([#7918](https://github.com/aliyun/terraform-provider-alicloud/issues/7918))
+- resource/alicloud_cdn_real_time_log_delivery: support modify logstore, project, sls_region and status. ([#7919](https://github.com/aliyun/terraform-provider-alicloud/issues/7919))
+- data-source/alicloud_cen_flowlogs: add new attributes flow_log_version, interval, log_format_string etc. ([#7926](https://github.com/aliyun/terraform-provider-alicloud/issues/7926))
+- docs: improved description for redis. ([#7900](https://github.com/aliyun/terraform-provider-alicloud/issues/7900))
+- docs: fix cs_kubernetes_addon example. ([#7901](https://github.com/aliyun/terraform-provider-alicloud/issues/7901))
+- docs: Fix invalid subcategory for PAI workspace. ([#7912](https://github.com/aliyun/terraform-provider-alicloud/issues/7912))
+- docs: Improves description for gwlb. ([#7922](https://github.com/aliyun/terraform-provider-alicloud/issues/7922))
+- docs: add available version of image_type for alicloud_cs_kubernetes_node_pool. ([#7927](https://github.com/aliyun/terraform-provider-alicloud/issues/7927))
+- testcase: Fixed alicloud_ga_listener test case. ([#7905](https://github.com/aliyun/terraform-provider-alicloud/issues/7905))
+- testcase: Fixed alicloud_ecd_ad_connector_directory test case. ([#7906](https://github.com/aliyun/terraform-provider-alicloud/issues/7906))
+- testcase: Fixed alicloud_ecd_ad_connector_office_site test case. ([#7907](https://github.com/aliyun/terraform-provider-alicloud/issues/7907))
 
 ## 1.235.0 (November 21, 2024)
 
