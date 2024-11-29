@@ -144,17 +144,17 @@ The following arguments are supported:
   - If `file_system_type` is set to `standard`. Valid values: `NFS`, `SMB`.
   - If `file_system_type` is set to `extreme`. Valid values: `NFS`.
   - If `file_system_type` is set to `cpfs`. Valid values: `cpfs`.
-* `recycle_bin` - (Optional, Set, Available since v1.235.1) The recycle bin feature of the file system. See [`recycle_bin`](#recycle_bin) below.
+* `recycle_bin` - (Optional, Set, Available since v1.236.0) The recycle bin feature of the file system. See [`recycle_bin`](#recycle_bin) below.
 -> **NOTE:** `recycle_bin` takes effect only if `file_system_type` is set to `standard`.
-* `nfs_acl` - (Optional, Set, Available since v1.235.1) The NFS ACL feature of the file system. See [`nfs_acl`](#nfs_acl) below.
+* `nfs_acl` - (Optional, Set, Available since v1.236.0) The NFS ACL feature of the file system. See [`nfs_acl`](#nfs_acl) below.
 -> **NOTE:** `nfs_acl` takes effect only if `file_system_type` is set to `standard`.
-* `resource_group_id` - (Optional, Available since v1.235.1) The ID of the resource group.
-* `snapshot_id` - (Optional, Available since v1.235.1) The ID of the snapshot. **NOTE:** `snapshot_id` takes effect only if `file_system_type` is set to `extreme`.
+* `resource_group_id` - (Optional, Available since v1.236.0) The ID of the resource group.
+* `snapshot_id` - (Optional, Available since v1.236.0) The ID of the snapshot. **NOTE:** `snapshot_id` takes effect only if `file_system_type` is set to `extreme`.
 * `storage_type` - (Required, ForceNew) The storage type of the file system. Valid values:
   - If `file_system_type` is set to `standard`. Valid values: `Performance`, `Capacity`, `Premium`.
   - If `file_system_type` is set to `extreme`. Valid values: `standard`, `advance`.
   - If `file_system_type` is set to `cpfs`. Valid values: `advance_100`, `advance_200`.
--> **NOTE:** From version 1.140.0, `storage_type` can be set to `standard`, `advance`. From version 1.153.0, `storage_type` can be set to `advance_100`, `advance_200`. From version 1.235.1, `storage_type` can be set to `Premium`.
+-> **NOTE:** From version 1.140.0, `storage_type` can be set to `standard`, `advance`. From version 1.153.0, `storage_type` can be set to `advance_100`, `advance_200`. From version 1.236.0, `storage_type` can be set to `Premium`.
 * `tags` - (Optional, Available since v1.153.0) A mapping of tags to assign to the resource.
 * `vswitch_id` - (Optional, ForceNew, Available since v1.153.0) The ID of the vSwitch. **NOTE:** `vswitch_id` takes effect only if `file_system_type` is set to `cpfs`.
 * `vpc_id` - (Optional, ForceNew, Available since v1.153.0) The ID of the VPC. **NOTE:** `vpc_id` takes effect only if `file_system_type` is set to `cpfs`.
@@ -180,9 +180,9 @@ The nfs_acl supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of File System.
-* `create_time` - (Available since v1.235.1) The time when the file system was created.
-* `status` - (Available since v1.235.1) The status of the File System.
-* `recycle_bin` - (Available since v1.235.1) The recycle bin feature of the file system.
+* `create_time` - (Available since v1.236.0) The time when the file system was created.
+* `status` - (Available since v1.236.0) The status of the File System.
+* `recycle_bin` - (Available since v1.236.0) The recycle bin feature of the file system.
   * `size` - The size of the files that are dumped to the recycle bin.
   * `secondary_size` - The size of the Infrequent Access (IA) data that is dumped to the recycle bin.
   * `enable_time` - The time at which the recycle bin was enabled.
