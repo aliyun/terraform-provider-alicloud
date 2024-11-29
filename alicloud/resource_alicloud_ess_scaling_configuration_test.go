@@ -931,6 +931,156 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pl"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^centos.*_64",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+					"custom_priorities": []map[string]string{{
+						"instance_type": "${data.alicloud_instance_types.c6.instance_types.0.id}",
+						"vswitch_id":    "${alicloud_vswitch.default.id}",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit":    "false",
+						"custom_priorities.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_ssd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category": "cloud_ssd",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pl"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^centos.*_64",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_ssd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_priorities": []map[string]string{{
+						"instance_type": "${data.alicloud_instance_types.c6.instance_types.0.id}",
+						"vswitch_id":    "${alicloud_vswitch.default.id}",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_priorities.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration

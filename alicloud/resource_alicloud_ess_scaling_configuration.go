@@ -148,6 +148,22 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"custom_priorities": {
+				Optional: true,
+				Type:     schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"scaling_configuration_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -733,6 +749,25 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		}
 		request["NetworkInterfaces"] = networkInterfacesMaps
 	}
+
+	if v, ok := d.GetOk("custom_priorities"); ok {
+		customPrioritiesMaps := make([]map[string]interface{}, 0)
+		customPriorities := v.(*schema.Set).List()
+		for _, rew := range customPriorities {
+			customPrioritiesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				customPrioritiesMap["InstanceType"] = instanceType
+			}
+
+			if vswitchId, ok := item["vswitch_id"].(string); ok && vswitchId != "" {
+				customPrioritiesMap["VswitchId"] = vswitchId
+			}
+			customPrioritiesMaps = append(customPrioritiesMaps, customPrioritiesMap)
+		}
+		request["CustomPriorities"] = customPrioritiesMaps
+	}
 	request["IoOptimized"] = string(IOOptimized)
 
 	if d.Get("is_outdated").(bool) == true {
@@ -984,7 +1019,6 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	hasChangeSecurityGroupId := d.HasChange("security_group_id")
 	hasChangeSecurityGroupIds := d.HasChange("security_group_ids")
 	hasChangeNetworkInterfaces := d.HasChange("network_interfaces")
-	d.GetOk("network_interfaces")
 	if hasChangeSecurityGroupId || hasChangeSecurityGroupIds || hasChangeNetworkInterfaces || d.Get("override").(bool) {
 		securityGroupId := d.Get("security_group_id").(string)
 		securityGroupIds := d.Get("security_group_ids").([]interface{})
@@ -1019,6 +1053,23 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			request["SecurityGroupId"] = securityGroupId
 		}
 		update = true
+	}
+
+	if d.HasChange("custom_priorities") {
+		v, ok := d.GetOk("custom_priorities")
+		if ok {
+			customPriorities := make([]map[string]interface{}, 0)
+			for _, e := range v.(*schema.Set).List() {
+				pack := e.(map[string]interface{})
+				customPrioritiy := map[string]interface{}{
+					"InstanceType": pack["instance_type"].(string),
+					"VswitchId":    pack["vswitch_id"].(string),
+				}
+				customPriorities = append(customPriorities, customPrioritiy)
+			}
+			request["CustomPriorities"] = customPriorities
+			update = true
+		}
 	}
 
 	if d.HasChange("user_data") {
@@ -1442,6 +1493,22 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			result = append(result, l)
 		}
 		err := d.Set("network_interfaces", result)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if v := response["CustomPriorities"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["CustomPriority"].([]interface{}) {
+			r := i.(map[string]interface{})
+			l := map[string]interface{}{
+				"instance_type": r["InstanceType"],
+				"vswitch_id":    r["VswitchId"],
+			}
+			result = append(result, l)
+		}
+		err := d.Set("custom_priorities", result)
 		if err != nil {
 			return WrapError(err)
 		}
