@@ -1,4 +1,33 @@
 ## 1.236.0 (Unreleased)
+
+- **New Resource:** `alicloud_pai_workspace_dataset` [GH-7915]
+- **New Resource:** `alicloud_pai_workspace_experiment` [GH-7916]
+- **New Resource:** `alicloud_pai_workspace_datasetversion` [GH-7920]
+- **New Resource:** `alicloud_pai_workspace_run` [GH-7921]
+- **New Resource:** `alicloud_pai_workspace_code_source` [GH-7923]
+- **New Data Source:** `alicloud_gwlb_zones` [GH-7924]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in import. [GH-7873]
+- resource/alicloud_cs_kubernetes_node_pool: image_type support Ubuntu. [GH-7879]
+- resource/alicloud_emrv2_cluster: support ack_config, spot_strategy in node_groups and deletion_protection in emr cluster. [GH-7902]
+- resource/alicloud_nas_file_system: Refactored the resource alicloud_nas_file_system; Added the field create_time, recycle_bin, nfs_acl, resource_group_id, snapshot_id, status. [GH-7903]
+- resource/alicloud_ess_scaling_rule: optimize query rule. [GH-7910]
+- resource/alicloud_governance_account: support modify account_tags; data-source/alicloud_governance_baselines: fix bug while read ids. [GH-7913]
+- resource/alicloud_cdn_domain_new: add new attribute env and support modify status. [GH-7914]
+- resource/alicloud_ecs_auto_snapshot_policy: Refactored the resource alicloud_ecs_auto_snapshot_policy; Added the field auto_snapshot_policy_name, copy_encryption_configuration, resource_group_id, create_time, region_id; Deprecated the field name. [GH-7918]
+- resource/alicloud_cdn_real_time_log_delivery: support modify logstore, project, sls_region and status. [GH-7919]
+- data-source/alicloud_cen_flowlogs: add new attributes flow_log_version, interval, log_format_string etc. [GH-7926]
+- docs: improved description for redis. [GH-7900]
+- docs: fix cs_kubernetes_addon example. [GH-7901]
+- docs: Fix invalid subcategory for PAI workspace. [GH-7912]
+- docs: Improves description for gwlb. [GH-7922]
+- docs: add available version of image_type for alicloud_cs_kubernetes_node_pool. [GH-7927]
+- testcase: Fixed alicloud_ga_listener test case. [GH-7905]
+- testcase: Fixed alicloud_ecd_ad_connector_directory test case. [GH-7906]
+- testcase: Fixed alicloud_ecd_ad_connector_office_site test case. [GH-7907]
+
 ## 1.235.0 (November 21, 2024)
 
 - **New Resource:** `alicloud_rds_custom_deployment_set` ([#7884](https://github.com/aliyun/terraform-provider-alicloud/issues/7884))
