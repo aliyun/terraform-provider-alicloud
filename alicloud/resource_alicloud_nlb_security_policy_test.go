@@ -854,9 +854,9 @@ func TestAccAliCloudNlbSecurityPolicy_basic5352_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"security_policy_name": name,
 					"ciphers": []string{
-						"ECDHE-ECDSA-AES128-SHA", "TLS_AES_128_GCM_SHA256", "TLS_AES_128_GCM_SHA256"},
+						"ECDHE-ECDSA-AES128-SHA", "TLS_AES_128_GCM_SHA256"},
 					"tls_versions": []string{
-						"TLSv1.0", "TLSv1.3", "TLSv1.3"},
+						"TLSv1.0", "TLSv1.1", "TLSv1.3"},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"tags": map[string]string{
 						"Created": "TF",
@@ -866,7 +866,7 @@ func TestAccAliCloudNlbSecurityPolicy_basic5352_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_policy_name": name,
-						"ciphers.#":            "3",
+						"ciphers.#":            "2",
 						"tls_versions.#":       "3",
 						"resource_group_id":    CHECKSET,
 						"tags.%":               "2",
