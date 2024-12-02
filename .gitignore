@@ -17,7 +17,7 @@ website/node_modules
 ./*.tfstate
 .terraform*
 *.log
-demo.tf
+*.tf
 *.bak
 *~
 .*.swp

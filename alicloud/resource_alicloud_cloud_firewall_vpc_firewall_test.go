@@ -38,15 +38,15 @@ func TestAccAliCloudCloudfirewallA0VpcFirewall_basic(t *testing.T) {
 					"lang":              "zh",
 					"local_vpc": []map[string]interface{}{
 						{
-							"vpc_id":    "${data.alicloud_vpcs.vpcs_ds.vpcs.0.id}",
-							"region_no": defaultRegionToTest,
+							"vpc_id":    "${alicloud_vpc.local.id}",
+							"region_no": "${data.alicloud_regions.current.ids.0}",
 							"local_vpc_cidr_table_list": []map[string]interface{}{
 								{
-									"local_route_table_id": "${data.alicloud_route_tables.local_vpc.tables.0.id}",
+									"local_route_table_id": "${alicloud_vpc.local.route_table_id}",
 									"local_route_entry_list": []map[string]interface{}{
 										{
-											"local_destination_cidr":     "${data.alicloud_vpcs.vpcs_ds_peer.vpcs.0.cidr_block}",
-											"local_next_hop_instance_id": "${data.alicloud_vpc_peer_connections.cfw_vpc_peer.connections.0.id}",
+											"local_destination_cidr":     "${alicloud_route_entry.local.destination_cidrblock}",
+											"local_next_hop_instance_id": "${alicloud_vpc_peer_connection.default.id}",
 										},
 									},
 								},
@@ -55,15 +55,15 @@ func TestAccAliCloudCloudfirewallA0VpcFirewall_basic(t *testing.T) {
 					},
 					"peer_vpc": []map[string]interface{}{
 						{
-							"vpc_id":    "${data.alicloud_vpcs.vpcs_ds_peer.vpcs.0.id}",
-							"region_no": defaultRegionToTest,
+							"vpc_id":    "${alicloud_vpc.peer.id}",
+							"region_no": "${data.alicloud_regions.current.ids.0}",
 							"peer_vpc_cidr_table_list": []map[string]interface{}{
 								{
-									"peer_route_table_id": "${data.alicloud_route_tables.local_peer.tables.0.id}",
+									"peer_route_table_id": "${alicloud_vpc.peer.route_table_id}",
 									"peer_route_entry_list": []map[string]interface{}{
 										{
-											"peer_destination_cidr":     "${data.alicloud_vpcs.vpcs_ds.vpcs.0.cidr_block}",
-											"peer_next_hop_instance_id": "${data.alicloud_vpc_peer_connections.cfw_vpc_peer.connections.0.id}",
+											"peer_destination_cidr":     "${alicloud_route_entry.peer.destination_cidrblock}",
+											"peer_next_hop_instance_id": "${alicloud_vpc_peer_connection.default.id}",
 										},
 									},
 								},
@@ -134,27 +134,143 @@ func AliCloudCloudfirewallVpcFirewallBasicDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_account" "current" {
-	}
+# 获取当前阿里云uid
+data "alicloud_account" "current" {
+}
+data "alicloud_regions" "current" {
+  current = true
+}
+data "alicloud_zones" "zone" {
+  available_instance_type = "ecs.sn1ne.large"
+  available_resource_creation = "VSwitch"
+}
+# 创建VPC 1
+resource "alicloud_vpc" "peer" {
+  vpc_name   = format("%s-peer", var.name)
+  cidr_block = "192.168.0.0/16"
+}
+# 创建VPC 2
+resource "alicloud_vpc" "local" {
+  vpc_name   = format("%s-local", var.name)
+  cidr_block = "172.16.0.0/12"
+}
+# 创建一个Vswitch CIDR 块为 192.168.10.0/24
+resource "alicloud_vswitch" "peer01" {
+  vpc_id       = alicloud_vpc.peer.id
+  cidr_block   = "192.168.10.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.0.id
+  vswitch_name = format("%s-peer-01", var.name)
+}
+# 创建另一个Vswitch CIDR 块为 192.168.20.0/24
+resource "alicloud_vswitch" "peer02" {
+  vpc_id       = alicloud_vpc.peer.id
+  cidr_block   = "192.168.20.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.1.id
+  vswitch_name = format("%s-peer-02", var.name)
+}
+# 创建一个Vswitch CIDR 块为 172.16.10.0/24
+resource "alicloud_vswitch" "local01" {
+  vpc_id       = alicloud_vpc.local.id
+  cidr_block   = "172.16.10.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.0.id
+  vswitch_name = format("%s-local-01", var.name)
+}
+# 创建另一个Vswitch CIDR 块为 172.16.20.0/24
+resource "alicloud_vswitch" "local02" {
+  vpc_id       = alicloud_vpc.local.id
+  cidr_block   = "172.16.20.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.1.id
+  vswitch_name = format("%s-local-02", var.name)
+}
+# 创建VPC对等连接
+resource "alicloud_vpc_peer_connection" "default" {
+  # 对等连接名称
+  peer_connection_name = var.name
+  # 发起方VPC_ID
+  vpc_id = alicloud_vpc.local.id
+  # 接收方 VPC 对等连接的 Alibaba Cloud 账号 ID
+  accepting_ali_uid = data.alicloud_account.current.id
+  # 接收方 VPC 对等连接的区域 ID。同区域创建时，输入与发起方相同的区域 ID；跨区域创建时，输入不同的区域 ID。
+  accepting_region_id = data.alicloud_regions.current.ids.0
+  # 接收端VPC_ID
+  accepting_vpc_id = alicloud_vpc.peer.id
+  # 描述
+  description = "terraform-example"
+  # 是否强制删除
+  force_delete = true
+}
+# 接收端
+resource "alicloud_vpc_peer_connection_accepter" "default" {
+  instance_id = alicloud_vpc_peer_connection.default.id
+  # 是否强制删除
+  force_delete = true
+}
+# 配置路由条目-vpc-A
+resource "alicloud_route_entry" "local" {
+  # VPC-A 路由表ID
+  route_table_id = alicloud_vpc.local.route_table_id
+  # 目标网段，自定义
+  destination_cidrblock = "1.2.3.4/32"
+  # 下一跳类型
+  nexthop_type = "VpcPeer"
+  # 下一跳id
+  nexthop_id = alicloud_vpc_peer_connection.default.id
+}
+# 配置路由条目2 -vpc-B
+resource "alicloud_route_entry" "peer" {
+  # VPC-A 路由表id
+  route_table_id = alicloud_vpc.peer.route_table_id
+  # 目标网段，自定义
+  destination_cidrblock = "4.3.2.1/32"
+  # 下一跳类型
+  nexthop_type = "VpcPeer"
+  # 下一跳id
+  nexthop_id = alicloud_vpc_peer_connection.default.id
+}
 
-	data "alicloud_vpcs" "vpcs_ds" {
-  		name_regex = "^cfw-vpc-test-no-deleting"
-	}
-
-	data "alicloud_route_tables" "local_vpc" {
-  		vpc_id = data.alicloud_vpcs.vpcs_ds.vpcs.0.id
-	}
-
-	data "alicloud_vpcs" "vpcs_ds_peer" {
-  		name_regex = "^cfw-vpc-peer-test-no-deleting"
-	}
-
-	data "alicloud_route_tables" "local_peer" {
-  		vpc_id = data.alicloud_vpcs.vpcs_ds_peer.vpcs.0.id
-	}
-
-	data "alicloud_vpc_peer_connections" "cfw_vpc_peer" {
-  		name_regex = "^cfw-vpc-test-no-deleting"
-	}
+# VPC对等连接高速通道防火墙实例
+resource "alicloud_cloud_firewall_vpc_firewall" "default" {
+  # 实例名称
+  vpc_firewall_name = var.name
+  member_uid        = data.alicloud_account.current.id
+  local_vpc {
+    # 发起端vpc id
+    vpc_id = alicloud_vpc.local.id
+    # 地域
+    region_no = data.alicloud_regions.current.ids.0
+    # 路由条目
+    local_vpc_cidr_table_list {
+      # 路由表id
+      local_route_table_id = alicloud_vpc.local.route_table_id
+      local_route_entry_list {
+        # 下一跳
+        local_next_hop_instance_id = alicloud_vpc_peer_connection.default.id
+        # 目标网块
+        local_destination_cidr = alicloud_route_entry.local.destination_cidrblock
+      }
+    }
+  }
+  peer_vpc {
+    # 接收端vpc id
+    vpc_id = alicloud_vpc.peer.id
+    # 地域
+    region_no = data.alicloud_regions.current.ids.0
+    # 路由条目
+    peer_vpc_cidr_table_list {
+      # 路由表id
+      peer_route_table_id = alicloud_vpc.peer.route_table_id
+      peer_route_entry_list {
+        # 目标网块
+        peer_destination_cidr = alicloud_route_entry.peer.destination_cidrblock
+        # 下一跳
+        peer_next_hop_instance_id = alicloud_vpc_peer_connection.default.id
+      }
+    }
+  }
+  # 资源的状态。有效值：
+  # open: 创建 VPC 边界防火墙后，保护机制自动启用。
+  # close: 创建 VPC 边界防火墙后，不自动启用保护。
+  status = "open"
+}
 `, name)
 }

@@ -221,7 +221,7 @@ func resourceAliCloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, m
 				return resource.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"ErrorVpcFirewallNotFound"}) {
 				if err := cloudfwService.CreateVpcFirewallTask(); err != nil {
-					log.Println("[ERROR] syncing cen data failed by api CreateVpcFirewallTask. Error:", err)
+					log.Println("[ERROR] syncing cen configure failed by api CreateVpcFirewallTask. Error:", err)
 				}
 				wait()
 				return resource.RetryableError(err)
