@@ -92,6 +92,7 @@ variable "name" {
 
 resource "alicloud_resource_manager_account" "account" {
   display_name = var.name
+  abandon_able_check_id = ["SP_fc_fc"]
 }
 
 
@@ -164,6 +165,7 @@ variable "name" {
 }
 
 resource "alicloud_resource_manager_account" "account" {
+  abandon_able_check_id = ["SP_fc_fc"]
   display_name = var.name
 }
 
@@ -242,6 +244,7 @@ variable "name" {
 
 resource "alicloud_resource_manager_account" "account" {
   display_name = var.name
+  abandon_able_check_id = ["SP_fc_fc"]
 }
 
 
