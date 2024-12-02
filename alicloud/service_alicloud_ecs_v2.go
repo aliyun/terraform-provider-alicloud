@@ -401,3 +401,59 @@ func (s *EcsServiceV2) EcsImagePipelineExecutionStateRefreshFunc(id string, fiel
 }
 
 // DescribeEcsImagePipelineExecution >>> Encapsulated.
+
+// DescribeEcsKeyPair <<< Encapsulated get interface for Ecs KeyPair.
+
+func (s *EcsServiceV2) DescribeEcsKeyPair(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeKeyPairs"
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["KeyPairName"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.KeyPairs.KeyPair[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["KeyPairName"]
+	if currentStatus == "" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+// DescribeEcsKeyPair >>> Encapsulated.
