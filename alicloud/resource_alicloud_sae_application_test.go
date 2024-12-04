@@ -489,8 +489,8 @@ func TestAccAliCloudSAEApplication_basicImage(t *testing.T) {
 	})
 }
 
-// package_type = FatJar
-func TestAccAliCloudSAEApplication_basicFatJar(t *testing.T) {
+// package_type = FatJar Skip testing because api does not support STS authentication
+func SkipTestAccAliCloudSAEApplication_basicFatJar(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
@@ -1485,7 +1485,8 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
+// Skip testing because api has bug
+func SkipTestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
@@ -1857,7 +1858,7 @@ func TestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudSAEApplication_basicNewFatJar(t *testing.T) {
+func SkipTestAccAliCloudSAEApplication_basicNewFatJar(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"

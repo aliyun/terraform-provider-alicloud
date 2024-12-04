@@ -201,6 +201,7 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 			"micro_registration": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"0", "1", "2"}, false),
 			},
 			"envs": {
