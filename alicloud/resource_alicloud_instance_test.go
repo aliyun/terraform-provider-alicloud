@@ -1631,11 +1631,17 @@ func TestAccAliCloudECSInstanceTypeUpdate(t *testing.T) {
 					"instance_name":        "${var.name}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"image_options": []map[string]string{
+						{
+							"login_as_non_root": "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_type": CHECKSET,
 						"user_data":     REMOVEKEY,
+						"image_options.#": "1",
 						// "security_enhancement_strategy": REMOVEKEY,
 					}),
 				),

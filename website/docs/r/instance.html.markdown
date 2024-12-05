@@ -238,6 +238,8 @@ The following arguments are supported:
   - `false`: Does not use the preset password.
 -> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
 
+* `image_options` - (Optional, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
+
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
 -> **NOTE:** From version 1.5.0, instance's charge type can be changed to "PrePaid" by specifying `period` and `period_unit`, but it is irreversible.
@@ -304,6 +306,12 @@ The maintenance_time supports the following:
 
 * `start_time` - (Optional) The start time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
 * `end_time` - (Optional) The end time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
+
+### `image_options`
+
+The image_options supports the following:
+
+* `login_as_non_root` - (Optional, ForceNew) Whether to allow the instance logging in with the ecs-user user.
 
 ## Attributes Reference
 

@@ -249,7 +249,7 @@ func resourceAliCloudInstance() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto","cloud_essd_entry"}, false),
+							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto", "cloud_essd_entry"}, false),
 							Default:      DiskCloudEfficiency,
 							ForceNew:     true,
 						},
@@ -683,6 +683,21 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"image_options": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"login_as_non_root": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1107,6 +1122,15 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DedicatedHostId"] = v
 	}
 
+	if v, ok := d.GetOk("image_options"); ok {
+		for _, raw := range v.(*schema.Set).List() {
+			imageOptionsArg := raw.(map[string]interface{})
+			if v, ok := imageOptionsArg["login_as_non_root"]; ok {
+				request["ImageOptions.LoginAsNonRoot"] = v
+			}
+		}
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -1221,6 +1245,12 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("create_time", instance.CreationTime)
 	d.Set("start_time", instance.StartTime)
 	d.Set("expired_time", instance.ExpiredTime)
+
+	imageOptionsMaps := make([]map[string]interface{}, 0)
+	imageOptionsMap := make(map[string]interface{})
+	imageOptionsMap["login_as_non_root"] = instance.ImageOptions.LoginAsNonRoot
+	imageOptionsMaps = append(imageOptionsMaps, imageOptionsMap)
+	d.Set("image_options", imageOptionsMaps)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
