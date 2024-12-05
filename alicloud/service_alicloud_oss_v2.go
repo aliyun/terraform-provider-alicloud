@@ -3,9 +3,10 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tidwall/sjson"
 	"strings"
 	"time"
+
+	"github.com/tidwall/sjson"
 
 	"github.com/PaesslerAG/jsonpath"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -1497,3 +1498,83 @@ func (s *OssServiceV2) OssBucketCnameTokenStateRefreshFunc(id string, field stri
 }
 
 // DescribeOssBucketCnameToken >>> Encapsulated.
+
+// DescribeOssBucketWebsite <<< Encapsulated get interface for Oss BucketWebsite.
+
+func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	action := fmt.Sprintf("/?website")
+	conn, err := client.NewOssClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap := make(map[string]*string)
+	hostMap["bucket"] = StringPointer(id)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.Execute(genXmlParam("GetBucketWebsite", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket", "NoSuchWebsiteConfiguration"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketWebsite", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	v, err := jsonpath.Get("$.WebsiteConfiguration", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.WebsiteConfiguration", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *OssServiceV2) OssBucketWebsiteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeOssBucketWebsite(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeOssBucketWebsite >>> Encapsulated.
