@@ -64,7 +64,9 @@ The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to perform a dry run. Valid values:
   - `true`: performs a dry run. The system checks the required parameters, request syntax, and limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
   - `false` (default): performs a dry run and sends the request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
-* `enable_ipv6` - (Optional) The name of the VPC. The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`. 
+* `enable_ipv6` - (Optional) Specifies whether to enable IPv6. Valid values:
+  - `false` (default)
+  - `true`
 * `ipv4_ipam_pool_id` - (Optional) The ID of the IP Address Manager (IPAM) pool that contains IPv4 addresses. 
 * `ipv6_cidr_block` - (Optional, ForceNew, Computed) The IPv6 CIDR block of the default VPC.
 
