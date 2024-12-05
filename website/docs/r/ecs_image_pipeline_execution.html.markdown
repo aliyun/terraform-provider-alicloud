@@ -71,22 +71,8 @@ Terraform cannot destroy resource `alicloud_ecs_image_pipeline_execution`. Terra
 
 The following arguments are supported:
 * `image_pipeline_id` - (Required, ForceNew) The ID of the image template.
-* `status` - (Optional, Computed) The status of the image build task. You can set multiple values at the same time. Each value is separated by a comma (,). The format is 'BUILDING, distribut '. Value range:
-  - PREPARING: PREPARING. Create resources such as temporary transit instances.
-  - REPAIRING: REPAIRING. Repair the source image.
-  - BUILDING: under construction. Execute user-defined commands and create images.
-  - TESTING: TESTING. Execute user-defined test commands.
-  - DISTRIBUTING: DISTRIBUTING. Perform mirror replication and sharing.
-  - RELEASING: Resource Recovery. Temporary resources generated during the build process.
-  - SUCCESS: SUCCESS. Build successfully.
-  - PARTITION_SUCCESS: Partial success. The image has been built successfully, but there may be an exception in the distribution or resource cleanup steps.
-  - FAILED: FAILED. Failed to build image.
-  - TEST_FAILED: The test failed. The image was created successfully, but the test failed.
-  - Canceling: canceling. The build process is being canceled.
-  - Canceled: canceled. The build process has been canceled.
-
--> **NOTE:**  When the parameter value is empty, the image build tasks in all states are queried by default.
-
+* `status` - (Optional, Computed) The status of the image build task. Valid values:
+  - CANCELLED: canceled. The build process has been canceled.
 
 ## Attributes Reference
 
