@@ -183,6 +183,19 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 							"notify_end_time":   "23:59",
 						},
 					},
+					"notify_template": []map[string]interface{}{
+						{
+							"email_title":           "CreateEmailTitle",
+							"email_content":         "CreateEmailContent",
+							"email_recover_title":   "CreateEmailRecoverTitle",
+							"email_recover_content": "CreateEmailRecoverContent",
+							"sms_content":           "CreateSmsContent",
+							"sms_recover_content":   "CreateSmsRecoverContent",
+							"tts_content":           "CreateTtsContent",
+							"tts_recover_content":   "CreateTtsRecoverContent",
+							"robot_content":         "CreateRobotContent",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -191,6 +204,7 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 						"dispatch_type":                 "CREATE_ALERT",
 						"label_match_expression_grid.#": "1",
 						"notify_rules.#":                "1",
+						"notify_template.#":             "1",
 					}),
 				),
 			},
@@ -314,6 +328,28 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"notify_template": []map[string]interface{}{
+						{
+							"email_title":           "UpdateCreateEmailTitle",
+							"email_content":         "UpdateEmailContent",
+							"email_recover_title":   "UpdateEmailRecoverTitle",
+							"email_recover_content": "UpdateEmailRecoverContent",
+							"sms_content":           "UpdateSmsContent",
+							"sms_recover_content":   "UpdateSmsRecoverContent",
+							"tts_content":           "UpdateTtsContent",
+							"tts_recover_content":   "UpdateTtsRecoverContent",
+							"robot_content":         "UpdateRobotContent",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_template.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"dispatch_rule_name": "${var.name}",
 					"group_rules": []map[string]interface{}{
 						{
@@ -353,6 +389,19 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 							"notify_end_time":   "23:59",
 						},
 					},
+					"notify_template": []map[string]interface{}{
+						{
+							"email_title":           "CreateEmailTitle",
+							"email_content":         "CreateEmailContent",
+							"email_recover_title":   "CreateEmailRecoverTitle",
+							"email_recover_content": "CreateEmailRecoverContent",
+							"sms_content":           "CreateSmsContent",
+							"sms_recover_content":   "CreateSmsRecoverContent",
+							"tts_content":           "CreateTtsContent",
+							"tts_recover_content":   "CreateTtsRecoverContent",
+							"robot_content":         "CreateRobotContent",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -361,6 +410,7 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 						"dispatch_type":                 "CREATE_ALERT",
 						"label_match_expression_grid.#": "1",
 						"notify_rules.#":                "1",
+						"notify_template.#":             "1",
 					}),
 				),
 			},
@@ -440,6 +490,19 @@ func TestUnitAlicloudARMSDispatchRule(t *testing.T) {
 				"notify_end_time":   "23:59",
 			},
 		},
+		"notify_template": []interface{}{
+			map[string]interface{}{
+				"email_title":           "CreateEmailTitle",
+				"email_content":         "CreateEmailContent",
+				"email_recover_title":   "CreateEmailRecoverTitle",
+				"email_recover_content": "CreateEmailRecoverContent",
+				"sms_content":           "CreateSmsContent",
+				"sms_recover_content":   "CreateSmsRecoverContent",
+				"tts_content":           "CreateTtsContent",
+				"tts_recover_content":   "CreateTtsRecoverContent",
+				"robot_content":         "CreateRobotContent",
+			},
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -503,6 +566,20 @@ func TestUnitAlicloudARMSDispatchRule(t *testing.T) {
 					},
 					"NotifyStartTime": "00:00",
 					"NotifyEndTime":   "23:59",
+				},
+			},
+			"NotifyTemplate": []interface{}{
+				map[string]interface{}{
+					"EmailTitle":          "CreateEmailTitle",
+					"EmailContent":        "CreateEmailContent",
+					"EmailRecoverTitle":   "CreateEmailRecoverTitle",
+					"EmailRecoverContent": "CreateEmailRecoverContent",
+					"SmsContent":          "CreateSmsContent",
+					"SmsRecoverContent":   "CreateSmsRecoverContent",
+					"TtsContent":          "CreateTtsContent",
+					"TtsRecoverContent":   "CreateTtsRecoverContent",
+					"RobotContent":        "CreateRobotContent",
+					"RobotRecoverContent": "",
 				},
 			},
 			"State": "DefaultValue",
@@ -642,6 +719,19 @@ func TestUnitAlicloudARMSDispatchRule(t *testing.T) {
 					"notify_end_time":   "23:59",
 				},
 			},
+			"notify_template": []interface{}{
+				map[string]interface{}{
+					"email_title":           "UpdateDispatchRuleEmailTitle",
+					"email_content":         "UpdateDispatchRuleEmailContent",
+					"email_recover_title":   "UpdateDispatchRuleEmailRecoverTitle",
+					"email_recover_content": "UpdateDispatchRuleEmailRecoverContent",
+					"sms_content":           "UpdateDispatchRuleSmsContent",
+					"sms_recover_content":   "UpdateDispatchRuleSmsRecoverContent",
+					"tts_content":           "UpdateDispatchRuleTtsContent",
+					"tts_recover_content":   "UpdateDispatchRuleTtsRecoverContent",
+					"robot_content":         "UpdateDispatchRuleRobotContent",
+				},
+			},
 		}
 		diff, err := newInstanceDiff("alicloud_arms_dispatch_rule", attributes, attributesDiff, dInit.State())
 		if err != nil {
@@ -692,6 +782,20 @@ func TestUnitAlicloudARMSDispatchRule(t *testing.T) {
 						},
 						"NotifyStartTime": "01:00",
 						"NotifyEndTime":   "10:00",
+					},
+				},
+				"NotifyTemplate": []interface{}{
+					map[string]interface{}{
+						"EmailTitle":          "UpdateCreateEmailTitle",
+						"EmailContent":        "UpdateEmailContent",
+						"EmailRecoverTitle":   "UpdateEmailRecoverTitle",
+						"EmailRecoverContent": "UpdateEmailRecoverContent",
+						"SmsContent":          "UpdateSmsContent",
+						"SmsRecoverContent":   "UpdateSmsRecoverContent",
+						"TtsContent":          "UpdateTtsContent",
+						"TtsRecoverContent":   "UpdateTtsRecoverContent",
+						"RobotContent":        "UpdateRobotContent",
+						"RobotRecoverContent": "",
 					},
 				},
 			},
