@@ -84,6 +84,39 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cool_down_duration":        "5m",
+					"unneeded_duration":         "5m",
+					"utilization_threshold":     "0.6",
+					"gpu_utilization_threshold": "0.6",
+					"scan_interval":             "40s",
+					"scale_down_enabled":        "false",
+					"expander":                  "random",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_id":                CHECKSET,
+						"cool_down_duration":        CHECKSET,
+						"unneeded_duration":         CHECKSET,
+						"utilization_threshold":     CHECKSET,
+						"gpu_utilization_threshold": CHECKSET,
+						"scan_interval":             CHECKSET,
+						"scale_down_enabled":        CHECKSET,
+						"expander":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaler_type": "cluster-autoscaler",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaler_type": CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }

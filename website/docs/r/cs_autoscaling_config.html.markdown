@@ -17,6 +17,8 @@ This resource will help you configure auto scaling for the kubernetes cluster, s
 
 -> **NOTE:** From version 1.164.0, support for selecting the policy for selecting which node pool to scale by parameter `expander`.
 
+-> **NOTE:** From version 1.237.0, support for selecting the type of autoscaler by parameter `scaler_type`.
+
 ## Example Usage
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
@@ -74,6 +76,7 @@ resource "alicloud_cs_autoscaling_config" "default" {
   min_replica_count             = 0
   recycle_node_deletion_enabled = false
   scale_up_from_zero            = true
+  scaler_type                   = "goatscaler"
 }
 ```
 
@@ -96,6 +99,7 @@ The following arguments are supported.
 * `min_replica_count` - (Optional, Available since v1.209.0) Minimum number of replicas that a replica set or replication controller should have to allow their pods deletion in scale down. Default is `0`.
 * `recycle_node_deletion_enabled` - (Optional, Available since v1.209.0) Should CA delete the K8s node object when recycle node has scaled down successfully. Default is `false`.
 * `scale_up_from_zero` - (Optional, Available since v1.209.0) Should CA scale up when there 0 ready nodes. Default is `true`.
+* `scaler_type` - (Optional, Available since v1.237.0) The type of autoscaler. Valid values: `cluster-autoscaler`, `goatscaler`. For cluster version 1.22 and below, we only support `cluster-autoscaler`.
 
 ## Attributes Reference
 
