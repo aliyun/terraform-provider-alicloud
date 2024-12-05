@@ -612,6 +612,16 @@ func (s *CsClient) CsKubernetesAddonExistRefreshFunc(clusterId string, addonName
 		return object, object.Status, nil
 	}
 }
+func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutoscalingConfigRequest, error) {
+	request := &client.CreateAutoscalingConfigRequest{
+		CoolDownDuration:        tea.String("10m"),
+		UnneededDuration:        tea.String("10m"),
+		UtilizationThreshold:    tea.String("0.5"),
+		GpuUtilizationThreshold: tea.String("0.5"),
+		ScanInterval:            tea.String("30s"),
+	}
+	return request, nil
+}
 
 func (s *CsClient) installAddon(d *schema.ResourceData) error {
 	clusterId := d.Get("cluster_id").(string)

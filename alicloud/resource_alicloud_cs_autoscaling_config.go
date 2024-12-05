@@ -100,6 +100,10 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"scaler_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -167,6 +171,9 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOk("scale_up_from_zero"); ok {
 		updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(v.(bool))
+	}
+	if v, ok := d.GetOk("scaler_type"); ok {
+		updateAutoscalingConfigRequest.ScalerType = tea.String(v.(string))
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {

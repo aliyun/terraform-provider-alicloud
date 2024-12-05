@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/tjfoc/gmsm/sm3"
 )
@@ -632,4 +632,41 @@ func shaHmac1(source, secret string) []byte {
 	hmac := hmac.New(sha1.New, key)
 	hmac.Write([]byte(source))
 	return hmac.Sum(nil)
+}
+
+func getTimeLeft(rateLimit *string) (_result *int64) {
+	if rateLimit != nil {
+		pairs := strings.Split(tea.StringValue(rateLimit), ",")
+		for _, pair := range pairs {
+			kv := strings.Split(pair, ":")
+			if len(kv) == 2 {
+				key, value := kv[0], kv[1]
+				if key == "TimeLeft" {
+					timeLeftValue, err := strconv.ParseInt(value, 10, 64)
+					if err != nil {
+						return nil
+					}
+					return tea.Int64(timeLeftValue)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+/**
+ * Get throttling param
+ * @param the response headers
+ * @return time left
+ */
+func GetThrottlingTimeLeft(headers map[string]*string) (_result *int64) {
+	rateLimitForUserApi := headers["x-ratelimit-user-api"]
+	rateLimitForUser := headers["x-ratelimit-user"]
+	timeLeftForUserApi := getTimeLeft(rateLimitForUserApi)
+	timeLeftForUser := getTimeLeft(rateLimitForUser)
+	if tea.Int64Value(timeLeftForUserApi) > tea.Int64Value(timeLeftForUser) {
+		return timeLeftForUserApi
+	} else {
+		return timeLeftForUser
+	}
 }
