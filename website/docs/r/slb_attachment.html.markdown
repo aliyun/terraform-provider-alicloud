@@ -9,11 +9,9 @@ description: |-
 
 # alicloud_slb_attachment
 
--> **DEPRECATED:** This resource has been deprecated from v1.153.0 and using [alicloud_backend_server](https://www.terraform.io/docs/providers/alicloud/r/slb_backend_server.html) instead.
+-> **DEPRECATED:** This resource has been deprecated from v1.153.0 and using [alicloud_slb_backend_server](https://www.terraform.io/docs/providers/alicloud/r/slb_backend_server) instead.
 
 Add a group of backend servers (ECS instance) to the Server Load Balancer or remove them from it.
-
--> **NOTE:** Deprecated since v1.153.0+.
 
 ## Example Usage
 
