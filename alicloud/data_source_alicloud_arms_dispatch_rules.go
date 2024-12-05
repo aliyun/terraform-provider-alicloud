@@ -86,10 +86,6 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 								},
 							},
 						},
-						"dispatch_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -175,6 +171,50 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"notify_template": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"email_title": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"email_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"email_recover_title": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"email_recover_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tts_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tts_recover_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"sms_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"sms_recover_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"robot_content": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -189,15 +229,12 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 	request := map[string]interface{}{
 		"Page":     1,
 		"Size":     PageSizeXLarge,
+		"RegionId": client.RegionId,
 		"IsDetail": true,
 	}
 	if v, ok := d.GetOk("dispatch_rule_name"); ok {
 		request["Name"] = v
 	}
-	if v, ok := d.GetOk("enable_details"); ok {
-		request["IsDetail"] = v
-	}
-	request["RegionId"] = client.RegionId
 	var objects []map[string]interface{}
 	var dispatchRuleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -267,7 +304,7 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 			"dispatch_rule_name": object["Name"],
 			"status":             object["State"],
 		}
-		ids = append(ids, fmt.Sprint(mapping["id"]))
+		ids = append(ids, fmt.Sprint(object["Id"]))
 		names = append(names, object["Name"])
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s = append(s, mapping)
@@ -308,7 +345,23 @@ func dataSourceAlicloudArmsDispatchRulesRead(d *schema.ResourceData, meta interf
 				{"label_match_expression_groups": matchingRulesMaps},
 			}
 		}
-
+		if notifyTemplateItem, ok := object["NotifyTemplate"]; ok && notifyTemplateItem != nil {
+			notifyTemplateMaps := make([]map[string]interface{}, 0)
+			if notifyTemplateItemMap, ok := notifyTemplateItem.(map[string]interface{}); ok {
+				notifyTemplateMap := make(map[string]interface{}, 0)
+				notifyTemplateMap["email_title"] = notifyTemplateItemMap["EmailTitle"]
+				notifyTemplateMap["email_content"] = notifyTemplateItemMap["EmailContent"]
+				notifyTemplateMap["email_recover_title"] = notifyTemplateItemMap["EmailRecoverContent"]
+				notifyTemplateMap["email_recover_content"] = notifyTemplateItemMap["EmailRecoverTitle"]
+				notifyTemplateMap["sms_content"] = notifyTemplateItemMap["SmsContent"]
+				notifyTemplateMap["sms_recover_content"] = notifyTemplateItemMap["SmsRecoverContent"]
+				notifyTemplateMap["tts_content"] = notifyTemplateItemMap["TtsContent"]
+				notifyTemplateMap["tts_recover_content"] = notifyTemplateItemMap["TtsRecoverContent"]
+				notifyTemplateMap["robot_content"] = notifyTemplateItemMap["RobotContent"]
+				notifyTemplateMaps = append(notifyTemplateMaps, notifyTemplateMap)
+			}
+			mapping["notify_template"] = notifyTemplateMaps
+		}
 		if notifyRuleItem, ok := object["NotifyRule"]; ok && notifyRuleItem != nil {
 			notifyRulesMaps := make([]map[string]interface{}, 0)
 			if notifyRuleItemMap, ok := notifyRuleItem.(map[string]interface{}); ok {
