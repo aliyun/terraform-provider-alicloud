@@ -54,7 +54,7 @@ func resourceAliCloudArmsEnvironment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud","ManagedKubernetes","Kubernetes","ExternalKubernetes","One"}, true),
+				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud", "ManagedKubernetes", "Kubernetes", "ExternalKubernetes", "One"}, true),
 			},
 			"environment_type": {
 				Type:         schema.TypeString,

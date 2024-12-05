@@ -897,4 +897,3 @@ func AliCloudClickHouseDBClusterBasicDependence3(name string) string {
 	}
 `, name)
 }
-

@@ -53,7 +53,7 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 			},
 			"type": {
 				Type:         schema.TypeString,
-				Optional:	  true,
+				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Normal", "Super"}, false),
 			},
@@ -74,9 +74,9 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Computed: true,
 			},
 			"total_databases": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
 				Deprecated: "Field 'total_databases' has been deprecated from version 1.223.1 and it will be removed in the future version.",
 			},
 			"allow_dictionaries": {
@@ -85,9 +85,9 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Computed: true,
 			},
 			"total_dictionaries": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
 				Deprecated: "Field 'total_dictionaries' has been deprecated from version 1.223.1 and it will be removed in the future version.",
 			},
 		},

@@ -37,6 +37,10 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"scaler_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"cool_down_duration": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -127,6 +131,9 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 
 	// auto scaling config
 	updateAutoscalingConfigRequest := &cs.CreateAutoscalingConfigRequest{}
+	if v, ok := d.GetOk("scaler_type"); ok {
+		updateAutoscalingConfigRequest.ScalerType = tea.String(v.(string))
+	}
 	if v, ok := d.GetOk("cool_down_duration"); ok {
 		updateAutoscalingConfigRequest.CoolDownDuration = tea.String(v.(string))
 	}

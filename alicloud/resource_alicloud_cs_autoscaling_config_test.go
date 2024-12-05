@@ -48,6 +48,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 					"scan_interval":             "30s",
 					"scale_down_enabled":        "true",
 					"expander":                  "least-waste",
+					"scaler_type":               "goatscaler",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,6 +60,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"scan_interval":             CHECKSET,
 						"scale_down_enabled":        CHECKSET,
 						"expander":                  CHECKSET,
+						"scaler_type":               CHECKSET,
 					}),
 				),
 			},
@@ -81,6 +83,16 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"min_replica_count":             CHECKSET,
 						"recycle_node_deletion_enabled": CHECKSET,
 						"scale_up_from_zero":            CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaler_type": "goatscaler",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaler_type": CHECKSET,
 					}),
 				),
 			},

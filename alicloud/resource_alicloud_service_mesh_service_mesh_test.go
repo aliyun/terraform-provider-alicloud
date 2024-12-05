@@ -2008,7 +2008,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip": "false",
+							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},

@@ -113,9 +113,9 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_click_house_db_cluster.default.id}",
-					"account_name":     name,
-					"account_password": pwd,
+					"db_cluster_id":      "${alicloud_click_house_db_cluster.default.id}",
+					"account_name":       name,
+					"account_password":   pwd,
 					"type":               "Normal",
 					"ddl_authority":      "true",
 					"dml_authority":      "all",
