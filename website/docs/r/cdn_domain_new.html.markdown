@@ -94,7 +94,7 @@ The sources supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
+* `id` - The ID of the resource supplied above. It is the same as the `domain_name`.
 * `cname` - The CNAME domain name corresponding to the accelerated domain name.
 
 ## Timeouts
