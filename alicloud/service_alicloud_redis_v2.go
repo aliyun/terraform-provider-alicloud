@@ -68,7 +68,7 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *RedisServiceV2) DescribeDescribeInstanceConfig(id string) (object map[string]interface{}, err error) {
+func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceConfig(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -168,7 +168,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName str
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (object map[string]interface{}, err error) {
+func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -217,7 +217,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *RedisServiceV2) DescribeDescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
+func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -257,7 +257,7 @@ func (s *RedisServiceV2) DescribeDescribeInstanceSSL(id string) (object map[stri
 
 	return response, nil
 }
-func (s *RedisServiceV2) DescribeDescribeIntranetAttribute(id string) (object map[string]interface{}, err error) {
+func (s *RedisServiceV2) DescribeTairInstanceDescribeIntranetAttribute(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
