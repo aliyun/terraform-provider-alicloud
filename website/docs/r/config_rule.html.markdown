@@ -44,8 +44,8 @@ resource "alicloud_config_rule" "default" {
   "ACS::RDS::DBInstance"]
   rule_name = "contains-tag"
   input_parameters = {
-    key   = "example"
-    value = "example"
+    key1 = "value1"
+    key2 = "key2"
   }
 }
 ```
