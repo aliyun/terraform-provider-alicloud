@@ -126,8 +126,8 @@ The notify_rules supports the following:
 
 * `notify_objects` - (Required) Sets the notification object. See [`notify_objects`](#notify_rules-notify_objects) below.
 * `notify_channels` - (Required, List<String>) The notification method. Valid values: dingTalk, sms, webhook, email, and wechat.
-* `notify_start_time` - (Required) Start time of notification.
-* `notify_end_time` - (Required) End time of notification.
+* `notify_start_time` - (Required, Available since v1.237.0) Start time of notification.
+* `notify_end_time` - (Required, Available since v1.237.0) End time of notification.
 
 ### `notify_rules-notify_objects`
 The notify_objects supports the following:

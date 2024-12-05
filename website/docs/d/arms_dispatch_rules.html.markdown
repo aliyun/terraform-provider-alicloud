@@ -18,18 +18,56 @@ This data source provides the Arms Dispatch Rules of the current Alibaba Cloud u
 Basic Usage
 
 ```terraform
+resource "alicloud_arms_alert_contact" "default" {
+  alert_contact_name = "example_value"
+  email              = "example_value@aaa.com"
+}
+resource "alicloud_arms_alert_contact_group" "default" {
+  alert_contact_group_name = "example_value"
+  contact_ids              = [alicloud_arms_alert_contact.default.id]
+}
+
+resource "alicloud_arms_dispatch_rule" "default" {
+  dispatch_rule_name = "example_value"
+  dispatch_type      = "CREATE_ALERT"
+  group_rules {
+    group_wait_time = 5
+    group_interval  = 15
+    repeat_interval = 100
+    grouping_fields = ["alertname"]
+  }
+  label_match_expression_grid {
+    label_match_expression_groups {
+      label_match_expressions {
+        key      = "_aliyun_arms_involvedObject_kind"
+        value    = "app"
+        operator = "eq"
+      }
+    }
+  }
+
+  notify_rules {
+    notify_objects {
+      notify_object_id = alicloud_arms_alert_contact.default.id
+      notify_type      = "ARMS_CONTACT"
+      name             = "example_value"
+    }
+    notify_objects {
+      notify_object_id = alicloud_arms_alert_contact_group.default.id
+      notify_type      = "ARMS_CONTACT_GROUP"
+      name             = "example_value"
+    }
+    notify_channels   = ["dingTalk", "wechat"]
+    notify_start_time = "10:00"
+    notify_end_time   = "23:00"
+  }
+}
+
 data "alicloud_arms_dispatch_rules" "ids" {}
+
 output "arms_dispatch_rule_id_1" {
   value = data.alicloud_arms_dispatch_rules.ids.rules.0.id
 }
-
-data "alicloud_arms_dispatch_rules" "nameRegex" {
-  name_regex = "^my-DispatchRule"
-}
-output "arms_dispatch_rule_id_2" {
-  value = data.alicloud_arms_dispatch_rules.nameRegex.rules.0.id
-}
-
 ```
 
 ## Argument Reference
@@ -68,8 +106,8 @@ The following attributes are exported in addition to the arguments listed above:
 	
   * `notify_rules` - Sets the notification rule. 
     * `notify_channels` - A list of notification methods.
-    * `notify_start_time` - Start time of notification.
-    * `notify_end_time` - End time of notification.
+    * `notify_start_time` - (Available since v1.237.0) Start time of notification.
+    * `notify_end_time` - (Available since v1.237.0) End time of notification.
     * `notify_objects` - Sets the notification object.
       * `notify_object_id` - The ID of the contact or contact group.
       * `name` - The name of the contact or contact group.
