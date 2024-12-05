@@ -70,6 +70,7 @@ func TestAccAlicloudARMSDispatchRulesDataSource(t *testing.T) {
 			"rules.0.status":                        "enable",
 			"rules.0.label_match_expression_grid.#": "1",
 			"rules.0.notify_rules.#":                "1",
+			"rules.0.notify_template.#":             "1",
 			"rules.0.dispatch_rule_name":            name,
 		}
 	}
@@ -152,6 +153,18 @@ resource "alicloud_arms_dispatch_rule" "default" {
     notify_channels   = ["dingTalk", "wechat"]
     notify_start_time = "00:00"
     notify_end_time   = "23:59"
+  }
+
+  notify_template {
+    email_title           = "example_email_title"
+    email_content         = "example_email_content"
+    email_recover_title   = "example_email_recover_title"
+    email_recover_content = "example_email_recover_content"
+    sms_content           = "example_sms_content"
+    sms_recover_content   = "example_sms_recover_content"
+    tts_content           = "example_tts_content"
+    tts_recover_content   = "example_tts_recover_content"
+    robot_content         = "example_robot_content"
   }
 }
 `, name)
