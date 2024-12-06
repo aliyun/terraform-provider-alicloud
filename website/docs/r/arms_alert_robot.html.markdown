@@ -20,7 +20,7 @@ For information about Application Real-Time Monitoring Service (ARMS) Alert Robo
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_alert_robot&exampleId=bb18d5b9-0088-3372-d9c0-fc554d0d65c5fecbdba1&activeTab=example&spm=docs.r.arms_alert_robot.0.bb18d5b900&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_alert_robot&exampleId=7c89d9c5-5b38-a33b-bd96-ba9fc8db87cbd72ce504&activeTab=example&spm=docs.r.arms_alert_robot.0.7c89d9c55b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

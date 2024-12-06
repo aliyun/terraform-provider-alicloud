@@ -20,7 +20,7 @@ For information about Application Real-Time Monitoring Service (ARMS) Alert Disp
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_dispatch_rule&exampleId=89aa0a33-c0da-f92e-6b08-b5208fd78cf413ea1a94&activeTab=example&spm=docs.r.arms_dispatch_rule.0.89aa0a33c0&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_dispatch_rule&exampleId=8753904c-7180-d537-0209-3ac83b5fa9e8083e578f&activeTab=example&spm=docs.r.arms_dispatch_rule.0.8753904c71&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
