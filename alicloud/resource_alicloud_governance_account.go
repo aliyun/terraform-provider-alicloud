@@ -43,7 +43,6 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 			"account_tags": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"tag_key": {
