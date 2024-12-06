@@ -7,11 +7,11 @@ description: |-
   Provides a OOS Execution resource.
 ---
 
-# alicloud\_oos\_execution
+# alicloud_oos_execution
 
 Provides a OOS Execution resource. For information about Alicloud OOS Execution and how to use it, see [What is Resource Alicloud OOS Execution](https://www.alibabacloud.com/help/doc-detail/120771.htm).
 
--> **NOTE:** Available in 1.93.0+.
+-> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
 
@@ -22,6 +22,11 @@ Provides a OOS Execution resource. For information about Alicloud OOS Execution 
 </div></div>
 
 ```terraform
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_oos_template" "default" {
   content       = <<EOF
   {
@@ -47,8 +52,8 @@ resource "alicloud_oos_template" "default" {
       }]
   }
   EOF
-  template_name = "test-name"
-  version_name  = "test"
+  template_name = "tf-example-name-${random_integer.default.result}"
+  version_name  = "example"
   tags = {
     "Created" = "TF",
     "For"     = "acceptance Test"
@@ -96,7 +101,7 @@ The following attributes are exported:
 * `template_id` - The id of template.
 * `update_date` - The time when the execution was updated.
 
-### Timeouts
+## Timeouts
 
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
