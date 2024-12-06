@@ -236,13 +236,11 @@ func resourceAliCloudCloudFirewallControlPolicyCreate(d *schema.ResourceData, me
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -511,13 +509,11 @@ func resourceAliCloudCloudFirewallControlPolicyUpdate(d *schema.ResourceData, me
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
@@ -562,13 +558,11 @@ func resourceAliCloudCloudFirewallControlPolicyDelete(d *schema.ResourceData, me
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil

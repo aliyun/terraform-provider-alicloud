@@ -32,7 +32,7 @@ func TestAccAlicloudCloudFirewallInstanceMember_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"member_desc": "${var.name}",
-					"member_uid":  "${alicloud_resource_manager_account.default.it}",
+					"member_uid":  "${alicloud_resource_manager_account.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

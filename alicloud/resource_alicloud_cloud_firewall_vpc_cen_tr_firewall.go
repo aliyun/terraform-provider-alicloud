@@ -130,12 +130,11 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 			if IsExpectedErrors(err, []string{"ErrorTrResourceNotReady"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 		addDebug(action, response, request)
 		return nil
@@ -234,12 +233,11 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallUpdate(d *schema.ResourceData,
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 			addDebug(action, response, request)
 			return nil
@@ -274,12 +272,11 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallDelete(d *schema.ResourceData,
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 		addDebug(action, response, request)
 		return nil

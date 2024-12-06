@@ -5563,7 +5563,8 @@ func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, ap
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
-	return response, formatError(response, err)
+	return response, err
+	//return response, formatError(response, err)
 }
 
 // RpcPost invoking RPC API request with POST method
