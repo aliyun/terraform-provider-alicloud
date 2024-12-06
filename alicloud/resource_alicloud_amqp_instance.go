@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -44,7 +45,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip"}, true),
+				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip", "serverless"}, true),
 			},
 			"max_connections": {
 				Type:     schema.TypeInt,
@@ -662,6 +663,8 @@ func convertAmqpInstanceDataInstanceTypeResponse(source interface{}) interface{}
 		return "vip"
 	case "ENTERPRISE":
 		return "enterprise"
+	case "SERVERLESS":
+		return "serverless"
 	}
 	return source
 }
