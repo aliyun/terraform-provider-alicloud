@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud File Storage (NAS) Fileset resource.
 ---
 
-# alicloud\_nas\_fileset
+# alicloud_nas_fileset
 
 Provides a File Storage (NAS) Fileset resource.
 
 For information about File Storage (NAS) Fileset and how to use it, see [What is Fileset](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 provider "alicloud" {
-  region = "cn-zhangjiakou"
+  region = "cn-beijing"
 }
 
 data "alicloud_nas_zones" "example" {
@@ -80,7 +80,7 @@ The following attributes are exported:
 * `fileset_id` - The first ID of the resource.
 * `status` - The status of the fileset. 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -56,9 +56,14 @@ resource "alicloud_vswitch" "defaultoZAPmO" {
   cidr_block = "172.16.0.0/24"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_nas_access_group" "defaultBbc7ev" {
   access_group_type = "Vpc"
-  access_group_name = var.name
+  access_group_name = "${var.name}-${random_integer.default.result}"
   file_system_type  = "standard"
 }
 

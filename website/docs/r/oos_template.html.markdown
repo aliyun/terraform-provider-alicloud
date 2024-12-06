@@ -7,11 +7,11 @@ description: |-
   Provides a OOS Template resource.
 ---
 
-# alicloud\_oos\_template
+# alicloud_oos_template
 
 Provides a OOS Template resource. For information about Alicloud OOS Template and how to use it, see [What is Resource Alicloud OOS Template](https://www.alibabacloud.com/help/doc-detail/120761.htm).
 
--> **NOTE:** Available in 1.92.0+.
+-> **NOTE:** Available since v1.92.0.
 
 ## Example Usage
 
@@ -22,6 +22,11 @@ Provides a OOS Template resource. For information about Alicloud OOS Template an
 </div></div>
 
 ```terraform
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_oos_template" "example" {
   content       = <<EOF
   {
@@ -47,8 +52,8 @@ resource "alicloud_oos_template" "example" {
       }]
   }
   EOF
-  template_name = "test-name"
-  version_name  = "test"
+  template_name = "tf-example-name-${random_integer.default.result}"
+  version_name  = "example"
   tags = {
     "Created" = "TF",
     "For"     = "acceptance Test"
