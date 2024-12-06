@@ -5626,8 +5626,19 @@ func (client *AliyunClient) loadApiEndpoint(locationCode string) (string, error)
 	}
 	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", locationCode)
 }
-func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	endpoint, err := client.loadApiEndpoint(locationCode)
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
 		return nil, err
 	}
@@ -5642,11 +5653,103 @@ func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiN
 	sdkConfig.SetSecurityToken(*credential.SecurityToken)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", locationCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	return conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
+}
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	var err error
+	if endpoint == "" {
+		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+		endpoint, err = client.loadApiEndpoint(apiProductCode)
+		if err != nil {
+			return nil, err
+		}
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
+}
+
+func formatError(response map[string]interface{}, err error) error {
+	if err != nil {
+		return err
+	}
+	code, ok1 := response["Code"]
+	success, ok2 := response["Success"]
+	if (ok1 && code.(string) != "Success") || (ok2 && !success.(bool)) {
+		statusCode := 200
+		if v, ok := response["StatusCode"]; ok {
+			statusCode = tea.IntValue(v.(*int))
+		}
+		return tea.NewSDKError(map[string]interface{}{
+			"statusCode": statusCode,
+			"code":       tea.ToString(response["Code"]),
+			"message":    tea.ToString(response["Message"]),
+			"data":       response,
+		})
+	}
+	return err
+}
+
+// RpcGet invoking RPC API request with GET method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if err != nil {
+		return nil, err
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("GET"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
 }
 func (client *AliyunClient) NewPaiworkspaceClient() (*roa.Client, error) {
 	productCode := "paiworkspace"
