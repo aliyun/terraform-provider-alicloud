@@ -10,21 +10,22 @@ import (
 )
 
 // Test DataWorks Project. >>> Resource test cases, automatically generated.
-// Case Project_对接Terraform 7051
-func TestAccAliCloudDataWorksProject_basic7051(t *testing.T) {
+// Case 租户新版空间API对接terraform_新版_成都 8903
+func TestAccAliCloudDataWorksProject_basic8903(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksProjectMap7051)
+	ra := resourceAttrInit(resourceId, AlicloudDataWorksProjectMap8903)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDataWorksProject")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksProjectBasicDependence7051)
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksProjectBasicDependence8903)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -33,67 +34,137 @@ func TestAccAliCloudDataWorksProject_basic7051(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name": name,
-					"project_mode": "2",
-					"description":  "对接terraform测试",
-					"display_name": "对接terraform测试",
-					"status":       "0",
+					"description":             "tf_desc",
+					"project_name":            name,
+					"pai_task_enabled":        "false",
+					"display_name":            "tf_new_api_display",
+					"dev_role_disabled":       "true",
+					"dev_environment_enabled": "false",
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"status":                  "Available",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project_name": name,
-						"project_mode": "2",
-						"description":  "对接terraform测试",
-						"display_name": "对接terraform测试",
-						"status":       "0",
+						"description":             "tf_desc",
+						"project_name":            name,
+						"pai_task_enabled":        "false",
+						"display_name":            "tf_new_api_display",
+						"dev_role_disabled":       "true",
+						"dev_environment_enabled": "false",
+						"resource_group_id":       CHECKSET,
+						"status":                  "Available",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":  "变更terraform测试描述",
-					"display_name": "变更terraform测试显示名",
+					"status": "Forbidden",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":  "变更terraform测试描述",
-						"display_name": "变更terraform测试显示名",
+						"status": "Forbidden",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "被手动禁用",
-					"status":      "4",
+					"description":  "tf_desc_update",
+					"display_name": "tf_new_api_display_update",
+					"status":       "Available",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "被手动禁用",
-						"status":      "4",
+						"description":  "tf_desc_update",
+						"display_name": "tf_new_api_display_update",
+						"status":       "Available",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "解除禁用",
-					"status":      "0",
+					"pai_task_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "解除禁用",
-						"status":      "0",
+						"pai_task_enabled": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":  "对接terraform测试",
-					"display_name": "对接terraform测试",
+					"dev_environment_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":  "对接terraform测试",
-						"display_name": "对接terraform测试",
+						"dev_environment_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dev_role_disabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dev_role_disabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -107,16 +178,15 @@ func TestAccAliCloudDataWorksProject_basic7051(t *testing.T) {
 	})
 }
 
-var AlicloudDataWorksProjectMap7051 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-}
+var AlicloudDataWorksProjectMap8903 = map[string]string{}
 
-func AlicloudDataWorksProjectBasicDependence7051(name string) string {
+func AlicloudDataWorksProjectBasicDependence8903(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 
 `, name)
