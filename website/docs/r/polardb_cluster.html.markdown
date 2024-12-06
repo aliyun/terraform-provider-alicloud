@@ -183,7 +183,7 @@ The following arguments are supported:
 -> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
 -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
 * `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
-* `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
+* `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`.
 * `serverless_type` - (Optional, Available since v1.204.0) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `serverless_steady_switch` - (Optional, Available since v1.211.1) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
   -> **NOTE:** When serverless_steady_switch is `ON` and serverless_type is `SteadyServerless`, parameters `scale_min`, `scale_max`, `scale_ro_num_min` and `scale_ro_num_max` are all required.

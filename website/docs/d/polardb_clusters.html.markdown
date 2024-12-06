@@ -85,8 +85,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `expire_time` - Expiration time. Pay-As-You-Go clusters never expire.
   * `expired` - The expired of the PolarDB cluster.
   * `status` - Status of the cluster.
-  * `engine` - Database type. Options are `MySQL`, `Oracle` and `PostgreSQL`. If no value is specified, all types are returned.
-  * `db_type` - `Primary` for primary cluster, `ReadOnly` for read-only cluster, `Guard` for disaster recovery cluster, and `Temp` for temporary cluster.
+  * `engine` - The database engine of the cluster, example: POLARDB.
+  * `db_type` - Database type. Value options: MySQL, PostgreSQL and Oracle.
   * `db_version` - The DBVersion of the PolarDB cluster.
   * `lock_mode` - The LockMode of the PolarDB cluster.
   * `delete_lock` - The DeleteLock of the PolarDB cluster.

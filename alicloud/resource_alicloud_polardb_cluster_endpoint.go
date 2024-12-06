@@ -354,7 +354,7 @@ func resourceAlicloudPolarDBClusterEndpointUpdate(d *schema.ResourceData, meta i
 				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
+				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "InvalidMaxscaleStatus", "IncorrectDBInstanceState"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
