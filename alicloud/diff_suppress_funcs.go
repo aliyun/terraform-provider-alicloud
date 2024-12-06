@@ -797,3 +797,27 @@ func UpperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) 
 	}
 	return false
 }
+
+func ModifyDBInstanceConfigFunc(k, old, new string, d *schema.ResourceData) bool {
+	engine := d.Get("engine").(string)
+	encryptionKey := d.Get("encryption_key").(string)
+
+	// 检查 engine 不是 PostgreSQL、MySQL 或 SQLServer
+	if engine != "PostgreSQL" && engine != "MySQL" && engine != "SQLServer" {
+		return true
+	}
+
+	// 当 engine 是 PostgreSQL 时
+	if engine == "PostgreSQL" {
+		// ServiceKey情况处理
+		if encryptionKey == "ServiceKey" && old != "" {
+			return true
+		}
+		// disabled情况处理
+		if encryptionKey == "disable" && old == "" {
+			return true
+		}
+	}
+	// 其他情况返回 false
+	return false
+}
