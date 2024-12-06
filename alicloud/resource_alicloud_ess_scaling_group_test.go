@@ -1340,6 +1340,106 @@ func TestAccAliCloudEssScalingGroup_scalingPolicy_maxInstanceLifetime(t *testing
 
 }
 
+func TestAccAliCloudEssScalingGroup_scalingPolicy_stopInstanceTimeout(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                                 "1",
+		"max_size":                                 "1",
+		"default_cooldown":                         "20",
+		"scaling_group_name":                       fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":                            "2",
+		"removal_policies.#":                       "2",
+		"on_demand_base_capacity":                  "10",
+		"spot_instance_pools":                      "10",
+		"spot_instance_remedy":                     "false",
+		"group_deletion_protection":                "false",
+		"on_demand_percentage_above_base_capacity": "10",
+		"az_balance":                               "false",
+		"allocation_strategy":                      "priority",
+		"spot_allocation_strategy":                 "priority",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COMPOSABLE",
+					"on_demand_base_capacity": "10",
+					"on_demand_percentage_above_base_capacity": "10",
+					"spot_instance_pools":                      "10",
+					"az_balance":                               "false",
+					"allocation_strategy":                      "priority",
+					"scaling_policy":                           "release",
+					"spot_allocation_strategy":                 "priority",
+					"stop_instance_timeout":                    "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_policy":          "forceRelease",
+					"max_instance_lifetime":   "86400",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COMPOSABLE",
+					"on_demand_base_capacity": "10",
+					"on_demand_percentage_above_base_capacity": "10",
+					"spot_instance_pools":                      "10",
+					"spot_instance_remedy":                     "true",
+					"az_balance":                               "false",
+					"allocation_strategy":                      "priority",
+					"spot_allocation_strategy":                 "priority",
+					"stop_instance_timeout":                    "240",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_instance_remedy":     "true",
+						"az_balance":               "false",
+						"scaling_policy":           "forceRelease",
+						"max_instance_lifetime":    "86400",
+						"allocation_strategy":      "priority",
+						"spot_allocation_strategy": "priority",
+						"stop_instance_timeout":    "240",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_vpc(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
@@ -2368,7 +2468,6 @@ func resourceEssScalingAttachmentConfigDependence(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 
@@ -2591,8 +2690,7 @@ func resourceEssScalingGroupTemplate(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 
 	resource "alicloud_ecs_launch_template" "default3" {
@@ -2740,8 +2838,7 @@ func resourceEssScalingGroupAlbServerGroup(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+       availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 
 	resource "alicloud_ecs_launch_template" "default3" {

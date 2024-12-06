@@ -37,6 +37,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Required:     true,
 				ValidateFunc: IntBetween(0, 2000),
 			},
+			"stop_instance_timeout": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(30, 240),
+			},
 			"desired_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -319,6 +324,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("min_size", object["MinSize"])
 	d.Set("max_size", object["MaxSize"])
+	if object["StopInstanceTimeout"] != nil {
+		d.Set("stop_instance_timeout", object["StopInstanceTimeout"])
+	}
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("desired_capacity", object["DesiredCapacity"])
 	d.Set("scaling_group_name", object["ScalingGroupName"])
@@ -494,6 +502,13 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("max_size") {
 		request["MaxSize"] = requests.NewInteger(d.Get("max_size").(int))
 	}
+
+	if d.HasChange("stop_instance_timeout") {
+		if v, ok := d.GetOkExists("stop_instance_timeout"); ok {
+			request["StopInstanceTimeout"] = requests.NewInteger(v.(int))
+		}
+	}
+
 	if d.HasChange("desired_capacity") {
 		if v, ok := d.GetOkExists("desired_capacity"); ok {
 			request["DesiredCapacity"] = requests.NewInteger(v.(int))
@@ -744,6 +759,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("desired_capacity"); ok {
 		request["DesiredCapacity"] = v
+	}
+
+	if v, ok := d.GetOk("stop_instance_timeout"); ok {
+		request["StopInstanceTimeout"] = v
 	}
 
 	if v, ok := d.GetOk("max_instance_lifetime"); ok {
