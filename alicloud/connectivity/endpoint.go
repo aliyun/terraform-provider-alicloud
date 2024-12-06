@@ -317,6 +317,7 @@ var irregularProductEndpoint = map[string]string{
 	"vpcpeer":          "vpcpeer.aliyuncs.com",
 	"resourcecenter":   "resourcecenter.aliyuncs.com",
 	"market":           "market.aliyuncs.com",
+	"bssopenapi":       BssOpenAPIEndpointDomestic,
 }
 
 // irregularProductEndpointForIntlAccount specially records those product codes that
@@ -329,6 +330,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"cas":            "cas.ap-southeast-1.aliyuncs.com",
 	"cloudfw":        "cloudfw.ap-southeast-1.aliyuncs.com",
 	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
+	"bssopenapi":     BssOpenAPIEndpointInternational,
 }
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
@@ -426,7 +428,6 @@ var regularProductEndpoint = map[string]string{
 	"servicecatalog":       "servicecatalog.cn-hangzhou.aliyuncs.com",
 	"chatbot":              "chatbot.cn-shanghai.aliyuncs.com",
 	"computenest":          "computenest.cn-hangzhou.aliyuncs.com",
-	"bssopenapi":           BssOpenAPIEndpointDomestic,
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
@@ -437,7 +438,6 @@ var regularProductEndpoint = map[string]string{
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpointForIntlAccount = map[string]string{
 	"config":              "config.ap-southeast-1.aliyuncs.com",
-	"bssopenapi":          BssOpenAPIEndpointInternational,
 	"mscopensubscription": "mscopensubscription.ap-southeast-1.aliyuncs.com",
 }
 
