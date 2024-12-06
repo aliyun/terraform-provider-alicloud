@@ -97,7 +97,7 @@ resource "alicloud_cen_transit_router_multicast_domain_peer_member" "default" {
   provider                                = alicloud.hz
   transit_router_multicast_domain_id      = alicloud_cen_transit_router_multicast_domain.default.id
   peer_transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.peer.id
-  group_ip_address                        = "224.0.0.1"
+  group_ip_address                        = "224.1.0.0"
 }
 ```
 
