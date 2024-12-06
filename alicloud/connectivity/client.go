@@ -182,7 +182,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.236.0"
+var providerVersion = "1.237.0"
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{

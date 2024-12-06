@@ -1,4 +1,41 @@
 ## 1.237.0 (Unreleased)
+
+- **New Resource:** `alicloud_data_works_project_member` [GH-7897]
+- **New Resource:** `alicloud_data_works_data_source` [GH-7897]
+- **New Resource:** `alicloud_data_works_data_source_shared_rule` [GH-7897]
+- **New Resource:** `alicloud_arms_alert_robot` [GH-7898]
+- **New Resource:** `alicloud_oss_bucket_website` [GH-7935]
+- **New Resource:** `alicloud_ecs_image_pipeline_execution` [GH-7937]
+- **New Resource:** `alicloud_sls_oss_export_sink` [GH-7946]
+- **New Data Source:** `alicloud_arms_alert_robots` [GH-7898]
+
+ENHANCEMENTS:
+
+- resource/alicloud_adb_db_cluster: support 16Core128GB for attribute elastic_io_resource_size. [GH-7899]
+- resource/alicloud_ecs_key_pair: Refactored the resource alicloud_ecs_key_pair; Added the field create_time. [GH-7932]
+- resource/alicloud_redis_tair_instance: add new attribute param_no_loose_sentinel_password_free_access. [GH-7938]
+- resource/alicloud_instance: support attribute image_options.login_as_non_root. [GH-7939]
+- resource/alicloud_ecs_disk: Refactored the resource alicloud_ecs_disk; Added the field bursting_enabled, multi_attach, provisioned_iops, create_time, region_id. [GH-7943]
+- resource/alicloud_cs_autoscaling_config: support scaler_type. [GH-7951]
+- resource/alicloud_polardb_cluster_endpoint: modify retry; docs: Improves description for cluster. [GH-7952]
+- resource/alicloud_data_works_project: add new attributes dev_environment_enabled, dev_role_disabled, pai_task_enabled and etc. [GH-7953]
+- resource/alicloud_governance_account: support modify account_tags. [GH-7955]
+- data-source/alicloud_arms_dispatch_rules: add new attribute notify_start_time and notify_end_time; resource/alicloud_arms_dispatch_rule: add new attribute notify_start_time and notify_end_time. [GH-7904]
+- docs: improve docs for alicloud_slb_attachment. [GH-7940]
+- docs: Improves docs of resource alicloud_dcdn_domain and alicloud_cdn_domain_new. [GH-7941]
+- docs: improve examples for alicloud_config_rule. [GH-7942]
+- docs: Improves description for ecs_image_pipeline_execution. [GH-7947]
+- docs: Improves description for vpc. [GH-7948]
+- docs: Improves description for amrs. [GH-7949]
+- testcase: Fixed ADBCluster test case. [GH-7917]
+- testcase: Fix case for quotas_template_applications. [GH-7930]
+- testcase: Fixed alicloud_nlb_security_policy test case. [GH-7933]
+- testcase: Fixed alicloud_nlb_listener test case. [GH-7934]
+
+BUG FIXES:
+
+- resource/alicloud_sae_application: Fixed the diff error caused by field micro_registration. [GH-7936]
+
 ## 1.236.0 (November 29, 2024)
 
 - **New Resource:** `alicloud_pai_workspace_dataset` ([#7915](https://github.com/aliyun/terraform-provider-alicloud/issues/7915))

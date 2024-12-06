@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Arms Alert Robots of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.236.0.
+-> **NOTE:** Available since v1.237.0.
 
 ## Example Usage
 
