@@ -13,7 +13,7 @@ Provides a Application Real-Time Monitoring Service (ARMS) Alert Robot resource.
 
 For information about Application Real-Time Monitoring Service (ARMS) Alert Robot and how to use it, see [What is Alert Robot](https://next.api.alibabacloud.com/document/ARMS/2019-08-08/CreateOrUpdateIMRobot).
 
--> **NOTE:** Available since v1.236.0.
+-> **NOTE:** Available since v1.237.0.
 
 ## Example Usage
 
