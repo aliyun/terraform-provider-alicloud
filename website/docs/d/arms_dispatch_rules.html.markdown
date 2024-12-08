@@ -89,7 +89,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `dispatch_rule_id` - Dispatch rule ID.
   * `dispatch_rule_name` - The name of the dispatch rule.
   * `id` - The ID of the Dispatch Rule.
-  * `dispatch_type` - The type of the dispatch rule.
   * `status` - The resource status of Alert Dispatch Rule.
   * `group_rules` - Sets the event group.
     * `group_wait_time` - The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
@@ -103,7 +102,7 @@ The following attributes are exported in addition to the arguments listed above:
         * `key` - The key of the tag of the dispatch rule.
         * `value` - The value of the tag.
         * `operator` - The operator used in the dispatch rule. 
-	
+  
   * `notify_rules` - Sets the notification rule. 
     * `notify_channels` - A list of notification methods.
     * `notify_start_time` - (Available since v1.237.0) Start time of notification.
@@ -112,3 +111,14 @@ The following attributes are exported in addition to the arguments listed above:
       * `notify_object_id` - The ID of the contact or contact group.
       * `name` - The name of the contact or contact group.
       * `notify_type` - The type of the alert contact.
+
+  * `notify_template` - The notification method.
+    * `email_content` - The content of the email.
+    * `email_title` - The title of the email.
+    * `email_recover_title` - The title of the email.
+    * `email_recover_content` - The content of the email.
+    * `sms_content` - The content of the SMS.
+    * `sms_recover_content` - The content of the SMS.
+    * `tts_content` - The content of the TTS.
+    * `tts_recover_content` - The content of the TTS.
+    * `robot_content` - The content of the robot.
