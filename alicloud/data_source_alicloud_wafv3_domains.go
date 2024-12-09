@@ -253,17 +253,14 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 	}
 
 	var response map[string]interface{}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
