@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"log"
 	"net/http"
 	"net/url"
@@ -241,7 +242,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &AliyunClient{
+	client := &AliyunClient{
 		config:                       c,
 		teaSdkConfig:                 teaSdkConfig,
 		teaRoaSdkConfig:              teaRoaSdkConfig,
@@ -259,7 +260,13 @@ func (c *Config) Client() (*AliyunClient, error) {
 		otsTunnelConnByInstanceName:  make(map[string]otsTunnel.TunnelClient),
 		csprojectconnByKey:           make(map[string]*cs.ProjectClient),
 		skipRegionValidation:         c.SkipRegionValidation,
-	}, nil
+	}
+	if c.AccountType == "" {
+		c.AccountType = client.GetAccountType()
+		client.config = c
+	}
+	log.Printf("[INFO] caller identity's account type is %s.", client.config.AccountType)
+	return client, nil
 }
 
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
@@ -1625,6 +1632,59 @@ func (client *AliyunClient) AccountId() (string, error) {
 		client.accountId = identity.AccountId
 	}
 	return client.accountId, nil
+}
+
+// GetAccountType determines and returns the account type (Domestic or International) based on the client's configuration and API endpoint.
+// This function first checks if the AccountType is already set in the client configuration. If so, it returns that value directly.
+// Otherwise, it defaults the account type to "Domestic" and initializes a request to query available instances through the BssOpenApi API.
+// It then determines whether the account is domestic or international based on the API specific errors.
+// If there is a specific error, the account type should be updates, and meantime corrects the BssOpenApi endpoint.
+func (client *AliyunClient) GetAccountType() string {
+	if client.config.AccountType != "" {
+		return client.config.AccountType
+	}
+	// Default to Domestic
+	accountType := "Domestic"
+	productCode := strings.ToLower("BssOpenApi")
+	request := map[string]interface{}{
+		"PageSize":         "50",
+		"PageNum":          1,
+		"ProductCode":      "vipcloudfw",
+		"ProductType":      "vipcloudfw",
+		"SubscriptionType": "Subscription",
+	}
+	endpoint, err := client.loadApiEndpoint(productCode)
+	if err != nil {
+		log.Printf("[WARN] getting BssOpenApi endpoint failed. Error: %v", err)
+	} else if endpoint == BssOpenAPIEndpointInternational {
+		request["ProductCode"] = "cfw"
+		request["ProductType"] = "cfw_pre_intl"
+		accountType = "International"
+	}
+	wait := incrementalWait(1*time.Second, 0*time.Second)
+	resource.Retry(30*time.Second, func() *resource.RetryError {
+		_, err := client.RpcPost("BssOpenApi", "2017-12-14", "QueryAvailableInstances", nil, request, true)
+		log.Printf("[WARN] checking caller identity's account type by invoking BssOpenApi QueryAvailableInstances failed. Error: %v", err)
+		if err != nil {
+			if needRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if isExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
+				if request["ProductType"] == "vipcloudfw" {
+					accountType = "International"
+					client.config.Endpoints.Store(productCode, BssOpenAPIEndpointInternational)
+				} else {
+					accountType = "Domestic"
+					client.config.Endpoints.Store(productCode, BssOpenAPIEndpointDomestic)
+				}
+			} else {
+				accountType = ""
+			}
+		}
+		return nil
+	})
+	return accountType
 }
 
 func (client *AliyunClient) getSdkConfig() *sdk.Config {
@@ -5626,8 +5686,19 @@ func (client *AliyunClient) loadApiEndpoint(locationCode string) (string, error)
 	}
 	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", locationCode)
 }
-func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	endpoint, err := client.loadApiEndpoint(locationCode)
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
 		return nil, err
 	}
@@ -5642,11 +5713,109 @@ func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiN
 	sdkConfig.SetSecurityToken(*credential.SecurityToken)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", locationCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	return conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
+}
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	var err error
+	if endpoint == "" {
+		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+		endpoint, err = client.loadApiEndpoint(apiProductCode)
+		if err != nil {
+			return nil, err
+		}
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
+}
+
+func formatError(response map[string]interface{}, err error) error {
+	if err != nil {
+		return err
+	}
+	code, ok1 := response["Code"]
+	if ok1 && (strings.ToLower(fmt.Sprint(code)) == "success" || fmt.Sprint(code) == "200") {
+		return err
+	}
+	success, ok2 := response["Success"]
+	if ok2 && fmt.Sprint(success) == "true" {
+		return err
+	}
+	if ok1 || ok2 {
+		statusCode := 200
+		if v, ok := response["StatusCode"]; ok {
+			statusCode = tea.IntValue(v.(*int))
+		}
+		return tea.NewSDKError(map[string]interface{}{
+			"statusCode": statusCode,
+			"code":       tea.ToString(code),
+			"message":    tea.ToString(response["Message"]),
+			"data":       response,
+		})
+	}
+	return err
+}
+
+// RpcGet invoking RPC API request with GET method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if err != nil {
+		return nil, err
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String("GET"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	return response, formatError(response, err)
 }
 func (client *AliyunClient) NewPaiworkspaceClient() (*roa.Client, error) {
 	productCode := "paiworkspace"
