@@ -191,7 +191,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 		objectDataLocalMap["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
-		objectDataLocalMap["ChargeType"] = v
+		objectDataLocalMap["ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(v)
 	}
 	request["CreateInstanceRequest"] = objectDataLocalMap
 	request["CreateInstanceRequest.ZoneId"] = d.Get("zone_id")
