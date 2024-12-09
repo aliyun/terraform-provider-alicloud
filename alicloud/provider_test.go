@@ -1,10 +1,12 @@
 package alicloud
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -62,6 +64,55 @@ func testAccPreCheck(t *testing.T) {
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	} else {
 		defaultRegionToTest = v
+	}
+}
+
+func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) {
+	rawClient, err := sharedClientForRegion(defaultRegionToTest)
+	if err != nil {
+		t.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	bssOpenApiService := BssOpenApiService{client}
+	accountId, err := client.AccountId()
+	if err != nil {
+		t.Errorf("error getting AliCloud client: %s", err)
+	}
+	deadline := time.Now().Add(30 * time.Minute)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if time.Now().After(deadline) {
+				fmt.Println("Deadline reached, stopping waiting.")
+				return
+			}
+			instances, err := bssOpenApiService.QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl)
+			if err != nil {
+				t.Errorf("error querying available instances: %s", err)
+				return
+			}
+			instanceId := ""
+			for _, instance := range instances {
+				v := instance.(map[string]interface{})
+				if v["Status"].(string) != "Normal" {
+					continue
+				}
+				instanceId = v["InstanceID"].(string)
+			}
+			if instanceId == "" {
+				return
+			}
+			sendMessage(fmt.Sprintf(`
+[Critical] Please cleaning up instance before running integration test.
+
+AccountId: %s
+ProductCode: %s
+InstanceId: %s
+`, accountId, productCode, instanceId))
+			time.Sleep(3 * time.Minute)
+		}
 	}
 }
 
@@ -414,6 +465,43 @@ func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
 		t.Skipf("Skipping the test case with there is no \"INVITED_ALICLOUD_ACCOUNT_ID\" setting")
 		t.Skipped()
 	}
+}
+
+type DingTalkMessage struct {
+	MsgType string `json:"msgtype"`
+	Text    struct {
+		Content string `json:"content"`
+	} `json:"text"`
+}
+
+func sendMessage(msg string) {
+	// 钉钉机器人的 Webhook 地址
+	webhookURL := "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("DINGTALK_WEBHOOK_ACCESS_TOKEN")
+
+	// 构建消息内容
+	message := DingTalkMessage{
+		MsgType: "text",
+		Text: struct {
+			Content string `json:"content"`
+		}{
+			Content: msg,
+		},
+	}
+
+	// 将消息内容转换为 JSON 格式
+	jsonData, err := json.Marshal(message)
+	if err != nil {
+		fmt.Println("[ERROR] send dingTalk message failed. Error:", err)
+		return
+	}
+
+	// 发送 POST 请求
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("[ERROR] send dingTalk message failed. Error:", err)
+		return
+	}
+	defer resp.Body.Close()
 }
 
 func setStsCredential() {
