@@ -2,8 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/credentials-go/credentials"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -52,7 +54,7 @@ var endpoints sync.Map
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a give n region
 func sharedClientForRegion(region string) (interface{}, error) {
-	var accessKey, secretKey string
+	var accessKey, secretKey, securityToken string
 	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
 		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
 	}
@@ -60,6 +62,8 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
 		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
 	}
+
+	securityToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
 
 	conf := connectivity.Config{
 		Region:    connectivity.Region(region),
@@ -69,9 +73,21 @@ func sharedClientForRegion(region string) (interface{}, error) {
 		Protocol:  "HTTPS",
 		Endpoints: &endpoints,
 	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
 	if accountId := os.Getenv("ALICLOUD_ACCOUNT_ID"); accountId != "" {
 		conf.AccountId = accountId
 	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		return nil, err
+	}
+	conf.Credential = credential
 
 	// configures a default client for the region, using the above env vars
 	client, err := conf.Client()
