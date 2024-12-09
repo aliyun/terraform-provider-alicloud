@@ -11,6 +11,7 @@ import (
 
 func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
 	resourceId := "alicloud_cen_transit_router_multicast_domain_member.default"
 	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMulticastDomainMemberMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -19,7 +20,6 @@ func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
 	name := fmt.Sprintf("tf-testacc%sCenTransitRouterMulticastDomainMember%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterMulticastDomainMemberBasicDependence0)
 	resource.Test(t, resource.TestCase{
@@ -33,7 +33,7 @@ func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_multicast_domain_id": "${alicloud_cen_transit_router_multicast_domain_association.default.transit_router_multicast_domain_id}",
-					"group_ip_address":                   "224.0.0.8",
+					"group_ip_address":                   "239.0.0.8",
 					"network_interface_id":               "${alicloud_ecs_network_interface.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -55,6 +55,7 @@ func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0(t *testing.T) {
 
 func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
 	resourceId := "alicloud_cen_transit_router_multicast_domain_member.default"
 	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMulticastDomainMemberMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -63,7 +64,6 @@ func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0_twin(t *testing
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
 	name := fmt.Sprintf("tf-testacc%sCenTransitRouterMulticastDomainMember%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterMulticastDomainMemberBasicDependence0)
 	resource.Test(t, resource.TestCase{
@@ -77,7 +77,7 @@ func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0_twin(t *testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_multicast_domain_id": "${alicloud_cen_transit_router_multicast_domain_association.default.transit_router_multicast_domain_id}",
-					"group_ip_address":                   "224.0.0.8",
+					"group_ip_address":                   "239.0.0.8",
 					"network_interface_id":               "${alicloud_ecs_network_interface.default.id}",
 					"vpc_id":                             "${alicloud_cen_transit_router_vpc_attachment.default.vpc_id}",
 				}),
