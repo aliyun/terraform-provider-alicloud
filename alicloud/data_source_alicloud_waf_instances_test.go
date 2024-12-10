@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudWAFInstancesDataSource(t *testing.T) {
+func TestAccAliCloudWafInstancesDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{

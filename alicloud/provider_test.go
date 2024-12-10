@@ -110,7 +110,8 @@ func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCod
 AccountId: %s
 ProductCode: %s
 InstanceId: %s
-`, accountId, productCode, instanceId))
+Time: %s
+`, accountId, productCode, instanceId, time.Now().String()))
 			time.Sleep(3 * time.Minute)
 		}
 	}

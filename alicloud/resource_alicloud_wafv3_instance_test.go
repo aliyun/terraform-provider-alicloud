@@ -10,8 +10,9 @@ import (
 )
 
 // Skip this testcase because you can only have one instance.
-func SkipTestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
+func TestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	resourceId := "alicloud_wafv3_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafV3InstanceMap2294)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

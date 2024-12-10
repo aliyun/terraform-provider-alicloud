@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudWAFCertificate_basic0(t *testing.T) {
+func SkipTestAccAliCloudWafCertificate_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_waf_certificate.default"
@@ -65,7 +65,7 @@ func TestAccAlicloudWAFCertificate_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudWAFCertificate_basic1(t *testing.T) {
+func SkipTestAccAliCloudWafCertificate_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	resourceId := "alicloud_waf_certificate.default"

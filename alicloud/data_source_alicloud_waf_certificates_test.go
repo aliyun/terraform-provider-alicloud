@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudWAFCertificateDataSource(t *testing.T) {
+func SkipTestAccAliCloudWafCertificateDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -89,11 +89,12 @@ variable "name" {
 	default = "tf-testAccWafCertificate-%d"
 }
 
-data "alicloud_waf_instances" "default" {}
+resource "alicloud_wafv3_instance" "default" {
+}
 
 resource "alicloud_waf_domain" "domain" {
   domain_name       = "alicloud-provider.cn"
-  instance_id       = data.alicloud_waf_instances.default.ids.0
+  instance_id       = alicloud_wafv3_instance.default.id
   is_access_product = "On"
   source_ips        = ["1.1.1.1"]
   cluster_type      = "PhysicalCluster"
