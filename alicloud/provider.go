@@ -1312,7 +1312,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_resource_group":                       resourceAliCloudResourceManagerResourceGroup(),
 			"alicloud_resource_manager_folder":                               resourceAlicloudResourceManagerFolder(),
 			"alicloud_resource_manager_handshake":                            resourceAlicloudResourceManagerHandshake(),
-			"alicloud_cen_private_zone":                                      resourceAlicloudCenPrivateZone(),
+			"alicloud_cen_private_zone":                                      resourceAliCloudCenPrivateZone(),
 			"alicloud_resource_manager_policy":                               resourceAlicloudResourceManagerPolicy(),
 			"alicloud_resource_manager_account":                              resourceAlicloudResourceManagerAccount(),
 			"alicloud_waf_instance":                                          resourceAlicloudWafInstance(),
