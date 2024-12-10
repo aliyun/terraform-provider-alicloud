@@ -256,13 +256,11 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyCreate(d *schema.Resou
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"-200142"}) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		addDebug(action, response, request)
@@ -479,13 +477,11 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"-200511"}) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			addDebug(action, response, request)
@@ -520,13 +516,11 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			addDebug(action, response, request)
@@ -567,13 +561,11 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyDelete(d *schema.Resou
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		addDebug(action, response, request)

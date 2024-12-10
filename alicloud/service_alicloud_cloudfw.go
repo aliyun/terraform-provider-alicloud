@@ -40,13 +40,11 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
@@ -107,13 +105,11 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
@@ -170,12 +166,11 @@ func (s *CloudfwService) DescribeCloudFirewallInstanceMember(id string) (object 
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 		addDebug(action, response, request)
 		return nil
@@ -231,13 +226,11 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -268,6 +261,35 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 	return v.(map[string]interface{}), nil
 }
 
+func (s *CloudfwService) CreateVpcFirewallTask() (err error) {
+	client := s.client
+	var endpoint string
+	var response map[string]interface{}
+	action := "CreateVpcFirewallTask"
+	request := map[string]interface{}{
+		"TaskAction": "sync",
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
+	addDebug(action, response, request)
+	return err
+}
+
 func (s *CloudfwService) DescribeVpcFirewallCenList(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var endpoint string
@@ -284,13 +306,11 @@ func (s *CloudfwService) DescribeVpcFirewallCenList(id string) (object map[strin
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -349,13 +369,11 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -404,13 +422,11 @@ func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]i
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -481,13 +497,11 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -537,13 +551,11 @@ func (s *CloudfwService) DescribeCloudFirewallInstanceUserBuyVersion(id string) 
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not valid instanceId"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not valid instanceId" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil

@@ -120,6 +120,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"fw_vpc_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntBetween(2, 500),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("spec"); ok && v.(string) == "premium_version" {
@@ -301,7 +302,7 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if IsExpectedErrors(err, []string{"NotApplicable", NotFoundArticle}) {
 				request["ProductCode"] = "cfw"
 				request["ProductType"] = "cfw_pre_intl"
 
@@ -330,9 +331,7 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_instance", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
+
 	responseData := response["Data"].(map[string]interface{})
 
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
@@ -662,13 +661,11 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
@@ -710,13 +707,11 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
