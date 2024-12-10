@@ -1199,6 +1199,7 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 					"storage_space":       "40",
 					"db_node_num":         "2",
 					"hot_standby_cluster": "ON",
+					"strict_consistency":  "ON",
 					"storage_pay_type":    "PostPaid",
 					"proxy_type":          "EXCLUSIVE",
 					"proxy_class":         "polar.maxscale.g2.medium.c",
@@ -1218,7 +1219,7 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "hot_standby_cluster", "proxy_type", "proxy_class", "db_node_num"},
+				ImportStateVerifyIgnore: []string{"modify_type", "proxy_type", "proxy_class", "db_node_num"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
