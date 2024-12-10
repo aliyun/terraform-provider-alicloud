@@ -285,9 +285,8 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 		return
 	}
 	request := cbn.CreateDescribeCenPrivateZoneRoutesRequest()
-	request.RegionId = s.client.RegionId
-	request.AccessRegionId = parts[1]
 	request.CenId = parts[0]
+	request.AccessRegionId = parts[1]
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -302,20 +301,24 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		if IsExpectedErrors(err, []string{"ParameterIllegal.CenInstanceId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:PrivateZone", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
 
 	if len(response.PrivateZoneInfos.PrivateZoneInfo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenPrivateZone", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Cen:PrivateZone", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
+
 	return response.PrivateZoneInfos.PrivateZoneInfo[0], nil
 }
 
