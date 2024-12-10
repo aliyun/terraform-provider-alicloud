@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRdcOrganizationDataSource(t *testing.T) {
+// data source alicloud_rdc_organizations has been deprecated from version 1.238.0
+func SkipTestAccAlicloudRdcOrganizationDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.RDCupportRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
@@ -55,6 +56,7 @@ func TestAccAlicloudRdcOrganizationDataSource(t *testing.T) {
 	}
 	AlicloudRdcOrganizationCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf)
 }
+
 func testAccCheckAlicloudRdcOrganizationDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
