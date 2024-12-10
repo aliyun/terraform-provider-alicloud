@@ -7,11 +7,13 @@ description: |-
   Provides a list of Rdc Organizations to the user.
 ---
 
-# alicloud\_rdc\_organizations
+# alicloud_rdc_organizations
 
 This data source provides the Rdc Organizations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.137.0+.
+-> **NOTE:** Available since v1.137.0.
+
+-> **DEPRECATED:** This data source has been deprecated from version `1.238.0`.
 
 ## Example Usage
 
@@ -51,12 +53,12 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `real_pk` - (Optional, ForceNew) User pk, not required, only required when the ak used by the calling interface is inconsistent with the user pk
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Organization names.
 * `organizations` - A list of Rdc Organizations. Each element contains the following attributes:
-	* `id` - The ID of the Organization.
-	* `organization_id` - The first ID of the resource.
-	* `organization_name` - Company name.
+  * `id` - The ID of the Organization.
+  * `organization_id` - The first ID of the resource.
+  * `organization_name` - Company name.

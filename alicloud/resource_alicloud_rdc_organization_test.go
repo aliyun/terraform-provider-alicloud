@@ -94,7 +94,8 @@ func testSweepRdcOrganization(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRDCOrganization_basic1(t *testing.T) {
+// resource alicloud_rdc_organization has been deprecated from version 1.238.0
+func SkipTestAccAlicloudRDCOrganization_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.RDCupportRegions)
 	resourceId := "alicloud_rdc_organization.default"
