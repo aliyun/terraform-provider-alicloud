@@ -63,6 +63,7 @@ variable "name" {
 
 resource "alicloud_resource_manager_account" "default" {
   display_name = var.name
+  abandon_able_check_id = ["SP_fc_fc"]
 }
 
 resource "alicloud_cloud_firewall_instance_member" "default" {
