@@ -313,6 +313,10 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 		if IsExpectedErrors(err, []string{"ComboError"}) {
 			return nil
 		}
+		if IsExpectedErrors(err, []string{"NotExpiredInstanceReleaseError"}) {
+			log.Printf("[WARN] Resource alicloud_waf_instance DeleteInstance Failed!!! %s", err)
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil

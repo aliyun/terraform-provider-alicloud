@@ -11,7 +11,7 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
+func TestAccAliCloudWafDomainsDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{
@@ -91,6 +91,7 @@ func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 	}
 	WafDomainsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
@@ -105,12 +106,25 @@ func testAccAlicloudWafDomainDataSourceConfig(rand int, attrMap map[string]strin
 		variable "name" {
       		default = "tf-testacc%s%d.alicloud-provider.cn"
 		}
-
-		data "alicloud_waf_instances" "default" {}
+		// Create a waf instance in ap-southeast-1
+		resource "alicloud_waf_instance" "default" {
+		  big_screen           = "0"
+		  exclusive_ip_package = "0"
+		  ext_bandwidth        = "0"
+		  ext_domain_package   = "0"
+		  package_code         = "version_pro_asia"
+		  prefessional_service = "false"
+		  subscription_type    = "Subscription"
+		  period               = 3
+		  waf_log              = "false"
+		  log_storage          = "3"
+		  log_time             = "180"
+          resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+		}
 
 		resource "alicloud_waf_domain" "default" {
 			domain_name = "${var.name}"
-			instance_id = data.alicloud_waf_instances.default.ids.0
+			instance_id = alicloud_waf_instance.default.id
 			is_access_product = "Off"
 			source_ips = ["1.1.1.1"]
 			cluster_type = "PhysicalCluster"

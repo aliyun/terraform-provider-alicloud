@@ -97,7 +97,7 @@ func testSweepWafDomains(region string) error {
 	return nil
 }
 
-func TestAccAlicloudWAFDomain(t *testing.T) {
+func TestAccAliCloudWafDomain(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 

@@ -13,7 +13,7 @@ import (
 
 // Case 1
 func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafv3DomainMap2308)
@@ -28,6 +28,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

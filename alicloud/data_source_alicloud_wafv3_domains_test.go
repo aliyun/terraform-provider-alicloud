@@ -13,7 +13,8 @@ import (
 
 func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
+	// cn region needs icp domain, and using intl region instead
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_domain.default.id}"]`,
@@ -51,7 +52,12 @@ func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
 		}),
 	}
 
-	Wafv3DomainCheckInfo.dataSourceTestCheck(t, rand, idsConf, DomainConf, backendConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
+	}
+
+	Wafv3DomainCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, DomainConf, backendConf, allConf)
 }
 
 var existWafv3DomainMapFunc = func(rand int) map[string]string {
