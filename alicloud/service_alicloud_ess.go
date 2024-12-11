@@ -504,10 +504,13 @@ func (s *EssService) flattenInstancePatternInfoMappings(list []ess.InstancePatte
 		memeory, _ := strconv.ParseFloat(strconv.FormatFloat(i.Memory, 'f', 2, 64), 64)
 		maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(i.MaxPrice, 'f', 2, 64), 64)
 		l := map[string]interface{}{
-			"instance_family_level": i.InstanceFamilyLevel,
-			"memory":                memeory,
-			"cores":                 i.Cores,
-			"max_price":             maxPrice,
+			"instance_family_level":   i.InstanceFamilyLevel,
+			"memory":                  memeory,
+			"cores":                   i.Cores,
+			"max_price":               maxPrice,
+			"burstable_performance":   i.BurstablePerformance,
+			"architectures":           i.Architectures.Architecture,
+			"excluded_instance_types": i.ExcludedInstanceTypes.ExcludedInstanceType,
 		}
 		result = append(result, l)
 	}
