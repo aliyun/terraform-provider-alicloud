@@ -167,6 +167,46 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 							},
 							Computed: true,
 						},
+						"instance_pattern_info": {
+							Computed: true,
+							Type:     schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_family_level": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"burstable_performance": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"excluded_instance_types": {
+										Type:     schema.TypeList,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+										Computed: true,
+									},
+									"architectures": {
+										Type: schema.TypeList,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+										Computed: true,
+									},
+									"cores": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"memory": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+									"max_price": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -277,6 +317,7 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 			"host_name":                     scalingConfiguration.HostName,
 			"spot_strategy":                 scalingConfiguration.SpotStrategy,
 			"spot_price_limit":              essService.flattenSpotPriceLimitMappings(scalingConfiguration.SpotPriceLimit.SpotPriceModel),
+			"instance_pattern_info":         essService.flattenInstancePatternInfoMappings(scalingConfiguration.InstancePatternInfos.InstancePatternInfo),
 		}
 		ids = append(ids, scalingConfiguration.ScalingConfigurationId)
 		names = append(names, scalingConfiguration.ScalingConfigurationName)

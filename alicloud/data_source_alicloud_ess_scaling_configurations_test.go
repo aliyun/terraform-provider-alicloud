@@ -52,28 +52,38 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 
 	var existEssScalingconfigurationsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                                             "1",
-			"names.#":                                           "1",
-			"configurations.#":                                  "1",
-			"configurations.0.name":                             fmt.Sprintf("tf-testAccDataSourceEssScalingRules-%d", rand),
-			"configurations.0.scaling_group_id":                 CHECKSET,
-			"configurations.0.image_id":                         CHECKSET,
-			"configurations.0.instance_type":                    CHECKSET,
-			"configurations.0.security_group_id":                CHECKSET,
-			"configurations.0.creation_time":                    CHECKSET,
-			"configurations.0.system_disk_category":             CHECKSET,
-			"configurations.0.system_disk_size":                 CHECKSET,
-			"configurations.0.system_disk_performance_level":    "PL1",
-			"configurations.0.internet_max_bandwidth_in":        CHECKSET,
-			"configurations.0.internet_max_bandwidth_out":       CHECKSET,
-			"configurations.0.internet_charge_type":             CHECKSET,
-			"configurations.0.data_disks.#":                     "0",
-			"configurations.0.instance_name":                    "instance_name",
-			"configurations.0.host_name":                        "hostname",
-			"configurations.0.spot_strategy":                    "SpotWithPriceLimit",
-			"configurations.0.spot_price_limit.#":               "1",
-			"configurations.0.spot_price_limit.0.instance_type": CHECKSET,
-			"configurations.0.spot_price_limit.0.price_limit":   "2.2",
+			"ids.#":                                                              "1",
+			"names.#":                                                            "1",
+			"configurations.#":                                                   "1",
+			"configurations.0.name":                                              fmt.Sprintf("tf-testAccDataSourceEssScalingRules-%d", rand),
+			"configurations.0.scaling_group_id":                                  CHECKSET,
+			"configurations.0.image_id":                                          CHECKSET,
+			"configurations.0.instance_type":                                     CHECKSET,
+			"configurations.0.security_group_id":                                 CHECKSET,
+			"configurations.0.creation_time":                                     CHECKSET,
+			"configurations.0.system_disk_category":                              CHECKSET,
+			"configurations.0.system_disk_size":                                  CHECKSET,
+			"configurations.0.system_disk_performance_level":                     "PL1",
+			"configurations.0.internet_max_bandwidth_in":                         CHECKSET,
+			"configurations.0.internet_max_bandwidth_out":                        CHECKSET,
+			"configurations.0.internet_charge_type":                              CHECKSET,
+			"configurations.0.data_disks.#":                                      "0",
+			"configurations.0.instance_name":                                     "instance_name",
+			"configurations.0.host_name":                                         "hostname",
+			"configurations.0.spot_strategy":                                     "SpotWithPriceLimit",
+			"configurations.0.spot_price_limit.#":                                "1",
+			"configurations.0.spot_price_limit.0.instance_type":                  CHECKSET,
+			"configurations.0.spot_price_limit.0.price_limit":                    "2.2",
+			"configurations.0.instance_pattern_info.#":                           "1",
+			"configurations.0.instance_pattern_info.0.instance_family_level":     "EntryLevel",
+			"configurations.0.instance_pattern_info.0.cores":                     "2",
+			"configurations.0.instance_pattern_info.0.memory":                    "8",
+			"configurations.0.instance_pattern_info.0.max_price":                 "2.2",
+			"configurations.0.instance_pattern_info.0.burstable_performance":     "Include",
+			"configurations.0.instance_pattern_info.0.architectures.#":           "1",
+			"configurations.0.instance_pattern_info.0.architectures.0":           "X86",
+			"configurations.0.instance_pattern_info.0.excluded_instance_types.#": "1",
+			"configurations.0.instance_pattern_info.0.excluded_instance_types.0": CHECKSET,
 		}
 	}
 
@@ -122,7 +132,7 @@ resource "alicloud_ess_scaling_configuration" "default"{
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_group_id = "${alicloud_security_group.default.id}"
-	system_disk_category = "cloud_essd"
+	system_disk_category = "cloud_ssd"
 	system_disk_performance_level = "PL1"
 	force_delete = true
 	instance_name = "instance_name"
@@ -131,6 +141,15 @@ resource "alicloud_ess_scaling_configuration" "default"{
 	spot_price_limit {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		price_limit = 2.2
+	}
+	instance_pattern_info {
+		instance_family_level = "EntryLevel"
+		cores = 2
+		memory = 8.0
+		max_price = 2.2
+		burstable_performance = "Include"
+		architectures = ["X86"]
+        excluded_instance_types = ["${data.alicloud_instance_types.default.instance_types.1.id}"]
 	}
 }
 
