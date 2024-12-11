@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -100,12 +99,10 @@ func resourceAlicloudWafInstance() *schema.Resource {
 func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	action := "CreateInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
@@ -169,14 +166,14 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -186,9 +183,6 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_waf_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	if response["Code"].(string) != "Success" {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_waf_instance", action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(response["InstanceId"]))
@@ -207,17 +201,15 @@ func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
-	d.Set("status", formatInt(object["InstanceInfo"].(map[string]interface{})["Status"]))
-	d.Set("subscription_type", object["InstanceInfo"].(map[string]interface{})["SubscriptionType"])
+	d.Set("status", formatInt(object["Status"]))
+	d.Set("subscription_type", object["SubscriptionType"])
 	return nil
 }
 func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	update := false
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
@@ -271,14 +263,14 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 		action := "ModifyInstance"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -289,10 +281,6 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if response["Code"].(string) != "Success" {
-			return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-
 	}
 	return resourceAlicloudWafInstanceRead(d, meta)
 }
@@ -300,10 +288,7 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteInstance"
 	var response map[string]interface{}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
@@ -313,7 +298,7 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -326,6 +311,10 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ComboError"}) {
+			return nil
+		}
+		if IsExpectedErrors(err, []string{"NotExpiredInstanceReleaseError"}) {
+			log.Printf("[WARN] Resource alicloud_waf_instance DeleteInstance Failed!!! %s", err)
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

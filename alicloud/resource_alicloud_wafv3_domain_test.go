@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,7 +13,7 @@ import (
 
 // Case 1
 func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafv3DomainMap2308)
@@ -27,6 +28,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -34,7 +36,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${data.alicloud_wafv3_instances.default.ids.0}",
+					"instance_id": "${alicloud_wafv3_instance.default.id}",
 					"listen": []map[string]interface{}{
 						{
 							"https_ports":         []string{"443"},
@@ -207,6 +209,10 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 var AlicloudWafv3DomainMap2308 = map[string]string{}
 
 func AlicloudWafv3DomainBasicDependence2308(name string) string {
+	casRegion := "cn-hangzhou"
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) == "international" {
+		casRegion = "ap-southeast-1"
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -270,12 +276,12 @@ LILJ+e7bLw8RrM0HfgFnl8c=
 EOF
 }
 
-data "alicloud_wafv3_instances" "default" {}
+resource "alicloud_wafv3_instance" "default" {}
 
 locals {
   certificate_id = join("-", [alicloud_ssl_certificates_service_certificate.default.id, "%s"])
 }
 
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name, casRegion)
 }

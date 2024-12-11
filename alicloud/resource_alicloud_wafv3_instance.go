@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -45,16 +44,13 @@ func resourceAlicloudWafv3InstanceCreate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
 	wafOpenapiService := WafOpenapiService{client}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	var response map[string]interface{}
 	action := "CreatePostpaidInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -62,7 +58,6 @@ func resourceAlicloudWafv3InstanceCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -110,10 +105,8 @@ func resourceAlicloudWafv3InstanceRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudWafv3InstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafOpenapiService := WafOpenapiService{client}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var response map[string]interface{}
+	var err error
 
 	request := map[string]interface{}{
 
@@ -124,7 +117,7 @@ func resourceAlicloudWafv3InstanceDelete(d *schema.ResourceData, meta interface{
 	action := "ReleaseInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -132,7 +125,7 @@ func resourceAlicloudWafv3InstanceDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

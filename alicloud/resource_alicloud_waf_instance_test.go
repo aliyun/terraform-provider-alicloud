@@ -20,10 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Skip this testcase because you can only have one instance.
-func SkipTestAccAlicloudWAFInstance_basic(t *testing.T) {
+func TestAccAliCloudWafInstance_basic(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 	resourceId := "alicloud_waf_instance.default"
 	ra := resourceAttrInit(resourceId, WafInstanceMap)
 	serviceFunc := func() interface{} {
@@ -38,11 +37,12 @@ func SkipTestAccAlicloudWAFInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
