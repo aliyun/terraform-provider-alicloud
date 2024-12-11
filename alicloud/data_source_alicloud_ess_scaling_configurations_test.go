@@ -122,7 +122,7 @@ resource "alicloud_ess_scaling_configuration" "default"{
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_group_id = "${alicloud_security_group.default.id}"
-	system_disk_category = "cloud_essd"
+	system_disk_category = "cloud_ssd"
 	system_disk_performance_level = "PL1"
 	force_delete = true
 	instance_name = "instance_name"
