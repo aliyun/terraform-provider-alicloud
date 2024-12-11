@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -26,20 +24,13 @@ func (s *EsaServiceV2) DescribeEsaSite(id string) (object map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetSite"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
 	query["RegionId"] = client.RegionId
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -71,21 +62,15 @@ func (s *EsaServiceV2) DescribeListTagResources(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "Site"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -136,20 +121,14 @@ func (s *EsaServiceV2) DescribeAsyncSiteGetSite(d *schema.ResourceData, res map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetSite"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -200,7 +179,6 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -215,10 +193,6 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewEsaClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			jsonString := "{}"
@@ -233,11 +207,9 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -256,10 +228,6 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewEsaClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			jsonString := "{}"
@@ -277,11 +245,9 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -312,20 +278,14 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListUserRatePlanInstances"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -358,19 +318,13 @@ func (s *EsaServiceV2) DescribeDescribeRatePlanInstanceStatus(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRatePlanInstanceStatus"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
