@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudFirewallVpcFirewallControlPoliciesDataSource(t *testing.T) {
+func TestAccAliCloudCloudFirewallVpcFirewallControlPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallControlPoliciesDataSourceName(rand, map[string]string{

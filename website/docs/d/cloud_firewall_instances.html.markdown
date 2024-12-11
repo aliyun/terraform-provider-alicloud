@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Firewall Instances to the user.
 ---
 
-# alicloud\_cloud\_firewall\_instances
+# alicloud_cloud_firewall_instances
 
 This data source provides the Cloud Firewall Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.139.0+.
+-> **NOTE:** Available since v1.139.0.
 
 ## Example Usage
 
@@ -29,6 +29,7 @@ output "cloud_firewall_instance_id_1" {
 
 The following arguments are supported:
 
+* `payment_type` - (Optional, ForceNew) The payment type of the cloud firewall instance. Valid values: `PayAsYouGo`,`Subscription`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference

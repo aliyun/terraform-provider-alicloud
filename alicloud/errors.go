@@ -38,6 +38,7 @@ const (
 	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
 
 	InvalidFileSystemStatus_Ordering = "InvalidFileSystemStatus.Ordering"
+	NotFoundArticle                  = "not found article by given param"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

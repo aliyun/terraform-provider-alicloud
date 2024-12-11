@@ -2,19 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
+func TestAccAliCloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
-
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]`,
@@ -27,11 +22,11 @@ func TestAccAlicloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
 	CenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids":    `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]`,
-			"cen_id": `"${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}"`,
+			"cen_id": `"${alicloud_cen_instance_attachment.attach1.instance_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids":    `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}_fake"]`,
-			"cen_id": `"${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}_fake"`,
+			"cen_id": `"${alicloud_cen_instance_attachment.attach1.instance_id}_fake"`,
 		}),
 	}
 	StatusConf := dataSourceTestAccConfig{
@@ -58,13 +53,13 @@ func TestAccAlicloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]`,
-			"cen_id":            `"${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}"`,
+			"cen_id":            `"${alicloud_cen_instance_attachment.attach1.instance_id}"`,
 			"status":            `"opened"`,
 			"vpc_firewall_name": `"${alicloud_cloud_firewall_vpc_firewall_cen.default.vpc_firewall_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}_fake"]`,
-			"cen_id":            `"${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}_fake"`,
+			"cen_id":            `"${alicloud_cen_instance_attachment.attach1.instance_id}_fake"`,
 			"status":            `"closed"`,
 			"vpc_firewall_name": `"${alicloud_cloud_firewall_vpc_firewall_cen.default.vpc_firewall_name}_fake"`,
 		}),
@@ -101,35 +96,75 @@ func testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand int, attrM
 variable "name" {
     default = "tf-testacc-%d"
 }
+data "alicloud_regions" "current" {
+  current = true
+}
+data "alicloud_zones" "zone" {
+  available_instance_type = "ecs.sn1ne.large"
+  available_resource_creation = "VSwitch"
+}
+
 data "alicloud_account" "current" {
 }
 
-data "alicloud_cen_instances" "cen_instances_ds" {
-  name_regex = "^cfw-test-no-deleting"
+resource "alicloud_vpc" "foo" {
+  vpc_name   = "${var.name}-foo"
+  cidr_block = "192.168.0.0/16"
+}
+resource "alicloud_vpc" "bar" {
+  vpc_name   = "${var.name}-bar"
+  cidr_block = "172.16.0.0/12"
 }
 
-data "alicloud_vpcs" "vpcs_ds" {
-  name_regex = "^cfw-test-no-delete1"
+resource "alicloud_vswitch" "foo" {
+  vpc_id       = alicloud_vpc.foo.id
+  cidr_block   = "192.168.10.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.0.id
+  vswitch_name = "${var.name}-foo"
 }
 
-data "alicloud_vpcs" "vpcs_self" {
-  name_regex = "^default-NODELETING"
+resource "alicloud_vswitch" "bar" {
+  vpc_id       = alicloud_vpc.bar.id
+  cidr_block   = "172.16.10.0/24"
+  zone_id      = data.alicloud_zones.zone.zones.0.id
+  vswitch_name = "${var.name}-bar"
+}
+
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+  description       = var.name
+}
+
+resource "alicloud_cen_instance_attachment" "attach1" {
+  instance_id = alicloud_cen_instance.default.id
+  child_instance_id = alicloud_vpc.foo.id
+  child_instance_type = "VPC"
+  child_instance_region_id = data.alicloud_regions.current.ids.0
+  child_instance_owner_id = data.alicloud_account.current.id
+}
+resource "alicloud_cen_instance_attachment" "attach2" {
+  instance_id = alicloud_cen_instance.default.id
+  child_instance_id = alicloud_vpc.bar.id
+  child_instance_type = "VPC"
+  child_instance_region_id = data.alicloud_regions.current.ids.0
+  child_instance_owner_id = data.alicloud_account.current.id
 }
 
 resource "alicloud_cloud_firewall_vpc_firewall_cen" "default" {
-  cen_id = "${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}"
+  cen_id = alicloud_cen_instance_attachment.attach1.instance_id
   local_vpc {
-    network_instance_id = "${data.alicloud_vpcs.vpcs_ds.vpcs.0.id}"
+    network_instance_id = alicloud_cen_instance_attachment.attach1.child_instance_id
   }
   status            = "open"
-  member_uid        = "${data.alicloud_account.current.id}"
-  vpc_region        = "%s"
-  vpc_firewall_name ="${var.name}"
+  member_uid        = data.alicloud_account.current.id
+  vpc_region        = data.alicloud_regions.current.ids.0
+  vpc_firewall_name = var.name
+  lang = "zh"
 }
 
 data "alicloud_cloud_firewall_vpc_firewall_cens" "default" {
 %s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, strings.Join(pairs, "\n   "))
 	return config
 }
