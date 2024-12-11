@@ -25,6 +25,7 @@ func TestAccAliCloudEsaRatePlanInstance_basic8489(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaRatePlanInstanceBasicDependence8489)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
@@ -90,3 +91,66 @@ variable "name" {
 }
 
 // Test Esa RatePlanInstance. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudEsaRatePlanInstance_intl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_rate_plan_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudEsaRatePlanInstanceMap8489)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaRatePlanInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sesarateplaninstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaRatePlanInstanceBasicDependence8489)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"type":         "NS",
+					"auto_renew":   "true",
+					"period":       "1",
+					"payment_type": "Subscription",
+					"coverage":     "overseas",
+					"plan_name":    "entranceplan_intl",
+					"auto_pay":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"type":         "NS",
+						"auto_renew":   "true",
+						"period":       "1",
+						"payment_type": "Subscription",
+						"coverage":     "overseas",
+						"plan_name":    "entranceplan_intl",
+						"auto_pay":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_name": "basicplan_intl",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_name": "basicplan_intl",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_pay", "auto_renew", "coverage", "period", "type"},
+			},
+		},
+	})
+}
