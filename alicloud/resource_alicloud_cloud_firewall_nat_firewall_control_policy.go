@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -190,10 +189,8 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyCreate(d *schema.Resou
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	var endpoint string
 	request = make(map[string]interface{})
 	query["NatGatewayId"] = d.Get("nat_gateway_id")
 	query["Direction"] = d.Get("direction")
@@ -252,22 +249,18 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyCreate(d *schema.Resou
 		request = expandArrayToMap(request, applicationNameListMaps, "ApplicationNameList")
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"-200142"}) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		addDebug(action, response, request)
@@ -350,10 +343,6 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyNatFirewallControlPolicy"
-	conn, err := client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NatGatewayId"] = parts[1]
@@ -479,22 +468,20 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 		request["Lang"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var err error
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"-200511"}) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			addDebug(action, response, request)
@@ -507,10 +494,6 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ModifyNatFirewallControlPolicyPosition"
-	conn, err = client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NatGatewayId"] = parts[1]
@@ -524,22 +507,20 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 	}
 	request["NewOrder"] = d.Get("new_order")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var err error
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			addDebug(action, response, request)
@@ -562,10 +543,8 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyDelete(d *schema.Resou
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	var endpoint string
 	request = make(map[string]interface{})
 	query["AclUuid"] = parts[0]
 	query["NatGatewayId"] = parts[1]
@@ -574,23 +553,19 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyDelete(d *schema.Resou
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		addDebug(action, response, request)
