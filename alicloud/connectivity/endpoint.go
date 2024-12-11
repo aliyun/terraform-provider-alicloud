@@ -299,6 +299,10 @@ var productCodeToLocationCode = map[string]string{
 	"ram":                  "ram",             //RAM
 	"quotas":               "quotas",          //Quotas
 	"market":               "market",          //Market
+	"aiworkspace":          "paiworkspace",    //PAIWorkspace
+	"vpcipam":              "vpcipam",         //VpcIpam
+	"gwlb":                 "gwlb",            // GWLB
+	"esa":                  "dcdnservices",    // ESA
 }
 
 // irregularProductEndpoint specially records those product codes that
@@ -318,6 +322,7 @@ var irregularProductEndpoint = map[string]string{
 	"resourcecenter":   "resourcecenter.aliyuncs.com",
 	"market":           "market.aliyuncs.com",
 	"bssopenapi":       BssOpenAPIEndpointDomestic,
+	"esa":              "esa.cn-hangzhou.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccount specially records those product codes that
@@ -331,6 +336,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"cloudfw":        "cloudfw.ap-southeast-1.aliyuncs.com",
 	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
 	"bssopenapi":     BssOpenAPIEndpointInternational,
+	"esa":            "esa.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
@@ -428,6 +434,9 @@ var regularProductEndpoint = map[string]string{
 	"servicecatalog":       "servicecatalog.cn-hangzhou.aliyuncs.com",
 	"chatbot":              "chatbot.cn-shanghai.aliyuncs.com",
 	"computenest":          "computenest.cn-hangzhou.aliyuncs.com",
+	"aiworkspace":          "aiworkspace.%s.aliyuncs.com",
+	"vpcipam":              "vpcipam.%s.aliyuncs.com",
+	"gwlb":                 "gwlb.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be

@@ -3570,6 +3570,26 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["maxcompute_endpoint"],
 				},
+				"aiworkspace": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"vpcipam": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"gwlb": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"esa": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -3712,7 +3732,8 @@ func endpointsToHash(v interface{}) int {
 	return hashcode.String(buf.String())
 }
 
-// deprecatedEndpointMap is used to map old service name to new service name
+// deprecatedEndpointMap is used to map old service name to new service name,
+// and its value equals to the gateway code of the API after converting it to lowercase and using underscores
 // key: new endpoint key
 // value: deprecated endpoint key
 var deprecatedEndpointMap = map[string]string{
