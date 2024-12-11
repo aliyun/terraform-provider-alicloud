@@ -88,11 +88,14 @@ func (s *WafOpenapiService) DescribeWafInstance(id string) (object map[string]in
 		return
 	}
 	addDebug(action, response, request)
-	v, err := jsonpath.Get("$", response)
+	v, err := jsonpath.Get("$.InstanceInfo", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceInfo", response)
 	}
 	object = v.(map[string]interface{})
+	if v, ok := object["InstanceId"]; !ok || v.(string) != id {
+		return object, WrapErrorf(Error(GetNotFoundMessage("WAF", id)), NotFoundWithResponse, response)
+	}
 	return object, nil
 }
 

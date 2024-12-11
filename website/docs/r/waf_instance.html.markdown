@@ -37,6 +37,13 @@ resource "alicloud_waf_instance" "default" {
   resource_group_id    = "rs-abc12345"
 }
 ```
+
+### Deleting `alicloud_waf_instance` or removing it from your configuration
+
+The `alicloud_waf_instance` resource allows you to manage `subscription_type = "Subscription"` WAF instance, but Terraform cannot destroy it before it is expired.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the WAF Instance.
+You can resume managing the subscription WAF instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -13,6 +13,7 @@ import (
 // Case 接入terraform 5993
 func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	resourceId := "alicloud_wafv3_defense_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap5993)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -26,6 +27,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

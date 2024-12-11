@@ -27,6 +27,7 @@ output "alicloud_wafv3_instance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+* `ids` - (Optional, Available since 1.239.0) A list of WAF v3 instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 

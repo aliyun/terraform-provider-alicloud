@@ -16,6 +16,7 @@ func dataSourceAlicloudWafv3Instances() *schema.Resource {
 		Read: dataSourceAlicloudWafv3InstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
+				Optional: true,
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
@@ -56,6 +57,15 @@ func dataSourceAlicloudWafv3Instances() *schema.Resource {
 
 func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
@@ -95,9 +105,15 @@ func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+		id := fmt.Sprint(object["InstanceId"])
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[id]; !ok {
+				continue
+			}
+		}
 
 		mapping := map[string]interface{}{
-			"id": fmt.Sprint(object["InstanceId"]),
+			"id": id,
 		}
 
 		startTime97 := object["StartTime"]

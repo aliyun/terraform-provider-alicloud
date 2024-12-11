@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudWafv3InstanceDataSource(t *testing.T) {
+func TestAccAliCloudWafv3InstanceDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
@@ -59,7 +59,7 @@ variable "name" {
 resource "alicloud_wafv3_instance" "default" {}
 
 data "alicloud_wafv3_instances" "default" {
-    depends_on = [alicloud_wafv3_instance.default]
+    ids = [alicloud_wafv3_instance.default.id]
 %s
 }
 `, rand, strings.Join(pairs, "\n   "))

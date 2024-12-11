@@ -201,8 +201,8 @@ func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
-	d.Set("status", formatInt(object["InstanceInfo"].(map[string]interface{})["Status"]))
-	d.Set("subscription_type", object["InstanceInfo"].(map[string]interface{})["SubscriptionType"])
+	d.Set("status", formatInt(object["Status"]))
+	d.Set("subscription_type", object["SubscriptionType"])
 	return nil
 }
 func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -311,6 +311,10 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ComboError"}) {
+			return nil
+		}
+		if IsExpectedErrors(err, []string{"NotExpiredInstanceReleaseError"}) {
+			log.Printf("[WARN] Resource alicloud_waf_instance DeleteInstance Failed!!! %s", err)
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
