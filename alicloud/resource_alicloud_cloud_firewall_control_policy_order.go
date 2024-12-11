@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -43,33 +42,27 @@ func resourceAliCloudCloudFirewallControlPolicyOrder() *schema.Resource {
 func resourceAliCloudCloudFirewallControlPolicyOrderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	action := "ModifyControlPolicyPriority"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudfwClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	request["AclUuid"] = d.Get("acl_uuid")
 	request["Direction"] = d.Get("direction")
 	request["Order"] = d.Get("order")
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
-		}
-
-		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
 		return nil
@@ -128,27 +121,19 @@ func resourceAliCloudCloudFirewallControlPolicyOrderUpdate(d *schema.ResourceDat
 
 	if update {
 		action := "ModifyControlPolicyPriority"
-		conn, err := client.NewCloudfwClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
-			}
-
-			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
-				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
 			return nil
