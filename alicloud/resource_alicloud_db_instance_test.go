@@ -1019,6 +1019,16 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"recovery_model": "simple",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recovery_model": "simple",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_storage": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1246,6 +1256,26 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 						"db_instance_storage_type": "cloud_essd",
 						"category":                 "HighAvailability",
 						"target_minor_version":     "rds_postgres_1200_20231030",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "false",
 					}),
 				),
 			},

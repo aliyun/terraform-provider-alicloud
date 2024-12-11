@@ -397,7 +397,20 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "PostgreSQL" && d.Get("engine").(string) != "MySQL" && d.Get("engine").(string) != "SQLServer"
+					engine := d.Get("engine").(string)
+					encryptionKey := d.Get("encryption_key").(string)
+					if engine != "PostgreSQL" && engine != "MySQL" && engine != "SQLServer" {
+						return true
+					}
+					if engine == "PostgreSQL" {
+						if encryptionKey == "ServiceKey" && old != "" {
+							return true
+						}
+						if encryptionKey == "disable" && old == "" {
+							return true
+						}
+					}
+					return false
 				},
 			},
 			"zone_id_slave_a": {
@@ -605,6 +618,20 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Up", "Down", "TempUpgrade", "Serverless"}, false),
+			},
+			"pg_bouncer_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "PostgreSQL"
+				},
+			},
+			"recovery_model": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "SQLServer"
+				},
 			},
 		},
 	}
@@ -1561,6 +1588,58 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	// 定义一个处理配置变更的函数
+	handleConfigChange := func(configName string, configValue interface{}) error {
+		action := "ModifyDBInstanceConfig"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"ConfigName":   configName,
+			"ConfigValue":  configValue,
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		return nil
+	}
+	if "PostgreSQL" == d.Get("engine").(string) {
+		if d.HasChange("pg_bouncer_enabled") {
+			if err := handleConfigChange("pgbouncer", d.Get("pg_bouncer_enabled")); err != nil {
+				return err
+			}
+		}
+
+		if d.HasChange("encryption_key") {
+			if v, ok := d.GetOk("encryption_key"); ok {
+				var configValue string
+				if v.(string) == "disabled" {
+					configValue = "disabled"
+				} else {
+					configValue = v.(string)
+				}
+				if err := handleConfigChange("encryptionKey", configValue); err != nil {
+					return err
+				}
+			}
+		}
+
+	}
+
+	if "SQLServer" == d.Get("engine").(string) {
+		if d.HasChange("recovery_model") {
+			if err := handleConfigChange("backup_recovery_model", d.Get("recovery_model")); err != nil {
+				return err
+			}
+		}
+	}
+
 	if !d.IsNewResource() && (d.HasChange("target_minor_version") || d.HasChange("upgrade_db_instance_kernel_version")) {
 		action := "UpgradeDBInstanceKernelVersion"
 		request := map[string]interface{}{
@@ -1659,6 +1738,16 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
+	DBInstanceEncryptionKey, err := rdsService.DescribeDBInstanceEncryptionKey(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if DBInstanceEncryptionKey["EncryptionKey"] == "" {
+		d.Set("encryption_key", "")
+	} else {
+		d.Set("encryption_key", DBInstanceEncryptionKey["EncryptionKey"])
+	}
+
 	describeDBInstanceHAConfigObject, err := rdsService.DescribeDBInstanceHAConfig(d.Id())
 	hostInstanceInfos := describeDBInstanceHAConfigObject["HostInstanceInfos"].(map[string]interface{})["NodeInfo"].([]interface{})
 	var nodeId string
@@ -1708,6 +1797,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("zone_id", instance["ZoneId"])
 	d.Set("status", instance["DBInstanceStatus"])
 	d.Set("create_time", instance["CreationTime"])
+	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
 
 	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
 	payType := instance["PayType"]
@@ -1763,6 +1853,8 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	} else if len(slaveZones) == 1 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
 	}
+	recoveryModel := instance["Extra"].(map[string]interface{})["RecoveryModel"]
+	d.Set("recovery_model", recoveryModel)
 	if sqlCollectorPolicy["SQLCollectorStatus"] == "Enable" {
 		d.Set("sql_collector_status", "Enabled")
 	} else {
