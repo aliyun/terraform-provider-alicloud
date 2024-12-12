@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -46,7 +47,7 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 							Optional: true,
 						},
 						"vpc_owner_id": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Optional: true,
 						},
 					},
@@ -448,7 +449,7 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 			bindVpcsMap["region_id"] = bindVpcChild1Raw["RegionId"]
 			bindVpcsMap["vswitch_id"] = bindVpcChild1Raw["VSwitchId"]
 			bindVpcsMap["vpc_id"] = bindVpcChild1Raw["VpcId"]
-			bindVpcsMap["vpc_owner_id"] = formatInt(bindVpcChild1Raw["VpcOwnerId"])
+			bindVpcsMap["vpc_owner_id"] = bindVpcChild1Raw["VpcOwnerId"]
 
 			bindVpcsMaps = append(bindVpcsMaps, bindVpcsMap)
 		}
@@ -589,7 +590,15 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["VpcId"] = dataLoopTmp["vpc_id"]
-			dataLoopMap["VpcOwnerId"] = dataLoopTmp["vpc_owner_id"]
+
+			if vpcOwnerId, ok := dataLoopTmp["vpc_owner_id"]; ok {
+				vpcOwnerIdNumber, err := strconv.ParseInt(fmt.Sprint(vpcOwnerId), 10, 64)
+				if err != nil {
+					return WrapError(fmt.Errorf("convert vpc_owner_id to int64 failed, value: %v", vpcOwnerId))
+				}
+				dataLoopMap["VpcOwnerId"] = vpcOwnerIdNumber
+			}
+
 			dataLoopMap["RegionId"] = dataLoopTmp["region_id"]
 			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
 			bindVpcsMaps = append(bindVpcsMaps, dataLoopMap)
