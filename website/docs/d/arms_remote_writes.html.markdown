@@ -13,7 +13,7 @@ This data source provides the Arms Remote Writes of the current Alibaba Cloud us
 
 -> **NOTE:** Available since v1.204.0.
 
--> **DEPRECATED:** This resource has been deprecated since v1.228.0.
+-> **DEPRECATED:** This data source has been deprecated since v1.228.0.
 
 ## Example Usage
 
