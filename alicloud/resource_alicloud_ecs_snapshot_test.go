@@ -141,21 +141,31 @@ func TestAccAliCloudEcsSnapshot_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snapshot_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"snapshot_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snapshot_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snapshot_name": name,
 					}),
 				),
 			},
@@ -209,7 +219,7 @@ func TestAccAliCloudEcsSnapshot_basic0_twin(t *testing.T) {
 					"disk_id":           "${alicloud_ecs_disk_attachment.default.disk_id}",
 					"category":          "flash",
 					"retention_days":    "50",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 					"snapshot_name":     name,
 					"description":       name,
 					"force":             "true",
@@ -286,21 +296,31 @@ func TestAccAliCloudEcsSnapshot_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
 					}),
 				),
 			},
@@ -354,7 +374,7 @@ func TestAccAliCloudEcsSnapshot_basic1_twin(t *testing.T) {
 					"disk_id":           "${alicloud_ecs_disk_attachment.default.disk_id}",
 					"category":          "standard",
 					"retention_days":    "50",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 					"name":              name,
 					"description":       name,
 					"force":             "true",
@@ -388,8 +408,10 @@ func TestAccAliCloudEcsSnapshot_basic1_twin(t *testing.T) {
 }
 
 var AliCloudEcsSnapshotMap0 = map[string]string{
-	"category": CHECKSET,
-	"status":   CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+	"category":    CHECKSET,
+	"status":      CHECKSET,
 }
 
 func AliCloudEcsSnapshotBasicDependence0(name string) string {

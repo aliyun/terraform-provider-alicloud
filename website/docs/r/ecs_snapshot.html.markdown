@@ -2,7 +2,6 @@
 subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecs_snapshot"
-sidebar_current: "docs-alicloud-resource-ecs-snapshot"
 description: |-
   Provides a Alicloud ECS Snapshot resource.
 ---
@@ -10,6 +9,8 @@ description: |-
 # alicloud_ecs_snapshot
 
 Provides a ECS Snapshot resource.
+
+
 
 For information about ECS Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/en/doc-detail/25524.htm).
 
@@ -59,8 +60,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
@@ -102,28 +103,28 @@ resource "alicloud_ecs_snapshot" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `disk_id` - (Required, ForceNew) The ID of the disk.
 * `category` - (Optional, ForceNew) The category of the snapshot. Valid values:
   - `standard`: Normal snapshot.
   - `flash`: Local snapshot.
-* `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`. **NOTE:** From version 1.231.0, `retention_days` can be modified.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `snapshot_name` - (Optional) The name of the snapshot.
 * `description` - (Optional) The description of the snapshot.
+* `disk_id` - (Required, ForceNew) The ID of the disk.
 * `force` - (Optional, Bool) Specifies whether to force delete the snapshot that has been used to create disks. Valid values:
   - `true`: Force deletes the snapshot. After the snapshot is force deleted, the disks created from the snapshot cannot be re-initialized.
   - `false`: Does not force delete the snapshot.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-* `name` - (Optional, Deprecated since v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `snapshot_name` instead.
 * `instant_access` - (Optional, Deprecated since v1.231.0) Field `instant_access` has been deprecated from provider version 1.231.0.
 * `instant_access_retention_days` - (Optional, Deprecated since v1.231.0) Field `instant_access_retention_days` has been deprecated from provider version 1.231.0.
+* `resource_group_id` - (Optional) The ID of the resource group. **NOTE:** From version 1.239.0, `resource_group_id` can be modified.
+* `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`. **NOTE:** From version 1.231.0, `retention_days` can be modified.
+* `snapshot_name` - (Optional) The name of the snapshot.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `name` - (Optional, Deprecated since v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `snapshot_name` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
 * `id` - The resource ID in terraform of Snapshot.
+* `create_time` - (Available since v1.239.0) The time when the snapshot was created.
+* `region_id` - (Available since v1.239.0) The region ID of the snapshot.
 * `status` - The status of the Snapshot.
 
 ## Timeouts
@@ -131,10 +132,9 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.231.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 2 mins) Used when create the Snapshot.
-* `update` - (Defaults to 2 mins) Used when update the Snapshot.
-* `delete` - (Defaults to 2 mins) Used when delete the Snapshot.
+* `create` - (Defaults to 5 mins) Used when create the Snapshot.
+* `delete` - (Defaults to 5 mins) Used when delete the Snapshot.
+* `update` - (Defaults to 5 mins) Used when update the Snapshot.
 
 ## Import
 
