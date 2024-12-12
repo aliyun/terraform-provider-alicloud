@@ -873,6 +873,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_live_caster":                                          resourceAliCloudLiveCaster(),
 			"alicloud_ecs_image_pipeline_execution":                         resourceAliCloudEcsImagePipelineExecution(),
 			"alicloud_oss_bucket_website":                                   resourceAliCloudOssBucketWebsite(),
 			"alicloud_sls_oss_export_sink":                                  resourceAliCloudSlsOssExportSink(),
