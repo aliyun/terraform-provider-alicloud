@@ -13,7 +13,7 @@ This data source provides the Arms Prometheis of the current Alibaba Cloud user.
 
 -> **NOTE:** Available since v1.203.0.
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://www.terraform.io/docs/providers/alicloud/d/arms_prometheus) from version 1.214.0.
+-> **DEPRECATED:** This data source has been renamed to [alicloud_arms_prometheus](https://www.terraform.io/docs/providers/alicloud/d/arms_prometheus) from version 1.214.0.
 
 ## Example Usage
 

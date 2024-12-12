@@ -9,10 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudArmsRemoteWrite_basic0(t *testing.T) {
+// resource alicloud_arms_remote_writes has been deprecated from version 1.228.0
+func SkipTestAccAliCloudArmsRemoteWrite_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_remote_write.default"
-	ra := resourceAttrInit(resourceId, AlicloudArmsRemoteWriteMap)
+	ra := resourceAttrInit(resourceId, AliCloudArmsRemoteWriteMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ArmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeArmsRemoteWrite")
@@ -20,7 +21,7 @@ func TestAccAlicloudArmsRemoteWrite_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10, 99)
 	name := fmt.Sprintf("tf-testacc-ArmsRW%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudArmsRemoteWriteBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudArmsRemoteWriteBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -60,11 +61,11 @@ func TestAccAlicloudArmsRemoteWrite_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudArmsRemoteWriteMap = map[string]string{
+var AliCloudArmsRemoteWriteMap = map[string]string{
 	"remote_write_name": CHECKSET,
 }
 
-func AlicloudArmsRemoteWriteBasicDependence0(name string) string {
+func AliCloudArmsRemoteWriteBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"

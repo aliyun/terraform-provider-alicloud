@@ -8,35 +8,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudArmsRemoteWritesDataSource(t *testing.T) {
+// data source alicloud_arms_remote_writes has been deprecated from version 1.228.0
+func SkipTestAccAliCloudArmsRemoteWritesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(0, 10)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_arms_remote_write.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_arms_remote_write.default.id}_fake"]`,
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_arms_remote_write.default.remote_write_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_arms_remote_write.default.remote_write_name}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_arms_remote_write.default.id}"]`,
 			"name_regex": `"${alicloud_arms_remote_write.default.remote_write_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_arms_remote_write.default.id}_fake"]`,
 			"name_regex": `"${alicloud_arms_remote_write.default.remote_write_name}_fake"`,
 		}),
 	}
-	var existAlicloudArmsRemoteWritesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var existAliCloudArmsRemoteWritesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                             "1",
 			"names.#":                           "1",
@@ -47,7 +48,7 @@ func TestAccAlicloudArmsRemoteWritesDataSource(t *testing.T) {
 			"remote_writes.0.remote_write_yaml": "remote_write:\n- name: ArmsRemoteWrite\n  url: http://47.96.227.137:8080/prometheus/xxx/yyy/cn-hangzhou/api/v3/write\n  basic_auth: {username: 666, password: '******'}\n  write_relabel_configs:\n  - source_labels: [instance_id]\n    separator: ;\n    regex: si-6e2ca86444db4e55a7c1\n    replacement: $1\n    action: keep\n",
 		}
 	}
-	var fakeAlicloudArmsRemoteWritesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudArmsRemoteWritesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":           "0",
 			"names.#":         "0",
@@ -56,8 +57,8 @@ func TestAccAlicloudArmsRemoteWritesDataSource(t *testing.T) {
 	}
 	var alicloudArmsRemoteWritesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_arms_remote_writes.default",
-		existMapFunc: existAlicloudArmsRemoteWritesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudArmsRemoteWritesDataSourceNameMapFunc,
+		existMapFunc: existAliCloudArmsRemoteWritesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudArmsRemoteWritesDataSourceNameMapFunc,
 	}
 	preCheck := func() {
 		testAccPreCheck(t)
@@ -65,7 +66,7 @@ func TestAccAlicloudArmsRemoteWritesDataSource(t *testing.T) {
 	alicloudArmsRemoteWritesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
-func testAccCheckAlicloudArmsRemoteWritesDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAliCloudArmsRemoteWritesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
