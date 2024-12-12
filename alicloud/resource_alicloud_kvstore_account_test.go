@@ -10,10 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKVStoreAccount_basic(t *testing.T) {
+func TestAccAliCloudKVStoreAccount_basic(t *testing.T) {
 	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
-	ra := resourceAttrInit(resourceId, KvstoreAccountMap)
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreAccountMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeKvstoreAccount")
@@ -21,13 +21,12 @@ func TestAccAlicloudKVStoreAccount_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sKvstoreAccounttftestnormal%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreAccountBasicdependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KvStoreSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -100,10 +99,10 @@ func TestAccAlicloudKVStoreAccount_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreAccount_basic_v5(t *testing.T) {
+func TestAccAliCloudKVStoreAccount_basic_v5(t *testing.T) {
 	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
-	ra := resourceAttrInit(resourceId, KvstoreAccountMap)
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreAccountMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeKvstoreAccount")
@@ -111,13 +110,12 @@ func TestAccAlicloudKVStoreAccount_basic_v5(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sKvstoreAccounttftestnormal%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreAccountBasicdependenceV5)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreAccountBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KvStoreSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -190,57 +188,65 @@ func TestAccAlicloudKVStoreAccount_basic_v5(t *testing.T) {
 	})
 }
 
-var KvstoreAccountMap = map[string]string{
+var AliCloudKVStoreAccountMap0 = map[string]string{
 	"account_privilege": "RoleReadWrite",
 	"status":            CHECKSET,
 }
 
-func KvstoreAccountBasicdependence(name string) string {
+func AliCloudKVStoreAccountBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_kvstore_zones" "default"{
-		instance_charge_type = "PostPaid"
-	}
 	variable "name" {
-		default = "%v"
+  		default = "%s"
 	}
+
+	data "alicloud_kvstore_zones" "default" {
+  		instance_charge_type = "PostPaid"
+	}
+
 	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
+  		name_regex = "^default-NODELETING$"
 	}
+
 	data "alicloud_vswitches" "default" {
-	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-	  vpc_id = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
 	}
+
 	resource "alicloud_kvstore_instance" "default" {
-		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-		instance_class = "redis.master.small.default"
-		instance_name  = var.name
-		engine_version = "4.0"
-        vswitch_id = data.alicloud_vswitches.default.ids.0
+  		zone_id          = data.alicloud_kvstore_zones.default.zones.0.id
+  		instance_class   = "redis.master.small.default"
+  		db_instance_name = var.name
+  		engine_version   = "4.0"
+  		vswitch_id       = data.alicloud_vswitches.default.ids.0
 	}
-	`, name)
+`, name)
 }
 
-func KvstoreAccountBasicdependenceV5(name string) string {
+func AliCloudKVStoreAccountBasicDependence1(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_kvstore_zones" "default"{
-		instance_charge_type = "PostPaid"
-	}
 	variable "name" {
-		default = "%v"
+  		default = "%s"
 	}
+
+	data "alicloud_kvstore_zones" "default" {
+  		instance_charge_type = "PostPaid"
+	}
+
 	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
+  		name_regex = "^default-NODELETING$"
 	}
+
 	data "alicloud_vswitches" "default" {
-	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-	  vpc_id = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
 	}
+
 	resource "alicloud_kvstore_instance" "default" {
-		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-		instance_class = "redis.master.small.default"
-		instance_name  = var.name
-		engine_version = "5.0"
-        vswitch_id = data.alicloud_vswitches.default.ids.0
+  		zone_id          = data.alicloud_kvstore_zones.default.zones.0.id
+  		instance_class   = "redis.master.small.default"
+  		db_instance_name = var.name
+  		engine_version   = "5.0"
+  		vswitch_id       = data.alicloud_vswitches.default.ids.0
 	}
-	`, name)
+`, name)
 }
