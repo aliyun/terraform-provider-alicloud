@@ -794,7 +794,7 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Listener", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "ResourceInConfiguring.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
