@@ -297,7 +297,8 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 }
 
 var serviceCodeMapping = map[string]string{
-	"cloudapi": "apigateway",
+	"cloudapi":   "apigateway",
+	"iacservice": "iac",
 }
 
 const (

@@ -15,8 +15,8 @@ func TestAccAlicloudEcpKeyPair_basic(t *testing.T) {
 	resourceId := "alicloud_ecp_key_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcpKeyPairMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudphoneService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEcpKeyPair")
+		return &IaCServiceService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "GetKeyPairResource")
 	rac := resourceAttrCheckInit(rc, ra)
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccAlicloudEcpKeyPair%d", rand)
