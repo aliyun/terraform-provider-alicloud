@@ -1,4 +1,30 @@
 ## 1.238.0 (Unreleased)
+
+- **New Resource:** `alicloud_live_caster` [GH-7974]
+- **New Resource:** `alicloud_vpc_ipam_ipam_pool_allocation` [GH-7975]
+
+ENHANCEMENTS:
+
+- resource/alicloud_arms_dispatch_rule: add new attribute notify_template and data-source/alicloud_arms_dispatch_rules: add new attribute notify_template. [GH-7909]
+- resource/alicloud_ess_scaling_configuration: add attribute custom_priorities. [GH-7929]
+- resource/alicloud_ess_scaling_group: add attribute of stop_instance_timeout. [GH-7945]
+- resource/alicloud_cen_private_zone: Improved alicloud_cen_private_zone testcase. [GH-7963]
+- resource/alicloud_alb_rule: add retry code while creating rule. [GH-7977]
+- docs: improve examples for oos, nas, alb, cen, cloud_sso. [GH-7954]
+- docs: Deprecated resource alicloud_rdc_organization; Deprecated data source alicloud_rdc_organizations. [GH-7964]
+- docs: Improves example for fcv3_trigger. [GH-7968]
+- docs: Improves example for arms_dispatch_rules. [GH-7979]
+- docs: improve examples for alicloud_config_rule. [GH-7980]
+- testcase: Improves the init test client and using dingTalk to cleanup some instances before some specific testcases. [GH-7957]
+- testcase: testcase: Fixed alicloud_ssl_certificates_service_certificate test case. [GH-7958]
+- testcase: testcase: Fixed cen test case. [GH-7961]
+- testcase: Fixed alicloud_kvstore_account testcase. [GH-7971]
+- testcase: Deprecated alicloud_arms_remote_write, alicloud_arms_remote_writes testcase. [GH-7972]
+
+BUG FIXES:
+
+- resource/alicloud_kms_instance: fix bug while bind_vpcs.vpc_owner_id integer overflow. [GH-7976]
+
 ## 1.237.0 (December 06, 2024)
 
 - **New Resource:** `alicloud_data_works_project_member` ([#7897](https://github.com/aliyun/terraform-provider-alicloud/issues/7897))
