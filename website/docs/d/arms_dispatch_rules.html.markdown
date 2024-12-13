@@ -63,7 +63,9 @@ resource "alicloud_arms_dispatch_rule" "default" {
   }
 }
 
-data "alicloud_arms_dispatch_rules" "ids" {}
+data "alicloud_arms_dispatch_rules" "ids" {
+  ids = [alicloud_arms_dispatch_rule.default.id]
+}
 
 output "arms_dispatch_rule_id_1" {
   value = data.alicloud_arms_dispatch_rules.ids.rules.0.id
@@ -112,7 +114,7 @@ The following attributes are exported in addition to the arguments listed above:
       * `name` - The name of the contact or contact group.
       * `notify_type` - The type of the alert contact.
 
-  * `notify_template` - The notification method.
+  * `notify_template` - (Available since v1.238.0) The notification method.
     * `email_content` - The content of the email.
     * `email_title` - The title of the email.
     * `email_recover_title` - The title of the email.
