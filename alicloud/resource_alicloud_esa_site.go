@@ -72,10 +72,7 @@ func resourceAliCloudEsaSiteCreate(d *schema.ResourceData, meta interface{}) err
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -90,7 +87,7 @@ func resourceAliCloudEsaSiteCreate(d *schema.ResourceData, meta interface{}) err
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -175,10 +172,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	update := false
 	d.Partial(true)
 	action := "ChangeResourceGroup"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
@@ -192,7 +186,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -214,10 +208,6 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	action = "UpdateSiteCoverage"
-	conn, err = client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
@@ -231,7 +221,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -269,10 +259,7 @@ func resourceAliCloudEsaSiteDelete(d *schema.ResourceData, meta interface{}) err
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["SiteId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -281,7 +268,7 @@ func resourceAliCloudEsaSiteDelete(d *schema.ResourceData, meta interface{}) err
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

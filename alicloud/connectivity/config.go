@@ -31,6 +31,7 @@ type Config struct {
 	SecurityToken        string
 	OtsInstanceName      string
 	AccountId            string
+	AccountType          string
 	Protocol             string
 	ClientReadTimeout    int
 	ClientConnectTimeout int
@@ -425,6 +426,28 @@ func needRetry(err error) bool {
 			return true
 		}
 		if *e.Code == "ServiceUnavailable" || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
+			return true
+		}
+	}
+	return false
+}
+func isExpectedErrors(err error, expectCodes []string) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*tea.SDKError); ok {
+		for _, code := range expectCodes {
+			// The second statement aims to match the tea sdk history bug
+			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, code := range expectCodes {
+		if strings.Contains(err.Error(), code) {
 			return true
 		}
 	}
