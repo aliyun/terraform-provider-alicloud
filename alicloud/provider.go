@@ -1868,6 +1868,11 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
 		TerraformVersion:     p.TerraformVersion,
 	}
+
+	if v := os.Getenv("ALICLOUD_TERRAFORM_TRACE"); v != "" {
+		config.TerraformTraceId = v
+	}
+
 	log.Println("alicloud provider trace id:", config.TerraformTraceId)
 	if accessKey != "" && secretKey != "" {
 		credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
