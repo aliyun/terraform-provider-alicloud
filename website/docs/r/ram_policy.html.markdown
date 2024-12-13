@@ -68,7 +68,7 @@ The following arguments are supported:
 * `policy_document` - (Optional, Conflicts with `document`, `statement` and `version`, Available since 1.114.0+) Document of the RAM policy. It is required when the `statement` is not specified.
 * `description` - (Optional, ForceNew) Description of the RAM policy. This name can have a string of 1 to 1024 characters.
 * `rotate_strategy` - (Optional, Available since 1.114.0+) The rotation strategy of the policy. You can use this parameter to delete an early policy version. Valid Values: `None`, `DeleteOldestNonDefaultVersionWhenLimitExceeded`. Default to `None`.
-* `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
+* `force` - (Optional) This parameter is used for resource destroy. Default value is `false`. All the relationships associated with the policy will be removed when the `force` is set to `true`.
 
 
 ### `statement`
