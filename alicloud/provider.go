@@ -875,6 +875,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_live_caster":                                          resourceAliCloudLiveCaster(),
 			"alicloud_vpc_ipam_ipam_pool_allocation":                        resourceAliCloudVpcIpamIpamPoolAllocation(),
+			"alicloud_pai_service":                                          resourceAliCloudPaiService(),
 			"alicloud_ecs_image_pipeline_execution":                         resourceAliCloudEcsImagePipelineExecution(),
 			"alicloud_oss_bucket_website":                                   resourceAliCloudOssBucketWebsite(),
 			"alicloud_sls_oss_export_sink":                                  resourceAliCloudSlsOssExportSink(),
