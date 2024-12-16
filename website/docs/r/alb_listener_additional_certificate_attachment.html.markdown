@@ -20,7 +20,7 @@ For information about Application Load Balancer (ALB) Listener Additional Certif
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_listener_additional_certificate_attachment&exampleId=b59df346-6bd3-2c93-d938-adf69811b64fdb2aebb9&activeTab=example&spm=docs.r.alb_listener_additional_certificate_attachment.0.b59df3466b&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_listener_additional_certificate_attachment&exampleId=cdd4dc7e-7dfe-0ab2-0ce6-c4b63df5c387d63d67a9&activeTab=example&spm=docs.r.alb_listener_additional_certificate_attachment.0.cdd4dc7e7d&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

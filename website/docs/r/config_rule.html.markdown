@@ -20,7 +20,7 @@ For information about Config Rule and how to use it, see [What is Rule](https://
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_config_rule&exampleId=276bf272-5b0f-d56c-b9b8-42ba035c469405ed40f1&activeTab=example&spm=docs.r.config_rule.0.276bf2725b&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_config_rule&exampleId=3bd93541-7a3b-d7e0-aabd-67deb758585b69c25058&activeTab=example&spm=docs.r.config_rule.0.3bd935417a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

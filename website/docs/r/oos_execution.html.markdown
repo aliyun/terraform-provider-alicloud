@@ -16,7 +16,7 @@ Provides a OOS Execution resource. For information about Alicloud OOS Execution 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oos_execution&exampleId=b1fee8b3-109b-a25f-6099-35fc9e29f4e9f073eb47&activeTab=example&spm=docs.r.oos_execution.0.b1fee8b310&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oos_execution&exampleId=7bac5c9b-d872-f1bd-7010-aae94025a21433b48066&activeTab=example&spm=docs.r.oos_execution.0.7bac5c9bd8&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

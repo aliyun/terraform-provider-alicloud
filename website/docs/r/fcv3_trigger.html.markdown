@@ -75,6 +75,12 @@ resource "alicloud_fcv3_trigger" "default" {
 
 HTTP Trigger
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_trigger&exampleId=17b0b99e-bc39-9405-cad2-50772d0586c71bba4d44&activeTab=example&spm=docs.r.fcv3_trigger.1.17b0b99ebc&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

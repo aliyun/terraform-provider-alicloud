@@ -20,7 +20,7 @@ For information about File Storage (NAS) Fileset and how to use it, see [What is
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_fileset&exampleId=75f907b2-f410-d614-dbc7-514f21a4af25922f5e74&activeTab=example&spm=docs.r.nas_fileset.0.75f907b2f4&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_fileset&exampleId=9ac6c599-20fe-16ea-081e-20448496b4141b8987b4&activeTab=example&spm=docs.r.nas_fileset.0.9ac6c59920&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
