@@ -7,7 +7,7 @@ description: |-
   Provides a Web Application Firewall Instance resource.
 ---
 
-# alicloud\_waf\_instance
+# alicloud_waf_instance
 
 -> **DEPRECATED:**  This resource has been deprecated and using [alicloud_wafv3_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/wafv3_instance) instead.
 
@@ -15,7 +15,7 @@ Provides a WAF Instance resource to create instance in the Web Application Firew
 
 For information about WAF and how to use it, see [What is Alibaba Cloud WAF](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in 1.83.0+ .
+-> **NOTE:** Available since v1.83.0.
 
 ## Example Usage
 
@@ -37,6 +37,13 @@ resource "alicloud_waf_instance" "default" {
   resource_group_id    = "rs-abc12345"
 }
 ```
+
+### Deleting `alicloud_waf_instance` or removing it from your configuration
+
+The `alicloud_waf_instance` resource allows you to manage `subscription_type = "Subscription"` WAF instance, but Terraform cannot destroy it before it is expired.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the WAF Instance.
+You can resume managing the subscription WAF instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -54,10 +61,10 @@ The following arguments are supported:
     * International site customers can purchase the following versions of China Mainland region: ["version_pro_china", "version_business_china", "version_enterprise_china"]
     * International site customers can purchase the following versions of International region: ["version_pro", "version_business", "version_enterprise"].
 
-* `period` - (ForceNew) Service time of Web Application Firewall.
+* `period` - (Optional, ForceNew) Service time of Web Application Firewall.
 * `prefessional_service` - (Required, String) Specify whether professional service is supported. Valid values: ["true", "false"]
-* `renew_period` - (ForceNew) Renewal period of WAF service. Unit: month
-* `renewal_status` - (ForceNew) Renewal status of WAF service. Valid values: 
+* `renew_period` - (Optional, ForceNew) Renewal period of WAF service. Unit: month
+* `renewal_status` - (Optional, ForceNew) Renewal status of WAF service. Valid values: 
     * AutoRenewal: The service time of WAF is renewed automatically.
     * ManualRenewal (default): The service time of WAF is renewed manually.Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
 * `resource_group_id` - (Optional) The resource group ID.
