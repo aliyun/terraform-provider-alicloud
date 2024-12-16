@@ -2,54 +2,60 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"testing"
 
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var redisInstanceClassForTest = "redis.master.small.default"
-var memcacheInstanceClassForTest = "memcache.master.small.default"
-
-func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
-	var policy *r_kvstore.DescribeBackupPolicyResponse
-
+func TestAccAliCloudKvStoreBackupPolicy_basic0(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.KvStoreSupportRegions)
 	resourceId := "alicloud_kvstore_backup_policy.default"
-	ra := resourceAttrInit(resourceId, kvStoreMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudKvStoreBackupPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
+	}, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sKvstoreBackupPolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKvStoreBackupPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":   "${alicloud_kvstore_instance.default.id}",
+					"backup_period": []string{"Tuesday"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"instance_id":     CHECKSET,
+						"backup_period.#": "1",
+					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_time": "10:00Z-11:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Tuesday", "Wednesday", "Sunday"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_period.#": "3",
@@ -57,55 +63,47 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_time": "11:00Z-12:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_time":     "12:00Z-13:00Z",
-						"backup_period.#": "1",
-					}),
-				),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
-
 }
 
-func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
-	var policy *r_kvstore.DescribeBackupPolicyResponse
-
+func TestAccAliCloudKvStoreBackupPolicy_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.KvStoreSupportRegions)
 	resourceId := "alicloud_kvstore_backup_policy.default"
-	ra := resourceAttrInit(resourceId, kvStoreMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudKvStoreBackupPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
+	}, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sKvstoreBackupPolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKvStoreBackupPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":   "${alicloud_kvstore_instance.default.id}",
+					"backup_time":   "10:00Z-11:00Z",
+					"backup_period": []string{"Tuesday", "Wednesday", "Sunday"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"instance_id":     CHECKSET,
+						"backup_time":     "10:00Z-11:00Z",
+						"backup_period.#": "3",
+					}),
 				),
 			},
 			{
@@ -113,169 +111,37 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_period.#": "3",
-					}),
-				),
-			},
-			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_time": "11:00Z-12:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_time":     "12:00Z-13:00Z",
-						"backup_period.#": "1",
-					}),
-				),
-			},
 		},
 	})
-
 }
 
-func testAccCheckKVStoreBackupPolicyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
+var AliCloudKvStoreBackupPolicyMap0 = map[string]string{}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_kvstore_instance" {
-			continue
-		}
-
-		if _, err := kvstoreService.DescribeKVstoreBackupPolicy(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
-		}
-		return fmt.Errorf("KVStore Instance %s Policy sitll exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-var kvStoreMap = map[string]string{
-	"instance_id":     CHECKSET,
-	"backup_time":     "10:00Z-11:00Z",
-	"backup_period.#": "2",
-}
-
-func testAccKVStoreBackupPolicy_vpc(common, instanceType, instanceClass, engineVersion string) string {
+func AliCloudKvStoreBackupPolicyBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
 	variable "name" {
-		default = "tf-testAccKVStoreBackupPolicy_vpc"
+  		default = "%s"
 	}
-	resource "alicloud_kvstore_instance" "default" {
-		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = data.alicloud_vswitches.default.ids.0
-		security_ips = ["10.0.0.1"]
-		instance_type = "%s"
-		engine_version = "%s"
-	}
-	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
-		backup_period = ["Tuesday", "Wednesday"]
-		backup_time = "10:00Z-11:00Z"
-	}
-	`, common, instanceClass, instanceType, engineVersion)
-}
 
-func testAccKVStoreBackupPolicy_vpcUpdatePeriod(common, instanceType, instanceClass, engineVersion string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "KVStore"
+	data "alicloud_kvstore_zones" "default" {
+  		instance_charge_type = "PostPaid"
 	}
-	variable "multi_az" {
-		default = "false"
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
 	}
-	variable "name" {
-		default = "tf-testAccKVStoreBackupPolicy_vpc"
+
+	data "alicloud_vswitches" "default" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
 	}
+
 	resource "alicloud_kvstore_instance" "default" {
-		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = data.alicloud_vswitches.default.ids.0
-		security_ips = ["10.0.0.1"]
-		instance_type = "%s"
-		engine_version = "%s"
+  		zone_id          = data.alicloud_kvstore_zones.default.zones.0.id
+  		instance_class   = "redis.master.small.default"
+  		db_instance_name = var.name
+  		engine_version   = "5.0"
+  		vswitch_id       = data.alicloud_vswitches.default.ids.0
 	}
-	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
-		backup_period = ["Tuesday", "Wednesday", "Sunday"]
-		backup_time = "10:00Z-11:00Z"
-	}
-	`, common, instanceClass, instanceType, engineVersion)
-}
-func testAccKVStoreBackupPolicy_vpcUpdateTime(common, instanceType, instanceClass, engineVersion string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
-	variable "name" {
-		default = "tf-testAccKVStoreBackupPolicy_vpc"
-	}
-	resource "alicloud_kvstore_instance" "default" {
-		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = data.alicloud_vswitches.default.ids.0
-		security_ips = ["10.0.0.1"]
-		instance_type = "%s"
-		engine_version = "%s"
-	}
-	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
-		backup_period = ["Tuesday", "Wednesday", "Sunday"]
-		backup_time = "11:00Z-12:00Z"
-	}
-	`, common, instanceClass, instanceType, engineVersion)
-}
-func testAccKVStoreBackupPolicy_vpcUpdateAll(common, instanceType, instanceClass, engineVersion string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
-	variable "name" {
-		default = "tf-testAccKVStoreBackupPolicy_vpc"
-	}
-	resource "alicloud_kvstore_instance" "default" {
-		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = data.alicloud_vswitches.default.ids.0
-		security_ips = ["10.0.0.1"]
-		instance_type = "%s"
-		engine_version = "%s"
-	}
-	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
-		backup_period = ["Tuesday"]
-		backup_time = "12:00Z-13:00Z"
-	}
-	`, common, instanceClass, instanceType, engineVersion)
+`, name)
 }
