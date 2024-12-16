@@ -12,8 +12,9 @@ import (
 )
 
 func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
+	rand := acctest.RandIntRange(1000000, 99999999)
+	// cn region needs icp domain, and using intl region instead
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_domain.default.id}"]`,
@@ -51,7 +52,12 @@ func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
 		}),
 	}
 
-	Wafv3DomainCheckInfo.dataSourceTestCheck(t, rand, idsConf, DomainConf, backendConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
+	}
+
+	Wafv3DomainCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, DomainConf, backendConf, allConf)
 }
 
 var existWafv3DomainMapFunc = func(rand int) map[string]string {
@@ -114,12 +120,16 @@ func testAccCheckAliCloudWafv3DomainSourceConfig(rand int, attrMap map[string]st
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
+	casRegion := "cn-hangzhou"
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) == "international" {
+		casRegion = "ap-southeast-1"
+	}
 	config := fmt.Sprintf(`
 	variable "name" {
   		default = "tftest%d.tftest.top"
 	}
 
-	data "alicloud_wafv3_instances" "default" {
+	resource "alicloud_wafv3_instance" "default" {
 	}
 
 	resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -180,7 +190,7 @@ EOF
 	}
 
 	resource "alicloud_wafv3_domain" "default" {
-  		instance_id = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id = alicloud_wafv3_instance.default.id
   		domain      = var.name
   		access_type = "share"
   		listen {
@@ -225,10 +235,10 @@ EOF
 	}
 
 	data "alicloud_wafv3_domains" "default" {
-  		instance_id    = data.alicloud_wafv3_instances.default.ids.0
+  		instance_id    = alicloud_wafv3_instance.default.id
   		enable_details = true
 		%s
 	}
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, casRegion, strings.Join(pairs, "\n   "))
 	return config
 }

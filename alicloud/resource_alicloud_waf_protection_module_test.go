@@ -20,8 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudWAFProtectionModule_basic0(t *testing.T) {
+func TestAccAliCloudWafProtectionModule_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	resourceId := "alicloud_waf_protection_module.default"
 	ra := resourceAttrInit(resourceId, AlicloudWAFProtectionModuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -35,7 +36,6 @@ func TestAccAlicloudWAFProtectionModule_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_ICP_DOMAIN_NAME")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -110,7 +110,7 @@ variable "name" {
 data "alicloud_waf_instances" "default" {}
 
 resource "alicloud_waf_domain" "default" {
-  domain_name       = "%s"
+  domain_name       = "alicloud-provider.cn"
   instance_id       = data.alicloud_waf_instances.default.ids.0
   is_access_product = "On"
   source_ips        = ["1.1.1.1"]
@@ -127,7 +127,7 @@ resource "alicloud_waf_domain" "default" {
   }
 }
 
-`, name, os.Getenv("ALICLOUD_WAF_ICP_DOMAIN_NAME"))
+`, name)
 }
 
 func TestUnitAlicloudWAFProtectionModule(t *testing.T) {

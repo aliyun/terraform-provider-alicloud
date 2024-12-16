@@ -104,13 +104,15 @@ func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCod
 			if instanceId == "" {
 				return
 			}
+			t.Logf("waiting for cleaning up existed instances %s in region %s...", instanceId, instanceRegion)
 			sendMessage(fmt.Sprintf(`
 [Critical] Please cleaning up instance before running integration test.
 
 AccountId: %s
 ProductCode: %s
 InstanceId: %s
-`, accountId, productCode, instanceId))
+Time: %s
+`, accountId, productCode, instanceId, time.Now().String()))
 			time.Sleep(3 * time.Minute)
 		}
 	}

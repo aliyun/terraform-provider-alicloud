@@ -13,6 +13,7 @@ import (
 // Case 接入terraform 5993
 func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	resourceId := "alicloud_wafv3_defense_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap5993)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -26,6 +27,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -34,7 +36,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status":                             "0",
-					"instance_id":                        "${data.alicloud_wafv3_instances.default.ids.0}",
+					"instance_id":                        "${alicloud_wafv3_instance.default.id}",
 					"defense_template_name":              name,
 					"template_type":                      "user_custom",
 					"template_origin":                    "custom",
@@ -98,7 +100,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic5993(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status":                             "1",
-					"instance_id":                        "${data.alicloud_wafv3_instances.default.ids.0}",
+					"instance_id":                        "${alicloud_wafv3_instance.default.id}",
 					"defense_template_name":              name + "_update",
 					"template_type":                      "user_custom",
 					"template_origin":                    "custom",
@@ -139,7 +141,7 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_wafv3_instances" "default" {
+resource "alicloud_wafv3_instance" "default" {
 }
 
 
@@ -170,7 +172,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic5993_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status":                             "0",
-					"instance_id":                        "${data.alicloud_wafv3_instances.default.ids.0}",
+					"instance_id":                        "${alicloud_wafv3_instance.default.id}",
 					"defense_template_name":              name,
 					"template_type":                      "user_custom",
 					"template_origin":                    "custom",

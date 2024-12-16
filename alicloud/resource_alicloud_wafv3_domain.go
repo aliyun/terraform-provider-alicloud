@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -220,10 +219,7 @@ func resourceAlicloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("access_type"); ok {
 		request["AccessType"] = v
@@ -290,7 +286,7 @@ func resourceAlicloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 	action := "CreateDomain"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -298,7 +294,6 @@ func resourceAlicloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -407,11 +402,8 @@ func resourceAlicloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafOpenapiService := WafOpenapiService{client}
-
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var response map[string]interface{}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -480,15 +472,15 @@ func resourceAlicloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 	action := "ModifyDomain"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
@@ -505,15 +497,11 @@ func resourceAlicloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 func resourceAlicloudWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafOpenapiService := WafOpenapiService{client}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-
+	var response map[string]interface{}
 	request := map[string]interface{}{
 		"InstanceId": parts[0],
 		"Domain":     parts[1],
@@ -523,7 +511,7 @@ func resourceAlicloudWafv3DomainDelete(d *schema.ResourceData, meta interface{})
 	action := "DeleteDomain"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -531,7 +519,7 @@ func resourceAlicloudWafv3DomainDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

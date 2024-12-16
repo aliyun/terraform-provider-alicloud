@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Wafv3 Instance available to the user.[What is Instance](https://www.alibabacloud.com/help/en/web-application-firewall/latest/what-is-waf)
 
--> **NOTE:** Available in 1.200.0+
+-> **NOTE:** Available since v1.200.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_wafv3_instances" "default" {
 }
 
@@ -27,8 +27,8 @@ output "alicloud_wafv3_instance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+* `ids` - (Optional, Available since 1.239.0) A list of WAF v3 instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
