@@ -48,17 +48,34 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (*r_kvstore.Desc
 	request := r_kvstore.CreateDescribeBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = id
-	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-		return rkvClient.DescribeBackupPolicy(request)
+
+	var raw interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeBackupPolicy(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"LockTimeout"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	response, _ = raw.(*r_kvstore.DescribeBackupPolicyResponse)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("KVstoreBackupPolicy", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(Error(GetNotFoundMessage("KVstore:BackupPolicy", id)), NotFoundWithResponse, response)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*r_kvstore.DescribeBackupPolicyResponse)
+
 	return response, nil
 }
 
