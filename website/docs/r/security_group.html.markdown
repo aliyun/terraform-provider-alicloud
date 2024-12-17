@@ -2,16 +2,17 @@
 subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_security_group"
-sidebar_current: "docs-alicloud-resource-security-group"
 description: |-
-  Provides a Alicloud Security Group resource.
+  Provides a Alicloud ECS Security Group resource.
 ---
 
 # alicloud_security_group
 
-Provides a Security Group resource.
+Provides a ECS Security Group resource.
 
-For information about Security Group and how to use it, see [What is Security Group](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-createsecuritygroup).
+
+
+For information about ECS Security Group and how to use it, see [What is Security Group](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-createsecuritygroup).
 
 -> **NOTE:** Available since v1.0.0.
 
@@ -31,8 +32,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_security_group" "default" {
-  name        = "terraform-example"
-  description = "New security group"
+  security_group_name = "terraform-example"
 }
 ```
 
@@ -45,14 +45,14 @@ Basic Usage for VPC
 </div></div>
 
 ```terraform
-resource "alicloud_vpc" "vpc" {
+resource "alicloud_vpc" "default" {
   vpc_name   = "terraform-example"
-  cidr_block = "10.1.0.0/21"
+  cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_security_group" "group" {
-  name   = "terraform-example"
-  vpc_id = alicloud_vpc.vpc.id
+resource "alicloud_security_group" "default" {
+  security_group_name = "terraform-example"
+  vpc_id              = alicloud_vpc.default.id
 }
 ```
 
@@ -64,38 +64,40 @@ to create a security group and add several rules one-click.
 ## Argument Reference
 
 The following arguments are supported:
-
-* `vpc_id` - (Optional, ForceNew) The ID of the VPC.
-* `security_group_type` - (Optional, ForceNew, Available since v1.58.0) The type of the security group. Valid values:
-  - `normal`: basic security group.
-  - `enterprise`: advanced security group For more information, see [Advanced security groups](https://www.alibabacloud.com/help/en/ecs/advanced-security-groups).
-* `name` - (Optional) The name of the security group. Defaults to null.
-* `description` - (Optional) The security group description. Defaults to null.
+* `description` - (Optional) The description of the security group. The description must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
+* `inner_access_policy` - (Optional, Available since v1.55.3) The internal access control policy of the security group. Valid values:
+  - `Accept`: The internal interconnectivity policy.
+  - `Drop`: The internal isolation policy.
 * `resource_group_id` - (Optional, Available since v1.58.0) The ID of the resource group to which the security group belongs. **NOTE:** From version 1.115.0, `resource_group_id` can be modified.
-* `inner_access_policy` - (Optional, Available since v1.55.3) The internal access control policy of the security group. Valid values: `Accept`, `Drop`.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-* `inner_access` - (Deprecated since v1.55.3) Field `inner_access` has been deprecated from provider version 1.55.3. New field `inner_access_policy` instead.
-
-Combining security group rules, the policy can define multiple application scenario. Default to true. It is valid from version `1.7.2`.
+* `security_group_name` - (Optional, Available since v1.239.0) The name of the security group. The name must be `2` to `128` characters in length. The name must start with a letter and cannot start with `http://` or `https://`. The name can contain Unicode characters under the Decimal Number category and the categories whose names contain Letter. The name can also contain colons (:), underscores (\_), periods (.), and hyphens (-).
+* `security_group_type` - (Optional, ForceNew, Available since v1.58.0) The type of the security group. Default value: `normal`. Valid values:
+  - `normal`: Basic security group.
+  - `enterprise`: Advanced security group For more information, see [Advanced security groups](https://www.alibabacloud.com/help/en/ecs/advanced-security-groups).
+* `tags` - (Optional, Map) A mapping of tags to assign to the resource.
+* `vpc_id` - (Optional, ForceNew) The ID of the VPC in which you want to create the security group.
+* `name` - (Optional, Deprecated since v1.239.0) Field `name` has been deprecated from provider version 1.239.0. New field `security_group_name` instead.
+* `inner_access` - (Optional, Bool, Deprecated since v1.55.3) Field `inner_access` has been deprecated from provider version 1.55.3. New field `inner_access_policy` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Security Group.
+* `create_time` - (Available since v1.239.0) The time when the security group was created.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.214.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `delete` - (Defaults to 6 mins) Used when delete the Security Group.
+* `create` - (Defaults to 5 mins) Used when create the Security Group.
+* `delete` - (Defaults to 10 mins) Used when delete the Security Group.
+* `update` - (Defaults to 5 mins) Used when update the Security Group.
 
 ## Import
 
-Security Group can be imported using the id, e.g.
+ECS Security Group can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_security_group.example sg-abc123456
+$ terraform import alicloud_security_group.example <id>
 ```
