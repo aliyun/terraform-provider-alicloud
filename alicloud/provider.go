@@ -1061,7 +1061,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_snapshot":                                             resourceAliCloudEcsSnapshot(),
 			"alicloud_snapshot_policy":                                      resourceAliCloudEcsAutoSnapshotPolicy(),
 			"alicloud_launch_template":                                      resourceAliCloudEcsLaunchTemplate(),
-			"alicloud_security_group":                                       resourceAliyunSecurityGroup(),
+			"alicloud_security_group":                                       resourceAliCloudEcsSecurityGroup(),
 			"alicloud_security_group_rule":                                  resourceAliyunSecurityGroupRule(),
 			"alicloud_db_database":                                          resourceAlicloudDBDatabase(),
 			"alicloud_db_account":                                           resourceAlicloudRdsAccount(),

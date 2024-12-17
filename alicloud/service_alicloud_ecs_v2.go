@@ -542,3 +542,100 @@ func (s *EcsServiceV2) EcsDiskStateRefreshFunc(id string, field string, failStat
 }
 
 // DescribeEcsDisk >>> Encapsulated.
+
+// DescribeEcsSecurityGroup <<< Encapsulated get interface for Ecs SecurityGroup.
+
+func (s *EcsServiceV2) DescribeEcsSecurityGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeSecurityGroups"
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SecurityGroupId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.SecurityGroups.SecurityGroup[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["SecurityGroupId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EcsServiceV2) DescribeSecurityGroupDescribeSecurityGroupAttribute(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeSecurityGroupAttribute"
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SecurityGroupId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeEcsSecurityGroup >>> Encapsulated.
