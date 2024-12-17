@@ -295,6 +295,14 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 				Computed:     true,
+				ForceNew:     true,
+			},
+			"strict_consistency": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
+				Computed:     true,
+				ForceNew:     true,
 			},
 			"serverless_type": {
 				Type:         schema.TypeString,
@@ -1641,6 +1649,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_revision_version_list", DBRevisionVersionList)
 	d.Set("target_db_revision_version_code", d.Get("target_db_revision_version_code"))
 	d.Set("compress_storage", clusterAttribute.CompressStorageMode)
+	d.Set("hot_standby_cluster", convertPolarDBHotStandbyClusterStatusReadResponse(clusterAttribute.HotStandbyCluster))
+	d.Set("strict_consistency", clusterAttribute.StrictConsistency)
 	return nil
 }
 
@@ -1780,6 +1790,10 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 			}
 
 		}
+	}
+
+	if v, ok := d.GetOk("strict_consistency"); ok && v.(string) != "" {
+		request["StrictConsistency"] = d.Get("strict_consistency").(string)
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
@@ -1992,4 +2006,12 @@ func validateMaintainTimeRange(v interface{}, k string) (ws []string, errors []e
 		}
 	}
 	return
+}
+
+func convertPolarDBHotStandbyClusterStatusReadResponse(source string) string {
+	switch source {
+	case "StandbyClusterON":
+		return "ON"
+	}
+	return "OFF"
 }
