@@ -97,7 +97,7 @@ func resourceAlicloudCenInterRegionTrafficQosQueueCreate(d *schema.ResourceData,
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.TrafficQosPolicy"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -195,7 +195,7 @@ func resourceAlicloudCenInterRegionTrafficQosQueueUpdate(d *schema.ResourceData,
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.TrafficQosPolicy"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -236,7 +236,7 @@ func resourceAlicloudCenInterRegionTrafficQosQueueDelete(d *schema.ResourceData,
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking","IncorrectStatus.TrafficQosPolicy"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
