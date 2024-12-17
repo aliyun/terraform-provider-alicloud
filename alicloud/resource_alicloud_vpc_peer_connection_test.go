@@ -87,9 +87,12 @@ func testSweepVpcPeerConnection(region string) error {
 
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
+				if item["Name"] == nil || strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
 					skip = false
 				}
+			}
+			if item["Name"] == nil {
+				item["Name"] = ""
 			}
 			if skip {
 				log.Printf("[INFO] Skipping Vpc Peer Connection: %s", item["Name"].(string))
