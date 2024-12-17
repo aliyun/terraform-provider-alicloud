@@ -1314,13 +1314,29 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		request := ecs.CreateDescribeInstanceAutoRenewAttributeRequest()
 		request.RegionId = client.RegionId
 		request.InstanceId = d.Id()
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstanceAutoRenewAttribute(request)
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstanceAutoRenewAttribute(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
 		periodUnit := d.Get("period_unit").(string)
 		if periodUnit == "" {
