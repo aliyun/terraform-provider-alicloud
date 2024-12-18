@@ -227,6 +227,8 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					"db_instance_storage_type": "cloud_ssd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"db_is_ignore_case":        "false",
+					"tde_status":               "Enabled",
+					"tde_encryption_key":       "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -238,6 +240,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"auto_upgrade_minor_version": "Auto",
 						"db_instance_storage_type":   "cloud_ssd",
 						"resource_group_id":          CHECKSET,
+						"tde_status":                 "Enabled",
 					}),
 				),
 			},
@@ -438,7 +441,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 							"value": "70",
 						},
 					},
-					"encryption_key":           "${alicloud_kms_key.default.id}",
 					"port":                     "3306",
 					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
@@ -492,7 +494,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "tde_encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
 			},
 		},
 	})
@@ -640,8 +642,9 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enabled",
-					"role_arn":   "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"tde_status":         "Enabled",
+					"role_arn":           "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"tde_encryption_key": "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -709,7 +712,7 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "sql_collector_status", "role_arn"},
+				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "tde_encryption_key", "sql_collector_status", "role_arn"},
 			},
 		},
 	})
@@ -1019,6 +1022,16 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"recovery_model": "simple",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recovery_model": "simple",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_storage": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1236,6 +1249,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 					"monitoring_period":        "60",
 					"category":                 "HighAvailability",
 					"target_minor_version":     "rds_postgres_1200_20231030",
+					"encryption_key":           "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1246,6 +1260,37 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 						"db_instance_storage_type": "cloud_essd",
 						"category":                 "HighAvailability",
 						"target_minor_version":     "rds_postgres_1200_20231030",
+						"encryption_key":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_key": "disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encryption_key": "",
 					}),
 				),
 			},
@@ -1376,7 +1421,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"security_group_ids":       []string{},
 					"monitoring_period":        "60",
-					"encryption_key":           "${alicloud_kms_key.default.id}",
 					"category":                 "HighAvailability",
 					"db_instance_storage_type": "cloud_essd2",
 					"connection_string_prefix": connectionStringPrefixSecond,
@@ -1504,6 +1548,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 					"db_time_zone":             "America/New_York",
 					"connection_string_prefix": "${var.name}",
 					"port":                     "5999",
+					"pg_bouncer_enabled":       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1518,6 +1563,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 						"port":                     "5999",
 						"connection_string_prefix": CHECKSET,
 						"instance_name":            CHECKSET,
+						"pg_bouncer_enabled":       "true",
 					}),
 				),
 			},
@@ -1690,7 +1736,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 					"vswitch_id":                  "${local.vswitch_id}",
 					"security_group_ids":          []string{},
 					"monitoring_period":           "60",
-					"encryption_key":              "${alicloud_kms_key.default.id}",
 					"ssl_action":                  "Open",
 					"ca_type":                     "aliyun",
 					"client_ca_enabled":           "1",
@@ -1701,6 +1746,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 					"replication_acl":             "cert",
 					"deletion_protection":         "false",
 					"auto_upgrade_minor_version":  "Auto",
+					"encryption_key":              "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1728,6 +1774,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 						"server_key":                  CHECKSET,
 						"deletion_protection":         "false",
 						"auto_upgrade_minor_version":  "Auto",
+						"encryption_key":              CHECKSET,
 					}),
 				),
 			},
@@ -1997,7 +2044,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 					"vswitch_id":                  "${local.vswitch_id}",
 					"security_group_ids":          []string{},
 					"monitoring_period":           "60",
-					"encryption_key":              "${alicloud_kms_key.default.id}",
 					"ssl_action":                  "Open",
 					"ca_type":                     "aliyun",
 					"client_ca_enabled":           "1",
@@ -2051,7 +2097,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy", "babelfish_config.#",
-					"client_ca_enabled", "client_crl_enabled", "db_instance_ip_array_name", "encryption_key", "security_group_id", "modify_mode", "security_ip_type",
+					"client_ca_enabled", "client_crl_enabled", "db_instance_ip_array_name", "security_group_id", "modify_mode", "security_ip_type",
 					"whitelist_network_type", "babelfish_config.2289427611.babelfish_enabled", "babelfish_config.2289427611.master_user_password", "babelfish_config.2289427611.master_username",
 					"babelfish_config.2289427611.migration_mode"},
 			},
@@ -2431,7 +2477,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 					"vswitch_id":         "${local.vswitch_id}",
 					"monitoring_period":  "60",
 					"security_group_ids": "${alicloud_security_group.default.*.id}",
-					"encryption_key":     "${alicloud_kms_key.default.id}",
 					"security_ips":       []string{"10.168.1.12", "100.69.7.112"},
 					"db_time_zone":       "America/New_York",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -2452,7 +2497,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "db_is_ignore_case"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2543,7 +2588,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "Postpaid", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "Postpaid", "db_is_ignore_case"},
 			},
 		},
 	})
@@ -3166,6 +3211,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 							"min_capacity": "2",
 						},
 					},
+					"recovery_model": "simple",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3179,6 +3225,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 						"serverless_config.#":              "1",
 						"serverless_config.0.max_capacity": "8",
 						"serverless_config.0.min_capacity": "2",
+						"recovery_model":                   "simple",
 					}),
 				),
 			},
@@ -3508,7 +3555,6 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "cloud_essd",
-					"encryption_key":           "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3527,7 +3573,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -3937,7 +3983,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
