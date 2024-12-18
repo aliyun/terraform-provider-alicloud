@@ -360,7 +360,12 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: IntInSlice([]int{30, 180, 365, 1095, 1825}),
-				Default:      30,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("sql_collector_status"); ok && strings.ToLower(v.(string)) == "enabled" {
+						return false
+					}
+					return true
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -605,6 +610,11 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Up", "Down", "TempUpgrade", "Serverless"}, false),
+			},
+			"bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -1423,6 +1433,11 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["DBInstanceStorage"] = d.Get("instance_storage")
 
+	if d.HasChange("bursting_enabled") {
+		update = true
+	}
+	request["BurstingEnabled"] = d.Get("bursting_enabled")
+
 	if d.HasChange("serverless_config") {
 		update = true
 		if v, ok := d.GetOk("serverless_config"); ok {
@@ -1708,6 +1723,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("zone_id", instance["ZoneId"])
 	d.Set("status", instance["DBInstanceStatus"])
 	d.Set("create_time", instance["CreationTime"])
+	d.Set("bursting_enabled", instance["BurstingEnabled"])
 
 	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
 	payType := instance["PayType"]
@@ -1965,6 +1981,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("port"); ok && v.(string) != "" {
 		request["Port"] = v
+	}
+	if v, ok := d.GetOk("bursting_enabled"); ok && v.(string) != "" {
+		request["BurstingEnabled"] = v
 	}
 
 	if request["Engine"] == "MySQL" || request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {
