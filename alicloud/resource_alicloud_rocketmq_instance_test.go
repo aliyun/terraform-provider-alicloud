@@ -456,8 +456,8 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
-// Case 4652
-func TestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
+// Case 4652 From November 9th, 2024 Beijing time, the RocketMQ version 5.x cannot create single node instances.
+func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4652)
@@ -1441,8 +1441,8 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 	})
 }
 
-// Case 4652  twin
-func TestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
+// Case 4652  twin From November 9th, 2024 Beijing time, the RocketMQ version 5.x cannot create single node instances.
+func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4652)
@@ -1894,8 +1894,8 @@ resource "alicloud_vswitch" "createVSwitch2" {
 `, name)
 }
 
-// Case 创建单节点实例用例_副本1719467789892 7144
-func TestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
+// Case 创建单节点实例用例_副本1719467789892 7144 From November 9th, 2024 Beijing time, the RocketMQ version 5.x cannot create single node instances.
+func SkipTestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap7144)
