@@ -80,7 +80,7 @@ func (s *OosService) DescribeOosExecution(id string) (object map[string]interfac
 	return object, nil
 }
 
-func (s *OosService) OosExecutionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *OosService) OosExecutionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeOosExecution(id)
 		if err != nil {
@@ -91,12 +91,13 @@ func (s *OosService) OosExecutionStateRefreshFunc(id string, failStates []string
 			return nil, "", WrapError(err)
 		}
 
+		currentStatus := fmt.Sprint(object[field])
 		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
-		return object, object["Status"].(string), nil
+		return object, currentStatus, nil
 	}
 }
 
