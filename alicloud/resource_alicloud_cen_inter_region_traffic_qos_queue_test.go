@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenInterRegionTrafficQosQueue_basic0(t *testing.T) {
+func TestAccAliCloudCenInterRegionTrafficQosQueue_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_cen_inter_region_traffic_qos_queue.default"
