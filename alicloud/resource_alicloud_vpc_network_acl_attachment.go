@@ -168,7 +168,7 @@ func resourceAliCloudVpcNetworkAclAttachmentDelete(d *schema.ResourceData, meta 
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "NetworkStatus.Modifying", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "ResourceStatus.Error"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "NetworkStatus.Modifying", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
