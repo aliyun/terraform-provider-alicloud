@@ -1099,7 +1099,7 @@ func resourceAliCloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albServiceV2.AlbLoadBalancerJobStateRefreshFunc(d.Id(), response["JobId"].(string), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albServiceV2.AlbJobStateRefreshFunc(d.Id(), "loadbalancer", response["JobId"].(string), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
