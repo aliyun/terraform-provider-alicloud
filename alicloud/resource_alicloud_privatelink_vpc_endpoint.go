@@ -26,6 +26,12 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"address_ip_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"IPv4", "DualStack", "IPv6"}, false),
+			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -59,7 +65,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Interface"}, false),
+				ValidateFunc: StringInSlice([]string{"Interface", "GatewayLoadBalancer"}, false),
 			},
 			"policy_document": {
 				Type:     schema.TypeString,
@@ -70,6 +76,10 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -77,7 +87,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 			},
 			"security_group_ids": {
 				Type:     schema.TypeSet,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"service_id": {
@@ -218,32 +228,68 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", objectRaw["Bandwidth"])
-	d.Set("connection_status", objectRaw["ConnectionStatus"])
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("endpoint_business_status", objectRaw["EndpointBusinessStatus"])
-	d.Set("endpoint_description", objectRaw["EndpointDescription"])
-	d.Set("endpoint_domain", objectRaw["EndpointDomain"])
-	d.Set("endpoint_type", objectRaw["EndpointType"])
-	d.Set("policy_document", objectRaw["PolicyDocument"])
-	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	d.Set("service_id", objectRaw["ServiceId"])
-	d.Set("service_name", objectRaw["ServiceName"])
-	d.Set("status", objectRaw["EndpointStatus"])
-	d.Set("vpc_endpoint_name", objectRaw["EndpointName"])
-	d.Set("vpc_id", objectRaw["VpcId"])
-	d.Set("zone_private_ip_address_count", objectRaw["ZonePrivateIpAddressCount"])
+	if objectRaw["AddressIpVersion"] != nil {
+		d.Set("address_ip_version", objectRaw["AddressIpVersion"])
+	}
+	if objectRaw["Bandwidth"] != nil {
+		d.Set("bandwidth", objectRaw["Bandwidth"])
+	}
+	if objectRaw["ConnectionStatus"] != nil {
+		d.Set("connection_status", objectRaw["ConnectionStatus"])
+	}
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["EndpointBusinessStatus"] != nil {
+		d.Set("endpoint_business_status", objectRaw["EndpointBusinessStatus"])
+	}
+	if objectRaw["EndpointDescription"] != nil {
+		d.Set("endpoint_description", objectRaw["EndpointDescription"])
+	}
+	if objectRaw["EndpointDomain"] != nil {
+		d.Set("endpoint_domain", objectRaw["EndpointDomain"])
+	}
+	if objectRaw["EndpointType"] != nil {
+		d.Set("endpoint_type", objectRaw["EndpointType"])
+	}
+	if objectRaw["PolicyDocument"] != nil {
+		d.Set("policy_document", objectRaw["PolicyDocument"])
+	}
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["ServiceId"] != nil {
+		d.Set("service_id", objectRaw["ServiceId"])
+	}
+	if objectRaw["ServiceName"] != nil {
+		d.Set("service_name", objectRaw["ServiceName"])
+	}
+	if objectRaw["EndpointStatus"] != nil {
+		d.Set("status", objectRaw["EndpointStatus"])
+	}
+	if objectRaw["EndpointName"] != nil {
+		d.Set("vpc_endpoint_name", objectRaw["EndpointName"])
+	}
+	if objectRaw["VpcId"] != nil {
+		d.Set("vpc_id", objectRaw["VpcId"])
+	}
+	if objectRaw["ZonePrivateIpAddressCount"] != nil {
+		d.Set("zone_private_ip_address_count", objectRaw["ZonePrivateIpAddressCount"])
+	}
 
-	objectRaw, err = privateLinkServiceV2.DescribePrivateLinkListTagResources(d.Id())
-	if err != nil {
+	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
 	tagsMaps := objectRaw["TagResources"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
-	objectRaw, err = privateLinkServiceV2.DescribeListVpcEndpointSecurityGroups(d.Id())
-	if err != nil {
+	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointListVpcEndpointSecurityGroups(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -395,7 +441,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
