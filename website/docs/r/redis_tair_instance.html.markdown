@@ -20,12 +20,6 @@ For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Tair In
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_redis_tair_instance&exampleId=620b10c9-7933-f986-971f-30e49bed804e188829d7&activeTab=example&spm=docs.r.redis_tair_instance.0.620b10c979&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -110,6 +104,7 @@ The following arguments are supported:
 * `node_type` - (Optional, Computed) The node type. For cloud-native instances, input MASTER_SLAVE (master-replica) or STAND_ALONE (standalone). For classic instances, input double (master-replica) or single (standalone).
 * `param_no_loose_sentinel_enabled` - (Optional, Computed, Available since v1.233.1) sentinel compatibility mode, applicable to non-cluster instances. For more information about parameters, see yes or no in the https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance, valid values: yes, no. The default value is no. 
 * `param_no_loose_sentinel_password_free_access` - (Optional, Computed, Available since v1.237.0) Whether to allow Sentinel commands to be executed without secrets when Sentinel mode is enabled. Value: yes: enabled. After the command is enabled, you can directly run the Sentinel command in the VPC without enabling the password-free feature. no: the default value, disabled. For parameters, see https://help.aliyun.com/zh/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance
+* `param_no_loose_sentinel_password_free_commands` - (Optional, Computed, Available since v1.239.0) After sentinel mode and the# no_loose_sentinel-password-free-access parameter are enabled, you can use this parameter to add additional secret-free command lists (empty by default). After setting, you can execute the corresponding command on any connection without secret, please operate carefully. Commands are written in lowercase letters, and multiple commands are separated by commas (,). See https://help.aliyun.com/zh/redis/user-guide/parameter-support for details
 * `param_repl_mode` - (Optional, Computed, Available since v1.233.1) The value is semisync or async. The default value is async.
 
   The default data synchronization mode is asynchronous replication. To modify the data synchronization mode, refer to https://www.alibabacloud.com/help/en/redis/user-guide/modify-the-synchronization-mode-of-a-persistent-memory-optimized-instance 。

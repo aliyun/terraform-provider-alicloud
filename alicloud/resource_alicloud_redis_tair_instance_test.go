@@ -1848,12 +1848,13 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_ips":                                 "127.0.0.3",
-					"param_no_loose_sentinel_enabled":              "yes",
-					"param_no_loose_sentinel_password_free_access": "yes",
-					"param_sentinel_compat_enable":                 "1",
-					"effective_time":                               "Immediately",
-					"modify_mode":                                  "Cover",
+					"security_ips":                                   "127.0.0.3",
+					"param_no_loose_sentinel_enabled":                "yes",
+					"param_no_loose_sentinel_password_free_access":   "yes",
+					"param_sentinel_compat_enable":                   "1",
+					"effective_time":                                 "Immediately",
+					"modify_mode":                                    "Cover",
+					"param_no_loose_sentinel_password_free_commands": "ping",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1870,11 +1871,13 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"security_ips":           "127.0.0.2",
 					"security_ip_group_name": "default",
+					"param_no_loose_sentinel_password_free_commands": "pong",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ips":           "127.0.0.2",
 						"security_ip_group_name": "default",
+						"param_no_loose_sentinel_password_free_commands": "pong",
 					}),
 				),
 			},
