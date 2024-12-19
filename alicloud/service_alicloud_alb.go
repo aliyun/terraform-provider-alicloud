@@ -1172,6 +1172,7 @@ func (s *AlbService) AlbAscriptStateRefreshFunc(d *schema.ResourceData, failStat
 		return object, fmt.Sprint(object["AScriptStatus"]), nil
 	}
 }
+
 func (s *AlbService) DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewAlbClient()
 	if err != nil {
