@@ -125,7 +125,14 @@ The following attributes are exported in addition to the arguments listed above:
   * `burstable_instance` - The burstable instance attribution:
     - initial_credit: The initial CPU credit of a burstable instance.
     - baseline_credit:  The compute performance benchmark CPU credit of a burstable instance.
-  * `eni_amount` - The maximum number of network interfaces that an instance type can be attached to.
+  * `eni_amount` - (Deprecated) The maximum number of ENIs per instance. It sames as `eni_quantity`.
+  * `eni_quantity` - The maximum number of ENIs per instance.
+  * `primary_eni_queue_number` - The default number of queues per primary ENI.
+  * `secondary_eni_queue_number` - The default number of queues per secondary ENI.
+  * `eni_ipv6_address_quantity` - The maximum number of IPv6 addresses per ENI. 
+  * `maximum_queue_number_per_eni` - The maximum number of queues per ENI, including primary and secondary ENIs.
+  * `total_eni_queue_quantity` - The maximum number of queues on ENIs that the instance type supports. 
+  * `eni_private_ip_address_quantity` -  The maximum number of IPv4 addresses per ENI.
   * `local_storage` - Local storage of an instance type:
     - capacity: The capacity of a local storage in GB.
     - amount:  The number of local storage devices that an instance has been attached to.
