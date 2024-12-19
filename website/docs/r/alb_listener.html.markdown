@@ -61,9 +61,9 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = var.name
-  vpc_id      = alicloud_vpc.default.id
+  security_group_name = var.name
+  description         = var.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_alb_load_balancer" "default" {
