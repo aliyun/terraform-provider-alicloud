@@ -331,7 +331,10 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	parts, _ := ParseResourceIds(id)
+	parts := strings.Split(id, ":")
+	if len(parts) > 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	}
 	action := "ListVpcEndpointServiceResources"
 	conn, err := client.NewPrivatelinkClient()
 	if err != nil {
@@ -367,7 +370,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 
 	v, err := jsonpath.Get("$.Resources[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {

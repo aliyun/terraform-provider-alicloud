@@ -45,7 +45,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"slb", "alb", "nlb"}, false),
+				ValidateFunc: StringInSlice([]string{"slb", "alb", "nlb", "gwlb"}, false),
 			},
 			"service_id": {
 				Type:     schema.TypeString,
@@ -191,7 +191,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(d *schema.Resou
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointServiceConnectionDependence"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointServiceConnectionDependence", "ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

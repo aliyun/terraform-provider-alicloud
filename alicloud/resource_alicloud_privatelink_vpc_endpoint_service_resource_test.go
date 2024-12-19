@@ -305,11 +305,11 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 }
 
 // Test PrivateLink VpcEndpointServiceResource. >>> Resource test cases, automatically generated.
-// Case 5022
-func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic5022(t *testing.T) {
+// Case 生命周期测试-VpcEndpointServiceResource_gwlb 9625
+func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic9625(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceResourceMap5022)
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceResourceMap9625)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribePrivateLinkVpcEndpointServiceResource")
@@ -317,10 +317,11 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic5022(t *testing.T
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointserviceresource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence5022)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence9625)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -328,17 +329,19 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic5022(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_id":   "${alicloud_nlb_load_balancer.defaultJB9ul9.id}",
-					"resource_type": "nlb",
+					"resource_id":   "${alicloud_gwlb_load_balancer.defaultGllPJd.id}",
+					"resource_type": "gwlb",
 					"service_id":    "${alicloud_privatelink_vpc_endpoint_service.defaultQtVkqH.id}",
-					"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+					"zone_id":       "${var.zone_id_1}",
+					"dry_run":       "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_id":   CHECKSET,
-						"resource_type": "nlb",
+						"resource_type": "gwlb",
 						"service_id":    CHECKSET,
 						"zone_id":       CHECKSET,
+						"dry_run":       "false",
 					}),
 				),
 			},
@@ -352,55 +355,49 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic5022(t *testing.T
 	})
 }
 
-var AlicloudPrivateLinkVpcEndpointServiceResourceMap5022 = map[string]string{
-	"zone_id": CHECKSET,
+var AlicloudPrivateLinkVpcEndpointServiceResourceMap9625 = map[string]string{
+	"region_id": CHECKSET,
 }
 
-func AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence5022(name string) string {
+func AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence9625(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
 
-data "alicloud_nlb_zones" "default" {}
+variable "zone_id_1" {
+  default = "cn-wulanchabu-b"
+}
+
+variable "region_id" {
+  default = "cn-wulanchabu"
+}
 
 resource "alicloud_vpc" "defaultvVpc" {
   description = "test"
   cidr_block  = "10.0.0.0/8"
   vpc_name    = var.name
-
 }
 
 resource "alicloud_vswitch" "defaultVSwitch1" {
   vpc_id     = alicloud_vpc.defaultvVpc.id
-  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
-  cidr_block = "10.1.0.0/16"
+  zone_id    = var.zone_id_1
+  cidr_block = "10.2.0.0/16"
 }
 
-resource "alicloud_vswitch" "defaultVSwitch2" {
-  vpc_id     = alicloud_vpc.defaultvVpc.id
-  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
-  cidr_block = "10.10.0.0/16"
-}
-
-resource "alicloud_nlb_load_balancer" "defaultJB9ul9" {
-  load_balancer_name = var.name
-
-  vpc_id = alicloud_vpc.defaultvVpc.id
+resource "alicloud_gwlb_load_balancer" "defaultGllPJd" {
+  load_balancer_name = format("%%s2", var.name)
+  address_ip_version = "Ipv4"
+  vpc_id             = alicloud_vpc.defaultvVpc.id
   zone_mappings {
     vswitch_id = alicloud_vswitch.defaultVSwitch1.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+    zone_id    = var.zone_id_1
   }
-  zone_mappings {
-    vswitch_id = alicloud_vswitch.defaultVSwitch2.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
-  }
-  address_type = "Intranet"
 }
 
 resource "alicloud_privatelink_vpc_endpoint_service" "defaultQtVkqH" {
-  service_description   = "test-zejun"
-  service_resource_type = "nlb"
+  service_description   = "test-lengqing"
+  service_resource_type = "gwlb"
 }
 
 
