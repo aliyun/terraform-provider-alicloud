@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -26,6 +27,12 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"address_ip_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6", "DualStack"}, false),
+			},
 			"auto_accept_connection": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -77,7 +84,7 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"slb", "alb", "nlb"}, false),
+				ValidateFunc: StringInSlice([]string{"slb", "alb", "nlb", "gwlb"}, false),
 			},
 			"service_support_ipv6": {
 				Type:     schema.TypeBool,
@@ -118,14 +125,14 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
-	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request = expandTagsToMap(request, tagsMap)
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOkExists("service_support_ipv6"); ok {
 		request["ServiceSupportIPv6"] = v
 	}
@@ -238,8 +245,8 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 		d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
 	}
 
-	objectRaw, err = privateLinkServiceV2.DescribeListTagResources(d.Id())
-	if err != nil {
+	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointServiceListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -282,14 +289,14 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 		request["ServiceSupportIPv6"] = d.Get("service_support_ipv6")
 	}
 
-	if d.HasChange("connect_bandwidth") {
-		update = true
-		request["ConnectBandwidth"] = d.Get("connect_bandwidth")
-	}
-
 	if !d.IsNewResource() && d.HasChange("zone_affinity_enabled") {
 		update = true
 		request["ZoneAffinityEnabled"] = d.Get("zone_affinity_enabled")
+	}
+
+	if d.HasChange("connect_bandwidth") {
+		update = true
+		request["ConnectBandwidth"] = d.Get("connect_bandwidth")
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {

@@ -20,12 +20,6 @@ For information about Private Link Vpc Endpoint Service and how to use it, see [
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_privatelink_vpc_endpoint_service&exampleId=3a7ae46a-09f6-78a6-a810-69e7b0912f50c5749917&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_service.0.3a7ae46a09&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf_example"
@@ -41,6 +35,7 @@ resource "alicloud_privatelink_vpc_endpoint_service" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `address_ip_version` - (Optional, Computed, Available since v1.239.0) The IP address version.
 * `auto_accept_connection` - (Optional) Indicates whether the endpoint service automatically accepts endpoint connection requests. Valid values:
   - `true`
   - `false`
