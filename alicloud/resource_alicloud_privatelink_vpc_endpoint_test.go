@@ -137,6 +137,7 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
 					"vpc_endpoint_name":  name,
 					"depends_on":         []string{"alicloud_privatelink_vpc_endpoint_service.default"},
+					"address_ip_version": "IPv4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -144,6 +145,7 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 						"vpc_id":               CHECKSET,
 						"security_group_ids.#": "1",
 						"vpc_endpoint_name":    name,
+						"address_ip_version":   "IPv4",
 					}),
 				),
 			},
@@ -170,6 +172,16 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_endpoint_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_ip_version": "DualStack",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_ip_version": "DualStack",
 					}),
 				),
 			},
