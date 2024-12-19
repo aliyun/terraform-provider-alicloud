@@ -15,6 +15,8 @@ For information about ECD Ram Directory and how to use it, see [What is Ram Dire
 
 -> **NOTE:** Available since v1.174.0.
 
+-> **DEPRECATED:** This resource has been deprecated from version `1.239.0`.
+
 ## Example Usage
 
 Basic Usage
