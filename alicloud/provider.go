@@ -873,6 +873,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_express_connect_router_grant_association":             resourceAliCloudExpressConnectRouterGrantAssociation(),
 			"alicloud_live_caster":                                          resourceAliCloudLiveCaster(),
 			"alicloud_vpc_ipam_ipam_pool_allocation":                        resourceAliCloudVpcIpamIpamPoolAllocation(),
 			"alicloud_pai_service":                                          resourceAliCloudPaiService(),
