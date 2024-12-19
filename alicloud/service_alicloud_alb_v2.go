@@ -153,7 +153,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *AlbServiceV2) AlbLoadBalancerListAsynJobs(id, jobId string) (object map[string]interface{}, err error) {
+func (s *AlbServiceV2) DescribeAlbListAsynJobs(id, resourceType, jobId string) (object map[string]interface{}, err error) {
 
 	client := s.client
 	var request map[string]interface{}
@@ -168,7 +168,7 @@ func (s *AlbServiceV2) AlbLoadBalancerListAsynJobs(id, jobId string) (object map
 	query = make(map[string]interface{})
 
 	query["JobIds.1"] = jobId
-	query["ResourceType"] = "loadbalancer"
+	query["ResourceType"] = resourceType
 	query["ResourceIds.1"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -200,9 +200,9 @@ func (s *AlbServiceV2) AlbLoadBalancerListAsynJobs(id, jobId string) (object map
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *AlbServiceV2) AlbLoadBalancerJobStateRefreshFunc(id string, jobId string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbServiceV2) AlbJobStateRefreshFunc(id string, resourceType string, jobId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.AlbLoadBalancerListAsynJobs(id, jobId)
+		object, err := s.DescribeAlbListAsynJobs(id, resourceType, jobId)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil

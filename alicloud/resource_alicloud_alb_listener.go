@@ -708,6 +708,7 @@ func resourceAliCloudAlbListenerRead(d *schema.ResourceData, meta interface{}) e
 func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
+	albServiceV2 := AlbServiceV2{client}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -890,6 +891,7 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 
 	if !d.IsNewResource() && d.HasChange("x_forwarded_for_config") {
 		update = true
+
 		if v, ok := d.GetOk("x_forwarded_for_config"); ok {
 			xforwardedForConfigMap := map[string]interface{}{}
 			for _, xforwardedForConfig := range v.(*schema.Set).List() {
@@ -913,8 +915,11 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 
 			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
 		}
-	} else if !d.IsNewResource() && d.HasChange("xforwarded_for_config") {
+	}
+
+	if !d.IsNewResource() && d.HasChange("xforwarded_for_config") {
 		update = true
+
 		if v, ok := d.GetOk("xforwarded_for_config"); ok {
 			xforwardedForConfigMap := map[string]interface{}{}
 			for _, xforwardedForConfig := range v.(*schema.Set).List() {
@@ -991,6 +996,7 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		newAssociateAclsSet := newAssociateVpcs.(*schema.Set)
 		removed := oldAssociateAclsSet.Difference(newAssociateAclsSet)
 		added := newAssociateAclsSet.Difference(oldAssociateAclsSet)
+
 		if removed.Len() > 0 {
 			action := "DissociateAclsFromListener"
 			dissociateAclsFromListenerReq := map[string]interface{}{
@@ -1025,14 +1031,22 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				return nil
 			})
 			addDebug(action, response, dissociateAclsFromListenerReq)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
+
+			stateConf = BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albServiceV2.AlbJobStateRefreshFunc(d.Id(), "listener", response["JobId"].(string), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
+
 		if added.Len() > 0 {
 			action := "AssociateAclsWithListener"
 			associateAclsWithListenerReq := map[string]interface{}{
@@ -1068,10 +1082,17 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				return nil
 			})
 			addDebug(action, response, associateAclsWithListenerReq)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+			stateConf = BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albServiceV2.AlbJobStateRefreshFunc(d.Id(), "listener", response["JobId"].(string), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
