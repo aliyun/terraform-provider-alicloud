@@ -213,6 +213,34 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"eni_quantity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"primary_eni_queue_number": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"secondary_eni_queue_number": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"eni_ipv6_address_quantity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"maximum_queue_number_per_eni": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"total_eni_queue_quantity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"eni_private_ip_address_quantity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"nvme_support": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -451,12 +479,19 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 	var s []map[string]interface{}
 	for _, t := range types {
 		mapping := map[string]interface{}{
-			"id":             t.InstanceType["InstanceTypeId"],
-			"cpu_core_count": formatInt(t.InstanceType["CpuCoreCount"]),
-			"memory_size":    formatFloat64(t.InstanceType["MemorySize"]),
-			"family":         t.InstanceType["InstanceTypeFamily"],
-			"eni_amount":     t.InstanceType["EniQuantity"],
-			"nvme_support":   t.InstanceType["NvmeSupport"],
+			"id":                              t.InstanceType["InstanceTypeId"],
+			"cpu_core_count":                  formatInt(t.InstanceType["CpuCoreCount"]),
+			"memory_size":                     formatFloat64(t.InstanceType["MemorySize"]),
+			"family":                          t.InstanceType["InstanceTypeFamily"],
+			"eni_amount":                      t.InstanceType["EniQuantity"],
+			"nvme_support":                    t.InstanceType["NvmeSupport"],
+			"eni_quantity":                    t.InstanceType["EniQuantity"],
+			"primary_eni_queue_number":        t.InstanceType["PrimaryEniQueueNumber"],
+			"secondary_eni_queue_number":      t.InstanceType["SecondaryEniQueueNumber"],
+			"eni_ipv6_address_quantity":       t.InstanceType["EniIpv6AddressQuantity"],
+			"maximum_queue_number_per_eni":    t.InstanceType["MaximumQueueNumberPerEni"],
+			"total_eni_queue_quantity":        t.InstanceType["TotalEniQueueQuantity"],
+			"eni_private_ip_address_quantity": t.InstanceType["EniPrivateIpAddressQuantity"],
 		}
 		if sortedBy == "Price" {
 			mapping["price"] = fmt.Sprintf("%.4f", t.OriginalPrice)
