@@ -40,7 +40,7 @@ func testSweepEcdRamDirectory(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -118,11 +118,12 @@ func testSweepEcdRamDirectory(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDRamDirectory_basic0(t *testing.T) {
+// resource alicloud_ecd_ram_directory has been deprecated from version 1.239.0
+func SkipTestAccAliCloudECDRamDirectory_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_ram_directory.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDRamDirectoryMap0)
+	ra := resourceAttrInit(resourceId, AliCloudECDRamDirectoryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcdRamDirectory")
@@ -130,7 +131,7 @@ func TestAccAlicloudECDRamDirectory_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secdramdirectory%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDRamDirectoryBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECDRamDirectoryBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -160,11 +161,11 @@ func TestAccAlicloudECDRamDirectory_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECDRamDirectory_basic1(t *testing.T) {
+func SkipTestAccAliCloudECDRamDirectory_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_ram_directory.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDRamDirectoryMap0)
+	ra := resourceAttrInit(resourceId, AliCloudECDRamDirectoryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcdRamDirectory")
@@ -172,7 +173,7 @@ func TestAccAlicloudECDRamDirectory_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secdramdirectory%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDRamDirectoryBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECDRamDirectoryBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -211,12 +212,12 @@ func TestAccAlicloudECDRamDirectory_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudECDRamDirectoryMap0 = map[string]string{
+var AliCloudECDRamDirectoryMap0 = map[string]string{
 	"vswitch_ids.#": CHECKSET,
 	"status":        CHECKSET,
 }
 
-func AlicloudECDRamDirectoryBasicDependence0(name string) string {
+func AliCloudECDRamDirectoryBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -231,7 +232,7 @@ data "alicloud_vswitches" "default" {
 }`, name)
 }
 
-func TestUnitAlicloudECDRamDirectory(t *testing.T) {
+func TestUnitAliCloudECDRamDirectory(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(nil, nil)
