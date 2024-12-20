@@ -21,12 +21,6 @@ For information about ECD Ram Directory and how to use it, see [What is Ram Dire
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecd_ram_directory&exampleId=aa4b8c7e-dd35-d836-9ce1-ac0300c8c71d91310cf5&activeTab=example&spm=docs.r.ecd_ram_directory.0.aa4b8c7edd&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"

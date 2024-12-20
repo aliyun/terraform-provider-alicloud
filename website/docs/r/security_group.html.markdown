@@ -25,7 +25,7 @@ For information about ECS Security Group and how to use it, see [What is Securit
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group&exampleId=208de1a8-f807-d3c8-4eec-fd8ed6675dde443e059c&activeTab=example&spm=docs.r.security_group.0.208de1a8f8&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group&exampleId=a779d5f6-6a79-09ec-6f53-24a3c18ea4b1edff5bfe&activeTab=example&spm=docs.r.security_group.0.a779d5f66a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -39,7 +39,7 @@ resource "alicloud_security_group" "default" {
 Basic Usage for VPC
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group&exampleId=8240bef5-f041-f81e-90db-3fff1120ceeec8a42079&activeTab=example&spm=docs.r.security_group.1.8240bef5f0&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group&exampleId=99236f01-ecf3-77e3-3c27-670b6276d29fcf85b305&activeTab=example&spm=docs.r.security_group.1.99236f01ec&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
