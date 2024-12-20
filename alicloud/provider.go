@@ -81,6 +81,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_ID", "ALIBABA_CLOUD_ACCOUNT_ID"}, nil),
 				Description: descriptions["account_id"],
 			},
+			"account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Domestic", "International"}, true),
+				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_TYPE", "ALIBABA_CLOUD_ACCOUNT_TYPE"}, nil),
+			},
 			"assume_role":           assumeRoleSchema(),
 			"sign_version":          signVersionSchema(),
 			"assume_role_with_oidc": assumeRoleWithOidcSchema(),
@@ -1882,6 +1888,12 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		}
 		config.Credential = credential
 	}
+	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
+		config.AccountId = strings.TrimSpace(account.(string))
+	}
+	if v, ok := d.GetOk("account_type"); ok && v.(string) != "" {
+		config.AccountType = v.(string)
+	}
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}
@@ -1943,6 +1955,12 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	for _, endpointsSetI := range endpointsSet.List() {
 		endpoints := endpointsSetI.(map[string]interface{})
 		for key, val := range endpoints {
+			// Compatible with the deprecated endpoint setting
+			if val == nil || val.(string) == "" {
+				if v, ok := deprecatedEndpointMap[key]; ok {
+					val = endpoints[v]
+				}
+			}
 			endpointInit.Store(key, val)
 		}
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
@@ -2091,10 +2109,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	}
 	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
 		config.MnsEndpoint = strings.TrimSpace(mnsEndpoint.(string))
-	}
-
-	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
-		config.AccountId = strings.TrimSpace(account.(string))
 	}
 
 	if fcEndpoint, ok := d.GetOk("fc"); ok && fcEndpoint.(string) != "" {
@@ -2594,6 +2608,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["beebot_endpoint"],
 				},
+				"chatbot": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["beebot_endpoint"],
+				},
 
 				"eflo": {
 					Type:        schema.TypeString,
@@ -2608,7 +2628,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["srvcatalog_endpoint"],
 				},
-
+				"servicecatalog": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["srvcatalog_endpoint"],
+				},
 				"cloudfirewall": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2657,6 +2682,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cbs_endpoint"],
 				},
+				"dbs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cbs_endpoint"],
+				},
 
 				"vpcpeer": {
 					Type:        schema.TypeString,
@@ -2670,6 +2701,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dysms_endpoint"],
+				},
+				"dysmsapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dysmsapi_endpoint"],
 				},
 
 				"edas": {
@@ -2685,7 +2722,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["edasschedulerx_endpoint"],
 				},
-
+				"schedulerx2": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edasschedulerx_endpoint"],
+				},
 				"ehs": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2707,6 +2749,12 @@ func endpointsSchema() *schema.Schema {
 					Description: descriptions["ddosbasic_endpoint"],
 				},
 
+				"antiddos_public": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ddosbasic_endpoint"],
+				},
 				"smartag": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2715,6 +2763,12 @@ func endpointsSchema() *schema.Schema {
 				},
 
 				"oceanbase": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["oceanbase_endpoint"],
+				},
+				"oceanbasepro": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
@@ -2736,6 +2790,12 @@ func endpointsSchema() *schema.Schema {
 				},
 
 				"edsuser": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edsuser_endpoint"],
+				},
+				"eds_user": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
@@ -2786,6 +2846,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["quickbi_endpoint"],
 				},
+				"quickbi_public": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["quickbi_endpoint"],
+				},
 				"vod": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2799,6 +2865,12 @@ func endpointsSchema() *schema.Schema {
 					Description: descriptions["opensearch_endpoint"],
 				},
 				"gds": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gds_endpoint"],
+				},
+				"gdb": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
@@ -2859,6 +2931,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["swas_endpoint"],
 				},
+				"swas_open": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["swas_endpoint"],
+				},
 
 				"imm": {
 					Type:        schema.TypeString,
@@ -2880,6 +2958,12 @@ func endpointsSchema() *schema.Schema {
 				},
 
 				"alidfs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["alidfs_endpoint"],
+				},
+				"dfs": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
@@ -2939,7 +3023,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["dataworkspublic_endpoint"],
 				},
-
+				"dataworks_public": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dataworkspublic_endpoint"],
+				},
 				"hcs_sgw": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2972,6 +3061,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["gwsecd_endpoint"],
 				},
+				"ecd": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gwsecd_endpoint"],
+				},
 				"scdn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2991,12 +3086,24 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["serverless_endpoint"],
 				},
-
+				"sae": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["serverless_endpoint"],
+				},
 				"hbr": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["hbr_endpoint"],
+				},
+
+				"amqp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["onsproxy_endpoint"],
 				},
 
 				"onsproxy": {
@@ -3059,6 +3166,11 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["resourcesharing_endpoint"],
+				},
+				"resourcesharing": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
 				},
 				"ga": {
 					Type:        schema.TypeString,
@@ -3312,6 +3424,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["drds_endpoint"],
 				},
+				"polardbx": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["drds_endpoint"],
+				},
 				"dds": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3342,6 +3460,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["fc_endpoint"],
 				},
+				"fc_open": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["fc_endpoint"],
+				},
 				"apigateway": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3354,11 +3478,27 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["datahub_endpoint"],
 				},
+				"devops_rdc": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
 				"mns": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["mns_endpoint"],
+				},
+				"mns_open": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["mns_endpoint"],
+				},
+				"rocketmq": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
 				},
 				"location": {
 					Type:        schema.TypeString,
@@ -3431,6 +3571,26 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["maxcompute_endpoint"],
+				},
+				"aiworkspace": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"vpcipam": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"gwlb": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				"esa": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
 				},
 			},
 		},
@@ -3572,6 +3732,39 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["beebot"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["computenest"].(string)))
 	return hashcode.String(buf.String())
+}
+
+// deprecatedEndpointMap is used to map old service name to new service name,
+// and its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// key: new endpoint key
+// value: deprecated endpoint key
+var deprecatedEndpointMap = map[string]string{
+	"resourcesharing":  "ressharing",
+	"ga":               "gaplus",
+	"dms_enterprise":   "dmsenterprise",
+	"sgw":              "hcs_sgw",
+	"amqp":             "onsproxy",
+	"cassandra":        "cds",
+	"cloudfw":          "cloudfirewall",
+	"sae":              "serverless",
+	"r_kvstore":        "redisa",
+	"ecd":              "gwsecd",
+	"dataworks_public": "dataworkspublic",
+	"dfs":              "alidfs",
+	"swas_open":        "swas",
+	"quickbi_public":   "quickbi",
+	"gdb":              "gds",
+	"cr":               "acr",
+	"eds_user":         "edsuser",
+	"antiddos_public":  "ddosbasic",
+	"schedulerx2":      "edasschedulerx",
+	"ehpc":             "ehs",
+	"dysmsapi":         "dysms",
+	"dbs":              "cbs",
+	"mns_open":         "mns",
+	"servicecatalog":   "srvcatalog",
+	"oceanbasepro":     "oceanbase",
+	"chatbot":          "beebot",
 }
 
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
