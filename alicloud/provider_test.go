@@ -125,6 +125,10 @@ func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	defaultAccount := string(DomesticSite)
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
 		defaultAccount = v
+	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
+		defaultAccount = v
+	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
+		defaultAccount = v
 	}
 	if defaultAccount != string(account) {
 		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
