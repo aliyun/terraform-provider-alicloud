@@ -72,14 +72,14 @@ func resourceAliCloudExpressConnectRouterGrantAssociationCreate(d *schema.Resour
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	request["EcrOwnerAliUid"] = d.Get("ecr_owner_ali_uid")
 	request["InstanceId"] = d.Get("instance_id")
+	request["InstanceType"] = d.Get("instance_type")
 	request["InstanceRegionId"] = d.Get("instance_region_id")
 	request["EcrId"] = d.Get("ecr_id")
 
 	request["ClientToken"] = buildClientToken(action)
 
-	request["EcrOwnerAliUid"] = d.Get("ecr_owner_ali_uid")
-	request["InstanceType"] = d.Get("instance_type")
 	request["CallerType"] = "OTHER"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -101,7 +101,7 @@ func resourceAliCloudExpressConnectRouterGrantAssociationCreate(d *schema.Resour
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_express_connect_router_grant_association", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v:%v", request["EcrId"], request["InstanceId"], request["InstanceRegionId"]))
+	d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v", request["EcrId"], request["InstanceId"], request["InstanceRegionId"], request["EcrOwnerAliUid"], request["InstanceType"]))
 
 	return resourceAliCloudExpressConnectRouterGrantAssociationRead(d, meta)
 }
@@ -120,23 +120,23 @@ func resourceAliCloudExpressConnectRouterGrantAssociationRead(d *schema.Resource
 		return WrapError(err)
 	}
 
-	if objectRaw["EcrOwnerAliUid"] != nil {
-		d.Set("ecr_owner_ali_uid", objectRaw["EcrOwnerAliUid"])
-	}
-	if objectRaw["NodeType"] != nil {
-		d.Set("instance_type", objectRaw["NodeType"])
-	}
 	if objectRaw["Status"] != nil {
 		d.Set("status", objectRaw["Status"])
 	}
 	if objectRaw["EcrId"] != nil {
 		d.Set("ecr_id", objectRaw["EcrId"])
 	}
+	if objectRaw["EcrOwnerAliUid"] != nil {
+		d.Set("ecr_owner_ali_uid", objectRaw["EcrOwnerAliUid"])
+	}
 	if objectRaw["NodeId"] != nil {
 		d.Set("instance_id", objectRaw["NodeId"])
 	}
 	if objectRaw["NodeRegionId"] != nil {
 		d.Set("instance_region_id", objectRaw["NodeRegionId"])
+	}
+	if objectRaw["NodeType"] != nil {
+		d.Set("instance_type", objectRaw["NodeType"])
 	}
 
 	return nil
@@ -155,14 +155,14 @@ func resourceAliCloudExpressConnectRouterGrantAssociationDelete(d *schema.Resour
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	request["EcrOwnerAliUid"] = parts[3]
 	request["InstanceId"] = parts[1]
+	request["InstanceType"] = parts[4]
 	request["InstanceRegionId"] = parts[2]
 	request["EcrId"] = parts[0]
 
 	request["ClientToken"] = buildClientToken(action)
 
-	request["EcrOwnerAliUid"] = d.Get("ecr_owner_ali_uid")
-	request["InstanceType"] = d.Get("instance_type")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)

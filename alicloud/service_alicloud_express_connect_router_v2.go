@@ -953,8 +953,8 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
-	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	if len(parts) != 5 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 5, len(parts)))
 	}
 	action := "DescribeInstanceGrantedToExpressConnectRouter"
 	conn, err := client.NewExpressconnectrouterClient()
@@ -966,6 +966,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 	request["EcrId"] = parts[0]
 	request["InstanceId"] = parts[1]
 	request["InstanceRegionId"] = parts[2]
+	request["InstanceType"] = parts[4]
 
 	request["ClientToken"] = buildClientToken(action)
 
@@ -1000,7 +1001,27 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 		return object, WrapErrorf(Error(GetNotFoundMessage("GrantAssociation", id)), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["EcrId"]) != parts[0] {
+			continue
+		}
+		if fmt.Sprint(item["EcrOwnerAliUid"]) != parts[3] {
+			continue
+		}
+		if fmt.Sprint(item["NodeId"]) != parts[1] {
+			continue
+		}
+		if fmt.Sprint(item["NodeRegionId"]) != parts[2] {
+			continue
+		}
+		if fmt.Sprint(item["NodeType"]) != parts[4] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("GrantAssociation", id)), NotFoundMsg, response)
 }
 
 func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterGrantAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
