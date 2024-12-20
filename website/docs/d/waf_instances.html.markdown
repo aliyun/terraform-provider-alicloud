@@ -13,11 +13,11 @@ Provides a WAF datasource to retrieve instances.
 
 For information about WAF and how to use it, see [What is Alibaba Cloud WAF](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in 1.90.0+ .
+-> **NOTE:** Available since v1.90.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_waf_instances" "default" {
   ids               = ["waf-cn-09k********"]
   status            = "1"

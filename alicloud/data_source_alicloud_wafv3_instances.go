@@ -16,6 +16,7 @@ func dataSourceAlicloudWafv3Instances() *schema.Resource {
 		Read: dataSourceAlicloudWafv3InstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
+				Optional: true,
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
@@ -56,15 +57,20 @@ func dataSourceAlicloudWafv3Instances() *schema.Resource {
 
 func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
 
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var objects []interface{}
 	var response map[string]interface{}
 	action := "DescribeInstance"
@@ -72,7 +78,7 @@ func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -80,7 +86,6 @@ func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -100,9 +105,15 @@ func dataSourceAlicloudWafv3InstancesRead(d *schema.ResourceData, meta interface
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+		id := fmt.Sprint(object["InstanceId"])
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[id]; !ok {
+				continue
+			}
+		}
 
 		mapping := map[string]interface{}{
-			"id": fmt.Sprint(object["InstanceId"]),
+			"id": id,
 		}
 
 		startTime97 := object["StartTime"]
