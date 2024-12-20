@@ -7,19 +7,21 @@ description: |-
   Provides a datasource to retrieve domain names.
 ---
 
-# alicloud\_waf\_domains
+# alicloud_waf_domains
 
 Provides a WAF datasource to retrieve domains.
 
 For information about WAF and how to use it, see [What is Alibaba Cloud WAF](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in 1.86.0+ .
+-> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
 
-```
+```terraform
+data "alicloud_waf_instances" "default" {}
+
 data "alicloud_waf_domains" "default" {
-  instance_id = "waf-cf-xxxxx"
+  instance_id = data.alicloud_waf_instances.default.ids.0
 }
 ```
 ## Argument Reference
@@ -61,4 +63,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `source_ips` - List of the IP address or domain of the origin server to which the specified domain points.
   * `version` - The system data identifier that is used to control optimistic locking.
   * `write_time` - The timeout period for a WAF exclusive cluster write connection. Unit: seconds.
-```

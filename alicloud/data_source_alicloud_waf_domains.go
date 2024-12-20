@@ -183,13 +183,10 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_domains", action, AlibabaCloudSdkGoERROR)
 	}

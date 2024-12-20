@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -151,10 +150,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	action := "CreateDomain"
 	request := make(map[string]interface{})
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("cluster_type"); ok {
 		request["ClusterType"] = convertClusterTypeRequest(v.(string))
 	}
@@ -224,7 +220,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -309,13 +305,9 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		request["ClusterType"] = convertClusterTypeRequest(d.Get("cluster_type").(string))
 		action := "ModifyDomainClusterType"
-		conn, err := client.NewWafClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -390,13 +382,9 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	request["WriteTime"] = d.Get("write_time")
 	if update {
 		action := "ModifyDomain"
-		conn, err := client.NewWafClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -434,10 +422,6 @@ func resourceAlicloudWafDomainDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	action := "DeleteDomain"
 	var response map[string]interface{}
-	conn, err := client.NewWafClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"Domain":     parts[1],
 		"InstanceId": parts[0],
@@ -445,7 +429,7 @@ func resourceAlicloudWafDomainDelete(d *schema.ResourceData, meta interface{}) e
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

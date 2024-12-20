@@ -7,7 +7,7 @@ description: |-
   Provides a Web Application Firewall Domain resource.
 ---
 
-# alicloud\_waf\_domain
+# alicloud_waf_domain
 
 -> **DEPRECATED:**  This resource has been deprecated and using [alicloud_wafv3_domain](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/wafv3_domain) instead.
 
@@ -15,7 +15,7 @@ Provides a WAF Domain resource to create domain in the Web Application Firewall.
 
 For information about WAF and how to use it, see [What is Alibaba Cloud WAF](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in 1.82.0+ .
+-> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
 

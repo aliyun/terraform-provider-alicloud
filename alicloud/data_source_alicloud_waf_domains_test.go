@@ -11,7 +11,7 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
+func TestAccAliCloudWafDomainsDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{

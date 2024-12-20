@@ -10,8 +10,9 @@ import (
 )
 
 // Skip this testcase because you can only have one instance.
-func SkipTestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
+func TestAccAliCloudWafv3Instance_basic2294(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	resourceId := "alicloud_wafv3_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafV3InstanceMap2294)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -25,6 +26,7 @@ func SkipTestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
