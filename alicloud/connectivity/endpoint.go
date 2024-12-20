@@ -339,6 +339,14 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"esa":            "esa.ap-southeast-1.aliyuncs.com",
 }
 
+// irregularProductEndpointForIntlRegion specially records those product codes that
+// cannot be parsed out by the location service and sensitive to region.
+// These products adapt to international region, and conflict with irregularProductEndpointForIntlAccount
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is higher than location service, lower than user environment variable configuration
+var irregularProductEndpointForIntlRegion = map[string]string{}
+
 // regularProductEndpoint specially records those product codes that have been confirmed to be
 // regional or central endpoints.
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
@@ -481,6 +489,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Secondly, load endpoint from known rules
 	if endpointFmt, ok := irregularProductEndpoint[productCode]; ok {
 		if v, ok := irregularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+			endpointFmt = v
+		}
+		if v, ok := irregularProductEndpointForIntlRegion[productCode]; ok && !strings.HasPrefix(client.RegionId, "cn-") {
 			endpointFmt = v
 		}
 		if strings.Contains(endpointFmt, "%s") {
