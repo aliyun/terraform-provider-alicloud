@@ -1,4 +1,29 @@
 ## 1.239.0 (Unreleased)
+
+- **New Resource:** `alicloud_express_connect_router_grant_association` [GH-8000]
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster: added support strict_consistency. [GH-7966]
+- resource/alicloud_ecs_snapshot: Refactored the resource alicloud_ecs_snapshot; Added the field create_time, region_id; Removed the ForceNew for field resource_group_id. [GH-7973]
+- resource/alicloud_kvstore_backup_policy: Added retry strategy for error code IncorrectDBInstanceState, LockTimeout. [GH-7983]
+- resource/alicloud_security_group: Refactored the resource alicloud_security_group; Added the field security_group_name, create_time; Deprecated the field name. [GH-7987]
+- resource/alicloud_network_acl: Added retry strategy for error code. [GH-7988]
+- resource/alicloud_instance: Added retry strategy for error code. [GH-7989]
+- resource/alicloud_cen_inter_region_traffic_qos_queue: add retry for Operation.Blocking and IncorrectStatus.TrafficQosPolicy. [GH-7990]
+- resource/alicloud_oos_execution: Ensure the resource status is success after creating it. [GH-7991]
+- resource/alicloud_vpc_network_acl_attachment: add retry code while UnassociateNetworkAcl. [GH-7993]
+- resource/alicloud_privatelink_vpc_endpoint_service: add new attribue address_ip_version. [GH-7994]
+- resource/alicloud_alb_load_balancer: Improved the state refresh function AlbJobStateRefreshFunc; resource/alicloud_alb_listener: Fixed the update error caused by state refresh. [GH-7995]
+- resource/alicloud_privatelink_vpc_endpoint_service_resource: support gwlb type. [GH-7998]
+- resource/alicloud_redis_tair_instance: add new attribute param_no_loose_sentinel_password_free_commands. [GH-7999]
+- resource/alicloud_privatelink_vpc_endpoint: add new attribute address_ip_version. [GH-8001]
+- resource/alicloud_express_connect_router_grant_association: change ID fields. [GH-8002]
+- data-source/alicloud_instance_types: Supports more attributes for eni. [GH-7996]
+- testcase: testcase: add sweeper for vpcpeer. [GH-7986]
+- testcase: Fixed alicloud_rocketmq_instance testcase. [GH-7992]
+- testcase: Deprecated alicloud_ecd_ram_directory testcase. [GH-7997]
+
 ## 1.238.0 (December 16, 2024)
 
 - **New Resource:** `alicloud_live_caster` ([#7974](https://github.com/aliyun/terraform-provider-alicloud/issues/7974))
