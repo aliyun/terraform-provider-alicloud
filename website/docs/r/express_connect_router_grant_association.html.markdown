@@ -30,21 +30,22 @@ provider "alicloud" {
 }
 
 variable "vpc_id" {
-  default = "vpc-7qbx5bpq0axxbt9pqnzel"
+  # You need to modify this value to an existing VPC under your account
+  default = "vpc-xxx"
 }
 
 variable "ecr_owner_uid" {
-  default = <<EOF
-1891593620094065
-EOF
+  # You need to modify this value to ecr owner ali uid
+  default = "18xxx"
 }
 
 variable "ecr_id" {
-  default = "ecr-0a6p1fk05ji1whedvj"
+  # You need to modify this value to an existing ecr id
+  default = "ecr-xxx"
 }
 
 variable "region" {
-  default = "cn-wulanchabu-example-5"
+  default = "cn-hangzhou"
 }
 
 
@@ -71,7 +72,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<instance_id>:<instance_region_id>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<instance_id>:<instance_region_id>:<ecr_owner_ali_uid>:<instance_type>`.
 * `status` - The status of the resource
 
 ## Timeouts
@@ -85,5 +86,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Express Connect Router Grant Association can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_express_connect_router_grant_association.example <ecr_id>:<instance_id>:<instance_region_id>
+$ terraform import alicloud_express_connect_router_grant_association.example <ecr_id>:<instance_id>:<instance_region_id>:<ecr_owner_ali_uid>:<instance_type>
 ```
