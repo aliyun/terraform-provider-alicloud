@@ -76,8 +76,19 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	if securityToken != "" {
 		conf.SecurityToken = securityToken
 	}
-	if accountId := os.Getenv("ALICLOUD_ACCOUNT_ID"); accountId != "" {
+	accountId := os.Getenv("ALICLOUD_ACCOUNT_ID")
+	if accountId == "" {
+		accountId = os.Getenv("ALIBABA_CLOUD_ACCOUNT_ID")
+	}
+	if accountId != "" {
 		conf.AccountId = accountId
+	}
+	accountType := os.Getenv("ALICLOUD_ACCOUNT_TYPE")
+	if accountType == "" {
+		accountType = os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")
+	}
+	if accountType != "" {
+		conf.AccountType = accountType
 	}
 	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
 	if v := strings.TrimSpace(securityToken); v != "" {

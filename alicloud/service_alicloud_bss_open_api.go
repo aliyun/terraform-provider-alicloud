@@ -334,6 +334,12 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 		"ProductCode": productCode,
 		"ProductType": productType,
 	}
+	if s.client.GetAccountType() == "International" {
+		request = map[string]interface{}{
+			"ProductCode": productCodeIntl,
+			"ProductType": productTypeIntl,
+		}
+	}
 	if instanceRegion != "" {
 		request["Region"] = instanceRegion
 	}
@@ -347,29 +353,7 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable", "SignatureDoesNotMatch"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-				request["ProductCode"] = productCodeIntl
-				request["ProductType"] = productTypeIntl
-				return resource.RetryableError(err)
-			}
 			return resource.NonRetryableError(err)
-		}
-		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
-		if len(resp.([]interface{})) < 1 {
-			request["ProductCode"] = productCodeIntl
-			if productTypeIntl != "" {
-				request["ProductType"] = productTypeIntl
-			}
-			conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
 		}
 		return nil
 	})
