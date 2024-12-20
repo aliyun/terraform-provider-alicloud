@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -88,23 +87,14 @@ func dataSourceAlicloudEcdUsersRead(d *schema.ResourceData, meta interface{}) er
 		status = convertEcdUserStatusRequest(status.(string))
 	}
 	var response map[string]interface{}
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
-				}
-				if IsExpectedErrors(err, []string{"Forbidden"}) {
-					conn.Endpoint = String(connectivity.EcdOpenAPIEndpointUser)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

@@ -5,13 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudEcdCustomPropertiesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdCustomPropertiesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecd_custom_property.default.id}"]`,
