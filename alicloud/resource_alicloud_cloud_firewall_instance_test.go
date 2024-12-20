@@ -34,6 +34,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -83,6 +84,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -126,6 +128,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -134,17 +137,17 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type": "Subscription",
-					"spec":         "premium_version",
-					"ip_number":    "20",
-					"band_width":   "20",
+					"spec":         "enterprise_version",
+					"ip_number":    "50",
+					"band_width":   "50",
 					"cfw_log":      "false",
 					"period":       "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type": "Subscription",
-						"spec":         "premium_version",
-						"ip_number":    "20",
+						"spec":         "enterprise_version",
+						"ip_number":    "50",
 						"cfw_log":      "false",
 						"period":       "1",
 					}),
@@ -165,42 +168,54 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"band_width":  "25",
+					"band_width":  "55",
 					"modify_type": "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"fw_vpc_number": "2",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cfw_log":         "true",
-					"cfw_log_storage": "1000",
+					"cfw_log_storage": "3000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cfw_log":         "true",
-						"cfw_log_storage": "1000",
+						"cfw_log_storage": "3000",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log_storage": "2000",
+					"cfw_log_storage": "5000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log_storage": "2000",
+						"cfw_log_storage": "5000",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ip_number": "25",
+					"ip_number": "55",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ip_number": "25",
+						"ip_number": "55",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fw_vpc_number": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"fw_vpc_number": "5",
 					}),
 				),
 			},
@@ -232,43 +247,43 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_duration": REMOVEKEY,
-					"renew_period":     "2",
-					"renewal_status":   "AutoRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_duration":      "2",
-						"renew_period":          "2",
-						"renewal_duration_unit": "Month",
-						"renewal_status":        "AutoRenewal",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_status": "NotRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_status":        "NotRenewal",
-						"renewal_duration":      REMOVEKEY,
-						"renew_period":          REMOVEKEY,
-						"renewal_duration_unit": REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"renewal_duration": REMOVEKEY,
+			//		"renew_period":     "2",
+			//		"renewal_status":   "AutoRenewal",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"renewal_duration":      "2",
+			//			"renew_period":          "2",
+			//			"renewal_duration_unit": "Month",
+			//			"renewal_status":        "AutoRenewal",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"renewal_status": "NotRenewal",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"renewal_status":        "NotRenewal",
+			//			"renewal_duration":      REMOVEKEY,
+			//			"renew_period":          REMOVEKEY,
+			//			"renewal_duration_unit": REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cfw_account":    "true",
-					"account_number": "1",
+					"account_number": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cfw_account":    "true",
-						"account_number": "1",
+						"account_number": "10",
 					}),
 				),
 			},

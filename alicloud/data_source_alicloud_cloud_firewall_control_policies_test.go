@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccCheckAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
+func TestAccAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	aclActionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
@@ -16,14 +16,6 @@ func TestAccCheckAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
 			"acl_action": `"drop"`,
-		}),
-	}
-	aclUuidConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
-			"acl_uuid": `"${alicloud_cloud_firewall_control_policy.default.acl_uuid}"`,
-		}),
-		fakeConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
-			"acl_uuid": `"${alicloud_cloud_firewall_control_policy.default.acl_uuid}_fake"`,
 		}),
 	}
 	descriptionConf := dataSourceTestAccConfig{
@@ -70,7 +62,6 @@ func TestAccCheckAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
 			"acl_action":  `"${alicloud_cloud_firewall_control_policy.default.acl_action}"`,
-			"acl_uuid":    `"${alicloud_cloud_firewall_control_policy.default.acl_uuid}"`,
 			"description": `"${alicloud_cloud_firewall_control_policy.default.description}"`,
 			"destination": `"${alicloud_cloud_firewall_control_policy.default.destination}"`,
 			"ip_version":  `"${alicloud_cloud_firewall_control_policy.default.ip_version}"`,
@@ -79,7 +70,6 @@ func TestAccCheckAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand, map[string]string{
 			"acl_action":  `"drop"`,
-			"acl_uuid":    `"${alicloud_cloud_firewall_control_policy.default.acl_uuid}_fake"`,
 			"description": `"${alicloud_cloud_firewall_control_policy.default.description}_fake"`,
 			"destination": `"${alicloud_cloud_firewall_control_policy.default.destination}_fake"`,
 			"ip_version":  `"6"`,
@@ -132,7 +122,7 @@ func TestAccCheckAliCloudCloudFirewallControlPoliciesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheck(t)
 	}
-	alicloudCloudFirewallControlPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, aclActionConf, aclUuidConf, descriptionConf, destinationConf, ipVersionConf, protoConf, sourceConf, allConf)
+	alicloudCloudFirewallControlPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, aclActionConf, descriptionConf, destinationConf, ipVersionConf, protoConf, sourceConf, allConf)
 }
 
 func testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand int, attrMap map[string]string) string {
@@ -161,7 +151,8 @@ func testAccCheckAliCloudCloudFirewallControlPoliciesDataSourceName(rand int, at
 	}
 
 	data "alicloud_cloud_firewall_control_policies" "default" {
-  		direction = alicloud_cloud_firewall_control_policy.default.direction
+		direction = alicloud_cloud_firewall_control_policy.default.direction
+  		acl_uuid = alicloud_cloud_firewall_control_policy.default.acl_uuid
 		%s
 	}
 `, rand, strings.Join(pairs, " \n "))

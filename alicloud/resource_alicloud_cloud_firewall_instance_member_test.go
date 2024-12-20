@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudFirewallInstanceMember_basic(t *testing.T) {
+func TestAccAliCloudCloudFirewallInstanceMember_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance_member.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallInstanceMemberMap)
@@ -24,6 +24,8 @@ func TestAccAlicloudCloudFirewallInstanceMember_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// currently, international test account has not enabled RD
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -69,6 +71,7 @@ variable "name" {
 
 resource "alicloud_resource_manager_account" "default" {
   display_name = var.name
+  abandon_able_check_id = ["SP_fc_fc"]
 }
 `, name)
 }

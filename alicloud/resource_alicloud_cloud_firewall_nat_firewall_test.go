@@ -13,6 +13,7 @@ import (
 // Case 云防火墙资源测试-v1 6822
 func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_cloud_firewall_nat_firewall.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallNatFirewallMap6822)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -26,7 +27,6 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -35,7 +35,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status":         "normal",
-					"region_no":      "cn-shenzhen",
+					"region_no":      "${data.alicloud_regions.current.ids.0}",
 					"vswitch_auto":   "true",
 					"strict_mode":    "0",
 					"vpc_id":         "${alicloud_vpc.defaultikZ0gD.id}",
@@ -56,7 +56,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"region_no":              "cn-shenzhen",
+						"region_no":              defaultRegionToTest,
 						"vpc_id":                 CHECKSET,
 						"proxy_name":             "YQC-防火墙测试",
 						"nat_gateway_id":         CHECKSET,
@@ -86,7 +86,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_no":      "cn-shenzhen",
+					"region_no":      "${data.alicloud_regions.current.ids.0}",
 					"vswitch_auto":   "true",
 					"strict_mode":    "0",
 					"vpc_id":         "${alicloud_vpc.defaultikZ0gD.id}",
@@ -108,7 +108,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"region_no":              "cn-shenzhen",
+						"region_no":              defaultRegionToTest,
 						"vswitch_auto":           "true",
 						"strict_mode":            "0",
 						"vpc_id":                 CHECKSET,
@@ -143,6 +143,9 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_regions" "current" {
+  current = true
+}
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -193,6 +196,7 @@ resource "alicloud_snat_entry" "defaultAKE43g" {
 // Case 云防火墙资源测试-v1 6822  twin
 func TestAccAliCloudCloudFirewallNatFirewall_basic6822_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_cloud_firewall_nat_firewall.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallNatFirewallMap6822)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -206,7 +210,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -214,7 +218,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_no":      "cn-shenzhen",
+					"region_no":      "${data.alicloud_regions.current.ids.0}",
 					"vswitch_auto":   "true",
 					"strict_mode":    "0",
 					"vpc_id":         "${alicloud_vpc.defaultikZ0gD.id}",
@@ -236,7 +240,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"region_no":              "cn-shenzhen",
+						"region_no":              defaultRegionToTest,
 						"vswitch_auto":           "true",
 						"strict_mode":            "0",
 						"vpc_id":                 CHECKSET,
@@ -264,6 +268,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_twin(t *testing.T) {
 // Case 云防火墙资源测试-v1 6822  raw
 func TestAccAliCloudCloudFirewallNatFirewall_basic6822_raw(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_cloud_firewall_nat_firewall.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallNatFirewallMap6822)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -277,7 +282,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -285,7 +290,7 @@ func TestAccAliCloudCloudFirewallNatFirewall_basic6822_raw(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_no":      defaultRegionToTest,
+					"region_no":      "${data.alicloud_regions.current.ids.0}",
 					"vswitch_auto":   "true",
 					"strict_mode":    "0",
 					"vpc_id":         "${alicloud_vpc.defaultikZ0gD.id}",
