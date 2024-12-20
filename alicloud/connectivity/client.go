@@ -744,6 +744,12 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ramconn = ramconn
+	} else {
+		err := client.ramconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
+		}
+
 	}
 
 	return do(client.ramconn)
@@ -5941,4 +5947,64 @@ func (client *AliyunClient) NewPaiClient() (*roa.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
+}
+
+type ossCredentials struct {
+	client *AliyunClient
+}
+
+func (defCre *ossCredentials) GetAccessKeyID() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.AccessKey
+}
+
+func (defCre *ossCredentials) GetAccessKeySecret() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecretKey
+}
+
+func (defCre *ossCredentials) GetSecurityToken() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecurityToken
+}
+
+type ossCredentialsProvider struct {
+	client *AliyunClient
+}
+
+func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{client: defBuild.client}
+}
+
+func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
+
+	maxRetryTimeout := client.config.MaxRetryTimeout
+	if maxRetryTimeout != 0 {
+		return time.Duration(maxRetryTimeout) * time.Second
+	}
+
+	return defaultTimeout
+}
+
+func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String(client.config.Protocol),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
 }
