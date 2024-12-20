@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -23,20 +22,14 @@ func (s *GovernanceServiceV2) DescribeGovernanceBaseline(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetAccountFactoryBaseline"
-	conn, err := client.NewGovernanceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["BaselineId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -91,20 +84,14 @@ func (s *GovernanceServiceV2) DescribeGovernanceAccount(id string) (object map[s
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetEnrolledAccount"
-	conn, err := client.NewGovernanceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountUid"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
