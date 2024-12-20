@@ -69,3 +69,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `spot_price_limit` - (Optional, Available in 1.151.0+) The maximum price hourly for instance types.
     * `instance_type` - Resource type of an ECS instance.
     * `price_limit` - Price limit hourly of instance type.
+  * `instance_pattern_info` - (Optional, Available since v1.239.0+) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types. 
+    * `cores` - The number of vCPUs that are specified for an instance type in instancePatternInfo.
+    * `instance_family_level` - The instance family level in instancePatternInfo.
+    * `max_price` - The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.
+    * `memory` - The memory size that is specified for an instance type in instancePatternInfo.
+    * `burstable_performance` - Specifies whether to include burstable instance types.  Valid values: Exclude, Include, Required.
+    * `excluded_instance_types` - Instance type N that you want to exclude. You can use wildcard characters, such as an asterisk (*), to exclude an instance type or an instance family.
+    * `architectures` -  Architecture N of instance type N. Valid values: X86, Heterogeneous, BareMetal, Arm, SuperComputeCluster.
