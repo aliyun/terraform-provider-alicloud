@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -40,21 +39,16 @@ func resourceAlicloudMscSubWebhook() *schema.Resource {
 func resourceAlicloudMscSubWebhookCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["Locale"] = "en"
 	request["ServerUrl"] = d.Get("server_url")
 	request["WebhookName"] = d.Get("webhook_name")
 	request["ClientToken"] = buildClientToken("CreateWebhook")
 	var response map[string]interface{}
+	var err error
 	action := "CreateWebhook"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -62,8 +56,7 @@ func resourceAlicloudMscSubWebhookCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
@@ -97,10 +90,7 @@ func resourceAlicloudMscSubWebhookRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudMscSubWebhookUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"WebhookId": d.Id(),
@@ -117,11 +107,9 @@ func resourceAlicloudMscSubWebhookUpdate(d *schema.ResourceData, meta interface{
 		request["Locale"] = "en"
 		action := "UpdateWebhook"
 		request["ClientToken"] = buildClientToken("UpdateWebhook")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -129,7 +117,7 @@ func resourceAlicloudMscSubWebhookUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -145,10 +133,7 @@ func resourceAlicloudMscSubWebhookUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudMscSubWebhookDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"WebhookId": d.Id(),
 		"Locale":    "en",
@@ -157,7 +142,7 @@ func resourceAlicloudMscSubWebhookDelete(d *schema.ResourceData, meta interface{
 	action := "DeleteWebhook"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -165,7 +150,7 @@ func resourceAlicloudMscSubWebhookDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

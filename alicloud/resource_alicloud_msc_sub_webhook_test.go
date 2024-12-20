@@ -46,16 +46,10 @@ func testSweepMscSubWebhook(region string) error {
 	request["MaxResults"] = PageSizeLarge
 
 	var response map[string]interface{}
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2021-07-13"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("MscOpenSubscription", "2021-07-13", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -94,7 +88,7 @@ func testSweepMscSubWebhook(region string) error {
 			request := map[string]interface{}{
 				"WebhookId": item["WebhookId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Msc Sub Webhook (%s): %s", item["WebhookName"].(string), err)
 			}

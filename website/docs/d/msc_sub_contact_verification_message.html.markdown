@@ -7,10 +7,10 @@ description: |-
     Provide a data source to send the verification message to the user.
 ---
 
-# alicloud\_msc\_sub\_contact\_verification\_message
+# alicloud_msc_sub_contact_verification_message
 
 
--> **NOTE:** Available in v1.156.0+.
+-> **NOTE:** Available since v1.156.0.
 
 ## Example Usage
 

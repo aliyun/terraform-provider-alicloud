@@ -7,11 +7,11 @@ description: |-
   Provides a list of Msc Sub Webhooks to the user.
 ---
 
-# alicloud\_msc\_sub\_webhooks
+# alicloud_msc_sub_webhooks
 
 This data source provides the Msc Sub Webhooks of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 
@@ -42,13 +42,13 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Webhook name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Webhook names.
 * `webhooks` - A list of Msc Sub Webhooks. Each element contains the following attributes:
-	* `id` - The ID of the Webhook.
-	* `server_url` - The serverUrl of the Subscription.
-	* `webhook_id` - The first ID of the resource.
-	* `webhook_name` - The name of the Webhook. **Note:** The name must be `2` to `12` characters in length, and can contain uppercase and lowercase letters.
+  * `id` - The ID of the Webhook.
+  * `server_url` - The serverUrl of the Subscription.
+  * `webhook_id` - The first ID of the resource.
+  * `webhook_name` - The name of the Webhook. **Note:** The name must be `2` to `12` characters in length, and can contain uppercase and lowercase letters.
