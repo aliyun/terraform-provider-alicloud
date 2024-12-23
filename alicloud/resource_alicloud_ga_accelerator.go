@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -115,10 +114,7 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateAccelerator"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	// there is an api bug that the name can not effect
 	//if v, ok := d.GetOk("accelerator_name"); ok {
 	//	request["Name"] = v
@@ -162,9 +158,7 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 		request["ResourceGroupId"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_accelerator", action, AlibabaCloudSdkGoERROR)
 	}
@@ -261,16 +255,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	if update {
 		action := "UpdateAcceleratorAutoRenewAttribute"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -323,14 +312,9 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		action := "UpdateAccelerator"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateAcceleratorReq, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, updateAcceleratorReq, true)
 		addDebug(action, response, updateAcceleratorReq)
 
 		if err != nil {
@@ -363,16 +347,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	if update {
 		action := "UpdateAcceleratorCrossBorderStatus"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateAcceleratorCrossBorderStatusReq, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, updateAcceleratorCrossBorderStatusReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -412,16 +391,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	if update {
 		action := "UpdateAcceleratorCrossBorderMode"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateAcceleratorCrossBorderModeReq, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, updateAcceleratorCrossBorderModeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 					wait()
@@ -462,16 +436,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	if update {
 		action := "ChangeResourceGroup"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, changeResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -501,10 +470,7 @@ func resourceAliCloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{
 	action := "DeleteAccelerator"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	object, err := gaService.DescribeGaAccelerator(d.Id())
 	if err != nil {
@@ -525,11 +491,9 @@ func resourceAliCloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{
 		"AcceleratorId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 				wait()

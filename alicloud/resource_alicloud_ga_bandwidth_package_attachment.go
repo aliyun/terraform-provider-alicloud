@@ -55,10 +55,7 @@ func resourceAliCloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "BandwidthPackageAddAccelerator"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["AcceleratorId"] = d.Get("accelerator_id")
@@ -68,7 +65,7 @@ func resourceAliCloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator", "GreaterThanGa.IpSetBandwidth", "BandwidthIllegal.BandwidthPackage", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()
@@ -152,16 +149,13 @@ func resourceAliCloudGaBandwidthPackageAttachmentUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "ReplaceBandwidthPackage"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator", "GreaterThanGa.IpSetBandwidth", "BandwidthIllegal.BandwidthPackage", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 					wait()
@@ -194,10 +188,7 @@ func resourceAliCloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 	action := "BandwidthPackageRemoveAccelerator"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if !strings.Contains(d.Id(), ":") {
 		d.SetId(fmt.Sprintf("%v:%v", d.Get("accelerator_id"), d.Id()))
@@ -218,7 +209,7 @@ func resourceAliCloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator", "BindExist.CrossDomain", "Exist.EndpointGroup", "Exist.IpSet", "BandwidthPackageCannotUnbind.HasCrossRegion", "BandwidthPackageCannotUnbind.IpSet", "BandwidthPackageCannotUnbind.EndpointGroup"}) || NeedRetry(err) {
 				wait()

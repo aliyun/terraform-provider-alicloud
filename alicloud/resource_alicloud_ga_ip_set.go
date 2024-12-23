@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -74,10 +73,7 @@ func resourceAliCloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 		"RegionId": client.RegionId,
 	}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	request["AccelerateRegion.1.AccelerateRegionId"] = d.Get("accelerate_region_id")
@@ -95,13 +91,11 @@ func resourceAliCloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateIpSets")
 	action := "CreateIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotExist.BasicBandwidthPackage", "NotSuitable.RegionSelection", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
@@ -161,10 +155,7 @@ func resourceAliCloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error
 func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	update := false
 	request := map[string]interface{}{
@@ -178,13 +169,11 @@ func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 	request["Bandwidth"] = d.Get("bandwidth")
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		action := "UpdateIpSet"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateIpSet")
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth", "NotActive.Listener"}) || NeedRetry(err) {
 					wait()
@@ -192,7 +181,7 @@ func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
 			return nil
 		})
 
@@ -212,23 +201,18 @@ func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 func resourceAliCloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"IpSetIds.1": d.Id(),
 		"RegionId":   client.RegionId,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	action := "DeleteIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
@@ -236,7 +220,7 @@ func resourceAliCloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
