@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeCasters"
-	conn, err := client.NewLiveClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["CasterId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -104,7 +96,6 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -119,10 +110,6 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewLiveClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -132,11 +119,9 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -155,10 +140,6 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewLiveClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -171,11 +152,9 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = d.Get("resource_type")
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

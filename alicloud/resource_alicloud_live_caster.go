@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -132,11 +131,8 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateCaster"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewLiveClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -154,11 +150,9 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -219,15 +213,12 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 
 	action := "SetCasterConfig"
-	conn, err := client.NewLiveClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["CasterId"] = d.Id()
@@ -286,11 +277,9 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 		request["UrgentLiveStreamUrl"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -307,10 +296,6 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "UpdateCasterResourceGroup"
-	conn, err = client.NewLiveClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["CasterId"] = d.Id()
@@ -320,11 +305,9 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -356,20 +339,15 @@ func resourceAliCloudLiveCasterDelete(d *schema.ResourceData, meta interface{}) 
 	action := "DeleteCaster"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewLiveClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["CasterId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-11-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

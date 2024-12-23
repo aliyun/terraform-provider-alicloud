@@ -303,6 +303,7 @@ var productCodeToLocationCode = map[string]string{
 	"vpcipam":              "vpcipam",         //VpcIpam
 	"gwlb":                 "gwlb",            // GWLB
 	"esa":                  "dcdnservices",    // ESA
+	"live":                 "live",            // Live
 }
 
 // irregularProductEndpoint specially records those product codes that
@@ -445,6 +446,7 @@ var regularProductEndpoint = map[string]string{
 	"aiworkspace":          "aiworkspace.%s.aliyuncs.com",
 	"vpcipam":              "vpcipam.%s.aliyuncs.com",
 	"gwlb":                 "gwlb.%s.aliyuncs.com",
+	"live":                 "live.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
