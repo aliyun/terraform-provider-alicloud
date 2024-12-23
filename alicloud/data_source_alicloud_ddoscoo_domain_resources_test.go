@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDdoscooDomainResourcesDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+func TestAccAliCloudDdosCooDomainResourcesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, []connectivity.Region{"ap-southeast-1", "cn-hangzhou"})
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%d.qq.com", rand)
 	idsConf := dataSourceTestAccConfig{

@@ -1757,7 +1757,11 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 		ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ddoscooconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ddoscooconn = ddoscooconn
-
+	} else {
+		err := client.ddoscooconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DdosCoo client: %#v", err)
+		}
 	}
 
 	return do(client.ddoscooconn)

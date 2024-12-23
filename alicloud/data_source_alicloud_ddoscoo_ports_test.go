@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDdoscooPortsDataSource(t *testing.T) {
+func TestAccAliCloudDdosCooPortsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 65535)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{

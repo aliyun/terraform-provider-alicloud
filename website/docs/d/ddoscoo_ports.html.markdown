@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ddoscoo Ports of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.123.0+.
+-> **NOTE:** Available since v1.123.0.
 
 ## Example Usage
 
@@ -35,17 +35,17 @@ The following arguments are supported:
 * `frontend_port` - (Optional, ForceNew) The forwarding port.
 * `frontend_protocol` - (Optional, ForceNew) The forwarding protocol. Valid values `tcp` and `udp`.
 * `ids` - (Optional, ForceNew, Computed)  A list of Port IDs.
-* `instance_id` - (Required, ForceNew) The Ddoscoo instance ID.
+* `instance_id` - (Required, ForceNew) The DdosCoo instance ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ports` - A list of Ddoscoo Ports. Each element contains the following attributes:
-	* `backend_port` - The source station port.
-	* `frontend_port` - The forwarding port.
-    * `frontend_protocol` - The forwarding protocol. 
-    * `instance_id` - The Ddoscoo instance ID.
-	* `id` - The ID of the Port.
-	* `real_servers` - List of source IP addresses.
+* `ports` - A list of DdosCoo Ports. Each element contains the following attributes:
+  * `backend_port` - The source station port.
+  * `frontend_port` - The forwarding port.
+  * `frontend_protocol` - The forwarding protocol. 
+  * `instance_id` - The Ddoscoo instance ID.
+  * `id` - The ID of the Port.
+  * `real_servers` - List of source IP addresses.
