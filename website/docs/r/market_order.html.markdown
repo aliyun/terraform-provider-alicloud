@@ -7,13 +7,13 @@ description: |-
     Provides a market order resource.
 ---
 
-# alicloud\_market\_order
+# alicloud_market_order
 
 Provides a market order resource.
 
 -> **NOTE:** Terraform will auto build a market order  while it uses `alicloud_market_order` to build a market order resource.
 
--> **NOTE:** Available in 1.69.0+
+-> **NOTE:** Available since v1.69.0.
 
 ## Example Usage
 
@@ -28,7 +28,7 @@ Basic Usage
 ```terraform
 resource "alicloud_market_order" "order" {
   product_code    = "cmapi033136"
-  pay_type        = "prepay"
+  pay_type        = "PrePaid"
   quantity        = 1
   duration        = 1
   pricing_cycle   = "Month"

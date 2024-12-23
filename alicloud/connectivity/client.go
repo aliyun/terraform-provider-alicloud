@@ -1982,6 +1982,11 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		marketconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		marketconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.marketconn = marketconn
+	} else {
+		err := client.marketconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
+		}
 	}
 
 	return do(client.marketconn)
