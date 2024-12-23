@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointService(id string) 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcEndpointServiceAttribute"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -65,10 +57,6 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointServiceListTagResources(id str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
@@ -76,11 +64,9 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointServiceListTagResources(id str
 	request["ClientToken"] = buildClientToken(action)
 
 	request["ResourceType"] = "VpcEndpointService"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -136,7 +122,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -151,10 +136,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewPrivatelinkClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -168,11 +149,9 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -191,10 +170,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewPrivatelinkClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -211,11 +186,9 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -250,21 +223,15 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceUser(id stri
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListVpcEndpointServiceUsers"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ServiceId"] = parts[0]
 	query["UserId"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -336,20 +303,14 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "ListVpcEndpointServiceResources"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -434,20 +395,14 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListVpcEndpointZones"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -522,21 +477,15 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointConnection(id strin
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListVpcEndpointConnections"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EndpointId"] = parts[1]
 	request["ServiceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -608,20 +557,14 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpoint(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcEndpointAttribute"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EndpointId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -648,22 +591,15 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointListTagResources(id string) (o
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-
 	request["ResourceType"] = "VpcEndpoint"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -688,20 +624,14 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointListVpcEndpointSecurityGroups(
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListVpcEndpointSecurityGroups"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EndpointId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

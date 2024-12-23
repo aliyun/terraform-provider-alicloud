@@ -7,11 +7,11 @@ description: |-
   Provides a list of Privatelink Vpc Endpoint Connections to the user.
 ---
 
-# alicloud\_privatelink\_vpc\_endpoint\_connections
+# alicloud_privatelink_vpc_endpoint_connections
 
 This data source provides the Privatelink Vpc Endpoint Connections of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.110.0+.
+-> **NOTE:** Available since v1.110.0.
 
 ## Example Usage
 
@@ -38,13 +38,13 @@ The following arguments are supported:
 * `service_id` - (Required, ForceNew) The ID of the Vpc Endpoint Service.
 * `status` - (Optional, ForceNew) The status of Vpc Endpoint Connection. Valid Values: `Connected`, `Connecting`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting`, `Pending` and `ServiceDeleted`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Connection IDs.
 * `connections` - A list of Privatelink Vpc Endpoint Connections. Each element contains the following attributes:
-	* `bandwidth` - The Bandwidth.
-	* `endpoint_id` - The ID of the Vpc Endpoint.
-	* `id` - The ID of the Vpc Endpoint Connection.
-	* `status` - The status of Vpc Endpoint Connection.
+  * `bandwidth` - The Bandwidth.
+  * `endpoint_id` - The ID of the Vpc Endpoint.
+  * `id` - The ID of the Vpc Endpoint Connection.
+  * `status` - The status of Vpc Endpoint Connection.
