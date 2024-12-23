@@ -8,7 +8,9 @@ import (
 	"testing"
 )
 
-func TestAccAliCloudGaEndpointGroupIpAddressCidrBlocksDataSource(t *testing.T) {
+// TODO: There is an api bug that it always return some cidr blocks whatever accelerator_id whether correct
+// aone id: 62065946.
+func SkipTestAccAliCloudGaEndpointGroupIpAddressCidrBlocksDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	allConf := dataSourceTestAccConfig{

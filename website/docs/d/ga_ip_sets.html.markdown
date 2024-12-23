@@ -7,11 +7,11 @@ description: |-
   Provides a list of Global Accelerator (GA) Ip Sets to the user.
 ---
 
-# alicloud\_ga\_ip\_sets
+# alicloud_ga_ip_sets
 
 This data source provides the Global Accelerator (GA) Ip Sets of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.113.0+.
+-> **NOTE:** Available since v1.113.0.
 
 ## Example Usage
 
@@ -37,15 +37,15 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew)  The status of the acceleration region. Valid values: `active`, `deleting`, `init`, `updating`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `sets` - A list of Ga Ip Sets. Each element contains the following attributes:
-	* `accelerate_region_id` -  The ID of an acceleration region.
-	* `bandwidth` - The bandwidth allocated to the acceleration region.
-	* `id` - The ID of the Ip Set.
-	* `ip_address_list` - The list of accelerated IP addresses in the acceleration region.
-	* `ip_set_id` -  Accelerated area ID.
-	* `ip_version` - The IP protocol used by the GA instance.
-	* `status` -  The status of the acceleration region.
+  * `accelerate_region_id` -  The ID of an acceleration region.
+  * `bandwidth` - The bandwidth allocated to the acceleration region.
+  * `id` - The ID of the Ip Set.
+  * `ip_address_list` - The list of accelerated IP addresses in the acceleration region.
+  * `ip_set_id` -  Accelerated area ID.
+  * `ip_version` - The IP protocol used by the GA instance.
+  * `status` -  The status of the acceleration region.

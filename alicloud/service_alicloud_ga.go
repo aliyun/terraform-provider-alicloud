@@ -19,23 +19,16 @@ type GaService struct {
 
 func (s *GaService) DescribeGaAccelerator(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
 	action := "DescribeAccelerator"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":      s.client.RegionId,
 		"AcceleratorId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -86,20 +79,15 @@ func (s *GaService) GaAcceleratorStateRefreshFunc(id string, failStates []string
 
 func (s *GaService) DescribeGaListener(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeListener"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"ListenerId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -146,13 +134,8 @@ func (s *GaService) GaListenerStateRefreshFunc(id string, failStates []string) r
 
 func (s *GaService) DescribeGaBandwidthPackage(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
 	action := "DescribeBandwidthPackage"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":           s.client.RegionId,
 		"BandwidthPackageId": id,
@@ -162,7 +145,7 @@ func (s *GaService) DescribeGaBandwidthPackage(id string) (object map[string]int
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -214,23 +197,16 @@ func (s *GaService) GaBandwidthPackageStateRefreshFunc(id string, failStates []s
 
 func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
 	action := "DescribeEndpointGroup"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"EndpointGroupId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -265,13 +241,8 @@ func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interf
 
 func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
 	action := "ListForwardingRules"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		err = WrapError(err)
@@ -293,7 +264,7 @@ func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]inter
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 					wait()
@@ -340,10 +311,7 @@ func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]inter
 }
 
 func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"IpSetId":  id,
@@ -352,11 +320,9 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 
 	var response map[string]interface{}
 	action := "DescribeIpSet"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -499,20 +465,15 @@ func (s *GaService) GaIpSetStateRefreshFunc(d *schema.ResourceData, failStates [
 
 func (s *GaService) DescribeAcceleratorAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAcceleratorAutoRenewAttribute"
 	request := map[string]interface{}{
 		"RegionId":      s.client.RegionId,
 		"AcceleratorId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 				wait()
@@ -536,20 +497,15 @@ func (s *GaService) DescribeAcceleratorAutoRenewAttribute(id string) (object map
 
 func (s *GaService) DescribeGaAcl(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAcl"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"AclId":    id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -596,20 +552,15 @@ func (s *GaService) GaAclStateRefreshFunc(id string, failStates []string) resour
 
 func (s *GaService) GetAcl(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAcl"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"AclId":    id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -636,10 +587,7 @@ func (s *GaService) GetAcl(id string) (object map[string]interface{}, err error)
 
 func (s *GaService) DescribeGaAclAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeListener"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -651,11 +599,9 @@ func (s *GaService) DescribeGaAclAttachment(id string) (object map[string]interf
 		"ListenerId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -716,10 +662,7 @@ func (s *GaService) GaAclAttachmentStateRefreshFunc(id string, failStates []stri
 
 func (s *GaService) DescribeGaAdditionalCertificate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListListenerCertificates"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -739,7 +682,7 @@ func (s *GaService) DescribeGaAdditionalCertificate(id string) (object map[strin
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -781,10 +724,7 @@ func (s *GaService) DescribeGaAdditionalCertificate(id string) (object map[strin
 
 func (s *GaService) DescribeGaAcceleratorSpareIpAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetSpareIp"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -796,11 +736,9 @@ func (s *GaService) DescribeGaAcceleratorSpareIpAttachment(id string) (object ma
 		"AcceleratorId": parts[0],
 		"SpareIp":       parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -847,20 +785,15 @@ func (s *GaService) GaAcceleratorSpareIpAttachmentStateRefreshFunc(id string, fa
 
 func (s *GaService) DescribeBandwidthPackageAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBandwidthPackageAutoRenewAttribute"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -884,13 +817,8 @@ func (s *GaService) DescribeBandwidthPackageAutoRenewAttribute(id string) (objec
 
 func (s *GaService) DescribeGaAccessLog(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
 	action := "DescribeLogStoreOfEndpointGroup"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, WrapError(err)
@@ -902,11 +830,9 @@ func (s *GaService) DescribeGaAccessLog(id string) (object map[string]interface{
 		"EndpointGroupId": parts[2],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -957,14 +883,11 @@ func (s *GaService) GaAccessLogStateRefreshFunc(id string, failStates []string) 
 
 func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
 	}
+	client := s.client
 	action := "GetAcl"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -972,11 +895,9 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1016,24 +937,17 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 }
 
 func (s *GaService) DescribeGaBasicAccelerator(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetBasicAccelerator"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":      s.client.RegionId,
 		"AcceleratorId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1084,25 +998,18 @@ func (s *GaService) GaBasicAcceleratorStateRefreshFunc(id string, failStates []s
 }
 
 func (s *GaService) DescribeGaBasicEndpointGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetBasicEndpointGroup"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"ClientToken":     buildClientToken("GetBasicEndpointGroup"),
 		"EndpointGroupId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1152,25 +1059,18 @@ func (s *GaService) GaBasicEndpointGroupStateRefreshFunc(id string, failStates [
 }
 
 func (s *GaService) DescribeGaBasicIpSet(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetBasicIpSet"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"ClientToken": buildClientToken("GetBasicIpSet"),
 		"IpSetId":     id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1222,23 +1122,16 @@ func (s *GaService) GaBasicIpSetStateRefreshFunc(id string, failStates []string)
 func (s *GaService) DescribeGaBasicAccelerateIp(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetBasicAccelerateIp"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"RegionId":       s.client.RegionId,
 		"ClientToken":    buildClientToken("GetBasicAccelerateIp"),
 		"AccelerateIpId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1290,12 +1183,7 @@ func (s *GaService) GaBasicAccelerateIpStateRefreshFunc(id string, failStates []
 func (s *GaService) DescribeGaBasicEndpoint(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetBasicEndpoint"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -1307,11 +1195,9 @@ func (s *GaService) DescribeGaBasicEndpoint(id string) (object map[string]interf
 		"EndpointId":  parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1361,14 +1247,9 @@ func (s *GaService) GaBasicEndpointStateRefreshFunc(id string, failStates []stri
 }
 
 func (s *GaService) DescribeGaBasicAccelerateIpEndpointRelation(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetBasicAccelerateIpEndpointRelation"
-
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, WrapError(err)
@@ -1382,11 +1263,9 @@ func (s *GaService) DescribeGaBasicAccelerateIpEndpointRelation(id string) (obje
 		"EndpointId":     parts[2],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1437,10 +1316,7 @@ func (s *GaService) GaBasicAccelerateIpEndpointRelationStateRefreshFunc(id strin
 }
 
 func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -1454,11 +1330,9 @@ func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, 
 
 	var response map[string]interface{}
 	action := "ListDomains"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1466,7 +1340,6 @@ func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, 
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -1487,21 +1360,16 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroup(id string) (object map[
 	var response map[string]interface{}
 	action := "DescribeCustomRoutingEndpointGroup"
 
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"EndpointGroupId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1559,10 +1427,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroupDestination(id string) (
 	var response map[string]interface{}
 	action := "DescribeCustomRoutingEndpointGroupDestinations"
 
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1574,11 +1439,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroupDestination(id string) (
 		"DestinationId": parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1636,10 +1499,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpoint(id string) (object map[strin
 	var response map[string]interface{}
 	action := "DescribeCustomRoutingEndpoint"
 
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1652,11 +1512,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpoint(id string) (object map[strin
 		"EndpointId":    parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1714,10 +1572,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointTrafficPolicy(id string) (obj
 	var response map[string]interface{}
 	action := "DescribeCustomRoutingEndPointTrafficPolicy"
 
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1730,11 +1585,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpointTrafficPolicy(id string) (obj
 		"PolicyId":   parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1789,28 +1642,13 @@ func (s *GaService) GaCustomRoutingEndpointTrafficPolicyStateRefreshFunc(id stri
 }
 
 func (s *GaService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"ResourceType": resourceType,
-	}
-
-	resourceIdNum := strings.Count(id, ":")
-
-	switch resourceIdNum {
-	case 0:
-		request["ResourceId.1"] = id
-	case 1:
-		parts, err := ParseResourceId(id, 2)
-		if err != nil {
-			return object, WrapError(err)
-		}
-		request["ResourceId.1"] = parts[resourceIdNum]
+		"ResourceId.1": id,
 	}
 
 	tags := make([]interface{}, 0)
@@ -1819,7 +1657,7 @@ func (s *GaService) ListTagResources(id string, resourceType string) (object int
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1843,7 +1681,7 @@ func (s *GaService) ListTagResources(id string, resourceType string) (object int
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 			return
 		}
-		if response["NextToken"] == nil {
+		if response["NextToken"] == nil || response["NextToken"].(string) == "" {
 			break
 		}
 		request["NextToken"] = response["NextToken"]
@@ -1853,17 +1691,13 @@ func (s *GaService) ListTagResources(id string, resourceType string) (object int
 }
 
 func (s *GaService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
+	client := s.client
 	resourceIdNum := strings.Count(d.Id(), ":")
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
 		var response map[string]interface{}
-		conn, err := s.client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
+		var err error
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -1894,7 +1728,7 @@ func (s *GaService) SetResourceTags(d *schema.ResourceData, resourceType string)
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1938,7 +1772,7 @@ func (s *GaService) SetResourceTags(d *schema.ResourceData, resourceType string)
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
