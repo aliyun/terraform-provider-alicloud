@@ -7,11 +7,11 @@ description: |-
   Provides a list of Privatelink Vpc Endpoint Service Users to the user.
 ---
 
-# alicloud\_privatelink\_vpc\_endpoint\_service\_users
+# alicloud_privatelink_vpc_endpoint_service_users
 
 This data source provides the Privatelink Vpc Endpoint Service Users of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.110.0+.
+-> **NOTE:** Available since v1.110.0.
 
 ## Example Usage
 
@@ -35,11 +35,11 @@ The following arguments are supported:
 * `service_id` - (Required, ForceNew) The Id of Vpc Endpoint Service.
 * `user_id` - (Optional, ForceNew) The Id of Ram User.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Service User IDs.
 * `users` - A list of Privatelink Vpc Endpoint Service Users. Each element contains the following attributes:
-	* `id` - The ID of the Vpc Endpoint Service User.
-	* `user_id` - The Id of Ram User.
+  * `id` - The ID of the Vpc Endpoint Service User.
+  * `user_id` - The Id of Ram User.

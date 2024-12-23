@@ -63,11 +63,8 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionCreate(d *schema.ResourceDa
 	action := "EnableVpcEndpointConnection"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["EndpointId"] = d.Get("endpoint_id")
 	request["ServiceId"] = d.Get("service_id")
@@ -80,11 +77,9 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionCreate(d *schema.ResourceDa
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointConnectionOperationDenied"}) || NeedRetry(err) {
 				wait()
@@ -145,15 +140,12 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateVpcEndpointConnectionAttribute"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EndpointId"] = parts[1]
@@ -173,7 +165,7 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 					wait()
@@ -204,11 +196,8 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionDelete(d *schema.ResourceDa
 	action := "DisableVpcEndpointConnection"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["EndpointId"] = parts[1]
 	request["ServiceId"] = parts[0]
@@ -218,11 +207,9 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionDelete(d *schema.ResourceDa
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
