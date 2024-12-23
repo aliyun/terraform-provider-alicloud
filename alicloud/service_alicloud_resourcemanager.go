@@ -508,49 +508,66 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicy(id string)
 
 func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListControlPolicyAttachmentsForTarget"
+
 	conn, err := s.client.NewResourcemanagerClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListControlPolicyAttachmentsForTarget"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
 		"TargetId": parts[1],
 	}
+
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Target"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerControlPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.ControlPolicyAttachments.ControlPolicyAttachment", response)
+
+	resp, err := jsonpath.Get("$.ControlPolicyAttachments.ControlPolicyAttachment", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ControlPolicyAttachments.ControlPolicyAttachment", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
 	}
-	for _, v := range v.([]interface{}) {
-		if v.(map[string]interface{})["PolicyId"].(string) == parts[0] {
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["PolicyId"]) == parts[0] {
 			idExist = true
 			return v.(map[string]interface{}), nil
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 
