@@ -20,10 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerControlPolicyAttachment_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerControlPolicyAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_control_policy_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerControlPolicyAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerControlPolicyAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourcemanagerService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerControlPolicyAttachment")
@@ -31,21 +31,19 @@ func TestAccAlicloudResourceManagerControlPolicyAttachment_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerControlPolicyAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerControlPolicyAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_id": "${alicloud_resource_manager_control_policy.example.id}",
-					"target_id": "${alicloud_resource_manager_folder.example.id}",
+					"policy_id": "${alicloud_resource_manager_control_policy.default.id}",
+					"target_id": "${alicloud_resource_manager_folder.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,29 +61,28 @@ func TestAccAlicloudResourceManagerControlPolicyAttachment_basic(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerControlPolicyAttachmentMap0 = map[string]string{}
+var AliCloudResourceManagerControlPolicyAttachmentMap0 = map[string]string{}
 
-func AlicloudResourceManagerControlPolicyAttachmentBasicDependence0(name string) string {
+func AliCloudResourceManagerControlPolicyAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_resource_manager_folder" "example" {
-    folder_name = "tf-testAcc870912"
-}
+	resource "alicloud_resource_manager_folder" "default" {
+  		folder_name = var.name
+	}
 
-resource "alicloud_resource_manager_control_policy" "example" {
-	control_policy_name = var.name
-	description = var.name
-	effect_scope = "RAM"
-	policy_document = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Deny\",\"Action\":[\"ram:UpdateRole\",\"ram:DeleteRole\",\"ram:AttachPolicyToRole\",\"ram:DetachPolicyFromRole\"],\"Resource\":\"acs:ram:*:*:role/ResourceDirectoryAccountAccessRole\"}]}"
-}
-
+	resource "alicloud_resource_manager_control_policy" "default" {
+  		control_policy_name = var.name
+  		description         = var.name
+  		effect_scope        = "RAM"
+  		policy_document     = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Deny\",\"Action\":[\"ram:UpdateRole\",\"ram:DeleteRole\",\"ram:AttachPolicyToRole\",\"ram:DetachPolicyFromRole\"],\"Resource\":\"acs:ram:*:*:role/ResourceDirectoryAccountAccessRole\"}]}"
+	}
 `, name)
 }
 
-func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
+func TestUnitAliCloudResourceManagerControlPolicyAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_control_policy_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_control_policy_attachment"].Schema).Data(nil, nil)
@@ -150,7 +147,7 @@ func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerControlPolicyAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerControlPolicyAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -175,7 +172,7 @@ func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -220,7 +217,7 @@ func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -239,7 +236,7 @@ func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerControlPolicyAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerControlPolicyAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -267,7 +264,7 @@ func TestUnitAlicloudResourceManagerControlPolicyAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
