@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -19,14 +17,9 @@ type DdoscooService struct {
 }
 
 func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstances"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceIds": []string{id},
 		"PageSize":    PageSizeLarge,
@@ -35,11 +28,9 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -109,24 +100,17 @@ func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) re
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceSpecs"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceIds": []string{id},
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -169,14 +153,9 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceExt"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"PageSize":   PageSizeLarge,
@@ -185,11 +164,9 @@ func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[strin
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -250,61 +227,64 @@ func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name strin
 	return nil
 }
 
-func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.RegionId = s.client.RegionId
-	if d.Get("product_type").(string) == "ddoscoo_intl" {
-		request.RegionId = "ap-southeast-1"
-	} else {
-		request.RegionId = "cn-hangzhou"
+func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "ModifyInstance"
+	request := map[string]interface{}{
+		"InstanceId":       d.Id(),
+		"RegionId":         s.client.RegionId,
+		"ProductCode":      "ddos",
+		"ProductType":      "ddoscoo",
+		"SubscriptionType": "Subscription",
+		"ModifyType":       "Upgrade",
 	}
-	request.InstanceId = d.Id()
-
-	request.ProductCode = "ddos"
+	if d.Get("product_type").(string) == "ddoscoo_intl" {
+		request["RegionId"] = "ap-southeast-1"
+	} else {
+		request["RegionId"] = "cn-hangzhou"
+	}
 
 	if v, ok := d.GetOk("product_type"); ok {
-		request.ProductType = v.(string)
-	} else {
-		request.ProductType = "ddoscoo"
+		request["ProductType"] = v.(string)
 	}
-
-	request.SubscriptionType = "Subscription"
 
 	o, n := d.GetChange(schemaName)
 	oi, _ := strconv.Atoi(o.(string))
 	ni, _ := strconv.Atoi(n.(string))
 	if ni < oi {
-		request.ModifyType = "Downgrade"
-	} else {
-		request.ModifyType = "Upgrade"
+		request["ModifyType"] = "Downgrade"
 	}
 
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
+	request["Parameter"] = []map[string]string{
 		{
-			Code:  specName,
-			Value: d.Get(schemaName).(string),
+			"Code":  specName,
+			"Value": d.Get(schemaName).(string),
 		},
 	}
-	raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = client.RpcPost("BssOpenApi", "2017-12-14", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"SYSTEM.CONCURRENT_OPERATE"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*bssopenapi.ModifyInstanceResponse)
-	if !response.Success {
-		return WrapError(Error(response.Message))
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
 func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeSchedulerRules"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -313,11 +293,9 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 		"PageSize":   10,
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -353,11 +331,8 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 }
 
 func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDomainResource"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -365,11 +340,9 @@ func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[st
 		"PageNumber": 1,
 		"PageSize":   10,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -399,11 +372,8 @@ func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[st
 }
 
 func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribePort"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -418,11 +388,9 @@ func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]inter
 		"PageNumber":       1,
 		"PageSize":         10,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

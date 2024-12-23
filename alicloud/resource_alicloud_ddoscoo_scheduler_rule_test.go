@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDdoscooSchedulerRule_basic(t *testing.T) {
+func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_scheduler_rule.default"

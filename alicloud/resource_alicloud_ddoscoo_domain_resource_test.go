@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudDdosCooDomainResource_basic(t *testing.T) {
+func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
 	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
@@ -30,8 +30,8 @@ func TestAccAliCloudDdosCooDomainResource_basic(t *testing.T) {
 	}, "DescribeDdoscooDomainResource")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%d.alibaba.com", rand)
+	rand := acctest.RandString(10)
+	name := fmt.Sprintf("tf-testacc%s.alibaba.com", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -155,7 +155,7 @@ func TestAccAliCloudDdosCooDomainResource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDdosCooDomainResource_basic1(t *testing.T) {
+func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
 	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
