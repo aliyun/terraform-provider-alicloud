@@ -744,6 +744,12 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ramconn = ramconn
+	} else {
+		err := client.ramconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
+		}
+
 	}
 
 	return do(client.ramconn)
