@@ -879,6 +879,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_schedulerx_app_group":                                 resourceAliCloudSchedulerxAppGroup(),
+			"alicloud_schedulerx_job":                                       resourceAliCloudSchedulerxJob(),
 			"alicloud_express_connect_router_grant_association":             resourceAliCloudExpressConnectRouterGrantAssociation(),
 			"alicloud_live_caster":                                          resourceAliCloudLiveCaster(),
 			"alicloud_vpc_ipam_ipam_pool_allocation":                        resourceAliCloudVpcIpamIpamPoolAllocation(),
@@ -1671,7 +1673,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_sls_group":                                         resourceAlicloudCmsSlsGroup(),
 			"alicloud_config_aggregate_delivery":                             resourceAliCloudConfigAggregateDelivery(),
 			"alicloud_edas_namespace":                                        resourceAlicloudEdasNamespace(),
-			"alicloud_schedulerx_namespace":                                  resourceAlicloudSchedulerxNamespace(),
+			"alicloud_schedulerx_namespace":                                  resourceAliCloudSchedulerxNamespace(),
 			"alicloud_ehpc_cluster":                                          resourceAlicloudEhpcCluster(),
 			"alicloud_cen_traffic_marking_policy":                            resourceAliCloudCenTrafficMarkingPolicy(),
 			"alicloud_ecs_instance_set":                                      resourceAlicloudEcsInstanceSet(),
