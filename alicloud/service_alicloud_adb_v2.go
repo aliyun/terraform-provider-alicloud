@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -27,21 +26,15 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeAccountAllPrivileges"
-	conn, err := client.NewAdbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccountName"] = parts[1]
 	query["DBClusterId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -73,20 +66,14 @@ func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]in
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeAccounts"
-	conn, err := client.NewAdbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccountName"] = parts[1]
 	query["DBClusterId"] = parts[0]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
