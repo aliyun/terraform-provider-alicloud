@@ -68,6 +68,7 @@ The following arguments are supported:
   - The following types are added after v1.192.0: `PrefixList` and `Image`.  
   - The following types are added after v1.194.1: `PublicIpAddressPool`.
   - The following types are added after v1.208.0: `KMSInstance`.
+  - The following types are added after v1.240.0: `Snapshot`.
 
 ## Attributes Reference
 

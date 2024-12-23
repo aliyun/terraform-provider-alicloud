@@ -11,11 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudResourceManagerSharedResource() *schema.Resource {
+func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudResourceManagerSharedResourceCreate,
-		Read:   resourceAlicloudResourceManagerSharedResourceRead,
-		Delete: resourceAlicloudResourceManagerSharedResourceDelete,
+		Create: resourceAliCloudResourceManagerSharedResourceCreate,
+		Read:   resourceAliCloudResourceManagerSharedResourceRead,
+		Delete: resourceAliCloudResourceManagerSharedResourceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,7 +38,7 @@ func resourceAlicloudResourceManagerSharedResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"VSwitch", "ROSTemplate", "ServiceCatalogPortfolio", "PrefixList", "Image", "PublicIpAddressPool", "KMSInstance"}, false),
+				ValidateFunc: StringInSlice([]string{"VSwitch", "ROSTemplate", "ServiceCatalogPortfolio", "PrefixList", "Image", "PublicIpAddressPool", "KMSInstance", "Snapshot"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -48,7 +48,7 @@ func resourceAlicloudResourceManagerSharedResource() *schema.Resource {
 	}
 }
 
-func resourceAlicloudResourceManagerSharedResourceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerSharedResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcesharingService := ResourcesharingService{client}
 	var response map[string]interface{}
@@ -88,10 +88,10 @@ func resourceAlicloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudResourceManagerSharedResourceRead(d, meta)
+	return resourceAliCloudResourceManagerSharedResourceRead(d, meta)
 }
 
-func resourceAlicloudResourceManagerSharedResourceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerSharedResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcesharingService := ResourcesharingService{client}
 	object, err := resourcesharingService.DescribeResourceManagerSharedResource(d.Id())
@@ -117,7 +117,7 @@ func resourceAlicloudResourceManagerSharedResourceRead(d *schema.ResourceData, m
 	return nil
 }
 
-func resourceAlicloudResourceManagerSharedResourceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerSharedResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
