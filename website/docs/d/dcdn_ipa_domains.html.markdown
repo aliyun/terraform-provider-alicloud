@@ -7,11 +7,11 @@ description: |-
   Provides a list of Dcdn Ipa Domains to the user.
 ---
 
-# alicloud\_dcdn\_ipa\_domains
+# alicloud_dcdn_ipa_domains
 
 This data source provides the Dcdn Ipa Domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.158.0+.
+-> **NOTE:** Available since v1.158.0.
 
 ## Example Usage
 
@@ -44,26 +44,26 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the accelerated domain name. Valid values: `check_failed`, `checking`, `configure_failed`, `configuring`, `offline`, `online`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dcdn Ipa Domain names.
 * `domains` - A list of Dcdn Ipa Domains. Each element contains the following attributes:
-	* `cert_name` - CertName.
-	* `cname` - The CNAME assigned to the domain name.
-	* `create_time` - The time when the accelerated domain name was created.
-	* `description` - The description.
-	* `domain_name` - The accelerated domain names.
-	* `id` - The ID of the Ipa Domain.
-	* `resource_group_id` - The ID of the resource group.
-	* `scope` - The accelerated region.
-	* `sources` - The information about the origin server.
-		* `priority` - The priority of the origin server if multiple origin servers are specified.
-		* `type` - The type of the origin server.
-		* `weight` - The weight of the origin server if multiple origin servers are specified.
-		* `content` - The address of the origin server.
-		* `port` - The custom port.
-	* `ssl_protocol` - Indicates whether the Security Socket Layer (SSL) certificate is enabled.
-	* `ssl_pub` - Indicates the public key of the certificate if the HTTPS protocol is enabled.
-	* `status` - The status of the accelerated domain name.
+  * `cert_name` - CertName.
+  * `cname` - The CNAME assigned to the domain name.
+  * `create_time` - The time when the accelerated domain name was created.
+  * `description` - The description.
+  * `domain_name` - The accelerated domain names.
+  * `id` - The ID of the Ipa Domain.
+  * `resource_group_id` - The ID of the resource group.
+  * `scope` - The accelerated region.
+  * `sources` - The information about the origin server.
+    * `priority` - The priority of the origin server if multiple origin servers are specified.
+    * `type` - The type of the origin server.
+    * `weight` - The weight of the origin server if multiple origin servers are specified.
+    * `content` - The address of the origin server.
+    * `port` - The custom port.
+  * `ssl_protocol` - Indicates whether the Security Socket Layer (SSL) certificate is enabled.
+  * `ssl_pub` - Indicates the public key of the certificate if the HTTPS protocol is enabled.
+  * `status` - The status of the accelerated domain name.

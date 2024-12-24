@@ -11,11 +11,11 @@ description: |-
 
 Provides a collection of DCDN Domains to the specified filters.
 
-~> **NOTE:** Available in 1.94.0+.
+-> **NOTE:** Available since 1.94.0.
 
 ## Example Usage
 
- ```
+```terraform
 data "alicloud_dcdn_domains" "example" {
   ids = ["example.com"]
 }
@@ -44,24 +44,24 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
- * `ids` - A list ids of DCDN Domain.
- * `names` - A list of DCDN Domain names.
- * `domains` - A list of domains. Each element contains the following attributes:
-   * `id` - The ID of the DCDN Domain.
-   * `cert_name` - Indicates the name of the certificate.
-   * `resource_group_id` - The ID of the resource group.
-   * `domain_name` - The name of the DCDN Domain.
-   * `ssl_protocol` - Indicates whether the SSL certificate is enabled.
-   * `ssl_pub` -  Indicates the public key of the certificate.
-   * `scope` - The acceleration region.
-   * `status` - The status of DCDN Domain. Valid values: `online`, `offline`, `check_failed`, `checking`, `configure_failed`, `configuring`.
-   * `cname` - The canonical name (CNAME) of the accelerated domain.
-   * `description` - The reason that causes the review failure.
-   * `gmt_modified` - The time when the accelerated domain was last modified.
-   * `sources` - The origin information.
-     * `content` - The origin address.
-     * `type` - The type of the origin. Valid values:
-     * `port` - The port number.
-     * `priority` - The priority of the origin if multiple origins are specified.
-     * `weight` - The weight of the origin if multiple origins are specified.
-     * `enabled` - The status of the origin.
+* `ids` - A list ids of DCDN Domain.
+* `names` - A list of DCDN Domain names.
+* `domains` - A list of domains. Each element contains the following attributes:
+  * `id` - The ID of the DCDN Domain.
+  * `cert_name` - Indicates the name of the certificate.
+  * `resource_group_id` - The ID of the resource group.
+  * `domain_name` - The name of the DCDN Domain.
+  * `ssl_protocol` - Indicates whether the SSL certificate is enabled.
+  * `ssl_pub` -  Indicates the public key of the certificate.
+  * `scope` - The acceleration region.
+  * `status` - The status of DCDN Domain. Valid values: `online`, `offline`, `check_failed`, `checking`, `configure_failed`, `configuring`.
+  * `cname` - The canonical name (CNAME) of the accelerated domain.
+  * `description` - The reason that causes the review failure.
+  * `gmt_modified` - The time when the accelerated domain was last modified.
+  * `sources` - The origin information.
+    * `content` - The origin address.
+    * `type` - The type of the origin. Valid values:
+    * `port` - The port number.
+    * `priority` - The priority of the origin if multiple origins are specified.
+    * `weight` - The weight of the origin if multiple origins are specified.
+    * `enabled` - The status of the origin.
