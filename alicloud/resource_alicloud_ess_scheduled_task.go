@@ -47,7 +47,7 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 				Type:         schema.TypeInt,
 				Default:      600,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 21600),
+				ValidateFunc: IntBetween(0, 1800),
 			},
 			"min_value": {
 				Type:     schema.TypeInt,
@@ -119,19 +119,25 @@ func resourceAliyunEssScheduledTaskRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	d.Set("scheduled_action", object.ScheduledAction)
-	d.Set("launch_time", object.LaunchTime)
-	d.Set("scheduled_task_name", object.ScheduledTaskName)
-	d.Set("description", object.Description)
-	d.Set("launch_expiration_time", object.LaunchExpirationTime)
-	d.Set("recurrence_type", object.RecurrenceType)
-	d.Set("recurrence_value", object.RecurrenceValue)
-	d.Set("recurrence_end_time", object.RecurrenceEndTime)
-	d.Set("task_enabled", object.TaskEnabled)
-	d.Set("min_value", object.MinValue)
-	d.Set("max_value", object.MaxValue)
-	d.Set("desired_capacity", object.DesiredCapacity)
-	d.Set("scaling_group_id", object.ScalingGroupId)
+	d.Set("scheduled_action", object["ScheduledAction"])
+	d.Set("launch_time", object["LaunchTime"])
+	d.Set("scheduled_task_name", object["ScheduledTaskName"])
+	d.Set("description", object["Description"])
+	d.Set("launch_expiration_time", object["LaunchExpirationTime"])
+	d.Set("recurrence_type", object["RecurrenceType"])
+	d.Set("recurrence_value", object["RecurrenceValue"])
+	d.Set("recurrence_end_time", object["RecurrenceEndTime"])
+	d.Set("task_enabled", object["TaskEnabled"])
+	if object["MinValue"] != nil {
+		d.Set("min_value", object["MinValue"])
+	}
+	if object["MaxValue"] != nil {
+		d.Set("max_value", object["MaxValue"])
+	}
+	if object["DesiredCapacity"] != nil {
+		d.Set("desired_capacity", object["DesiredCapacity"])
+	}
+	d.Set("scaling_group_id", object["ScalingGroupId"])
 
 	return nil
 }

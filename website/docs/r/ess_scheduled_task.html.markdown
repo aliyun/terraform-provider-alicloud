@@ -63,8 +63,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -133,7 +133,7 @@ The following arguments are supported:
 The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation. 
 If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime. 
 Otherwise, the task is only executed once at the date and time specified by LaunchTime.
-* `launch_expiration_time` - (Optional) The time period during which a failed scheduled task is retried. Unit: seconds. Valid values: 0 to 21600. Default value: 600
+* `launch_expiration_time` - (Optional) The time period during which a failed scheduled task is retried. Unit: seconds. Valid values: 0 to 1800, Available since v1.240.0. Default value: 600
 * `recurrence_type` - (Optional) Specifies the recurrence type of the scheduled task. **NOTE:** You must specify `RecurrenceType`, `RecurrenceValue`, and `RecurrenceEndTime` at the same time. Valid values:
     - Daily: The scheduled task is executed once every specified number of days.
     - Weekly: The scheduled task is executed on each specified day of a week.
