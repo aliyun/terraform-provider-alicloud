@@ -7,11 +7,11 @@ description: |-
   Provides a list of Config Aggregators to the user.
 ---
 
-# alicloud\_config\_aggregators
+# alicloud_config_aggregators
 
 This data source provides the Config Aggregators of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available since v1.124.0.
 
 ## Example Usage
 
@@ -44,14 +44,14 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Aggregator names.
 * `aggregators` - A list of config aggregators. Each element contains the following attributes:
-	* `account_id` - The Aliyun Uid.
-	* `aggregator_accounts` - Account information in aggregator.
-		* `account_id` - Aggregator account uid.
-		* `account_name` - Aggregator account name.
-		* `account_type` - Aggregator account source type.
-	* `aggregator_id` - The id of aggregator.
-	* `aggregator_name` - The name of aggregator.
-	* `aggregator_type` - The type of aggregator.
-	* `description` - The description of aggregator.
-	* `id` - The id of the aggregator.
-	* `status` - The status of the resource.
+  * `account_id` - The Aliyun Uid.
+  * `aggregator_accounts` - Account information in aggregator.
+    * `account_id` - Aggregator account uid.
+    * `account_name` - Aggregator account name.
+    * `account_type` - Aggregator account source type.
+  * `aggregator_id` - The id of aggregator.
+  * `aggregator_name` - The name of aggregator.
+  * `aggregator_type` - The type of aggregator.
+  * `description` - The description of aggregator.
+  * `id` - The id of the aggregator.
+  * `status` - The status of the resource.
