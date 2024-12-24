@@ -489,6 +489,20 @@ func resourceAliCloudInstance() *schema.Resource {
 					string(DeactiveSecurityEnhancementStrategy),
 				}, false),
 			},
+			"security_options": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"confidential_computing_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"tags":        tagsSchemaWithIgnore(),
 			"volume_tags": tagsSchemaComputed(),
 			"auto_release_time": {
@@ -882,6 +896,16 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
 		request["SecurityEnhancementStrategy"] = v
+	}
+
+	if v, ok := d.GetOk("security_options"); ok {
+		securityOptions := v.(*schema.Set).List()
+		for _, securityOption := range securityOptions {
+			securityOptionMap := securityOption.(map[string]interface{})
+			if v, ok := securityOptionMap["confidential_computing_mode"]; ok {
+				request["SecurityOptions.ConfidentialComputingMode"] = v
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("auto_release_time"); ok && v.(string) != "" {
