@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudEssNotification_basic(t *testing.T) {
+func TestAccAliCloudEssNotification_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.NotificationConfigurationModel
 	resourceId := "alicloud_ess_notification.default"
@@ -27,7 +27,8 @@ func TestAccAlicloudEssNotification_basic(t *testing.T) {
 		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	})
 	rac := resourceAttrCheckInit(rc, ra)
-
+	name := fmt.Sprintf("tf-testAccEssNotificationBasic-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -38,7 +39,38 @@ func TestAccAlicloudEssNotification_basic(t *testing.T) {
 		CheckDestroy:  testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssNotification(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR", "AUTOSCALING:SCALE_IN_SUCCESS", "AUTOSCALING:SCALE_IN_ERROR"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notification_types.#": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id": "${alicloud_ess_scaling_group.default1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"notification_arn": "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default1.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -48,25 +80,120 @@ func TestAccAlicloudEssNotification_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssNotification_timeZone(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.NotificationConfigurationModel
+	resourceId := "alicloud_ess_notification.default"
+
+	basicMap := map[string]string{
+		"notification_types.#": "2",
+		"scaling_group_id":     CHECKSET,
+		"notification_arn":     CHECKSET,
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAccEssNotificationTimeZone-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Steps: []resource.TestStep{
 			{
-				Config: testAccEssNotification_update_notification_types(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}",
+					"time_zone":          "UTC+8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone": "UTC-7",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"notification_types.#": "4",
+						"time_zone": "UTC-7",
 					}),
 				),
 			},
 			{
-				Config: testAccEssNotification_update_scaling_group_id(EcsInstanceCommonTestCase, rand),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssNotification_timeZone1(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.NotificationConfigurationModel
+	resourceId := "alicloud_ess_notification.default"
+
+	basicMap := map[string]string{
+		"notification_types.#": "2",
+		"scaling_group_id":     CHECKSET,
+		"notification_arn":     CHECKSET,
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAccEssNotificationTimeZone-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
 			},
 			{
-				Config: testAccEssNotification_update_notification_arn(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone": "UTC+8",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"time_zone": "UTC+8",
+					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -94,146 +221,45 @@ func testAccCheckEssNotificationDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccEssNotification(common string, rand int) string {
+func testAccEssNotification(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccEssNotification-%d"
+		default = "%s"
 	}
-
-	data "alicloud_regions" "default" {
-		current = true
-	}
-
-	data "alicloud_account" "default" {
-	}
-	
-	resource "alicloud_ess_scaling_group" "default" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.name}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}
-
-	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
-	}
-	
-	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR"]
-		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
-	}
-	`, common, rand)
-}
-
-func testAccEssNotification_update_notification_types(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssNotification-%d"
-	}
-
-	data "alicloud_regions" "default" {
-		current = true
-	}
-
-	data "alicloud_account" "default" {
-	}
-	
-	resource "alicloud_ess_scaling_group" "default" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.name}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}
-
-	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
-	}
-	
-	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
-		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
-	}
-	`, common, rand)
-}
-
-func testAccEssNotification_update_scaling_group_id(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssNotification-%d"
-	}
-
 	variable "newname" {
-		default = "tf-testAccEssNotification_new-%d"
+		default = "newnameN"
 	}
-
-	data "alicloud_regions" "default" {
-		current = true
-	}
-
-	data "alicloud_account" "default" {
-	}
-	
-	resource "alicloud_ess_scaling_group" "default1" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.newname}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}
-
-	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
-	}
-	
-	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default1.id}"
-		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
-		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
-	}
-	`, common, rand, rand)
-}
-
-func testAccEssNotification_update_notification_arn(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssNotification-%d"
-	}
-
-	variable "newname" {
-		default = "tf-testAccEssNotification-new-%d"
-	}
-
-	data "alicloud_regions" "default" {
-		current = true
-	}
-
-	data "alicloud_account" "default" {
-	}
-	
-	resource "alicloud_ess_scaling_group" "default1" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.newname}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	}
-
-	resource "alicloud_mns_queue" "default1"{
+    resource "alicloud_mns_queue" "default1"{
 		name="${var.newname}"
 	}
-	
-	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default1.id}"
-		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
-		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default1.name}"
+	data "alicloud_regions" "default" {
+		current = true
 	}
-	`, common, rand, rand)
+
+	data "alicloud_account" "default" {
+	}
+
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+	
+	resource "alicloud_ess_scaling_group" "default1" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.newname}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+
+	resource "alicloud_mns_queue" "default"{
+		name="${var.name}"
+	}
+	`, EcsInstanceCommonTestCase, common)
 }
