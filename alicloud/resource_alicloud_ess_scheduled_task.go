@@ -47,7 +47,7 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 				Type:         schema.TypeInt,
 				Default:      600,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 21600),
+				ValidateFunc: validation.IntBetween(0, 1800),
 			},
 			"min_value": {
 				Type:     schema.TypeInt,
