@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDcdnWafDomainsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudDcdnWafDomainsDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDcdnWafDomainsDataSourceName(rand, map[string]string{
@@ -57,7 +57,7 @@ func testAccCheckAlicloudDcdnWafDomainsDataSourceName(rand int, attrMap map[stri
 	config := fmt.Sprintf(`
 
 variable "domain_name" {	
-	default = "tf-testacc%d.alicloud-provider.cn"
+	default = "tf-testacc%d.pfytlm.xyz"
 }
 resource "alicloud_dcdn_domain" "default" {
   domain_name = "${var.domain_name}"

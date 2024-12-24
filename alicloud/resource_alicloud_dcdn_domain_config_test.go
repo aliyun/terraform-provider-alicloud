@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudDCDNDomainConfig_ip_allow_list(t *testing.T) {
+func TestAccAliCloudDcdnDomainConfig_ip_allow_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, AliCloudDCDNDomainConfigMap0)
@@ -74,7 +74,7 @@ func TestAccAliCloudDCDNDomainConfig_ip_allow_list(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDCDNDomainConfig_referer_white_list(t *testing.T) {
+func TestAccAliCloudDcdnDomainConfig_referer_white_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, AliCloudDCDNDomainConfigMap0)
@@ -138,7 +138,7 @@ func TestAccAliCloudDCDNDomainConfig_referer_white_list(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
+func TestAccAliCloudDcdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, AliCloudDCDNDomainConfigMap0)
@@ -228,7 +228,7 @@ func TestAccAliCloudDCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudDCDNDomainConfig_filetype_based_ttl_set_twin(t *testing.T) {
+func TestAccAliCloudDcdnDomainConfig_filetype_based_ttl_set_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, AliCloudDCDNDomainConfigMap0)

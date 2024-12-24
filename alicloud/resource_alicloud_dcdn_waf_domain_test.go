@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDCDNWafDomain_basic0(t *testing.T) {
+func TestAccAliCloudDcdnWafDomain_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_domain.default"
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
@@ -29,7 +29,7 @@ func TestAccAlicloudDCDNWafDomain_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.pfytlm.xyz", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -81,7 +81,7 @@ resource "alicloud_dcdn_domain" "default" {
 `, name)
 }
 
-func TestAccAlicloudDCDNWafDomain_basic1(t *testing.T) {
+func TestAccAliCloudDcdnWafDomain_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_domain.default"
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
@@ -92,7 +92,7 @@ func TestAccAlicloudDCDNWafDomain_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.pfytlm.xyz", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

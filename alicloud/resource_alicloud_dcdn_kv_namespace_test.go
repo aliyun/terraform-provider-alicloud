@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudDcdnKvNamespace_basic2278(t *testing.T) {
+func TestAccAliCloudDcdnKvNamespace_basic2278(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_kv_namespace.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnKvNamespaceMap2278)

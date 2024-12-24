@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDcdnEr_basic0(t *testing.T) {
+func TestAccAliCloudDcdnEr_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_er.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnErMap)

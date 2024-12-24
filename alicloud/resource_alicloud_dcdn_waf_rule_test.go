@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudDcdnWafRule_basic2264(t *testing.T) {
+func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnWafRuleMap2264)
@@ -171,7 +171,7 @@ resource "alicloud_dcdn_waf_policy" "default" {
 }
 
 // Case 3
-func TestAccAlicloudDcdnWafRule_basic2624(t *testing.T) {
+func TestAccAliCloudDcdnWafRule_basic2624(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnWafRuleMap2624)
@@ -248,7 +248,7 @@ resource "alicloud_dcdn_waf_policy" "default" {
 }
 
 // Case 5
-func TestAccAlicloudDcdnWafRule_basic2749(t *testing.T) {
+func TestAccAliCloudDcdnWafRule_basic2749(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnWafRuleMap2749)
@@ -346,7 +346,7 @@ resource "alicloud_dcdn_waf_policy" "default" {
 }
 
 // Case 6
-func TestAccAlicloudDcdnWafRule_basic2753(t *testing.T) {
+func TestAccAliCloudDcdnWafRule_basic2753(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudDcdnWafRuleMap2753)

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDCDNIpaDomainsDataSource(t *testing.T) {
+func TestAccAliCloudDcdnIpaDomainsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -64,7 +64,7 @@ func TestAccAlicloudDCDNIpaDomainsDataSource(t *testing.T) {
 			"domains.0.description":        "",
 			"domains.0.id":                 CHECKSET,
 			"domains.0.resource_group_id":  CHECKSET,
-			"domains.0.scope":              "domestic",
+			"domains.0.scope":              "overseas",
 			"domains.0.sources.#":          "1",
 			"domains.0.sources.0.content":  "www.alicloud-provider.cn",
 			"domains.0.sources.0.port":     "8898",
@@ -108,7 +108,7 @@ variable "domain_name" {
 
 resource "alicloud_dcdn_ipa_domain" "default" {
 	domain_name = "${var.domain_name}"
-	scope = "domestic"
+	scope = "overseas"
     sources {
 		content =  "www.alicloud-provider.cn"
 		port =     8898
