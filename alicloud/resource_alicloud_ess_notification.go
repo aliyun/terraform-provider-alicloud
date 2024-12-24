@@ -2,7 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -35,17 +39,26 @@ func resourceAlicloudEssNotification() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
 
 func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ess.CreateCreateNotificationConfigurationRequest()
-	request.RegionId = client.RegionId
-	request.ScalingGroupId = d.Get("scaling_group_id").(string)
-	request.NotificationArn = d.Get("notification_arn").(string)
+	var response map[string]interface{}
+	action := "CreateNotificationConfiguration"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	conn, err := client.NewEssClient()
+	request["ScalingGroupId"] = d.Get("scaling_group_id").(string)
+	request["NotificationArn"] = d.Get("notification_arn").(string)
+	if v, ok := d.GetOk("time_zone"); ok {
+		request["TimeZone"] = v
+	}
 	if v, ok := d.GetOk("notification_types"); ok {
 		notificationTypes := make([]string, 0)
 		notificationTypeList := v.(*schema.Set).List()
@@ -55,18 +68,25 @@ func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interfac
 			}
 		}
 		if len(notificationTypes) > 0 {
-			request.NotificationType = &notificationTypes
+			request["NotificationType"] = notificationTypes
 		}
 	}
-
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.CreateNotificationConfiguration(request)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_notification", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	d.SetId(fmt.Sprintf("%s:%s", request.ScalingGroupId, request.NotificationArn))
+	addDebug(action, response, request)
+	d.SetId(fmt.Sprintf("%s:%s", request["ScalingGroupId"], request["NotificationArn"]))
 	return resourceAlicloudEssNotificationRead(d, meta)
 }
 
@@ -81,39 +101,57 @@ func resourceAlicloudEssNotificationRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
-	d.Set("scaling_group_id", object.ScalingGroupId)
-	d.Set("notification_arn", object.NotificationArn)
-	d.Set("notification_types", object.NotificationTypes.NotificationType)
+	d.Set("scaling_group_id", object["ScalingGroupId"])
+	d.Set("notification_arn", object["NotificationArn"])
+	d.Set("time_zone", object["TimeZone"])
+	notificationTypes, _ := jsonpath.Get("$.NotificationTypes", object)
+	notificationType, _ := jsonpath.Get("$.NotificationType", notificationTypes)
+	d.Set("notification_types", notificationType)
 	return nil
 }
 
 func resourceAlicloudEssNotificationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ess.CreateModifyNotificationConfigurationRequest()
-	request.RegionId = client.RegionId
+	var response map[string]interface{}
+	action := "ModifyNotificationConfiguration"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	conn, err := client.NewEssClient()
+	request["RegionId"] = client.RegionId
 	parts := strings.SplitN(d.Id(), ":", 2)
-	request.ScalingGroupId = parts[0]
-	request.NotificationArn = parts[1]
-	if d.HasChange("notification_types") {
-		v := d.Get("notification_types")
-		notificationTypes := make([]string, 0)
-		notificationTypeList := v.(*schema.Set).List()
-		if len(notificationTypeList) > 0 {
-			for _, n := range notificationTypeList {
-				notificationTypes = append(notificationTypes, n.(string))
+	request["ScalingGroupId"] = parts[0]
+	request["NotificationArn"] = parts[1]
+	v := d.Get("notification_types")
+	notificationTypes := make([]string, 0)
+	notificationTypeList := v.(*schema.Set).List()
+	if len(notificationTypeList) > 0 {
+		for _, n := range notificationTypeList {
+			notificationTypes = append(notificationTypes, n.(string))
+		}
+	}
+	if len(notificationTypes) > 0 {
+		request["NotificationType"] = notificationTypes
+	}
+	if d.HasChange("time_zone") {
+		if v, ok := d.GetOk("time_zone"); ok {
+			request["TimeZone"] = v
+		}
+	}
+	runtime := util.RuntimeOptions{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	runtime.SetAutoretry(true)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
+			return resource.NonRetryableError(err)
 		}
-		if len(notificationTypes) > 0 {
-			request.NotificationType = &notificationTypes
-		}
-	}
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyNotificationConfiguration(request)
+		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	addDebug(action, response, request)
 	return resourceAlicloudEssNotificationRead(d, meta)
 }
 
