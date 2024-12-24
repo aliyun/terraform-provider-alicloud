@@ -135,7 +135,7 @@ resource "alicloud_config_aggregate_delivery" "default" {
 }
 
 data "alicloud_config_aggregate_deliveries" "default" {
-  aggregator_id = alicloud_config_aggregator.default.id
+  aggregator_id = alicloud_config_aggregate_delivery.default.aggregator_id
   %s
 }
 `, rand, defaultRegionToTest, strings.Join(pairs, " \n "))

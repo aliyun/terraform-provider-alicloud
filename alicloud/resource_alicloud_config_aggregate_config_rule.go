@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -119,12 +118,10 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 func resourceAlicloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "CreateAggregateConfigRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request["ConfigRuleName"] = d.Get("aggregate_config_rule_name")
 	request["AggregatorId"] = d.Get("aggregator_id")
 	request["ConfigRuleTriggerTypes"] = d.Get("config_rule_trigger_types")
@@ -161,11 +158,9 @@ func resourceAlicloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, met
 		request["TagValueScope"] = v
 	}
 	request["ClientToken"] = buildClientToken("CreateAggregateConfigRule")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -221,10 +216,7 @@ func resourceAlicloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta 
 }
 func resourceAlicloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	configService := ConfigService{client}
 	d.Partial(true)
 	var response map[string]interface{}
@@ -283,16 +275,15 @@ func resourceAlicloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, met
 	}
 	if !d.IsNewResource() && d.HasChange("tag_value_scope") {
 		update = true
+		request["TagKeyScope"] = d.Get("tag_key_scope")
 		request["TagValueScope"] = d.Get("tag_value_scope")
 	}
 	if update {
 		action := "UpdateAggregateConfigRule"
 		request["ClientToken"] = buildClientToken("UpdateAggregateConfigRule")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -350,10 +341,7 @@ func resourceAlicloudConfigAggregateConfigRuleDelete(d *schema.ResourceData, met
 	}
 	action := "DeleteAggregateConfigRules"
 	var response map[string]interface{}
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request := map[string]interface{}{
 		"AggregatorId":  parts[0],
 		"ConfigRuleIds": parts[1],
@@ -361,7 +349,7 @@ func resourceAlicloudConfigAggregateConfigRuleDelete(d *schema.ResourceData, met
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
