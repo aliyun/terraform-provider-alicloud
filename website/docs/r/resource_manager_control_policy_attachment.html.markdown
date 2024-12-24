@@ -11,7 +11,7 @@ description: |-
 
 Provides a Resource Manager Control Policy Attachment resource.
 
-For information about Resource Manager Control Policy Attachment and how to use it, see [What is Control Policy Attachment](https://www.alibabacloud.com/help/en/resource-management/latest/api-resourcedirectorymaster-2022-04-19-attachcontrolpolicy).
+For information about Resource Manager Control Policy Attachment and how to use it, see [What is Control Policy Attachment](https://www.alibabacloud.com/help/en/resource-management/resource-directory/developer-reference/api-resourcemanager-2020-03-31-attachcontrolpolicy).
 
 -> **NOTE:** Available since v1.120.0.
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
@@ -35,7 +35,7 @@ resource "random_integer" "default" {
   max = 99999
 }
 
-resource "alicloud_resource_manager_control_policy" "example" {
+resource "alicloud_resource_manager_control_policy" "default" {
   control_policy_name = var.name
   description         = var.name
   effect_scope        = "RAM"
@@ -58,13 +58,13 @@ resource "alicloud_resource_manager_control_policy" "example" {
   EOF
 }
 
-resource "alicloud_resource_manager_folder" "example" {
+resource "alicloud_resource_manager_folder" "default" {
   folder_name = "${var.name}-${random_integer.default.result}"
 }
 
-resource "alicloud_resource_manager_control_policy_attachment" "example" {
-  policy_id = alicloud_resource_manager_control_policy.example.id
-  target_id = alicloud_resource_manager_folder.example.id
+resource "alicloud_resource_manager_control_policy_attachment" "default" {
+  policy_id = alicloud_resource_manager_control_policy.default.id
+  target_id = alicloud_resource_manager_folder.default.id
 }
 ```
 
@@ -72,14 +72,23 @@ resource "alicloud_resource_manager_control_policy_attachment" "example" {
 
 The following arguments are supported:
 
-* `policy_id` - (Required, ForceNew) The ID of control policy.
-* `target_id` - (Required, ForceNew) The ID of target.
+* `policy_id` - (Required, ForceNew) The ID of the access control policy.
+* `target_id` - (Required, ForceNew) The ID of the object to which you want to attach the access control policy.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Control Policy Attachment. The value is formatted `<policy_id>:<target_id>`.
+* `id` - The resource ID in terraform of Control Policy Attachment. It formats as `<policy_id>:<target_id>`.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.240.0.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Control Policy Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Control Policy Attachment.
 
 ## Import
 

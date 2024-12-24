@@ -11,13 +11,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudResourceManagerControlPolicyAttachment() *schema.Resource {
+func resourceAliCloudResourceManagerControlPolicyAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudResourceManagerControlPolicyAttachmentCreate,
-		Read:   resourceAlicloudResourceManagerControlPolicyAttachmentRead,
-		Delete: resourceAlicloudResourceManagerControlPolicyAttachmentDelete,
+		Create: resourceAliCloudResourceManagerControlPolicyAttachmentCreate,
+		Read:   resourceAliCloudResourceManagerControlPolicyAttachmentRead,
+		Delete: resourceAliCloudResourceManagerControlPolicyAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"policy_id": {
@@ -34,7 +38,7 @@ func resourceAlicloudResourceManagerControlPolicyAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudResourceManagerControlPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerControlPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AttachControlPolicy"
@@ -43,69 +47,84 @@ func resourceAlicloudResourceManagerControlPolicyAttachmentCreate(d *schema.Reso
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request["PolicyId"] = d.Get("policy_id")
 	request["TargetId"] = d.Get("target_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_control_policy_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["PolicyId"], ":", request["TargetId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["PolicyId"], request["TargetId"]))
 
-	return resourceAlicloudResourceManagerControlPolicyAttachmentRead(d, meta)
+	return resourceAliCloudResourceManagerControlPolicyAttachmentRead(d, meta)
 }
-func resourceAlicloudResourceManagerControlPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudResourceManagerControlPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
-	_, err := resourcemanagerService.DescribeResourceManagerControlPolicyAttachment(d.Id())
+
+	object, err := resourcemanagerService.DescribeResourceManagerControlPolicyAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_resource_manager_control_policy_attachment resourcemanagerService.DescribeResourceManagerControlPolicyAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("policy_id", parts[0])
+
+	d.Set("policy_id", object["PolicyId"])
 	d.Set("target_id", parts[1])
+
 	return nil
 }
-func resourceAlicloudResourceManagerControlPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudResourceManagerControlPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 	action := "DetachControlPolicy"
 	var response map[string]interface{}
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	request := map[string]interface{}{
 		"PolicyId": parts[0],
 		"TargetId": parts[1],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -113,14 +132,16 @@ func resourceAlicloudResourceManagerControlPolicyAttachmentDelete(d *schema.Reso
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExists.Target"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Target"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
