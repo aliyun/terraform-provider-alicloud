@@ -20,10 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerSharedResource_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerSharedResource_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -31,7 +31,7 @@ func TestAccAlicloudResourceManagerSharedResource_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccResourceManagerSharedResource%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -64,10 +64,10 @@ func TestAccAlicloudResourceManagerSharedResource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudResourceManagerSharedResource_prefixList(t *testing.T) {
+func TestAccAliCloudResourceManagerSharedResource_prefixList(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -75,7 +75,7 @@ func TestAccAlicloudResourceManagerSharedResource_prefixList(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccResourceManagerSharedResource%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourcePrefixListDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourcePrefixListDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -108,10 +108,10 @@ func TestAccAlicloudResourceManagerSharedResource_prefixList(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudResourceManagerSharedResource_image(t *testing.T) {
+func TestAccAliCloudResourceManagerSharedResource_image(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -119,7 +119,7 @@ func TestAccAlicloudResourceManagerSharedResource_image(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccResourceManagerSharedResource%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceImageDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceImageDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -152,11 +152,11 @@ func TestAccAlicloudResourceManagerSharedResource_image(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerSharedResourceMap = map[string]string{
+var AliCloudResourceManagerSharedResourceMap = map[string]string{
 	"status": "Associated",
 }
 
-func AlicloudResourceManagerSharedResourceBasicDependence(name string) string {
+func AliCloudResourceManagerSharedResourceBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -181,7 +181,7 @@ func AlicloudResourceManagerSharedResourceBasicDependence(name string) string {
 `, name)
 }
 
-func AlicloudResourceManagerSharedResourcePrefixListDependence(name string) string {
+func AliCloudResourceManagerSharedResourcePrefixListDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -204,7 +204,7 @@ func AlicloudResourceManagerSharedResourcePrefixListDependence(name string) stri
 `, name)
 }
 
-func AlicloudResourceManagerSharedResourceImageDependence(name string) string {
+func AliCloudResourceManagerSharedResourceImageDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -267,7 +267,7 @@ func AlicloudResourceManagerSharedResourceImageDependence(name string) string {
 `, name)
 }
 
-func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
+func TestUnitAliCloudResourceManagerSharedResource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_shared_resource"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_shared_resource"].Schema).Data(nil, nil)
@@ -341,7 +341,7 @@ func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerSharedResourceCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerSharedResourceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -373,7 +373,7 @@ func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedResourceCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerSharedResourceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -418,7 +418,7 @@ func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedResourceRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerSharedResourceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -437,7 +437,7 @@ func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerSharedResourceDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerSharedResourceDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -472,7 +472,7 @@ func TestUnitAlicloudResourceManagerSharedResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedResourceDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerSharedResourceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
