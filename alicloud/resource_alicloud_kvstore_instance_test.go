@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"strings"
@@ -31,12 +29,6 @@ func testSweepKVStoreInstances(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
-	conn, err := client.NewRedisaClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -53,9 +45,7 @@ func testSweepKVStoreInstances(region string) error {
 	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
 		request["InstanceType"] = instanceType
 		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
 				return nil
@@ -98,7 +88,7 @@ func testSweepKVStoreInstances(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -117,7 +107,7 @@ func testSweepKVStoreInstances(region string) error {
 		}
 		wait = incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -2328,10 +2318,12 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_enable":                "Disable",
 					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"ssl_enable":                "Disable",
 						"private_connection_prefix": CHECKSET,
 					}),
 				),
