@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstanceAttribute"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -74,20 +66,14 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceConfig(id string) (
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstanceConfig"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -114,20 +100,14 @@ func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSecurityIps"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -174,20 +154,14 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSecurityGroupConfiguration"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -223,20 +197,14 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceSSL(id string) (obj
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstanceSSL"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -263,20 +231,14 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeIntranetAttribute(id string
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeIntranetAttribute"
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -334,7 +296,6 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -349,10 +310,6 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewRedisClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -362,11 +319,9 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -385,10 +340,6 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewRedisClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -401,11 +352,9 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
