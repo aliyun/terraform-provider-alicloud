@@ -2258,6 +2258,49 @@ func TestAccAliCloudOssBucketResourceGroup(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOssBucketOmitBucketName(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", resourceOssBucketResourceGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"redundancy_type":   "LRS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                  REGEXMATCH + "^tf\\-oss\\-bucket\\-.*$",
+						"access_monitor.#":        "1",
+						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
+						"redundancy_type":         "LRS",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceOssBucketConfigBasic(name string) string {
 	return fmt.Sprintf("")
 }
