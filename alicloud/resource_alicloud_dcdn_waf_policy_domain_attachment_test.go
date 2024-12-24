@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDCDNWafPolicyDomainAttachment_basic0(t *testing.T) {
+func TestAccAliCloudDcdnWafPolicyDomainAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_policy_domain_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)

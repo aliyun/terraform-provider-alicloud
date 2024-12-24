@@ -7,11 +7,11 @@ description: |-
   Provides a list of Dcdn Waf Policies to the user.
 ---
 
-# alicloud\_dcdn\_waf\_policies
+# alicloud_dcdn_waf_policies
 
 This data source provides the Dcdn Waf Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.184.0+.
+-> **NOTE:** Available since v1.184.0.
 
 ## Example Usage
 
@@ -33,7 +33,7 @@ The following arguments are supported:
 * `query_args` - (Optional, ForceNew) The query conditions. The value is a string in the JSON format. Format: `{"PolicyIds":"The ID of the proteuleIds":"Thection policy","R range of protection rule IDs","PolicyNameLike":"The name of the protection policy","DomainNames":"The protected domain names","PolicyType":"default","DefenseScenes":"waf_group","PolicyStatus":"on","OrderBy":"GmtModified","Desc":"false"}`.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `on`, `off`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

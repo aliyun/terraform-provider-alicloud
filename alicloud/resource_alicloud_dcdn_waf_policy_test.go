@@ -41,30 +41,25 @@ func testSweepDcdnWafPolicy(region string) error {
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 	action := "DescribeDcdnWafPolicies"
 	request := map[string]interface{}{}
-	request["RegionId"] = aliyunClient.RegionId
+	request["RegionId"] = client.RegionId
 
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewDcdnClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -103,7 +98,7 @@ func testSweepDcdnWafPolicy(region string) error {
 			request := map[string]interface{}{
 				"PolicyId": item["PolicyId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Dcdn Waf Policy (%s): %s", item["PolicyName"].(string), err)
 			}
@@ -117,7 +112,7 @@ func testSweepDcdnWafPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDCDNWafPolicy_basic0(t *testing.T) {
+func TestAccAliCloudDcdnWafPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)

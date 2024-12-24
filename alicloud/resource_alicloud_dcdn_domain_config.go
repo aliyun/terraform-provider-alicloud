@@ -7,7 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,10 +72,7 @@ func resourceAliCloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "BatchSetDcdnDomainConfigs"
 	request := make(map[string]interface{})
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DomainNames"] = d.Get("domain_name").(string)
 
@@ -107,11 +103,9 @@ func resourceAliCloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 
 	request["Functions"] = string(bytConfig)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"FlowControlError"}) || NeedRetry(err) {
 				wait()
@@ -215,10 +209,6 @@ func resourceAliCloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("function_args") || d.HasChange("parent_id") {
 		action := "BatchSetDcdnDomainConfigs"
 		request := make(map[string]interface{})
-		conn, err := client.NewDcdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
 
 		parts, err := ParseResourceId(d.Id(), 3)
 		if err != nil {
@@ -252,12 +242,9 @@ func resourceAliCloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 		bytconfig, _ := json.Marshal(config)
 
 		request["Functions"] = string(bytconfig)
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"FlowControlError"}) || NeedRetry(err) {
 					wait()
@@ -288,10 +275,7 @@ func resourceAliCloudDcdnDomainConfigDelete(d *schema.ResourceData, meta interfa
 	action := "DeleteDcdnSpecificConfig"
 	var response map[string]interface{}
 
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -303,11 +287,9 @@ func resourceAliCloudDcdnDomainConfigDelete(d *schema.ResourceData, meta interfa
 		"ConfigId":   parts[2],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

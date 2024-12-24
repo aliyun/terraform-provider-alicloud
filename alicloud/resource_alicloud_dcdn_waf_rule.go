@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -195,10 +194,7 @@ func resourceAlicloudDcdnWafRule() *schema.Resource {
 func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	ruleConfigMap := make(map[string]interface{}, 0)
 	if v, ok := d.GetOk("cc_status"); ok {
 		ruleConfigMap["ccStatus"] = v
@@ -285,7 +281,7 @@ func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{})
 	action := "BatchCreateDcdnWafRules"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 				wait()
@@ -293,7 +289,6 @@ func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -389,10 +384,7 @@ func resourceAlicloudDcdnWafRuleRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudDcdnWafRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"RuleId": d.Id(),
@@ -524,7 +516,7 @@ func resourceAlicloudDcdnWafRuleUpdate(d *schema.ResourceData, meta interface{})
 		action := "ModifyDcdnWafRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("dcdn", "2018-01-15", action, request, nil, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 					wait()
@@ -532,7 +524,7 @@ func resourceAlicloudDcdnWafRuleUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -545,10 +537,7 @@ func resourceAlicloudDcdnWafRuleUpdate(d *schema.ResourceData, meta interface{})
 
 func resourceAlicloudDcdnWafRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RuleIds": d.Id(),
@@ -557,7 +546,7 @@ func resourceAlicloudDcdnWafRuleDelete(d *schema.ResourceData, meta interface{})
 	action := "BatchDeleteDcdnWafRules"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPost("dcdn", "2018-01-15", action, request, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -565,7 +554,7 @@ func resourceAlicloudDcdnWafRuleDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

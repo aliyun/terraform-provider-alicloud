@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -214,14 +213,9 @@ func dataSourceAlicloudDcdnDomainsRead(d *schema.ResourceData, meta interface{})
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", action, AlibabaCloudSdkGoERROR)
 		}
