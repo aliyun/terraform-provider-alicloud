@@ -122,31 +122,54 @@ func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout i
 	}
 }
 
-func (s *EssService) DescribeEssNotification(id string) (notification ess.NotificationConfigurationModel, err error) {
+func (s *EssService) DescribeEssNotification(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEssClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	parts := strings.SplitN(id, ":", 2)
 	scalingGroupId, notificationArn := parts[0], parts[1]
-	request := ess.CreateDescribeNotificationConfigurationsRequest()
-	request.RegionId = s.client.RegionId
-	request.ScalingGroupId = scalingGroupId
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeNotificationConfigurations(request)
-	})
+	request := map[string]interface{}{
+		"ScalingGroupId": scalingGroupId,
+		"RegionId":       s.client.RegionId,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("DescribeNotificationConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotificationConfigurationNotExist", "InvalidScalingGroupId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, "DescribeNotificationConfigurations", AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ess.DescribeNotificationConfigurationsResponse)
-	for _, v := range response.NotificationConfigurationModels.NotificationConfigurationModel {
-		if v.NotificationArn == notificationArn {
-			return v, nil
+
+	addDebug("DescribeNotificationConfigurations", response, request)
+
+	v, err := jsonpath.Get("$.NotificationConfigurationModels", response)
+
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NotificationConfigurationModels", response)
+	}
+
+	vv, err := jsonpath.Get("$.NotificationConfigurationModel", v)
+
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NotificationConfigurationModel", response)
+	}
+
+	for _, w := range vv.([]interface{}) {
+		m := w.(map[string]interface{})
+		if m["NotificationArn"] == notificationArn {
+			return m, nil
 		}
 	}
+
 	err = WrapErrorf(Error(GetNotFoundMessage("EssNotificationConfiguration", id)), NotFoundMsg, ProviderERROR)
 	return
+
 }
 
 func (s *EssService) WaitForEssNotification(id string, status Status, timeout int) error {
@@ -162,7 +185,7 @@ func (s *EssService) WaitForEssNotification(id string, status Status, timeout in
 				return WrapError(err)
 			}
 		}
-		resourceId := fmt.Sprintf("%s:%s", object.ScalingGroupId, object.NotificationArn)
+		resourceId := fmt.Sprintf("%s:%s", object["ScalingGroupId"], object["NotificationArn"])
 		if resourceId == id && status != Deleted {
 			return nil
 		}
