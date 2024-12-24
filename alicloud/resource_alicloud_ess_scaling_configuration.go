@@ -214,6 +214,20 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Active", "Deactive"}, false),
 			},
+			"security_options": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"confidential_computing_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -579,6 +593,16 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	}
 	if v, ok := d.GetOk("security_enhancement_strategy"); ok && v.(string) != "" {
 		request["SecurityEnhancementStrategy"] = v
+	}
+
+	if v, ok := d.GetOk("security_options"); ok {
+		securityOptions := v.(*schema.Set).List()
+		for _, securityOption := range securityOptions {
+			securityOptionMap := securityOption.(map[string]interface{})
+			if v, ok := securityOptionMap["confidential_computing_mode"]; ok {
+				request["SecurityOptions.ConfidentialComputingMode"] = v
+			}
+		}
 	}
 
 	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
@@ -1320,6 +1344,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 	d.Set("system_disk_category", response["SystemDiskCategory"])
 	d.Set("security_enhancement_strategy", response["SecurityEnhancementStrategy"])
+	d.Set("security_options", response["SecurityOptions"])
 	if response["InternetMaxBandwidthIn"] != nil {
 		d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
 	}
