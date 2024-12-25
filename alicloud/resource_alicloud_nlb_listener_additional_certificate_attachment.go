@@ -76,8 +76,6 @@ func resourceAliCloudNlbListenerAdditionalCertificateAttachmentCreate(d *schema.
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,9 +83,9 @@ func resourceAliCloudNlbListenerAdditionalCertificateAttachmentCreate(d *schema.
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nlb_listener_additional_certificate_attachment", action, AlibabaCloudSdkGoERROR)
@@ -118,8 +116,13 @@ func resourceAliCloudNlbListenerAdditionalCertificateAttachmentRead(d *schema.Re
 		return WrapError(err)
 	}
 
-	d.Set("status", objectRaw["Status"])
-	d.Set("certificate_id", objectRaw["CertificateId"])
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["CertificateId"] != nil {
+		d.Set("certificate_id", objectRaw["CertificateId"])
+	}
+
 	parts := strings.Split(d.Id(), ":")
 	d.Set("listener_id", parts[0])
 
@@ -147,7 +150,6 @@ func resourceAliCloudNlbListenerAdditionalCertificateAttachmentDelete(d *schema.
 	request["ListenerId"] = parts[0]
 	request["AdditionalCertificateIds.1"] = parts[1]
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -167,21 +169,22 @@ func resourceAliCloudNlbListenerAdditionalCertificateAttachmentDelete(d *schema.
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.listener", "ResourceNotFound.loadbalancer"}) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.listener", "ResourceNotFound.loadbalancer"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	nlbServiceV2 := NlbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbListenerAdditionalCertificateAttachmentStateRefreshFunc(d, response, "$.Status", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nlbServiceV2.DescribeAsyncNlbListenerAdditionalCertificateAttachmentStateRefreshFunc(d, response, "$.Status", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
+
 	return nil
 }
