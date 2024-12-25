@@ -128,10 +128,9 @@ func (s *NlbServiceV2) DescribeNlbListenerAdditionalCertificateAttachment(id str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -148,7 +147,7 @@ func (s *NlbServiceV2) DescribeNlbListenerAdditionalCertificateAttachment(id str
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["CertificateId"] != parts[1] {
+		if fmt.Sprint(item["CertificateId"]) != parts[1] {
 			continue
 		}
 		return item, nil
@@ -169,6 +168,13 @@ func (s *NlbServiceV2) NlbListenerAdditionalCertificateAttachmentStateRefreshFun
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -181,7 +187,6 @@ func (s *NlbServiceV2) NlbListenerAdditionalCertificateAttachmentStateRefreshFun
 func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
-	taskId, err := jsonpath.Get("$.JobId", res)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
@@ -196,9 +201,9 @@ func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	query["JobId"], err = jsonpath.Get("$.JobId", res)
 
 	request["ClientToken"] = buildClientToken(action)
-	request["JobId"] = taskId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -214,12 +219,11 @@ func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -232,14 +236,23 @@ func (s *NlbServiceV2) DescribeAsyncNlbListenerAdditionalCertificateAttachmentSt
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
