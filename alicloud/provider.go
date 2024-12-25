@@ -882,6 +882,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_private_srv_network_address":                  resourceAliCloudMongodbPrivateSrvNetworkAddress(),
 			"alicloud_schedulerx_app_group":                                 resourceAliCloudSchedulerxAppGroup(),
 			"alicloud_schedulerx_job":                                       resourceAliCloudSchedulerxJob(),
+			"alicloud_esa_record":                                           resourceAliCloudEsaRecord(),
 			"alicloud_express_connect_router_grant_association":             resourceAliCloudExpressConnectRouterGrantAssociation(),
 			"alicloud_live_caster":                                          resourceAliCloudLiveCaster(),
 			"alicloud_vpc_ipam_ipam_pool_allocation":                        resourceAliCloudVpcIpamIpamPoolAllocation(),
