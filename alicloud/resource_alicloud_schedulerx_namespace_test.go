@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSchedulerxNamespace_basic0(t *testing.T) {
+func TestAccAliCloudSchedulerxNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_namespace.default"
 	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap0)
@@ -174,7 +174,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSchedulerxNamespaceCreate(dInit, rawClient)
+	err = resourceAliCloudSchedulerxNamespaceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -197,7 +197,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSchedulerxNamespaceCreate(dInit, rawClient)
+		err := resourceAliCloudSchedulerxNamespaceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -224,7 +224,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSchedulerxNamespaceUpdate(dExisted, rawClient)
+	err = resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -265,7 +265,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSchedulerxNamespaceUpdate(dExisted, rawClient)
+		err := resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -309,7 +309,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSchedulerxNamespaceRead(dExisted, rawClient)
+		err := resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -320,3 +320,63 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 	}
 
 }
+
+// Test Schedulerx Namespace. >>> Resource test cases, automatically generated.
+// Case 预发环境_20241220_杭州region 9449
+func TestAccAliCloudSchedulerxNamespace_basic9449(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_schedulerx_namespace.default"
+	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap9449)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSchedulerxNamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxnamespace%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence9449)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name": name,
+					"description":    "namespace 资源用例自动创建的命名空间",
+					"namespace_uid":  fmt.Sprint(rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name": name,
+						"description":    "namespace 资源用例自动创建的命名空间",
+						"namespace_uid":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSchedulerxNamespaceMap9449 = map[string]string{}
+
+func AlicloudSchedulerxNamespaceBasicDependence9449(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Schedulerx Namespace. <<< Resource test cases, automatically generated.
