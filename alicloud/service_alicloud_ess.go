@@ -586,27 +586,36 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 	}
 }
 
-func (s *EssService) DescribeEssScheduledTask(id string) (task ess.ScheduledTask, err error) {
-	request := ess.CreateDescribeScheduledTasksRequest()
-	request.ScheduledTaskId = &[]string{id}
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScheduledTasks(request)
-	})
-	if err != nil {
-		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ess.DescribeScheduledTasksResponse)
+func (s *EssService) DescribeEssScheduledTask(id string) (task map[string]interface{}, err error) {
+	action := "DescribeScheduledTasks"
+	request := make(map[string]interface{})
+	conn, err := s.client.NewEssClient()
+	var response map[string]interface{}
 
-	for _, v := range response.ScheduledTasks.ScheduledTask {
-		if v.ScheduledTaskId == id {
-			task = v
-			return
-		}
+	request["ScheduledTaskId"] = []string{id}
+	request["RegionId"] = s.client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return task, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EssSchedule", id)), NotFoundMsg, ProviderERROR)
-	return
+	v, err := jsonpath.Get("$.ScheduledTasks", response)
+
+	vv, err := jsonpath.Get("$.ScheduledTask", v)
+
+	if err != nil {
+		return task, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScheduledTasks", response)
+	}
+
+	if len(vv.([]interface{})) == 0 {
+		return task, WrapErrorf(Error(GetNotFoundMessage("ScheduledTask", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	task = vv.([]interface{})[0].(map[string]interface{})
+	return task, nil
 }
 
 func (s *EssService) WaitForEssScheduledTask(id string, status Status, timeout int) error {
@@ -623,13 +632,13 @@ func (s *EssService) WaitForEssScheduledTask(id string, status Status, timeout i
 			}
 		}
 
-		if object.TaskEnabled {
+		if object["TaskEnabled"].(bool) {
 			return nil
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ScheduledTaskId, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ScheduledTaskId"], id, ProviderERROR)
 		}
 	}
 }
