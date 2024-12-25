@@ -640,8 +640,9 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enabled",
-					"role_arn":   "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"tde_status":         "Enabled",
+					"role_arn":           "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"tde_encryption_key": "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -709,7 +710,7 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "sql_collector_status", "role_arn"},
+				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "sql_collector_status", "role_arn", "tde_encryption_key"},
 			},
 		},
 	})
@@ -828,6 +829,11 @@ data "alicloud_ram_roles" "default" {
 resource "alicloud_security_group" "default" {
 	name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_kms_key" "default" {
+  description = var.name
+  pending_window_in_days  = 7
+  status            = "Enabled"
 }
 
 
@@ -1456,7 +1462,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_kms_key" "default" {
   description = var.name
   pending_window_in_days  = 7
-  key_state               = "Enabled"
+  status            = "Enabled"
 }
 
 `, name)
@@ -3942,6 +3948,205 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap7)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigGeneralEssdPgSql)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "PostgreSQL",
+					"engine_version":           "17.0",
+					"instance_type":            "pg.n4.2c.2m",
+					"instance_storage":         "30",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "PostgreSQL",
+						"engine_version":           "17.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_bouncer_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_bouncer_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_key": "ServiceKey",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encryption_key": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_key": "disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encryption_key": "",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart"},
+			},
+		},
+	})
+}
+
+func resourceDBInstanceConfigGeneralEssdPgSql(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "PostgreSQL"
+	engine_version = "17.0"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+`, name)
+}
+
+func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap8)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigGeneralEssdSqlService)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "SQLServer",
+					"engine_version":           "2022_web",
+					"instance_type":            "mssql.x2.medium.w1",
+					"instance_storage":         "50",
+					"instance_charge_type":     "Postpaid",
+					"category":                 "Basic",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "SQLServer",
+						"engine_version":           "2022_web",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"recovery_model": "simple",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recovery_model": "simple",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart"},
+			},
+		},
+	})
+}
+
+func resourceDBInstanceConfigGeneralEssdSqlService(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "SQLServer"
+	engine_version = "2022_web"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+`, name)
+}
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -4073,4 +4278,40 @@ var instancePostgreSQLBasicMap = map[string]string{
 	"status":               CHECKSET,
 	"create_time":          CHECKSET,
 	"ssl_action":           "Close",
+}
+var instanceBasicMap7 = map[string]string{
+	"engine":               "PostgreSQL",
+	"engine_version":       "17.0",
+	"instance_type":        CHECKSET,
+	"db_instance_type":     "Primary",
+	"instance_storage":     "30",
+	"instance_name":        "tf-testAccDBInstanceConfig",
+	"zone_id":              CHECKSET,
+	"instance_charge_type": "Postpaid",
+	"connection_string":    CHECKSET,
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+	"ssl_action":           "Close",
+}
+var instanceBasicMap8 = map[string]string{
+	"engine":               "SQLServer",
+	"engine_version":       "2022_web",
+	"instance_type":        CHECKSET,
+	"instance_storage":     "50",
+	"instance_name":        "tf-testAccDBInstanceConfig",
+	"zone_id":              CHECKSET,
+	"instance_charge_type": "Postpaid",
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+}
+var instanceBasicMap9 = map[string]string{
+	"engine":               "MySQL",
+	"engine_version":       "8.0",
+	"instance_type":        CHECKSET,
+	"instance_name":        "tf-testAccDBInstanceConfig",
+	"zone_id":              CHECKSET,
+	"instance_charge_type": "Postpaid",
+	"connection_string":    CHECKSET,
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
 }
