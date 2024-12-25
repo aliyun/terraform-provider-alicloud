@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -12,54 +13,66 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudSchedulerxNamespace() *schema.Resource {
+func resourceAliCloudSchedulerxNamespace() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSchedulerxNamespaceCreate,
-		Read:   resourceAlicloudSchedulerxNamespaceRead,
-		Update: resourceAlicloudSchedulerxNamespaceUpdate,
-		Delete: resourceAlicloudSchedulerxNamespaceDelete,
+		Create: resourceAliCloudSchedulerxNamespaceCreate,
+		Read:   resourceAliCloudSchedulerxNamespaceRead,
+		Delete: resourceAliCloudSchedulerxNamespaceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Optional: true,
 				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"namespace_name": {
-				Required: true,
 				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"namespace_uid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-	}
-	conn, err := client.NewEdasschedulerxClient()
+
+	action := "CreateNamespace"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewSchedulerxClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("namespace_uid"); ok {
+		request["Uid"] = v
+	}
+	request["RegionId"] = client.RegionId
 
+	request["Name"] = d.Get("namespace_name")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	if v, ok := d.GetOk("namespace_name"); ok {
-		request["Name"] = v
-	}
-
-	var response map[string]interface{}
-	action := "CreateNamespace"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -67,89 +80,50 @@ func resourceAlicloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_schedulerx_namespace", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if v, err := jsonpath.Get("$.Data.NamespaceUid", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_schedulerx_namespace")
-	} else {
-		d.SetId(fmt.Sprint(v))
-	}
+	id, _ := jsonpath.Get("$.Data.NamespaceUid", response)
+	d.SetId(fmt.Sprint(id))
 
-	return resourceAlicloudSchedulerxNamespaceRead(d, meta)
+	return resourceAliCloudSchedulerxNamespaceRead(d, meta)
 }
 
-func resourceAlicloudSchedulerxNamespaceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSchedulerxNamespaceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	schedulerx2Service := Schedulerx2Service{client}
+	schedulerxServiceV2 := SchedulerxServiceV2{client}
 
-	object, err := schedulerx2Service.DescribeSchedulerxNamespace(d.Id())
+	objectRaw, err := schedulerxServiceV2.DescribeSchedulerxNamespace(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_schedulerx_namespace schedulerx2Service.DescribeSchedulerxNamespace Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_schedulerx_namespace DescribeSchedulerxNamespace Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object["Description"])
-	d.Set("namespace_name", object["Name"])
+
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("namespace_name", objectRaw["Name"])
+	}
+	if objectRaw["UId"] != nil {
+		d.Set("namespace_uid", objectRaw["UId"])
+	}
+
+	d.Set("namespace_uid", d.Id())
 
 	return nil
 }
 
-func resourceAlicloudSchedulerxNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEdasschedulerxClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	update := false
-	request := map[string]interface{}{
-		"Uid":      d.Id(),
-		"RegionId": client.RegionId,
-	}
-
-	if d.HasChange("description") {
-		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
-	}
-	if d.HasChange("namespace_name") {
-		update = true
-	}
-	request["Name"] = d.Get("namespace_name")
-
-	if update {
-		action := "CreateNamespace"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, resp, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-	}
-
-	return resourceAlicloudSchedulerxNamespaceRead(d, meta)
-}
-
-func resourceAlicloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudSchedulerxNamespace. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Namespace. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
