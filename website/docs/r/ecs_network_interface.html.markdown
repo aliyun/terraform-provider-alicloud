@@ -82,7 +82,7 @@ The following arguments are supported:
 * `queue_number` - (Optional, Int) The queue number of the ENI.
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `secondary_private_ip_address_count` - (Optional, Int) The number of private IP addresses that can be automatically created by ECS.
-* `security_group_ids` - (Optional, List) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
+* `security_group_ids` - (Optional, List) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added. **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `ipv6_address_count` - (Optional, Int, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
@@ -95,7 +95,7 @@ The following arguments are supported:
 * `private_ip` - (Optional, ForceNew, Deprecated since v1.123.1) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
 * `private_ips` - (Optional, List, Deprecated since v1.123.1) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead
 * `private_ips_count` - (Optional, Int, Deprecated since v1.123.1) Field `private_ips_count` has been deprecated from provider version 1.123.1. New field `secondary_private_ip_address_count` instead
-* `security_groups` - (Optional, List, Deprecated since v1.123.1) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
+* `security_groups` - (Optional, List, Deprecated since v1.123.1) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead. **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
 
 ## Attributes Reference
 
