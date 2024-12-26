@@ -5194,6 +5194,7 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 		AccessKeyId:     tea.String(client.config.AccessKey),
 		AccessKeySecret: tea.String(client.config.SecretKey),
 		SecurityToken:   tea.String(client.config.SecurityToken),
+		UserAgent:       tea.String(client.config.getUserAgent()),
 	}
 
 	endpoint := client.config.LogEndpoint

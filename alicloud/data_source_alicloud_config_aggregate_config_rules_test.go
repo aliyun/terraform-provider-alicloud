@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudConfigAggregateConfigRulesDataSource(t *testing.T) {
+func TestAccAliCloudConfigAggregateConfigRulesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudConfigAggregateConfigRulesDataSourceName(rand, map[string]string{
@@ -138,10 +138,21 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 data "alicloud_instances" "default" {}
 
-data "alicloud_config_aggregators" "default" {}
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
+}
+resource "alicloud_config_aggregator" "default" {
+  aggregator_accounts {
+    account_id   = data.alicloud_resource_manager_accounts.default.accounts.1.account_id
+    account_name = data.alicloud_resource_manager_accounts.default.accounts.1.display_name
+    account_type = "ResourceDirectory"
+  }
+  aggregator_name = var.name
+  description     = var.name
+}
 
 resource "alicloud_config_aggregate_config_rule" "default" {
-  aggregator_id              = data.alicloud_config_aggregators.default.ids.0
+  aggregator_id              = alicloud_config_aggregator.default.id
   aggregate_config_rule_name = var.name
   source_owner               = "ALIYUN"
   source_identifier    		= "ecs-cpu-min-count-limit"

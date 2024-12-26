@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudConfigConfigurationRecordersDataSource(t *testing.T) {
+// alicloud_config_configuration_recorder used to open CloudConfig service.
+// There can stop the service manually first before running the testcase.
+func SkipTestAccAliCloudConfigConfigurationRecordersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_config_configuration_recorders.example"
 

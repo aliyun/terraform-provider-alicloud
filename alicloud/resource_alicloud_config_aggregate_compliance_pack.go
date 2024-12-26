@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -108,12 +107,9 @@ func resourceAliCloudConfigAggregateCompliancePackCreate(d *schema.ResourceData,
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
 	var response map[string]interface{}
+	var err error
 	action := "CreateAggregateCompliancePack"
 	request := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	request["ClientToken"] = buildClientToken("CreateAggregateCompliancePack")
 	request["AggregatorId"] = d.Get("aggregator_id")
@@ -180,11 +176,9 @@ func resourceAliCloudConfigAggregateCompliancePackCreate(d *schema.ResourceData,
 		request["ConfigRules"] = configRulesJson
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -367,16 +361,9 @@ func resourceAliCloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 
 	if update {
 		action := "UpdateAggregateCompliancePack"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -407,12 +394,6 @@ func resourceAliCloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 		oldConfigRuleIds, newConfigRuleIds := d.GetChange("config_rule_ids")
 		remove := oldConfigRuleIds.(*schema.Set).Difference(newConfigRuleIds.(*schema.Set)).List()
 		create := newConfigRuleIds.(*schema.Set).Difference(oldConfigRuleIds.(*schema.Set)).List()
-
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		if len(remove) > 0 {
 			action := "DetachAggregateConfigRuleToCompliancePack"
 
@@ -431,12 +412,9 @@ func resourceAliCloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 			}
 
 			detachAggregateConfigRuleReq["ConfigRuleIds"] = convertListToCommaSeparate(configRuleIds)
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, detachAggregateConfigRuleReq, &runtime)
+				response, err = client.RpcPost("Config", "2020-09-07", action, nil, detachAggregateConfigRuleReq, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -473,11 +451,9 @@ func resourceAliCloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 
 			attachAggregateConfigRuleReq["ConfigRuleIds"] = convertListToCommaSeparate(configRuleIds)
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, attachAggregateConfigRuleReq, &runtime)
+				response, err = client.RpcPost("Config", "2020-09-07", action, nil, attachAggregateConfigRuleReq, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -507,11 +483,6 @@ func resourceAliCloudConfigAggregateCompliancePackDelete(d *schema.ResourceData,
 	action := "DeleteAggregateCompliancePacks"
 	var response map[string]interface{}
 
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -523,11 +494,9 @@ func resourceAliCloudConfigAggregateCompliancePackDelete(d *schema.ResourceData,
 		"CompliancePackIds": parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

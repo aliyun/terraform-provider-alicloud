@@ -11,7 +11,7 @@ import (
 
 // Test Config Remediation. >>> Resource test cases, automatically generated.
 // Case 2979
-func TestAccAlicloudConfigRemediation_basic2979(t *testing.T) {
+func TestAccAliCloudConfigRemediation_basic2979(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_remediation.default"
 	ra := resourceAttrInit(resourceId, AlicloudConfigRemediationMap2979)

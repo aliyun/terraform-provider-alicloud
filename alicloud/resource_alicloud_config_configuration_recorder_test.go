@@ -17,7 +17,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudConfigConfigurationRecorder_basic(t *testing.T) {
+// alicloud_config_configuration_recorder used to open CloudConfig service.
+// There can stop the service manually first before running the testcase.
+func SkipTestAccAliCloudConfigConfigurationRecorder_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_configuration_recorder.default"
 	ra := resourceAttrInit(resourceId, ConfigConfigurationRecorderMap)

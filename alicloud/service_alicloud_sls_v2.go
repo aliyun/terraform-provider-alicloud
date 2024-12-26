@@ -312,7 +312,7 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.Execute(client.GenRoaParam("GetLogStoreMeteringMode", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {

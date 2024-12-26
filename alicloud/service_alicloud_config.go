@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -19,20 +18,15 @@ type ConfigService struct {
 
 func (s *ConfigService) DescribeConfigRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetConfigRule"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"ConfigRuleId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -59,16 +53,13 @@ func (s *ConfigService) DescribeConfigRule(id string) (object map[string]interfa
 
 func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDeliveryChannels"
 	request := map[string]interface{}{
 		"RegionId":           s.client.RegionId,
 		"DeliveryChannelIds": id,
 	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "DeliveryChannelNotExists"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR)
@@ -95,15 +86,12 @@ func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object map[str
 
 func (s *ConfigService) DescribeConfigConfigurationRecorder(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeConfigurationRecorder"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ConfigConfigurationRecorder", id)), NotFoundMsg, ProviderERROR)
@@ -159,22 +147,16 @@ func (s *ConfigService) convertAggregatorAccountsToString(v []interface{}) (stri
 }
 
 func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"AggregatorId": id,
 	}
 
 	var response map[string]interface{}
 	action := "GetAggregator"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -182,8 +164,7 @@ func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]i
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
@@ -219,10 +200,7 @@ func (s *ConfigService) ConfigAggregatorStateRefreshFunc(d *schema.ResourceData,
 
 func (s *ConfigService) DescribeConfigAggregateConfigRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAggregateConfigRule"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -234,11 +212,9 @@ func (s *ConfigService) DescribeConfigAggregateConfigRule(id string) (object map
 		"AggregatorId": parts[0],
 		"ConfigRuleId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -267,10 +243,7 @@ func (s *ConfigService) DescribeConfigAggregateCompliancePack(id string) (object
 	var response map[string]interface{}
 	action := "GetAggregateCompliancePack"
 
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -282,11 +255,9 @@ func (s *ConfigService) DescribeConfigAggregateCompliancePack(id string) (object
 		"CompliancePackId": parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -338,20 +309,15 @@ func (s *ConfigService) ConfigAggregateCompliancePackStateRefreshFunc(id string,
 
 func (s *ConfigService) DescribeConfigCompliancePack(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetCompliancePack"
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
 		"CompliancePackId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -438,19 +404,14 @@ func (s *ConfigService) ConfigRuleStateRefreshFunc(id string, failStates []strin
 
 func (s *ConfigService) StopConfigRule(id string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "StopConfigRules"
 	request := map[string]interface{}{
 		"ConfigRuleIds": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -468,19 +429,14 @@ func (s *ConfigService) StopConfigRule(id string) (err error) {
 }
 func (s *ConfigService) ActiveConfigRule(id string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ActiveConfigRules"
 	request := map[string]interface{}{
 		"ConfigRuleIds": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -499,20 +455,15 @@ func (s *ConfigService) ActiveConfigRule(id string) (err error) {
 
 func (s *ConfigService) ActiveAggregateConfigRules(id, aggregatorId string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ActiveAggregateConfigRules"
 	request := map[string]interface{}{
 		"ConfigRuleIds": id,
 		"AggregatorId":  aggregatorId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -531,20 +482,15 @@ func (s *ConfigService) ActiveAggregateConfigRules(id, aggregatorId string) (err
 
 func (s *ConfigService) DeactiveAggregateConfigRules(id, aggregatorId string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "DeactiveAggregateConfigRules"
 	request := map[string]interface{}{
 		"ConfigRuleIds": id,
 		"AggregatorId":  aggregatorId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -563,19 +509,14 @@ func (s *ConfigService) DeactiveAggregateConfigRules(id, aggregatorId string) (e
 
 func (s *ConfigService) DescribeConfigDelivery(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetConfigDeliveryChannel"
 	request := map[string]interface{}{
 		"DeliveryChannelId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -603,10 +544,7 @@ func (s *ConfigService) DescribeConfigDelivery(id string) (object map[string]int
 
 func (s *ConfigService) DescribeConfigAggregateDelivery(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewConfigClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAggregateConfigDeliveryChannel"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -617,11 +555,9 @@ func (s *ConfigService) DescribeConfigAggregateDelivery(id string) (object map[s
 		"AggregatorId":      parts[0],
 		"DeliveryChannelId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

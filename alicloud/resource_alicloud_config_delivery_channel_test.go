@@ -21,7 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudConfigDeliveryChannel_basic(t *testing.T) {
+// Skipped: The resource and its apis have deprecated
+func SkipTestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
@@ -140,7 +141,8 @@ func TestAccAlicloudConfigDeliveryChannel_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigDeliveryChannel_MNS(t *testing.T) {
+// Skipped: The resource and its apis have deprecated
+func SkipTestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
@@ -258,7 +260,8 @@ func TestAccAlicloudConfigDeliveryChannel_MNS(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigDeliveryChannel_SLS(t *testing.T) {
+// Skipped: The resource and its apis have deprecated
+func SkipTestAccAliCloudConfigDeliveryChannel_SLS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)

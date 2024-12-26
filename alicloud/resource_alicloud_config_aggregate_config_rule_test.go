@@ -42,11 +42,6 @@ func testSweepConfigAggregateConfigRule(region string) error {
 		"tf_testAcc",
 	}
 
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	// Get all AggregatorId
 	aggregatorIds := make([]string, 0)
 	action := "ListAggregators"
@@ -55,11 +50,9 @@ func testSweepConfigAggregateConfigRule(region string) error {
 	}
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -112,11 +105,9 @@ func testSweepConfigAggregateConfigRule(region string) error {
 			"PageNumber":   1,
 		}
 		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+				response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -161,7 +152,7 @@ func testSweepConfigAggregateConfigRule(region string) error {
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, deleteRequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Config", "2020-09-07", action, nil, deleteRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -180,7 +171,7 @@ func testSweepConfigAggregateConfigRule(region string) error {
 	return nil
 }
 
-func TestAccAlicloudConfigAggregateConfigRule_basic(t *testing.T) {
+func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap0)
@@ -205,7 +196,7 @@ func TestAccAlicloudConfigAggregateConfigRule_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"aggregate_config_rule_name": "${var.name}",
-					"aggregator_id":              "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":              "${alicloud_config_aggregator.default.id}",
 					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
 					"source_owner":               "ALIYUN",
 					"source_identifier":          "ecs-cpu-min-count-limit",
@@ -347,7 +338,7 @@ func TestAccAlicloudConfigAggregateConfigRule_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigAggregateConfigRule_status(t *testing.T) {
+func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap0)
@@ -372,7 +363,7 @@ func TestAccAlicloudConfigAggregateConfigRule_status(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"aggregate_config_rule_name": "${var.name}",
-					"aggregator_id":              "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":              "${alicloud_config_aggregator.default.id}",
 					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
 					"source_owner":               "ALIYUN",
 					"source_identifier":          "ecs-cpu-min-count-limit",
@@ -456,13 +447,24 @@ data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
-data "alicloud_config_aggregators" "default" {}
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
+}
+resource "alicloud_config_aggregator" "default" {
+  aggregator_accounts {
+    account_id   = data.alicloud_resource_manager_accounts.default.accounts.1.account_id
+    account_name = data.alicloud_resource_manager_accounts.default.accounts.1.display_name
+    account_type = "ResourceDirectory"
+  }
+  aggregator_name = var.name
+  description     = var.name
+}
 
 `, name)
 }
 
 // Test this case need use a custom `source_identifier`
-func SkipTestAccAlicloudConfigAggregateConfigRule_basic1(t *testing.T) {
+func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap1)
@@ -487,7 +489,7 @@ func SkipTestAccAlicloudConfigAggregateConfigRule_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"aggregate_config_rule_name": "${var.name}",
-					"aggregator_id":              "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":              "${alicloud_config_aggregator.default.id}",
 					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
 					"source_owner":               "CUSTOM_FC",
 					"source_identifier":          "*** your_fc_function_arn ***",
@@ -672,7 +674,18 @@ data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
-data "alicloud_config_aggregators" "default" {}
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
+}
+resource "alicloud_config_aggregator" "default" {
+  aggregator_accounts {
+    account_id   = data.alicloud_resource_manager_accounts.default.accounts.1.account_id
+    account_name = data.alicloud_resource_manager_accounts.default.accounts.1.display_name
+    account_type = "ResourceDirectory"
+  }
+  aggregator_name = var.name
+  description     = var.name
+}
 
 `, name)
 }
