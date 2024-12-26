@@ -879,6 +879,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_apig_http_api":                                        resourceAliCloudApigHttpApi(),
 			"alicloud_mongodb_private_srv_network_address":                  resourceAliCloudMongodbPrivateSrvNetworkAddress(),
 			"alicloud_schedulerx_app_group":                                 resourceAliCloudSchedulerxAppGroup(),
 			"alicloud_schedulerx_job":                                       resourceAliCloudSchedulerxJob(),
