@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -37,14 +38,13 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnection(id string) (object map[
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnection", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -63,6 +63,13 @@ func (s *VpcPeerServiceV2) VpcPeerPeerConnectionStateRefreshFunc(id string, fiel
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -97,7 +104,7 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			query["RegionId"] = client.RegionId
+			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
@@ -114,9 +121,9 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -129,7 +136,7 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			query["RegionId"] = client.RegionId
+			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			count := 1
 			for key, value := range added {
@@ -149,9 +156,9 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -187,14 +194,13 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnectionAccepter(id string) (obj
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnectionAccepter", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -213,6 +219,13 @@ func (s *VpcPeerServiceV2) VpcPeerPeerConnectionAccepterStateRefreshFunc(id stri
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
