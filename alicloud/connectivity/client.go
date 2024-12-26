@@ -2285,26 +2285,13 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
-	productCode := "r_kvstore"
-	endpoint := ""
 	if client.r_kvstoreConn == nil {
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, RKvstoreCode)
-		}
-		if endpoint == "" {
-			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-				if err := client.loadEndpoint(productCode); err != nil {
-					endpoint = "r-kvstore.aliyuncs.com"
-					client.config.Endpoints.Store(productCode, endpoint)
-					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-				}
+		productCode := "r_kvstore"
+		endpoint := ""
+		if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+			if err := client.loadEndpoint(productCode); err != nil {
+				return nil, err
 			}
-			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-				endpoint = v.(string)
-			}
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, "r-kvstore", endpoint)
@@ -2323,6 +2310,11 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		r_kvstoreConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.r_kvstoreConn = r_kvstoreConn
+	} else {
+		err := client.r_kvstoreConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Redis client: %#v", err)
+		}
 	}
 	return do(client.r_kvstoreConn)
 }
