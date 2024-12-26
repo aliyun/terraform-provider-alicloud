@@ -324,9 +324,10 @@ func TestAccAliCloudCrInstance_basic7970_modified(t *testing.T) {
 }
 
 var AlicloudCrInstanceMap7970_modified = map[string]string{
-	"status":      CHECKSET,
-	"end_time":    CHECKSET,
-	"create_time": CHECKSET,
+	"status":               CHECKSET,
+	"end_time":             CHECKSET,
+	"create_time":          CHECKSET,
+	"instance_endpoints.#": CHECKSET,
 }
 
 func AlicloudCrInstanceBasicDependence7970_modified(name string) string {
