@@ -56,7 +56,7 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 
 	return response, nil
 }
-func (s *CrServiceV2) DescribeQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
+func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -110,6 +110,43 @@ func (s *CrServiceV2) DescribeQueryAvailableInstances(id string) (object map[str
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListInstanceEndpoint"
+	conn, err := client.NewAcrClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
 
 func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
@@ -140,7 +177,7 @@ func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failSt
 	}
 }
 
-func (s *CrServiceV2) DescribeAsyncInstanceGetInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	var request map[string]interface{}
@@ -181,7 +218,7 @@ func (s *CrServiceV2) DescribeAsyncInstanceGetInstance(d *schema.ResourceData, r
 
 func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAsyncInstanceGetInstance(d, res)
+		object, err := s.DescribeAsyncGetInstance(d, res)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil

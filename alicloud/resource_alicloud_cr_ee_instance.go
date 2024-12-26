@@ -51,6 +51,38 @@ func resourceAliCloudCrInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"ACR", "SAS"}, false),
 			},
+			"instance_endpoints": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"domains": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"domain": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"endpoint_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"enable": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -259,8 +291,8 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("status", objectRaw["InstanceStatus"])
 	}
 
-	objectRaw, err = crServiceV2.DescribeQueryAvailableInstances(d.Id())
-	if err != nil {
+	objectRaw, err = crServiceV2.DescribeInstanceQueryAvailableInstances(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -284,6 +316,43 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	if objectRaw["RenewStatus"] != nil {
 		d.Set("renewal_status", objectRaw["RenewStatus"])
+	}
+
+	objectRaw, err = crServiceV2.DescribeInstanceListInstanceEndpoint(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	endpoints1Raw, _ := jsonpath.Get("$.Endpoints", objectRaw)
+
+	instanceEndpointsMaps := make([]map[string]interface{}, 0)
+	if endpoints1Raw != nil {
+		for _, endpointsChild1Raw := range endpoints1Raw.([]interface{}) {
+			instanceEndpointsMap := make(map[string]interface{})
+			endpointsChild1Raw := endpointsChild1Raw.(map[string]interface{})
+			instanceEndpointsMap["enable"] = endpointsChild1Raw["Enable"]
+			instanceEndpointsMap["endpoint_type"] = endpointsChild1Raw["EndpointType"]
+
+			domains1Raw := endpointsChild1Raw["Domains"]
+			domainsMaps := make([]map[string]interface{}, 0)
+			if domains1Raw != nil {
+				for _, domainsChild1Raw := range domains1Raw.([]interface{}) {
+					domainsMap := make(map[string]interface{})
+					domainsChild1Raw := domainsChild1Raw.(map[string]interface{})
+					domainsMap["domain"] = domainsChild1Raw["Domain"]
+					domainsMap["type"] = domainsChild1Raw["Type"]
+
+					domainsMaps = append(domainsMaps, domainsMap)
+				}
+			}
+			instanceEndpointsMap["domains"] = domainsMaps
+			instanceEndpointsMaps = append(instanceEndpointsMaps, instanceEndpointsMap)
+		}
+	}
+	if objectRaw["Endpoints"] != nil {
+		if err := d.Set("instance_endpoints", instanceEndpointsMaps); err != nil {
+			return err
+		}
 	}
 
 	d.Set("created_time", d.Get("create_time"))

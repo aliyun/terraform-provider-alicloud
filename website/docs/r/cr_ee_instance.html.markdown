@@ -18,12 +18,6 @@ For information about Container Registry Enterprise Edition instances and how to
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_ee_instance&exampleId=22381149-4704-d4bc-dbb5-cafc5c4bdc8e6d63f70f&activeTab=example&spm=docs.r.cr_ee_instance.0.2238114947&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -48,17 +42,18 @@ resource "alicloud_cr_ee_instance" "default" {
 
 The following arguments are supported:
 * `custom_oss_bucket` - (Optional) Custom OSS Bucket name
-* `default_oss_bucket` - (Optional, Available since v1.235.0) Whether to use the default OSS Bucket
-* `image_scanner` - (Optional, Available since v1.235.0) Security scan engine
+* `default_oss_bucket` - (Optional, Available since v1.235.0) Whether to use the default OSS Bucket. Value:
+  - `true`: Use the default OSS Bucket.
+  - `false`: Use a custom OSS Bucket.
+* `image_scanner` - (Optional, Available since v1.235.0) The security scan engine used by the Enterprise Edition of Container Image Service. Value:
+  - `ACR`: Uses the Trivy scan engine provided by default.
+  - `SAS`: uses the enhanced cloud security scan engine.
 * `instance_name` - (Required, ForceNew) InstanceName
 * `instance_type` - (Required) The Value configuration of the Group 1 attribute of Container Mirror Service Enterprise Edition. Valid values:
-
-  Basic: Basic instance
-
-  Standard: Standard instance
-
-  Advanced: Advanced Edition Instance
-* `password` - (Optional) Permanent access credentials of the instance
+  - `Basic`: Basic instance
+  - `Standard`: Standard instance
+  - `Advanced`: Advanced Edition Instance
+* `password` - (Optional) Login password, 8-32 digits, must contain at least two letters, symbols, or numbers
 * `payment_type` - (Required, ForceNew) Payment type, value:
   - Subscription: Prepaid.
 * `period` - (Optional, Int) Prepaid cycle. The unit is Monthly, please enter an integer multiple of 12 for annual paid products.
@@ -87,6 +82,12 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `end_time` - Expiration Time
+* `instance_endpoints` - (Available since v1.240.0) Instance Network Access Endpoint List
+  * `domains` - Domain List
+    * `domain` - Domain
+    * `type` - Domain Type
+  * `enable` - enable
+  * `endpoint_type` - Network Access Endpoint Type
 * `region_id` - RegionId
 * `status` - Instance Status
 
