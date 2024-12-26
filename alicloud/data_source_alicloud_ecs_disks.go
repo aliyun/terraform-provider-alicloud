@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudEcsDisks() *schema.Resource {
+func dataSourceAliCloudEcsDisks() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEcsDisksRead,
+		Read: dataSourceAliCloudEcsDisksRead,
 		Schema: map[string]*schema.Schema{
 			"additional_attributes": {
 				Type:     schema.TypeList,
@@ -89,7 +89,6 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  true,
 			},
 			"enable_automated_snapshot_policy": {
 				Type:     schema.TypeBool,
@@ -247,6 +246,10 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"expiration_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"iops": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -382,7 +385,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEcsDisksRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudEcsDisksRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDisks"
@@ -580,6 +583,7 @@ func dataSourceAlicloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 			"enable_automated_snapshot_policy": object["EnableAutomatedSnapshotPolicy"],
 			"encrypted":                        string(OnFlag),
 			"expired_time":                     object["ExpiredTime"],
+			"expiration_time":                  object["ExpiredTime"],
 			"iops":                             formatInt(object["IOPS"]),
 			"iops_read":                        formatInt(object["IOPSRead"]),
 			"iops_write":                       formatInt(object["IOPSWrite"]),
