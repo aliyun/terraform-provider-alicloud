@@ -8,101 +8,101 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudECSDisksDataSource(t *testing.T) {
+func TestAccAliCloudECSDisksDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecs_disk.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecs_disk.default.id}_fake"]`,
 		}),
 	}
 	ZoneIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":     `["${alicloud_ecs_disk.default.id}"]`,
 			"zone_id": `"${alicloud_ecs_disk.default.zone_id}"`,
 		}),
 	}
 	categoryConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":      `["${alicloud_ecs_disk.default.id}"]`,
 			"category": `"cloud_efficiency"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":      `["${alicloud_ecs_disk.default.id}"]`,
 			"category": `"cloud"`,
 		}),
 	}
 	deleteAutoSnapshotConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"delete_auto_snapshot": `"true"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"delete_auto_snapshot": `"false"`,
 		}),
 	}
 	deleteWithInstanceConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"delete_with_instance": `"true"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"delete_with_instance": `"false"`,
 		}),
 	}
 	diskNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_ecs_disk.default.id}"]`,
 			"disk_name": `"${alicloud_ecs_disk.default.disk_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_ecs_disk.default.id}"]`,
 			"disk_name": `"${alicloud_ecs_disk.default.disk_name}_fake"`,
 		}),
 	}
 	enableAutoSnapshotConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"enable_auto_snapshot": `"true"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_ecs_disk.default.id}"]`,
 			"enable_auto_snapshot": `"false"`,
 		}),
 	}
 	encryptedConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_ecs_disk.default.id}"]`,
 			"encrypted": `"on"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_ecs_disk.default.id}"]`,
 			"encrypted": `"off"`,
 		}),
 	}
 	paymentTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_ecs_disk.default.id}"]`,
 			"payment_type": `"PayAsYouGo"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_ecs_disk.default.id}"]`,
 			"payment_type": `"Subscription"`,
 		}),
 	}
 	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecs_disk.default.id}"]`,
 			"tags": `{
 				"Created" = "TF"
 				"Environment" = "Acceptance-test"
 		}`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecs_disk.default.id}"]`,
 			"tags": `{
 				"Created" = "TF-fake"
@@ -111,37 +111,37 @@ func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ecs_disk.default.disk_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ecs_disk.default.disk_name}_fake"`,
 		}),
 	}
 	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ecs_disk.default.id}"]`,
 			"status": `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ecs_disk.default.id}"]`,
 			"status": `"Creating"`,
 		}),
 	}
 
 	pagingConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"disk_name":   `"${alicloud_ecs_disk.default.disk_name}"`,
 			"page_number": `1`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"disk_name":   `"${alicloud_ecs_disk.default.disk_name}"`,
 			"page_number": `2`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"zone_id":              `"${alicloud_ecs_disk.default.zone_id}"`,
 			"category":             `"cloud_efficiency"`,
 			"delete_auto_snapshot": `"true"`,
@@ -159,7 +159,7 @@ func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 		}`,
 			"page_number": `1`,
 		}),
-		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudEcsDisksDataSourceName(rand, map[string]string{
 			"category":             `"cloud"`,
 			"delete_auto_snapshot": `"false"`,
 			"delete_with_instance": `"false"`,
@@ -177,7 +177,7 @@ func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 			"page_number": `2`,
 		}),
 	}
-	var existAlicloudEcsDisksDataSourceNameMapFunc = func(rand int) map[string]string {
+	var existAliCloudEcsDisksDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                           "1",
 			"names.#":                         "1",
@@ -208,7 +208,7 @@ func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 			"disks.0.tags.Environment":        "Acceptance-test",
 		}
 	}
-	var fakeAlicloudEcsDisksDataSourceNameMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudEcsDisksDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":   "0",
 			"names.#": "0",
@@ -217,44 +217,45 @@ func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 	}
 	var alicloudEcsDisksCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_ecs_disks.default",
-		existMapFunc: existAlicloudEcsDisksDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEcsDisksDataSourceNameMapFunc,
+		existMapFunc: existAliCloudEcsDisksDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudEcsDisksDataSourceNameMapFunc,
 	}
 	alicloudEcsDisksCheckInfo.dataSourceTestCheck(t, rand, idsConf, ZoneIdConf, categoryConf, deleteAutoSnapshotConf, deleteWithInstanceConf, diskNameConf, enableAutoSnapshotConf, encryptedConf, paymentTypeConf, tagsConf, nameRegexConf, statusConf, pagingConf, allConf)
 }
-func testAccCheckAlicloudEcsDisksDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAliCloudEcsDisksDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
 
 	config := fmt.Sprintf(`
+	variable "name" {
+  		default = "tf-testAccDisk-%d"
+	}
 
-variable "name" {	
-	default = "tf-testAccDisk-%d"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-resource "alicloud_ecs_disk" "default" {
-	zone_id = "${data.alicloud_zones.default.zones.0.id}"
-	category = "cloud_efficiency"
-	delete_auto_snapshot = "true"
-	delete_with_instance = "true"
-	description = "Test For Terraform"
-	disk_name = var.name
-	enable_auto_snapshot = "true"
-	encrypted = "true"
-	size = "500"
-  	tags = {
-    	Created     = "TF"
-    	Environment = "Acceptance-test"
-  	}
-}
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
 
-data "alicloud_ecs_disks" "default" {	
-	%s
-}
+	resource "alicloud_ecs_disk" "default" {
+  		zone_id              = data.alicloud_zones.default.zones.0.id
+  		category             = "cloud_efficiency"
+  		delete_auto_snapshot = "true"
+  		delete_with_instance = "true"
+  		description          = "Test For Terraform"
+  		disk_name            = var.name
+  		enable_auto_snapshot = "true"
+  		encrypted            = "true"
+  		size                 = "500"
+		tags = {
+			Created     = "TF"
+    		Environment = "Acceptance-test"
+  		}
+	}
+
+	data "alicloud_ecs_disks" "default" {
+		%s
+	}
 `, rand, strings.Join(pairs, " \n "))
 	return config
 }
