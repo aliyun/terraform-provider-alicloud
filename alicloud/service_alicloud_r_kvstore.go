@@ -245,20 +245,14 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 
 func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceAttribute"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -323,20 +317,14 @@ func (s *R_kvstoreService) KvstoreInstanceAttributeRefreshFunc(id, attribute str
 
 func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstances"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"InstanceIds": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -387,21 +375,15 @@ func (s *R_kvstoreService) KvstoreInstancesStateRefreshFunc(id string, failState
 
 func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstances"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"InstanceIds": id,
 		"Expired":     true,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -593,20 +575,14 @@ func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.Des
 
 func (s *RKvstoreService) DescribeKvstoreAuditLogConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeAuditLogConfig"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -633,10 +609,6 @@ func (s *RKvstoreService) DescribeKvstoreAuditLogConfig(id string) (object map[s
 
 func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceAttribute"
 	request := map[string]interface{}{
 		"InstanceId": id,
@@ -645,7 +617,7 @@ func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[strin
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -699,20 +671,14 @@ func (s *RKvstoreService) KvstoreAuditLogConfigStateRefreshFunc(id string, failS
 
 func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceAutoRenewalAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 		"RegionId":     s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -746,20 +712,14 @@ func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (objec
 
 func (s *RKvstoreService) DescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceSSL"
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"RegionId":   s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -781,20 +741,14 @@ func (s *RKvstoreService) DescribeInstanceSSL(id string) (object map[string]inte
 
 func (s *RKvstoreService) DescribeSecurityGroupConfiguration(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeSecurityGroupConfiguration"
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"RegionId":   s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -822,20 +776,14 @@ func (s *RKvstoreService) DescribeSecurityGroupConfiguration(id string) (object 
 
 func (s *RKvstoreService) DescribeSecurityIps(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeSecurityIps"
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"RegionId":   s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -868,19 +816,13 @@ func (s *RKvstoreService) DescribeSecurityIps(id string) (object map[string]inte
 
 func (s *RKvstoreService) DescribeInstanceTDEStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceTDEStatus"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -904,19 +846,13 @@ func (s *RKvstoreService) DescribeInstanceTDEStatus(id string) (object map[strin
 
 func (s *RKvstoreService) DescribeEncryptionKey(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeEncryptionKey"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -941,21 +877,13 @@ func (s *RKvstoreService) DescribeEncryptionKey(id string) (object map[string]in
 func (s *R_kvstoreService) DescribeKvStoreInstanceNetInfo(id string) (objects []interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstanceNetInfo"
-
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -988,21 +916,12 @@ func (s *R_kvstoreService) DescribeKvStoreInstanceNetInfo(id string) (objects []
 func (s *R_kvstoreService) DescribeKvStoreEngineVersion(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeEngineVersion"
-
-	conn, err := s.client.NewRedisaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
