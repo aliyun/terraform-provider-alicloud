@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudConfigAggregateDeliveriesDataSource(t *testing.T) {
+func TestAccAliCloudConfigAggregateDeliveriesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
 	nameRegexConf := dataSourceTestAccConfig{
@@ -135,7 +135,7 @@ resource "alicloud_config_aggregate_delivery" "default" {
 }
 
 data "alicloud_config_aggregate_deliveries" "default" {
-  aggregator_id = alicloud_config_aggregator.default.id
+  aggregator_id = alicloud_config_aggregate_delivery.default.aggregator_id
   %s
 }
 `, rand, defaultRegionToTest, strings.Join(pairs, " \n "))

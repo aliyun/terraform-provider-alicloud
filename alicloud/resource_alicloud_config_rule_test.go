@@ -47,19 +47,14 @@ func testSweepConfigRuleByPrefixes(region string, prefixes []string) error {
 	request := make(map[string]interface{})
 	var response map[string]interface{}
 	action := "ListConfigRules"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var ruleIds []string
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Throttling.User"}) {
 					wait()
@@ -105,7 +100,7 @@ func testSweepConfigRuleByPrefixes(region string, prefixes []string) error {
 		request := map[string]interface{}{
 			"ConfigRuleIds": ruleId,
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve config rule (%s): %s", ruleId, err)
 			continue

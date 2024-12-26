@@ -10,7 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudConfigDeliveriesDataSource(t *testing.T) {
+func TestAccAliCloudConfigDeliveriesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
 	nameRegexConf := dataSourceTestAccConfig{

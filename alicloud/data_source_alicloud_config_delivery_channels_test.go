@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudConfigDeliveryChannelsDataSource(t *testing.T) {
+// Skipped: The resource and its apis have deprecated
+func SkipTestAccAliCloudConfigDeliveryChannelsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_config_delivery_channels.example"
 
