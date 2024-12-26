@@ -1,0 +1,90 @@
+---
+subcategory: "OSS"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_oss_access_point"
+description: |-
+  Provides a Alicloud OSS Access Point resource.
+---
+
+# alicloud_oss_access_point
+
+Provides a OSS Access Point resource.
+
+You can create multiple Access points for buckets and configure different Access control permissions and network control policies for different Access points.
+
+For information about OSS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.240.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_oss_bucket" "CreateBucket" {
+  storage_class = "Standard"
+}
+
+
+resource "alicloud_oss_access_point" "default" {
+  access_point_name = var.name
+  bucket            = alicloud_oss_bucket.CreateBucket.bucket
+  vpc_configuration {
+    vpc_id = "vpc-abcexample"
+  }
+  network_origin = "vpc"
+  public_access_block_configuration {
+    block_public_access = true
+  }
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `access_point_name` - (Required, ForceNew) The name of the access point
+* `bucket` - (Required, ForceNew) The Bucket to which the current access point belongs.
+* `network_origin` - (Required, ForceNew) Access point network source. The valid values are as follows: 
+  - vpc: only the specified VPC ID can be used to access the access point. 
+  - internet: the access point can be accessed through both external and internal Endpoint.
+* `public_access_block_configuration` - (Optional, List) Configuration of Access Point Blocking Public Access See [`public_access_block_configuration`](#public_access_block_configuration) below.
+* `vpc_configuration` - (Optional, ForceNew, List) If the Network Origin is vpc, the VPC source information is saved here. See [`vpc_configuration`](#vpc_configuration) below.
+
+### `public_access_block_configuration`
+
+The public_access_block_configuration supports the following:
+* `block_public_access` - (Optional, Computed) Block public access enabled for access point
+
+### `vpc_configuration`
+
+The vpc_configuration supports the following:
+* `vpc_id` - (Optional, ForceNew) The vpc ID is required only when the value of NetworkOrigin is VPC.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<bucket>:<access_point_name>`.
+* `status` - The status of the resource
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Access Point.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Point.
+* `update` - (Defaults to 5 mins) Used when update the Access Point.
+
+## Import
+
+OSS Access Point can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_oss_access_point.example <bucket>:<access_point_name>
+```
