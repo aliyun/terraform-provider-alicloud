@@ -378,6 +378,7 @@ func (s *ApigServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribeApigEnvironment <<< Encapsulated get interface for Apig Environment.
 
 func (s *ApigServiceV2) DescribeApigEnvironment(id string) (object map[string]interface{}, err error) {
@@ -412,7 +413,7 @@ func (s *ApigServiceV2) DescribeApigEnvironment(id string) (object map[string]in
 	})
 	addDebug(action, response, request)
 	if response == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Environment", id)), NotFoundMsg, err)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Environment", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 	code, _ := jsonpath.Get("$.code", response)
