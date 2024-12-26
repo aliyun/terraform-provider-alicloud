@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"hash/crc32"
 	"log"
 	"regexp"
 	"time"
@@ -61,6 +65,25 @@ func resourceAliCloudCloudSsoAccessConfiguration() *schema.Resource {
 			"permission_policies": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Set: func(v interface{}) int {
+					var buf bytes.Buffer
+					policy := v.(map[string]interface{})
+					if v, ok := policy["permission_policy_type"]; ok {
+						buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+					}
+					if v, ok := policy["permission_policy_name"]; ok {
+						buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+					}
+					if v, ok := policy["permission_policy_document"]; ok {
+						document := make(map[string]interface{})
+						err := json.Unmarshal([]byte(v.(string)), &document)
+						if err == nil {
+							documentString, _ := json.Marshal(document)
+							buf.WriteString(fmt.Sprintf("%s-", documentString))
+						}
+					}
+					return int(crc32.ChecksumIEEE([]byte(buf.String())))
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"permission_policy_type": {
@@ -73,8 +96,9 @@ func resourceAliCloudCloudSsoAccessConfiguration() *schema.Resource {
 							Required: true,
 						},
 						"permission_policy_document": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.ValidateJsonString,
 						},
 					},
 				},
