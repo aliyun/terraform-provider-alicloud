@@ -2,20 +2,19 @@
 subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_ee_sync_rule"
-sidebar_current: "docs-alicloud-resource-cr-ee-sync-rule"
 description: |-
-  Provides a Alicloud Container Registry Enterprise Edition Sync Rule resource.
+  Provides a Alicloud Container Registry Sync Rule resource.
 ---
 
 # alicloud_cr_ee_sync_rule
 
-Provides a Container Registry Enterprise Edition Sync Rule resource.
+Provides a Container Registry Sync Rule resource.
 
-For information about Container Registry Enterprise Edition Sync Rule and how to use it, see [What is Sync Rule](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createreposyncrule)
+For information about Container Registry Sync Rule and how to use it, see [What is Sync Rule](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createreposyncrule)
 
 -> **NOTE:** Available since v1.90.0.
 
--> **NOTE:** You need to set your registry password in Container Registry Enterprise Edition console before use this resource.
+-> **NOTE:** You need to set your registry password in Container Registry console before use this resource.
 
 ## Example Usage
 
@@ -92,7 +91,7 @@ resource "alicloud_cr_ee_repo" "target" {
 resource "alicloud_cr_ee_sync_rule" "default" {
   instance_id           = alicloud_cr_ee_instance.source.id
   namespace_name        = alicloud_cr_ee_namespace.source.name
-  name                  = "${var.name}-${random_integer.default.result}"
+  sync_rule_name        = "${var.name}-${random_integer.default.result}"
   target_instance_id    = alicloud_cr_ee_instance.target.id
   target_namespace_name = alicloud_cr_ee_namespace.target.name
   target_region_id      = data.alicloud_regions.default.regions.0.id
@@ -105,30 +104,48 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_id` - (Required, ForceNew) The ID of the Container Registry Enterprise Edition source instance.
+* `instance_id` - (Required, ForceNew) The ID of the Container Registry source instance.
 * `namespace_name` - (Required, ForceNew) The namespace name of the source instance.
-* `name` - (Required, ForceNew) The name of the sync rule.
+* `repo_name` - (Optional, ForceNew) The image repository name of the source instance.
+* `sync_rule_name` - (Optional, ForceNew, Available since v1.240.0) The name of the sync rule.
+* `sync_scope` - (Optional, ForceNew) The synchronization scope. Valid values:
+  - `REPO`: Encrypts or decrypts data.
+  - `NAMESPACE`: Generates or verifies a digital signature.
+-> **NOTE:** From version 1.240.0, `sync_scope` can be set.
+* `sync_trigger` - (Optional, ForceNew, Available since v1.240.0) The policy configured to trigger the synchronization rule. Default value: `PASSIVE`. Valid values:
+  - `INITIATIVE`: Manually triggers the synchronization rule.
+  - `PASSIVE`: Automatically triggers the synchronization rule.
+* `tag_filter` - (Required, ForceNew) The regular expression used to filter image tags.
 * `target_instance_id` - (Required, ForceNew) The ID of the destination instance.
 * `target_namespace_name` - (Required, ForceNew) The namespace name of the destination instance.
 * `target_region_id` - (Required, ForceNew) The region ID of the destination instance.
-* `tag_filter` - (Required, ForceNew) The regular expression used to filter image tags.
-* `repo_name` - (Optional, ForceNew) The image repository name of the source instance.
 * `target_repo_name` - (Optional, ForceNew) The image repository name of the destination instance.
+* `target_user_id` - (Optional, Available since v1.240.0) The UID of the account to which the target instance belongs.
+* `name` - (Optional, ForceNew, Deprecated since v1.240.0) Field `name` has been deprecated from provider version 1.240.0. New field `sync_rule_name` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Sync Rule. It formats as `<instance_id>:<namespace_name>:<rule_id>`.
-* `rule_id` - The ID of the sync rule.
+* `id` - The resource ID in terraform of Sync Rule. It formats as `<instance_id>:<namespace_name>:<repo_sync_rule_id>`.
+* `repo_sync_rule_id` - (Available since v1.240.0) The ID of the synchronization rule.
 * `sync_direction` - The synchronization direction.
-* `sync_scope` - The synchronization scope.
+* `create_time` - (Available since v1.240.0) The time when the synchronization rule was created.
+* `region_id` - (Available since v1.240.0) The region ID of the source instance.
+* `rule_id` - (Deprecated since v1.240.0) Field `rule_id` has been deprecated from provider version 1.240.0. New field `repo_sync_rule_id` instead.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.240.0.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Repo Sync Rule.
+* `delete` - (Defaults to 5 mins) Used when delete the Repo Sync Rule.
 
 ## Import
 
-Container Registry Enterprise Edition Sync Rule can be imported using the id, e.g.
+Container Registry Sync Rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cr_ee_sync_rule.example <instance_id>:<namespace_name>:<rule_id>
+$ terraform import alicloud_cr_ee_sync_rule.example <instance_id>:<namespace_name>:<repo_sync_rule_id>
 ```

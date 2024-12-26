@@ -248,3 +248,87 @@ func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.Resource
 }
 
 // DescribeCrInstance >>> Encapsulated.
+// DescribeCrRepoSyncRule <<< Encapsulated get interface for Cr RepoSyncRule.
+
+func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	action := "ListRepoSyncRule"
+	conn, err := client.NewAcrClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["NamespaceName"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNo"] = 1
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		if fmt.Sprint(response["IsSuccess"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		resp, err := jsonpath.Get("$.SyncRules", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SyncRules", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cr:RepoSyncRule", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["LocalInstanceId"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["LocalNamespaceName"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["SyncRuleId"]) == parts[2] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNo"] = request["PageNo"].(int) + 1
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cr:RepoSyncRule", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+// DescribeCrInstance >>> Encapsulated.
