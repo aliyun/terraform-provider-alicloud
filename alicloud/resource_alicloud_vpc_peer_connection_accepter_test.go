@@ -40,20 +40,24 @@ func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id": "${alicloud_vpc_peer_connection.default.id}",
+					"link_type":   "Gold",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id": CHECKSET,
+						"link_type":   "Gold",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name,
+					"link_type":   "Platinum",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
+						"link_type":   "Platinum",
 					}),
 				),
 			},

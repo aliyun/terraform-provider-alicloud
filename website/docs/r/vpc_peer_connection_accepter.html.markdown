@@ -3,26 +3,22 @@ subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_peer_connection_accepter"
 description: |-
-  Provides a Alicloud Vpc Peer Connection Accepter resource.
+  Provides a Alicloud Vpc Peer Peer Connection Accepter resource.
 ---
 
 # alicloud_vpc_peer_connection_accepter
 
-Provides a Vpc Peer Connection Accepter resource.
+Provides a Vpc Peer Peer Connection Accepter resource.
 
-For information about Vpc Peer Connection Accepter and how to use it, see [What is Peer Connection Accepter](https://www.alibabacloud.com/help/en/vpc/developer-reference/api-vpcpeer-2022-01-01-acceptvpcpeerconnection).
+Vpc peer connection receiver.
+
+For information about Vpc Peer Peer Connection Accepter and how to use it, see [What is Peer Connection Accepter](https://www.alibabacloud.com/help/en/vpc/developer-reference/api-vpcpeer-2022-01-01-acceptvpcpeerconnection).
 
 -> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_peer_connection_accepter&exampleId=8204ef10-2d10-b925-a0ac-68de784036d01a919786&activeTab=example&spm=docs.r.vpc_peer_connection_accepter.0.8204ef102d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -103,10 +99,11 @@ The following arguments are supported:
   - `false` (default): no.
   - `true`: yes. If you forcefully delete the VPC peering connection, the system deletes the routes that point to the VPC peering connection from the VPC route table.
 * `instance_id` - (Required, ForceNew) The ID of the VPC peering connection whose name or description you want to modify.
+* `link_type` - (Optional, Computed, Available since v1.240.0) Link Type. Valid values: `Platinum`, `Gold`, `Silver`.
 * `peer_connection_accepter_name` - (Optional, Computed, Available since v1.231.0) The new name of the VPC peering connection.
 
   The name must be 1 to 128 characters in length, and cannot start with `http://` or `https://`.
-* `resource_group_id` - (Optional, Computed, Available since v1.231.0) The ID of the new resource group.
+* `resource_group_id` - (Optional, Computed) The ID of the new resource group.
 
 -> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
@@ -122,6 +119,9 @@ The following attributes are exported:
 * `accepting_region_id` - The region ID of the recipient of the VPC peering connection to be created.-to-peer connection in the same region, enter the same region ID as the region ID of the initiator.-region VPC peer-to-peer connection, enter a region ID that is different from the region ID of the initiator.
 * `accepting_vpc_id` - The VPC ID of the receiving end of the VPC peer connection.
 * `create_time` - The creation time of the VPC peer connection. Use UTC time in the format' YYYY-MM-DDThh:mm:ssZ '.
+* `region_id` - The ID of the region where you want to query VPC peering connections.
+
+  You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/doc-detail/36063.html) operation to query the most recent region list.
 * `status` - The status of the resource
 * `vpc_id` - The VPC ID of the initiator of the VPC peering connection.
 
@@ -134,7 +134,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Vpc Peer Connection Accepter can be imported using the id, e.g.
+Vpc Peer Peer Connection Accepter can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_peer_connection_accepter.example <id>
