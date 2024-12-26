@@ -879,6 +879,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_access_point":                                     resourceAliCloudOssAccessPoint(),
+			"alicloud_oss_bucket_worm":                                      resourceAliCloudOssBucketWorm(),
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
 			"alicloud_apig_gateway":                                         resourceAliCloudApigGateway(),
 			"alicloud_apig_http_api":                                        resourceAliCloudApigHttpApi(),
