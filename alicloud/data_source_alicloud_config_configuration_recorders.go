@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -60,12 +59,7 @@ func dataSourceAlicloudConfigConfigurationRecordersRead(d *schema.ResourceData, 
 
 	action := "DescribeConfigurationRecorder"
 	request := make(map[string]interface{})
-	var response map[string]interface{}
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	response, err := client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_configuration_recorders", action, AlibabaCloudSdkGoERROR)
 	}

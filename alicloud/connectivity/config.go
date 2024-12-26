@@ -344,7 +344,7 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 		conf := &openapi.Config{
 			RegionId:  tea.String(c.RegionId),
 			Endpoint:  tea.String(c.StsEndpoint),
-			UserAgent: tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+			UserAgent: tea.String(c.getUserAgent()),
 			// currently, sts endpoint only supports https
 			Protocol:       tea.String("HTTPS"),
 			ReadTimeout:    tea.Int(c.ClientReadTimeout),
@@ -465,7 +465,7 @@ func (c *Config) RefreshAuthCredential() error {
 
 func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err error) {
 	config.SetRegionId(c.RegionId)
-	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
@@ -484,7 +484,7 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 }
 func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, err error) {
 	config.SetRegionId(c.RegionId)
-	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
@@ -502,7 +502,7 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 }
 func (c *Config) getTeaRpcOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
 	config.SetRegionId(c.RegionId)
-	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
@@ -527,7 +527,7 @@ func (c *Config) getTeaRpcOpenapiConfig(stsSupported bool) (config openapi.Confi
 }
 func (c *Config) getTeaRoaOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
 	config.SetRegionId(c.RegionId)
-	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
@@ -577,4 +577,8 @@ func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
 
 	credentialConfig.Type = &credentialType
 	return credentialConfig
+}
+
+func (c *Config) getUserAgent() string {
+	return fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)
 }

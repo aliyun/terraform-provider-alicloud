@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -81,11 +80,9 @@ func resourceAliCloudConfigDeliveryCreate(d *schema.ResourceData, meta interface
 	action := "CreateConfigDeliveryChannel"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -113,11 +110,9 @@ func resourceAliCloudConfigDeliveryCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("oversized_data_oss_target_arn"); ok {
 		request["OversizedDataOSSTargetArn"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -188,15 +183,17 @@ func resourceAliCloudConfigDeliveryRead(d *schema.ResourceData, meta interface{}
 
 func resourceAliCloudConfigDeliveryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	configServiceV2 := ConfigServiceV2{client}
+	objectRaw, err := configServiceV2.DescribeConfigDelivery(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
 	action := "UpdateConfigDeliveryChannel"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DeliveryChannelId"] = d.Id()
@@ -241,17 +238,16 @@ func resourceAliCloudConfigDeliveryUpdate(d *schema.ResourceData, meta interface
 		request["OversizedDataOSSTargetArn"] = d.Get("oversized_data_oss_target_arn")
 	}
 
-	if d.HasChange("status") || d.IsNewResource() {
+	// status default to 1 after creating
+	if v, ok := d.GetOkExists("status"); ok && fmt.Sprint(objectRaw["Status"]) != fmt.Sprint(v) {
 		update = true
-		request["Status"] = d.Get("status")
+		request["Status"] = v
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -276,19 +272,15 @@ func resourceAliCloudConfigDeliveryDelete(d *schema.ResourceData, meta interface
 	action := "DeleteConfigDeliveryChannel"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query["DeliveryChannelId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Config Compliance Packs to the user.
 ---
 
-# alicloud\_config\_compliance\_packs
+# alicloud_config_compliance_packs
 
 This data source provides the Config Compliance Packs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available since v1.124.0.
 
 ## Example Usage
 
@@ -44,18 +44,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Compliance Pack names.
 * `packs` - A list of Config Compliance Packs. Each element contains the following attributes:
-	* `account_id` - The Aliyun User Id.
-	* `compliance_pack_id` - The Compliance Package ID.
-	* `compliance_pack_name` - The Compliance Package Name.
-	* `compliance_pack_template_id` - The template ID of the Compliance Package.
-	* `config_rules` - A list of The Compliance Package Rules.
-		* `config_rule_id` - The ID of the rule.
-		* `config_rule_parameters` - A list of parameter rules.
-			* `parameter_name` - The Parameter Name.
-			* `parameter_value` - The Parameter Value.
-			* `required` - Required.
-		* `managed_rule_identifier` - Managed Rule Identifier.
-	* `description` - The description of compliance pack.
-	* `id` - The ID of the Compliance Pack.
-	* `risk_level` - The Ris Level.
-	* `status` - The status of the resource.
+  * `account_id` - The Aliyun User Id.
+  * `compliance_pack_id` - The Compliance Package ID.
+  * `compliance_pack_name` - The Compliance Package Name.
+  * `compliance_pack_template_id` - The template ID of the Compliance Package.
+  * `config_rules` - A list of The Compliance Package Rules.
+    * `config_rule_id` - The ID of the rule.
+    * `config_rule_parameters` - A list of parameter rules.
+      * `parameter_name` - The Parameter Name.
+      * `parameter_value` - The Parameter Value.
+      * `required` - Required.
+    * `managed_rule_identifier` - Managed Rule Identifier.
+  * `description` - The description of compliance pack.
+  * `id` - The ID of the Compliance Pack.
+  * `risk_level` - The Ris Level.
+  * `status` - The status of the resource.

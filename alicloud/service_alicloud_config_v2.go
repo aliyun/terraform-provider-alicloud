@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -24,10 +23,6 @@ func (s *ConfigServiceV2) DescribeConfigRule(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetConfigRule"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -35,7 +30,7 @@ func (s *ConfigServiceV2) DescribeConfigRule(id string) (object map[string]inter
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -93,10 +88,6 @@ func (s *ConfigServiceV2) DescribeConfigRemediation(id string) (object map[strin
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRemediation"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -104,7 +95,7 @@ func (s *ConfigServiceV2) DescribeConfigRemediation(id string) (object map[strin
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcGet("Config", "2020-09-07", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -161,19 +152,13 @@ func (s *ConfigServiceV2) DescribeConfigDelivery(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetConfigDeliveryChannel"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DeliveryChannelId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -237,20 +222,14 @@ func (s *ConfigServiceV2) DescribeConfigAggregateDelivery(id string) (object map
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetAggregateConfigDeliveryChannel"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AggregatorId"] = parts[0]
 	query["DeliveryChannelId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
