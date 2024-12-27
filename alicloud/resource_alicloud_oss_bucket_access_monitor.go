@@ -59,6 +59,7 @@ func resourceAliCloudOssBucketAccessMonitorCreate(d *schema.ResourceData, meta i
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 
 	objectDataLocalMap := make(map[string]interface{})
+
 	if v := d.Get("status"); v != nil {
 		objectDataLocalMap["Status"] = v
 		request["AccessMonitorConfiguration"] = objectDataLocalMap
@@ -77,15 +78,21 @@ func resourceAliCloudOssBucketAccessMonitorCreate(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_access_monitor", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
+
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutCreate), 0, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudOssBucketAccessMonitorRead(d, meta)
 }
@@ -104,7 +111,9 @@ func resourceAliCloudOssBucketAccessMonitorRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	d.Set("status", objectRaw["Status"])
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
 
 	d.Set("bucket", d.Id())
 
@@ -118,6 +127,7 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
 	action := fmt.Sprintf("/?accessmonitor")
 	conn, err := client.NewOssClient()
 	if err != nil {
@@ -128,10 +138,12 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
+
 	if d.HasChange("status") {
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
+
 	if v := d.Get("status"); v != nil {
 		objectDataLocalMap["Status"] = d.Get("status")
 		request["AccessMonitorConfiguration"] = objectDataLocalMap
@@ -151,11 +163,16 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutUpdate), 0, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 

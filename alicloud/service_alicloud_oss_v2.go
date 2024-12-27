@@ -705,11 +705,13 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
+		if IsExpectedErrors(err, []string{"NoSuchBucket"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketAccessMonitor", id)), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})
