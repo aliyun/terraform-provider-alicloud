@@ -1,4 +1,63 @@
 ## 1.240.0 (Unreleased)
+
+- **New Resource:** `alicloud_schedulerx_app_group` [GH-8023]
+- **New Resource:** `alicloud_schedulerx_job` [GH-8023]
+- **New Resource:** `alicloud_mongodb_private_srv_network_address` [GH-8031]
+- **New Resource:** `alicloud_esa_record` [GH-8037]
+- **New Resource:** `alicloud_apig_http_api` [GH-8043]
+- **New Resource:** `alicloud_apig_gateway` [GH-8045]
+- **New Resource:** `alicloud_apig_environment` [GH-8047]
+- **New Resource:** `alicloud_oss_bucket_worm` [GH-8050]
+- **New Resource:** `alicloud_oss_access_point` [GH-8050]
+
+ENHANCEMENTS:
+
+- client: Improves the method of setting endpoint; provider: add new parameter account_type to fix international account site issue. [GH-7736]
+- CloudFirewall: Improves the invoking cloud firewall api method and supports refreshing credential automatically. [GH-7931]
+- WAF: Improves the invoking waf api method and supports refreshing credential automatically. [GH-7959]
+- ESA: Improves the invoking esa api method and supports refreshing credential automatically. [GH-7969]
+- Goverance: Improves the invoking goverance api method and supports refreshing credential automatically. [GH-8005]
+- SDDP: Improves the invoking sddp api method and supports refreshing credential automatically. [GH-8006]
+- SMS: Improves the invoking sms api method and supports refreshing credential automatically. [GH-8007]
+- EcdUser: Improves the invoking ecd user api method and supports refreshing credential automatically. [GH-8008]
+- RAM: Improves the invoking ram api method and supports refreshing credential automatically. [GH-8009]
+- MscOpenSubscription: Improves the invoking MscOpenSubscription api method and supports refreshing credential automatically. [GH-8010]
+- ResourceCenter: Improves the invoking resource center api method and supports refreshing credential automatically. [GH-8011]
+- VpcPeer: Improves the invoking vpcpeer api method and supports refreshing credential automatically. [GH-8012]
+- SSLCertificatesService: Improves the invoking cas api method and supports refreshing credential automatically. [GH-8014]
+- Ga: Improves the invoking ga api method and supports refreshing credential automatically. [GH-8015]
+- DCDN: Improves the invoking dcdn api method and supports refreshing credential automatically. [GH-8017]
+- DdosCoo: Improves the invoking ddoscoo api method and supports refreshing credential automatically. [GH-8018]
+- PrivateLink: Improves the invoking private link api method and supports refreshing credential automatically. [GH-8019]
+- Redis: Improves the invoking redis api method and supports refreshing credential automatically. [GH-8020]
+- ADB: Improves the invoking adb api method and supports refreshing credential automatically. [GH-8022]
+- Live: Improves the invoking live api method and supports refreshing credential automatically. [GH-8025]
+- Market: Improves the invoking market api method and supports refreshing credential automatically. [GH-8026]
+- Config: Improves the invoking config api method and supports refreshing credential automatically. [GH-8046]
+- resource/alicloud_db_instance: Support ModifyDBInstanceConfig and add new attributes tde_encryption_key, pg_bouncer_enabled and recovery_model. [GH-7944]
+- resource/alicloud_resource_manager_shared_resource: Supported resource_type set to Snapshot. [GH-8021]
+- resource/alicloud_schedulerx_namespace: add new attribute namespace_name, namespace_uid. [GH-8023]
+- resource/alicloud_resource_manager_control_policy_attachment: : Added retry strategy for error code ConcurrentCallNotSupported. [GH-8024]
+- resource/alicloud_ess_notification: add attribute of time_zone. [GH-8027]
+- resource/alicloud_ess_scheduled_task: update launch_expiration_time range. [GH-8028]
+- resource/alicloud_kms_key: Refactored the resource alicloud_kms_key; Added the field deletion_protection, deletion_protection_description. [GH-8029]
+- resource/alicloud_mongodb_instance: add retry code while deleting instance. [GH-8032]
+- resource/alicloud_nlb_listener_additional_certificate_attachment: refactoring implement and fix testcase. [GH-8034]
+- resource/alicloud_cen_transit_router_multicast_domain_member: Added retry strategy for error code Operation.Blocking. [GH-8036]
+- resource/alicloud_vpc_peer_connection: add new attribute link_type, region_id; resource/alicloud_vpc_peer_connection_accepter: add new attribute link_type, region_id. [GH-8039]
+- resource/alicloud_cr_ee_instance: add new attribute instance_endpoints. [GH-8040]
+- resource/alicloud_vpc: add new attribute dns_hostname_status, ipv4_cidr_mask, secondary_cidr_mask. [GH-8042]
+- resource/alicloud_cr_ee_sync_rule: Refactored the resource alicloud_cr_ee_sync_rule; Added the field sync_rule_name, sync_trigger, target_user_id, repo_sync_rule_id, create_time, region_id; Deprecated the field name, rule_id. [GH-8044]
+- resource/alicloud_oss_bucket_access_monitor: add wait for status while create and update opertion. [GH-8051]
+- resource/alicloud_fcv3_trigger: mark source_arn as Computed. [GH-8052]
+- resource/alicloud_oss_bucket_logging: add wait for status while create and update opertion. [GH-8053]
+- data-source/alicloud_ess_scaling_configurations: support attribute of instance_pattern_info. [GH-8004]
+- data-source/alicloud_ecs_disks: Removed the default value of the field enable_auto_snapshot; Improved the document. [GH-8048]
+
+BUG FIXES:
+
+- resource/alicloud_cloud_sso_access_configuration: Fixed the diff error caused by field permission_policies.permission_policy_document. [GH-8041]
+
 ## 1.239.0 (December 20, 2024)
 
 - **New Resource:** `alicloud_express_connect_router_grant_association` ([#8000](https://github.com/aliyun/terraform-provider-alicloud/issues/8000))
