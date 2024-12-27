@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Provider: alicloud"
 sidebar_current: "docs-alicloud-index"
 description: |-
-  The Alicloud provider is used to interact with many resources supported by Alicloud. The provider needs to be configured with the proper credentials before it can be used.
+  The Alicloud provider is used to interact with many resources supported by Alibaba Cloud. The provider needs to be configured with the proper credentials before it can be used.
 ---
 
 # Alibaba Cloud Provider
@@ -285,6 +285,11 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   Can also be set with the `ALIBABA_CLOUD_ACCOUNT_ID` environment variable since v1.228.0.
   Environment variable `ALICLOUD_ACCOUNT_ID` has been deprecated since v1.228.0.
 
+* `account_type` - (Optional, Available since 1.240.0) Alibaba Cloud [Account Type](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account). 
+  It used to indicate caller identity's account type. Can also be set with the `ALIBABA_CLOUD_ACCOUNT_TYPE` environment variable. Valid values:
+  - `Domestic`(Default): China-Site Account.
+  - `International`: International-Site Account.
+  
 * `shared_credentials_file` - (Optional, Available since 1.49.0) This is the path to the shared credentials file.
   Can also be set with the `ALIBABA_CLOUD_CREDENTIALS_FILE` environment variable since v1.228.0.
   Environment variable `ALICLOUD_SHARED_CREDENTIALS_FILE` has been deprecated since v1.228.0.
