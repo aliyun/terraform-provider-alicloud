@@ -316,7 +316,6 @@ var irregularProductEndpoint = map[string]string{
 	"ram":              "ram.aliyuncs.com",
 	"brain_industrial": "brain-industrial.cn-hangzhou.aliyuncs.com",
 	"cassandra":        "cassandra.aliyuncs.com",
-	"cas":              "cas.aliyuncs.com",
 	"cloudfw":          "cloudfw.aliyuncs.com",
 	"scdn":             "scdn.aliyuncs.com",
 	"vpcpeer":          "vpcpeer.aliyuncs.com",
@@ -333,7 +332,6 @@ var irregularProductEndpoint = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpointForIntlAccount = map[string]string{
-	"cas":            "cas.ap-southeast-1.aliyuncs.com",
 	"cloudfw":        "cloudfw.ap-southeast-1.aliyuncs.com",
 	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
 	"bssopenapi":     BssOpenAPIEndpointInternational,
@@ -357,6 +355,7 @@ var regularProductEndpoint = map[string]string{
 	"mse":                  "mse.%s.aliyuncs.com",
 	"vpc":                  "vpc.%s.aliyuncs.com",
 	"oss":                  "oss-%s.aliyuncs.com",
+	"cas":                  "cas.aliyuncs.com",
 	"cr":                   "cr.%s.aliyuncs.com",
 	"cms":                  "metrics.%s.aliyuncs.com",
 	"sls":                  "%s.log.aliyuncs.com",
@@ -467,6 +466,7 @@ var regularProductEndpointForIntlAccount = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpointForIntlRegion = map[string]string{
+	"cas":         "cas.ap-southeast-1.aliyuncs.com",
 	"ddoscoo":     "ddoscoo.ap-southeast-1.aliyuncs.com",
 	"eds_user":    "eds-user.ap-southeast-1.aliyuncs.com",
 	"dysmsapi":    "dysmsapi.ap-southeast-1.aliyuncs.com",
@@ -475,7 +475,7 @@ var regularProductEndpointForIntlRegion = map[string]string{
 	"waf_openapi": "wafopenapi.ap-southeast-1.aliyuncs.com",
 }
 
-// NOTE: The productCode must be lower.
+// NOTE: The productCode must be lowed.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Firstly, load endpoint from environment variables
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("ALIBABA_CLOUD_ENDPOINT_%s", strings.ToUpper(productCode))))
