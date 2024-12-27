@@ -778,18 +778,22 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.BucketLoggingStatus.LoggingEnabled", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BucketLoggingStatus.LoggingEnabled", response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLogging", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.(map[string]interface{})["TargetBucket"]
+	if currentStatus == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLogging", id)), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -807,6 +811,13 @@ func (s *OssServiceV2) OssBucketLoggingStateRefreshFunc(id string, field string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
