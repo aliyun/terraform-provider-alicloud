@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -242,6 +241,30 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"kernel_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"available_kernel_versions": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"kernel_version": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"release_date": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"expire_date": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -313,14 +336,9 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, AlibabaCloudSdkGoERROR)
 		}
@@ -440,6 +458,24 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		}
 		mapping["engine_version"] = getResp2["EngineVersion"]
 		mapping["maintain_time"] = getResp2["MaintainTime"]
+		getResp3, err := adbService.DescribeAdbDbClusterKernelVersion(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["kernel_version"] = getResp3["KernelVersion"]
+		availableKernelVersion := getResp3["AvailableKernelVersion"]
+		availKernels := make([]map[string]interface{}, 0)
+		if availableKernelVersion != nil {
+			for _, v := range availableKernelVersion.([]interface{}) {
+				object := v.(map[string]interface{})
+				availKernels = append(availKernels, map[string]interface{}{
+					"kernel_version": object["KernelVersion"],
+					"release_date":   object["ReleaseDate"],
+					"expire_date":    object["ExpireDate"],
+				})
+			}
+			mapping["available_kernel_versions"] = availKernels
+		}
 
 		ids = append(ids, fmt.Sprint(object["DBClusterId"]))
 		s = append(s, mapping)

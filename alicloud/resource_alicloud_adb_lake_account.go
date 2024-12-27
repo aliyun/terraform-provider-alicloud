@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -111,11 +110,8 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 	action := "CreateAccount"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewAdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["AccountName"] = d.Get("account_name")
 	query["DBClusterId"] = d.Get("db_cluster_id")
@@ -127,11 +123,9 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 		request["AccountType"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -218,15 +212,12 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyAccountDescription"
-	conn, err := client.NewAdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DBClusterId"] = parts[0]
@@ -237,11 +228,9 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -261,10 +250,6 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ResetAccountPassword"
-	conn, err = client.NewAdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccountName"] = parts[1]
@@ -279,11 +264,9 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -304,10 +287,6 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ModifyAccountPrivileges"
-	conn, err = client.NewAdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DBClusterId"] = parts[0]
@@ -341,11 +320,9 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -373,20 +350,15 @@ func resourceAliCloudAdbLakeAccountDelete(d *schema.ResourceData, meta interface
 	action := "DeleteAccount"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewAdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["AccountName"] = parts[1]
 	query["DBClusterId"] = parts[0]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

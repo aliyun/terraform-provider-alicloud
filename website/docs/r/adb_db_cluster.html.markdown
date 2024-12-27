@@ -92,6 +92,10 @@ The following arguments are supported:
 * `disk_encryption` - (Optional, ForceNew, Bool, Available since v1.219.0) Specifies whether to enable disk encryption. Default Value: `false`. Valid values: `true`, `false`.
 * `kms_id` - (Optional, ForceNew, Available since v1.219.0) The Key Management Service (KMS) ID that is used for disk encryption. `kms_id` is valid only when `disk_encryption` is set to `true`.
 * `enable_ssl` - (Optional, Bool, Available since v1.230.0) Specifies whether to enable SSL encryption. Default Value: `false`. Valid values: `true`, `false`.
+* `kernel_version` - (Optional, String, Available since v1.240.0) The minor version to which you want to update.
+* `switch_mode` - (Optional, Int, Available since v1.240.0) The time when to perform the update. Valid values:
+  - `0` (default): immediately performs the update. 
+  - `1`: performs the update during the maintenance window.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
