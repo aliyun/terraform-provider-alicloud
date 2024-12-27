@@ -85,7 +85,7 @@ func Provider() terraform.ResourceProvider {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Domestic", "International"}, true),
-				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_TYPE", "ALIBABA_CLOUD_ACCOUNT_TYPE"}, nil),
+				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ALIBABA_CLOUD_ACCOUNT_TYPE"}, nil),
 			},
 			"assume_role":           assumeRoleSchema(),
 			"sign_version":          signVersionSchema(),
