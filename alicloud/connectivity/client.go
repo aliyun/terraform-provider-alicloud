@@ -2021,35 +2021,6 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 	return do(client.hbaseconn)
 }
 
-func (client *AliyunClient) NewAdbClient() (*rpc.Client, error) {
-	productCode := "ads"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if v := client.config.AdbEndpoint; v != "" {
-			client.config.Endpoints.Store(productCode, v)
-		}
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, exist := client.config.Endpoints.Load(productCode); exist && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
-}
-
 func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the adb client if necessary
 	if client.adbconn == nil {
@@ -2993,30 +2964,6 @@ func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
-func (client *AliyunClient) NewAdsClient() (*rpc.Client, error) {
-	productCode := "ads"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
 func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
 	productCode := "ddoscoo"
 	endpoint := ""

@@ -584,10 +584,7 @@ func (s *AdbService) AdbTaskStateRefreshFunc(id, taskId string) resource.StateRe
 
 func (s *AdbService) DescribeAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+
 	action := "DescribeAutoRenewAttribute"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -595,7 +592,7 @@ func (s *AdbService) DescribeAutoRenewAttribute(id string) (object map[string]in
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -618,10 +615,6 @@ func (s *AdbService) DescribeAutoRenewAttribute(id string) (object map[string]in
 
 func (s *AdbService) DescribeDBClusterAccessWhiteList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDBClusterAccessWhiteList"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
@@ -629,7 +622,7 @@ func (s *AdbService) DescribeDBClusterAccessWhiteList(id string) (object map[str
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("AnalyticdbForMysql3.0DbCluster", id)), NotFoundMsg, ProviderERROR)
@@ -660,14 +653,10 @@ func (s *AdbService) DescribeDBClusterAccessWhiteList(id string) (object map[str
 }
 
 func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
+	var response map[string]interface{}
+	var err error
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -685,8 +674,8 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -717,8 +706,8 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -741,18 +730,12 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 func (s *AdbService) DescribeAdbDbCluster(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDBClusterAttribute"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFoundError"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("AdbDbCluster", id)), NotFoundMsg, ProviderERROR)
@@ -779,18 +762,12 @@ func (s *AdbService) DescribeAdbDbCluster(id string) (object map[string]interfac
 
 func (s *AdbService) DescribeDBClusters(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDBClusters"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBClusterIds": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -834,12 +811,6 @@ func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, stateField string, 
 func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBClusterAttribute"
-
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
@@ -849,7 +820,7 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -914,12 +885,6 @@ func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceD
 func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeClusterAccessWhiteList"
-
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
@@ -928,7 +893,7 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -964,12 +929,6 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBResourceGroup"
-
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -985,7 +944,7 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1030,23 +989,50 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 func (s *AdbService) DescribeAdbDbClusterSSL(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBClusterSSL"
-
-	conn, err := s.client.NewAdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ADBVersionNotSupport"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeKernelVersion"
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
