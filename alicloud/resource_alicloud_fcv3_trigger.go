@@ -75,6 +75,7 @@ func resourceAliCloudFcv3Trigger() *schema.Resource {
 			"source_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -129,20 +130,18 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	request["triggerName"] = d.Get("trigger_name")
 
-	if v, ok := d.GetOk("description"); ok {
-		request["description"] = v
-	}
 	if v, ok := d.GetOk("invocation_role"); ok {
 		request["invocationRole"] = v
 	}
-	request["qualifier"] = d.Get("qualifier")
+	request["triggerConfig"] = d.Get("trigger_config")
+	request["triggerType"] = d.Get("trigger_type")
+	if v, ok := d.GetOk("description"); ok {
+		request["description"] = v
+	}
 	if v, ok := d.GetOk("source_arn"); ok {
 		request["sourceArn"] = v
 	}
-	if v, ok := d.GetOk("trigger_config"); ok {
-		request["triggerConfig"] = v
-	}
-	request["triggerType"] = d.Get("trigger_type")
+	request["qualifier"] = d.Get("qualifier")
 	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -252,6 +251,7 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
 	parts := strings.Split(d.Id(), ":")
 	functionName := parts[0]
 	triggerName := parts[1]
@@ -264,11 +264,6 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 
-	if d.HasChange("description") {
-		update = true
-		request["description"] = d.Get("description")
-	}
-
 	if d.HasChange("invocation_role") {
 		update = true
 		request["invocationRole"] = d.Get("invocation_role")
@@ -277,6 +272,11 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("trigger_config") {
 		update = true
 		request["triggerConfig"] = d.Get("trigger_config")
+	}
+
+	if d.HasChange("description") {
+		update = true
+		request["description"] = d.Get("description")
 	}
 
 	body = request
