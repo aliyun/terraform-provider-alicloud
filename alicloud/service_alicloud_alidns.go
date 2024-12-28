@@ -435,3 +435,21 @@ func (s *AlidnsService) DescribeAlidnsMonitorConfig(id string) (object map[strin
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *AlidnsService) DescribeDomainRecords(domainName string) ([]alidns.Record, error) {
+	request := alidns.CreateDescribeDomainRecordsRequest()
+	request.RegionId = s.client.RegionId
+	request.DomainName = domainName
+
+	raw, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+		return alidnsClient.DescribeDomainRecords(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, domainName, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, err
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alidns.DescribeDomainRecordsResponse)
+
+	return response.DomainRecords.Record, nil
+}
