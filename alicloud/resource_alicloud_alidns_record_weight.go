@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
@@ -24,7 +25,7 @@ func resourceAlicloudAlidnsRecordWeight() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"domain_name": {
 				Type:     schema.TypeString,
-				Required: true,
+				Required: true, // This makes domain_name mandatory
 			},
 			"line": {
 				Type:     schema.TypeString,
@@ -85,63 +86,20 @@ func resourceAlicloudAlidnsRecordWeightCreate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	alidnsService := AlidnsService{client}
 
-	// Step 1: Check for existing records
 	domainName := d.Get("domain_name").(string)
 	rr := d.Get("rr").(string)
 	recordType := d.Get("type").(string)
 	recordValue := d.Get("value").(string)
+	ttl := d.Get("ttl").(int)
 
-	records, err := alidnsService.DescribeDomainRecords(domainName)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	// Look for a matching record
-	var existingRecord *alidns.Record
-	for _, record := range records {
-		if record.RR == rr && record.Type == recordType && record.Value == recordValue {
-			existingRecord = &record
-			break
-		}
-	}
-
-	// Step 2: If record exists, update weight and WRR status
-	if existingRecord != nil {
-		log.Printf("[DEBUG] Found existing record: %s", existingRecord.RecordId)
-
-		// Enable WRR for the subdomain if needed
-		wrrStatus := d.Get("wrr_status").(string)
-		if wrrStatus == "ENABLE" {
-			err = alidnsService.SetWRRStatus(domainName, rr, wrrStatus)
-			if err != nil {
-				return WrapError(err)
-			}
-
-			// Update the weight for the existing record
-			if weight, ok := d.GetOk("weight"); ok && weight.(int) > 0 {
-				err = alidnsService.SetRecordWeight(existingRecord.RecordId, weight.(int))
-				if err != nil {
-					return WrapError(err)
-				}
-			}
-		}
-
-		// Set the existing record's ID
-		d.SetId(existingRecord.RecordId)
-		return resourceAlicloudAlidnsRecordWeightRead(d, meta)
-	}
-
-	// Step 3: If no existing record, create a new one
-	log.Printf("[DEBUG] No existing record found. Creating a new record for %s", rr)
-
+	// Step 1: Create the record
 	request := alidns.CreateAddDomainRecordRequest()
 	request.RegionId = client.RegionId
 	request.DomainName = domainName
 	request.RR = rr
 	request.Type = recordType
 	request.Value = recordValue
-	request.TTL = requests.NewInteger(d.Get("ttl").(int))
-	request.Line = d.Get("line").(string)
+	request.TTL = requests.NewInteger(ttl)
 
 	response, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 		return alidnsClient.AddDomainRecord(request)
@@ -150,22 +108,55 @@ func resourceAlicloudAlidnsRecordWeightCreate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	resp, _ := response.(*alidns.AddDomainRecordResponse)
+	resp, ok := response.(*alidns.AddDomainRecordResponse)
+	if !ok {
+		return fmt.Errorf("unexpected response type for AddDomainRecord")
+	}
+
 	d.SetId(resp.RecordId)
 
-	// Enable WRR and set weight for the new record
-	wrrStatus := d.Get("wrr_status").(string)
-	if wrrStatus == "ENABLE" {
-		err = alidnsService.SetWRRStatus(domainName, rr, wrrStatus)
+	err = alidnsService.WaitForRecordReady(resp.RecordId, domainName, rr, 2*time.Minute)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	recordID := d.Id()
+
+	err = alidnsService.WaitForLastOperation(recordID, domainName, 2*time.Minute)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	// Step 2: Update remark
+	if d.HasChange("remark") {
+		newRemark := d.Get("remark").(string)
+		log.Printf("[DEBUG] Updating remark: RecordId=%s, NewRemark=%s", recordID, newRemark)
+
+		err := alidnsService.UpdateRecordRemark(recordID, newRemark)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	// Step 3: Set WRR status
+	if wrrStatus, ok := d.GetOk("wrr_status"); ok && wrrStatus.(string) == "ENABLE" {
+		err = alidnsService.SetWRRStatus(domainName, rr, "ENABLE")
 		if err != nil {
 			return WrapError(err)
 		}
 
-		if weight, ok := d.GetOk("weight"); ok && weight.(int) > 0 {
-			err = alidnsService.SetRecordWeight(resp.RecordId, weight.(int))
-			if err != nil {
-				return WrapError(err)
-			}
+		// Wait for WRR status to be set
+		err = alidnsService.WaitForLastOperation(resp.RecordId, domainName, 2*time.Minute)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	// Step 4: Set weight
+	if weight, ok := d.GetOk("weight"); ok && weight.(int) > 0 {
+		err = alidnsService.SetRecordWeight(resp.RecordId, weight.(int), domainName, rr)
+		if err != nil {
+			return WrapError(err)
 		}
 	}
 
@@ -175,24 +166,74 @@ func resourceAlicloudAlidnsRecordWeightCreate(d *schema.ResourceData, meta inter
 func resourceAlicloudAlidnsRecordWeightUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alidnsService := AlidnsService{client}
+	recordID := d.Id()
+	domainName := d.Get("domain_name").(string)
+	rr := d.Get("rr").(string)
 
-	// Step 1: Update WRR status if changed
-	if d.HasChange("wrr_status") {
-		wrrStatus := d.Get("wrr_status").(string)
-		err := alidnsService.SetWRRStatus(d.Get("domain_name").(string), d.Get("rr").(string), wrrStatus)
+	// Step 1: Update remark
+	if d.HasChange("remark") {
+		newRemark := d.Get("remark").(string)
+		log.Printf("[DEBUG] Updating remark: RecordId=%s, NewRemark=%s", recordID, newRemark)
+
+		err := alidnsService.UpdateRecordRemark(recordID, newRemark)
 		if err != nil {
 			return WrapError(err)
 		}
 	}
 
-	// Step 2: Update weight only if WRR is enabled
-	if d.HasChange("weight") && d.Get("wrr_status").(string) == "ENABLE" {
-		err := alidnsService.SetRecordWeight(d.Id(), d.Get("weight").(int))
+	// Step 2: Update status
+	if d.HasChange("status") {
+		newStatus := d.Get("status").(string)
+		log.Printf("[DEBUG] Updating status: RecordId=%s, NewStatus=%s", recordID, newStatus)
+
+		err := alidnsService.SetRecordStatus(recordID, newStatus)
 		if err != nil {
 			return WrapError(err)
 		}
-	} else if d.Get("wrr_status").(string) == "DISABLE" {
-		log.Printf("[DEBUG] WRR is disabled, skipping weight update for record ID: %s", d.Id())
+	}
+
+	// Step 3: Update other record attributes (ttl, value, type)
+	if d.HasChange("ttl") || d.HasChange("value") || d.HasChange("type") {
+		updateRequest := alidns.CreateUpdateDomainRecordRequest()
+		updateRequest.RecordId = recordID
+		updateRequest.RR = rr
+		updateRequest.Type = d.Get("type").(string)
+		updateRequest.Value = d.Get("value").(string)
+		updateRequest.TTL = requests.NewInteger(d.Get("ttl").(int))
+
+		_, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+			return alidnsClient.UpdateDomainRecord(updateRequest)
+		})
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	// Step 4: Update WRR status
+	if d.HasChange("wrr_status") {
+		newWRRStatus := d.Get("wrr_status").(string)
+		log.Printf("[DEBUG] Updating WRR status: DomainName=%s, SubDomain=%s, NewStatus=%s", domainName, rr, newWRRStatus)
+
+		err := alidnsService.SetWRRStatus(domainName, rr, newWRRStatus)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		err = alidnsService.WaitForLastOperation(recordID, domainName, 2*time.Minute)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	// Step 5: Update weight
+	if d.HasChange("weight") {
+		newWeight := d.Get("weight").(int)
+		log.Printf("[DEBUG] Updating weight: RecordId=%s, NewWeight=%d", recordID, newWeight)
+
+		err := alidnsService.SetRecordWeight(recordID, newWeight, domainName, rr)
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return resourceAlicloudAlidnsRecordWeightRead(d, meta)
@@ -203,47 +244,70 @@ func resourceAlicloudAlidnsRecordWeightRead(d *schema.ResourceData, meta interfa
 	alidnsService := AlidnsService{client}
 
 	recordID := d.Id()
+	domainName := d.Get("domain_name").(string)
+	rr := d.Get("rr").(string)
 
-	// Use DescribeDomainRecordInfo to fetch detailed record info
-	record, err := alidnsService.DescribeDomainRecordById(recordID)
+	// Retry logic for API response delay
+	var record *alidns.Record
+	var err error
+	for i := 0; i < 5; i++ { // Retry up to 5 times
+		record, err = alidnsService.DescribeDomainRecordById(recordID, domainName)
+		if err == nil && record != nil {
+			break
+		}
+		log.Printf("[DEBUG] Retrying to fetch record: RecordId=%s, Attempt=%d", recordID, i+1)
+		time.Sleep(2 * time.Second) // Wait 2 seconds before retrying
+	}
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidRecordId.NotFound"}) {
 			log.Printf("[DEBUG] Record not found: %s", recordID)
-			d.SetId("")
+			d.SetId("") // Mark resource as deleted
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	// Populate resource data
-	d.Set("domain_name", record.DomainName)
+	// Fetch WRR status
+	wrrStatus, err := alidnsService.GetWRRStatus(domainName, rr)
+	if err != nil {
+		log.Printf("[WARN] Failed to fetch WRR status: %s", err)
+		wrrStatus = "DISABLE" // Default to DISABLE if fetch fails
+	}
+	d.Set("wrr_status", wrrStatus)
+
+	// Update Terraform state
+	d.Set("status", record.Status)
+	d.Set("remark", record.Remark)
+	d.Set("weight", record.Weight)
 	d.Set("rr", record.RR)
 	d.Set("type", record.Type)
 	d.Set("value", record.Value)
 	d.Set("ttl", record.TTL)
 	d.Set("line", record.Line)
-	d.Set("weight", record.Weight)
-	d.Set("priority", record.Priority) // Map Priority
-	d.Set("remark", record.Remark)     // Map Remark
-
-	// Determine WRR status based on weight
-	if record.Weight > 0 {
-		d.Set("wrr_status", "ENABLE")
-	} else {
-		d.Set("wrr_status", "DISABLE")
-	}
+	d.Set("priority", record.Priority)
 
 	return nil
 }
 
 func resourceAlicloudAlidnsRecordWeightDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	alidnsService := AlidnsService{client}
+	recordID := d.Id()
+	domainName := d.Get("domain_name").(string)
 
+	// Wait for the last operation to finish
+	err := alidnsService.WaitForLastOperation(recordID, domainName, 2*time.Minute)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	// Proceed with the delete operation
 	request := alidns.CreateDeleteDomainRecordRequest()
 	request.RegionId = client.RegionId
-	request.RecordId = d.Id()
+	request.RecordId = recordID
 
-	_, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+	_, err = client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 		return alidnsClient.DeleteDomainRecord(request)
 	})
 	if err != nil {
@@ -262,107 +326,84 @@ func resourceAlicloudAlidnsRecordWeightImport(d *schema.ResourceData, meta inter
 	alidnsService := AlidnsService{client}
 
 	importID := d.Id()
-	parts := strings.Split(importID, "/")
 	var domainName, recordID string
+
+	// Parse the import ID to support both formats
+	parts := strings.Split(importID, "/")
 	if len(parts) == 2 {
 		domainName = parts[0]
 		recordID = parts[1]
-	} else {
-		recordID = importID
-		record, err := alidnsService.DescribeDomainRecordById(recordID)
+	} else if len(parts) == 1 {
+		recordID = parts[0]
+
+		// If domainName is not provided, attempt to discover it
+		domains, err := alidnsService.ListAllDomains()
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, fmt.Errorf("failed to list all domains: %w", err)
 		}
-		domainName = record.DomainName
+
+		for _, domain := range domains {
+			records, err := alidnsService.DescribeDomainRecords(domain.DomainName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to describe records for domain %s: %w", domain.DomainName, err)
+			}
+
+			for _, record := range records {
+				if record.RecordId == recordID {
+					domainName = domain.DomainName
+					break
+				}
+			}
+
+			if domainName != "" {
+				break
+			}
+		}
+
+		if domainName == "" {
+			return nil, fmt.Errorf("record with ID %s not found in any domain", recordID)
+		}
+	} else {
+		return nil, fmt.Errorf("invalid import ID format: %s", importID)
 	}
 
-	records, err := alidnsService.DescribeDomainRecords(domainName)
+	// Fetch the record details
+	record, err := alidnsService.DescribeDomainRecordById(recordID, domainName)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, fmt.Errorf("failed to fetch record %s in domain %s: %w", recordID, domainName, err)
 	}
 
-	var importedRecord *alidns.Record
-	for _, record := range records {
-		if record.RecordId == recordID {
-			importedRecord = &record
+	// Fetch WRR configuration
+	weight := 0
+	wrrStatus := "DISABLE"
+
+	slbRecords, err := alidnsService.GetSLBSubDomains(domainName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch WRR configuration for domain %s: %w", domainName, err)
+	}
+
+	for _, subRecord := range slbRecords {
+		if subRecord.SubDomain == fmt.Sprintf("%s.%s", record.RR, domainName) {
+			wrrStatus = "ENABLE"
+			weight, err = alidnsService.GetWeight(recordID, domainName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch weight for record ID %s: %w", recordID, err)
+			}
 			break
 		}
 	}
-	if importedRecord == nil {
-		return nil, fmt.Errorf("record with ID %s not found in domain %s", recordID, domainName)
-	}
 
-	d.SetId(importedRecord.RecordId)
+	// Set Terraform resource data
+	d.SetId(recordID)
 	d.Set("domain_name", domainName)
-	d.Set("rr", importedRecord.RR)
-	d.Set("type", importedRecord.Type)
-	d.Set("value", importedRecord.Value)
-	d.Set("ttl", importedRecord.TTL)
-	d.Set("line", importedRecord.Line)
-	d.Set("weight", importedRecord.Weight)
-	d.Set("priority", 0) // Default or API-provided value
-	d.Set("remark", "")  // Default or API-provided value
-
-	// Fetch WRR status
-	if importedRecord.Weight > 0 {
-		d.Set("wrr_status", "ENABLE")
-	} else {
-		d.Set("wrr_status", "DISABLE")
-	}
+	d.Set("rr", record.RR)
+	d.Set("type", record.Type)
+	d.Set("value", record.Value)
+	d.Set("ttl", record.TTL)
+	d.Set("line", record.Line)
+	d.Set("remark", record.Remark)
+	d.Set("weight", weight)
+	d.Set("wrr_status", wrrStatus)
 
 	return []*schema.ResourceData{d}, nil
-}
-
-func (s *AlidnsService) SetWRRStatus(domainName, rr, status string) error {
-	request := alidns.CreateSetDNSSLBStatusRequest()
-	request.RegionId = s.client.RegionId
-	request.DomainName = domainName
-	request.SubDomain = fmt.Sprintf("%s.%s", rr, domainName)
-	request.Open = requests.NewBoolean(status == "ENABLE")
-
-	_, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-		return alidnsClient.SetDNSSLBStatus(request)
-	})
-	return WrapError(err)
-}
-
-func (s *AlidnsService) SetRecordWeight(recordID string, weight int) error {
-	request := alidns.CreateUpdateDNSSLBWeightRequest()
-	request.RegionId = s.client.RegionId
-	request.RecordId = recordID
-	request.Weight = requests.NewInteger(weight)
-
-	_, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-		return alidnsClient.UpdateDNSSLBWeight(request)
-	})
-	return WrapError(err)
-}
-
-func (s *AlidnsService) DescribeDomainRecordById(recordID string) (*alidns.Record, error) {
-	request := alidns.CreateDescribeDomainRecordInfoRequest()
-	request.RecordId = recordID
-
-	response, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-		return alidnsClient.DescribeDomainRecordInfo(request)
-	})
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
-	resp, ok := response.(*alidns.DescribeDomainRecordInfoResponse)
-	if !ok {
-		return nil, fmt.Errorf("failed to cast response to DescribeDomainRecordInfoResponse")
-	}
-
-	return &alidns.Record{
-		RecordId:   resp.RecordId,
-		DomainName: resp.DomainName,
-		RR:         resp.RR,
-		Type:       resp.Type,
-		Value:      resp.Value,
-		TTL:        resp.TTL,
-		Line:       resp.Line,
-		Priority:   resp.Priority, // Ensure this is set
-		Remark:     resp.Remark,   // Ensure this is set
-	}, nil
 }
