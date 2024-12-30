@@ -1,4 +1,5 @@
-## 1.240.0 (Unreleased)
+## 1.241.0 (Unreleased)
+## 1.240.0 (December 30, 2024)
 
 - **New Resource:** `alicloud_schedulerx_app_group` [GH-8023]
 - **New Resource:** `alicloud_schedulerx_job` [GH-8023]
@@ -12,6 +13,8 @@
 
 ENHANCEMENTS:
 
+- docs: Describes new provider argument account_type [GH-8056]
+- client: corrects the getting cas endpoint method [GH-8055]
 - client: Improves the method of setting endpoint; provider: add new parameter account_type to fix international account site issue. [GH-7736]
 - CloudFirewall: Improves the invoking cloud firewall api method and supports refreshing credential automatically. [GH-7931]
 - WAF: Improves the invoking waf api method and supports refreshing credential automatically. [GH-7959]
