@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaAcceleratorSpareIpAttachment_basic0(t *testing.T) {
+func TestAccAliCloudGaAcceleratorSpareIpAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ga_accelerator_spare_ip_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGaAcceleratorSpareIpAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudGaAcceleratorSpareIpAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaAcceleratorSpareIpAttachment")
@@ -31,7 +31,7 @@ func TestAccAlicloudGaAcceleratorSpareIpAttachment_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sgaacceleratorspareipattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAcceleratorSpareIpAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAcceleratorSpareIpAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -62,54 +62,38 @@ func TestAccAlicloudGaAcceleratorSpareIpAttachment_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudGaAcceleratorSpareIpAttachmentMap0 = map[string]string{
-	"accelerator_id": CHECKSET,
-	"spare_ip":       CHECKSET,
-	"status":         CHECKSET,
+var AliCloudGaAcceleratorSpareIpAttachmentMap0 = map[string]string{
+	"status": CHECKSET,
 }
 
-func AlicloudGaAcceleratorSpareIpAttachmentBasicDependence0(name string) string {
+func AliCloudGaAcceleratorSpareIpAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_ga_accelerators" "default" {
-	status = "active"
-    bandwidth_billing_type = "BandwidthPackage"
-}
+	data "alicloud_ga_accelerators" "default" {
+  		status                 = "active"
+  		bandwidth_billing_type = "BandwidthPackage"
+	}
 
-locals {
-  instance_id = length(data.alicloud_ga_accelerators.default.ids) > 0 ? data.alicloud_ga_accelerators.default.ids.0 : concat(alicloud_ga_accelerator.default.*.id, [""])[0]
-}
+	resource "alicloud_ga_bandwidth_package" "default" {
+  		bandwidth      = 100
+  		type           = "Basic"
+  		bandwidth_type = "Basic"
+  		payment_type   = "PayAsYouGo"
+  		billing_type   = "PayBy95"
+  		ratio          = 30
+	}
 
-resource "alicloud_ga_accelerator" "default" {
-  count = length(data.alicloud_ga_accelerators.default.ids) > 0 ? 0 : 1
-  duration         = 1
-  spec             = "1"
-  accelerator_name = var.name
-  auto_use_coupon  = true
-  description      = var.name
-}
-resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
-  	type                   = "Basic"
-  	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
-  	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-    auto_pay               = true
-    auto_use_coupon        = true
-}
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-	accelerator_id = local.instance_id
-	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
-}
+	resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
+  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	}
 `, name)
 }
 
-func TestUnitAlicloudGaAcceleratorSpareIpAttachment(t *testing.T) {
+func TestUnitAliCloudGaAcceleratorSpareIpAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_accelerator_spare_ip_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_accelerator_spare_ip_attachment"].Schema).Data(nil, nil)
