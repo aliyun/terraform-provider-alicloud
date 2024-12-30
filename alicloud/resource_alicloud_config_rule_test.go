@@ -346,6 +346,7 @@ func AliCloudConfigRuleBasicDependence0(name string) string {
 	}
 
 	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
 	}
