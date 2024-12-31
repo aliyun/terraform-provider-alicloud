@@ -82,7 +82,7 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 	}
 
 	for _, sslId := range ids {
-		log.Printf("[INFO] Delete ssl centrficate: %s ", sslId)
+		log.Printf("[INFO] Deleting ssl centrficate: %s ", sslId)
 		action = "DeleteUserCertificate"
 		request = map[string]interface{}{
 			"CertId": sslId,

@@ -323,6 +323,7 @@ var irregularProductEndpoint = map[string]string{
 	"market":           "market.aliyuncs.com",
 	"bssopenapi":       BssOpenAPIEndpointDomestic,
 	"esa":              "esa.cn-hangzhou.aliyuncs.com",
+	"cas":              "cas.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccount specially records those product codes that
@@ -344,7 +345,9 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
-var irregularProductEndpointForIntlRegion = map[string]string{}
+var irregularProductEndpointForIntlRegion = map[string]string{
+	"cas": "cas.ap-southeast-1.aliyuncs.com",
+}
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
 // regional or central endpoints.
@@ -355,7 +358,6 @@ var regularProductEndpoint = map[string]string{
 	"mse":                  "mse.%s.aliyuncs.com",
 	"vpc":                  "vpc.%s.aliyuncs.com",
 	"oss":                  "oss-%s.aliyuncs.com",
-	"cas":                  "cas.aliyuncs.com",
 	"cr":                   "cr.%s.aliyuncs.com",
 	"cms":                  "metrics.%s.aliyuncs.com",
 	"sls":                  "%s.log.aliyuncs.com",
@@ -466,7 +468,6 @@ var regularProductEndpointForIntlAccount = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpointForIntlRegion = map[string]string{
-	"cas":         "cas.ap-southeast-1.aliyuncs.com",
 	"ddoscoo":     "ddoscoo.ap-southeast-1.aliyuncs.com",
 	"eds_user":    "eds-user.ap-southeast-1.aliyuncs.com",
 	"dysmsapi":    "dysmsapi.ap-southeast-1.aliyuncs.com",

@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAliCloudSslCertificatesDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(10000, 999999)
 	resourceId := "data.alicloud_ssl_certificates_service_certificates.default"
 	name := fmt.Sprintf("tf-testacc%ssslcertificatesservicecertificate%d", defaultRegionToTest, rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAliCloudSslCertificatesConfig)
