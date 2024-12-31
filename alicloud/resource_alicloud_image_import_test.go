@@ -31,6 +31,7 @@ func TestAccAliCloudImageImport_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"image_name": name,
 					"disk_device_mapping": []map[string]interface{}{
 						{
 							"oss_bucket": "${alicloud_oss_bucket.default.id}",
@@ -40,17 +41,18 @@ func TestAccAliCloudImageImport_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"image_name":            name,
 						"disk_device_mapping.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_name": name,
+					"image_name": name + "-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_name": name,
+						"image_name": name + "-update",
 					}),
 				),
 			},
