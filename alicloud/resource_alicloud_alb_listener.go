@@ -155,10 +155,9 @@ func resourceAliCloudAlbListener() *schema.Resource {
 				},
 			},
 			"idle_timeout": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: IntBetween(1, 60),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"listener_description": {
 				Type:         schema.TypeString,
@@ -208,10 +207,9 @@ func resourceAliCloudAlbListener() *schema.Resource {
 				},
 			},
 			"request_timeout": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: IntBetween(1, 180),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"security_policy_id": {
 				Type:     schema.TypeString,
