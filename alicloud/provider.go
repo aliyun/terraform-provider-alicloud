@@ -1129,7 +1129,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_route_entry":                   resourceAliyunRouteEntry(),
 			"alicloud_route_table":                   resourceAliCloudVpcRouteTable(),
 			"alicloud_route_table_attachment":        resourceAliCloudVpcRouteTableAttachment(),
-			"alicloud_snat_entry":                    resourceAlicloudSnatEntry(),
+			"alicloud_snat_entry":                    resourceAliCloudNATGatewaySnatEntry(),
 			"alicloud_forward_entry":                 resourceAlicloudForwardEntry(),
 			"alicloud_eip":                           resourceAliCloudEipAddress(),
 			"alicloud_eip_association":               resourceAliCloudEipAssociation(),
