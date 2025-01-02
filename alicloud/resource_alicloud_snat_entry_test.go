@@ -9,39 +9,79 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCSnatEntry_basic(t *testing.T) {
+// Test NATGateway SnatEntry. >>> Resource test cases, automatically generated.
+// Case 全生命周期_SnatEntry source_cidr 8016
+func TestAccAliCloudNATGatewaySnatEntry_basic8016(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSnatEntry")
+		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNATGatewaySnatEntry")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSnatEntryBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snat_ip":           "${alicloud_eip_address.default.ip_address}",
-					"snat_table_id":     "${alicloud_nat_gateway.default.snat_table_ids}",
-					"source_vswitch_id": "${alicloud_vswitch.vswitch.id}",
-					"depends_on":        []string{"alicloud_eip_association.default"},
+					"snat_ip":       "${alicloud_vpc_nat_ip.default.nat_ip}" + "," + "${alicloud_vpc_nat_ip.update.nat_ip}",
+					"snat_table_id": "${alicloud_nat_gateway.default.snat_table_ids}",
+					"source_cidr":   "${cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip":           CHECKSET,
-						"snat_table_id":     CHECKSET,
-						"source_vswitch_id": CHECKSET,
+						"snat_ip":       CHECKSET,
+						"snat_table_id": CHECKSET,
+						"source_cidr":   CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"eip_affinity": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"eip_affinity": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"eip_affinity": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"eip_affinity": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_entry_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_entry_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_ip": "${alicloud_vpc_nat_ip.default.nat_ip}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_ip": CHECKSET,
 					}),
 				),
 			},
@@ -50,93 +90,37 @@ func TestAccAlicloudVPCSnatEntry_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"snat_entry_name": name + "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"snat_entry_name": name + "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"snat_entry_name": "${var.name}",
-					"snat_ip":         "${alicloud_eip_address.default.ip_address}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"snat_entry_name": name,
-						"snat_ip":         CHECKSET,
-					}),
-				),
-			},
 		},
 	})
 }
 
-func TestAccAlicloudVPCSnatEntry_multi(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_snat_entry.default.1"
-	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSnatEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssnatentry%d", defaultRegionToTest, rand)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: AlicloudSnatEntryMultiDependence0(name),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"snat_ip":           CHECKSET,
-						"snat_table_id":     CHECKSET,
-						"source_vswitch_id": CHECKSET,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudVPCSnatEntry_basic1(t *testing.T) {
+func TestAccAliCloudNATGatewaySnatEntry_basic8016_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSnatEntry")
+		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNATGatewaySnatEntry")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSnatEntryBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snat_ip":         "${alicloud_eip_address.default.ip_address}",
+					"snat_ip":         "${alicloud_vpc_nat_ip.default.nat_ip}" + "," + "${alicloud_vpc_nat_ip.update.nat_ip}",
 					"snat_table_id":   "${alicloud_nat_gateway.default.snat_table_ids}",
 					"source_cidr":     "${cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)}",
 					"snat_entry_name": name,
+					"eip_affinity":    "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -144,6 +128,7 @@ func TestAccAlicloudVPCSnatEntry_basic1(t *testing.T) {
 						"snat_table_id":   CHECKSET,
 						"source_cidr":     CHECKSET,
 						"snat_entry_name": name,
+						"eip_affinity":    "1",
 					}),
 				),
 			},
@@ -156,101 +141,184 @@ func TestAccAlicloudVPCSnatEntry_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudSnatEntryMap0 = map[string]string{}
+// Case 全生命周期_SnatEntry source_vswitch_id 8018
+func TestAccAliCloudNATGatewaySnatEntry_basic8018(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_snat_entry.default"
+	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNATGatewaySnatEntry")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_ip":           "${alicloud_vpc_nat_ip.default.nat_ip}" + "," + "${alicloud_vpc_nat_ip.update.nat_ip}",
+					"snat_table_id":     "${alicloud_nat_gateway.default.snat_table_ids}",
+					"source_vswitch_id": "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_ip":           CHECKSET,
+						"snat_table_id":     CHECKSET,
+						"source_vswitch_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"eip_affinity": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"eip_affinity": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"eip_affinity": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"eip_affinity": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_entry_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_entry_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_ip": "${alicloud_vpc_nat_ip.default.nat_ip}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_ip": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 
-func AlicloudSnatEntryBasicDependence0(name string) string {
+func TestAccAliCloudNATGatewaySnatEntry_basic8018_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_snat_entry.default"
+	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNATGatewaySnatEntry")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snat_ip":           "${alicloud_vpc_nat_ip.default.nat_ip}" + "," + "${alicloud_vpc_nat_ip.update.nat_ip}",
+					"snat_table_id":     "${alicloud_nat_gateway.default.snat_table_ids}",
+					"source_vswitch_id": "${alicloud_vswitch.default.id}",
+					"snat_entry_name":   name,
+					"eip_affinity":      "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snat_ip":           CHECKSET,
+						"snat_table_id":     CHECKSET,
+						"source_vswitch_id": CHECKSET,
+						"snat_entry_name":   name,
+						"eip_affinity":      "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudNATGatewaySnatEntryMap8016 = map[string]string{
+	"snat_entry_id": CHECKSET,
+	"status":        CHECKSET,
+}
+
+func AliCloudNATGatewaySnatEntryBasicDependence8016(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+	data "alicloud_zones" "default" {
+	}
 
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
-  name       = var.name
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/12"
+	}
 
-resource "alicloud_vswitch" "vswitch" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = alicloud_vswitch.vswitch.id
-}
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		vswitch_name = var.name
+	}
 
-resource "alicloud_nat_gateway" "default" {
-  vpc_id        = alicloud_vpc.default.id
-  network_type  = "internet"
-  nat_gateway_name = "${var.name}"
-  vswitch_id    = local.vswitch_id
-  nat_type      = "Enhanced"
-  internet_charge_type = "PayByLcu"
-}
+	resource "alicloud_nat_gateway" "default" {
+  		vpc_id               = alicloud_vpc.default.id
+  		network_type         = "intranet"
+  		nat_gateway_name     = var.name
+  		vswitch_id           = alicloud_vswitch.default.id
+  		nat_type             = "Enhanced"
+  		internet_charge_type = "PayByLcu"
+	}
 
-resource "alicloud_eip_address" "default" {
-  address_name = var.name
-}
+	resource "alicloud_vpc_nat_ip" "default" {
+  		nat_ip         = "172.16.0.66"
+  		nat_ip_cidr    = alicloud_vswitch.default.cidr_block
+  		nat_gateway_id = alicloud_nat_gateway.default.id
+	}
 
-resource "alicloud_eip_association" "default" {
-  allocation_id = alicloud_eip_address.default.id
-  instance_id   = alicloud_nat_gateway.default.id
-}
+	resource "alicloud_vpc_nat_ip" "update" {
+  		nat_ip         = "172.16.0.88"
+  		nat_ip_cidr    = alicloud_vswitch.default.cidr_block
+  		nat_gateway_id = alicloud_nat_gateway.default.id
+	}
 `, name)
 }
 
-func AlicloudSnatEntryMultiDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_enhanced_nat_available_zones" "default" {}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-resource "alicloud_vpc" "default" {
-	vpc_name = var.name
-	cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-	count = 3
-	vpc_id     = alicloud_vpc.default.id
-	zone_id = data.alicloud_zones.default.zones.0.id
-	cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, count.index)
-	vswitch_name = var.name
-}
-
-
-resource "alicloud_nat_gateway" "default" {
-  vpc_id        = alicloud_vpc.default.id
-  network_type  = "internet"
-  nat_gateway_name = "${var.name}"
-  vswitch_id    = alicloud_vswitch.default[0].id
-  nat_type      = "Enhanced"
-  internet_charge_type = "PayByLcu"
-}
-
-resource "alicloud_eip_address" "default" {
-  address_name = var.name
-}
-
-resource "alicloud_eip_association" "default" {
-  allocation_id = alicloud_eip_address.default.id
-  instance_id   = alicloud_nat_gateway.default.id
-}
-
-resource "alicloud_snat_entry" "default" {
-  count             = 3
-  snat_ip           = alicloud_eip_address.default.ip_address
-  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
-  source_vswitch_id = alicloud_vswitch.default[count.index].id
-  depends_on        = [alicloud_eip_association.default]
-}
-`, name)
-}
+// Test NATGateway SnatEntry. <<< Resource test cases, automatically generated.

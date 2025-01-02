@@ -2,14 +2,17 @@
 subcategory: "NAT Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_snat_entry"
-sidebar_current: "docs-alicloud-resource-vpc"
 description: |-
   Provides a Alicloud snat resource.
 ---
 
 # alicloud_snat_entry
 
-Provides a snat resource.
+Provides a NAT Gateway Snat Entry resource.
+
+
+
+For information about NAT Gateway Snat Entry and how to use it, see [What is Snat Entry](https://www.alibabacloud.com/help/en/nat-gateway/developer-reference/api-vpc-2016-04-28-createsnatentry-natgws).
 
 -> **NOTE:** Available since v1.119.0.
 
@@ -25,7 +28,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf_example"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -40,7 +43,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
@@ -71,35 +74,42 @@ resource "alicloud_snat_entry" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `snat_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
-* `source_vswitch_id` - (Optional, ForceNew) The vswitch ID.
-* `source_cidr` - (Optional, ForceNew, Available since v1.71.1) The private network segment of Ecs. This parameter and the `source_vswitch_id` parameter are mutually exclusive and cannot appear at the same time.
-* `snat_entry_name` - (Optional, Available since v1.71.2) The name of snat entry.
-* `snat_ip` - (Required, ForceNew) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
+* `eip_affinity` - (Optional, Int, Available since v1.241.0) Specifies whether to enable EIP affinity. Default value: `0`. Valid values:
+  - `0`: Disable.
+  - `1`: Enable.
+* `snat_entry_name` - (Optional, Available since v1.71.2) The name of the SNAT entry. The name must be `2` to `128` characters in length. It must start with a letter but cannot start with `http://` or `https://`.
+* `snat_ip` - (Required) The IP of a SNAT entry. Separate multiple EIP or NAT IP addresses with commas (,). **NOTE:** From version 1.241.0, `snat_ip` can be modified.
+* `snat_table_id` - (Required, ForceNew) The ID of the SNAT table.
+* `source_cidr` - (Optional, ForceNew, Available since v1.71.1) The source CIDR block specified in the SNAT entry.
+* `source_vswitch_id` - (Optional, ForceNew) The ID of the vSwitch.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The ID of the snat entry. The value formats as `<snat_table_id>:<snat_entry_id>`
+* `id` - The resource ID in terraform of Snat Entry. It formats as `<snat_table_id>:<snat_entry_id>`.
+-> **NOTE:** Before provider version 1.37.0, it formats as `<snat_entry_id>`
 * `snat_entry_id` - The id of the snat entry on the server.
-* `status` - (Available since v1.119.1) The status of snat entry.
+* `status` - (Available since v1.119.1) The ID of the SNAT entry.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 2 mins) Used when create the snat.
-* `update` - (Defaults to 2 mins) Used when update the snat.
-* `delete` - (Defaults to 2 mins) Used when delete the snat.
+* `create` - (Defaults to 5 mins) Used when create the Snat Entry.
+* `delete` - (Defaults to 5 mins) Used when delete the Snat Entry.
+* `update` - (Defaults to 5 mins) Used when update the Snat Entry.
 
 ## Import
 
-Snat Entry can be imported using the id, e.g.
+NAT Gateway Snat Entry can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_snat_entry.foo stb-1aece3:snat-232ce2
+$ terraform import alicloud_snat_entry.example <snat_table_id>:<snat_entry_id>
+```
+
+**NOTE:** Before provider version 1.37.0, NAT Gateway Snat Entry can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_snat_entry.example <snat_entry_id>
 ```
