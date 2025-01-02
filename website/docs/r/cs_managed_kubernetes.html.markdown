@@ -137,12 +137,12 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   cluster_spec = "ack.pro.small"
   # version can not be defined in variables.tf.
   # version            = "1.26.3-aliyun.1"
-  worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  pod_vswitch_ids    = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
-  new_nat_gateway    = true
-  node_cidr_mask     = var.node_cidr_mask
-  proxy_mode         = var.proxy_mode
-  service_cidr       = var.service_cidr
+  vswitch_ids     = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  pod_vswitch_ids = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
+  new_nat_gateway = true
+  node_cidr_mask  = var.node_cidr_mask
+  proxy_mode      = var.proxy_mode
+  service_cidr    = var.service_cidr
 
   addons {
     name = "terway-eniip"
@@ -186,7 +186,13 @@ The following arguments are supported:
 *Global params*
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
-* `worker_vswitch_ids` - (**Required**, ForceNew) The vswitches used by control plane.  See [`worker_vswitch_ids`](#worker_vswitch_ids) below.
+* `worker_vswitch_ids` - (Optional, Deprecated since v1.241.0) The vswitches used by control plane. Modification after creation will not take effect. Please use `vswitch_ids` to managed control plane vswtiches, which supports modifying control plane vswtiches.
+* `vswitch_ids` - (Optional, Available since v1.241.0) The vSwitches of the control plane.
+-> **NOTE:** Please take of note before updating the `vswitch_ids`:
+  * This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane. 
+  * The control plane restarts during the change process. Exercise caution when you perform this operation. 
+  * Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server. 
+  * If the new vSwitches of the control plane are configured with an ACL, ensure that the ACL allows communication between the new vSwitches and CIDR blocks such as those of the cluster nodes and the container network.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `timezone` - (Optional, ForceNew, Available since v1.103.2) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
@@ -209,7 +215,7 @@ The following arguments are supported:
 * `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The disk encryption key.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
-* `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 
+* `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
 * `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
 * `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
@@ -220,7 +226,7 @@ The following arguments are supported:
 *Network params*
 
 * `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
-* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
+* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice. Only works for **Create** Operation. 
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
@@ -238,7 +244,6 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 *Removed params*
 
 * `worker_instance_type` - (Removed from version 1.16.0) The instance type of worker node.
-* `vswitch_ids` - (Removed) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
 * `force_update` - (Removed) Whether to force the update of kubernetes cluster arguments. Default to false.
 * `log_config` - (Removed) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
 * `cluster_network_type` - (Removed) The network that cluster uses, use `flannel` or `terway`.
@@ -581,16 +586,6 @@ The following example is the definition of tags block. The type of this field is
     "key2" = "value2"
     "name" = "tf"
   }
-```
-
-### worker_vswitch_ids
-
-The following example is the definition of `worker_vswitch_ids` block.
-
-```
-  # the ID can be the same, At least one.
-
-  worker_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
 ```
 
 ### `delete_options`

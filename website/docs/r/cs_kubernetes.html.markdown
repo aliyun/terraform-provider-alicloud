@@ -218,7 +218,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). Only works for **Create** Operation. 
 * `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables | ipvs. default: ipvs.
-* `image_id` - (Optional, ForceNew) Custom Image support. Must based on CentOS7 or AliyunLinux2.
+* `image_id` - (Optional, ForceNew) Custom Image support. Must be based on AliyunLinux or AliyunLinux3.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
 * `custom_san` - (Optional, ForceNew, Available since v1.103.2) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 * `user_ca` - (Optional) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
@@ -235,7 +235,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `os_type` - (Optional, ForceNew, Available since v1.103.2) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
-* `platform` - (Optional, ForceNew, Available since v1.103.2) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
+* `platform` - (Optional, ForceNew, Available since v1.103.2) The architecture of the nodes that run pods, its valid value `AliyunLinux`, `AliyunLinux3`. Default to `AliyunLinux3`.
 * `node_name_mode` - (Optional, ForceNew, Available since v1.88.0) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 
