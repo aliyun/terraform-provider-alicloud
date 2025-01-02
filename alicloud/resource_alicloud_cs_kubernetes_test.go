@@ -219,7 +219,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"version":                        "1.26.15-aliyun.1",
+					"version":                        "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.2.version}",
 					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"master_disk_category":           "cloud_essd",
@@ -237,8 +237,8 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"deletion_protection":            "false",
 					"timezone":                       "Asia/Shanghai",
 					"os_type":                        "Linux",
-					"platform":                       "CentOS",
-					"image_id":                       "centos_7_9_x64_20G_alibase_20230718.vhd",
+					"platform":                       "AliyunLinux3",
+					"image_id":                       "aliyun_3_x64_20G_alibase_20240819.vhd",
 					"runtime":                        map[string]interface{}{"name": "containerd", "version": "1.6.20"},
 					"node_name_mode":                 "customized,aliyun.com-,5,-test",
 					"cluster_domain":                 "cluster.local",
@@ -256,7 +256,6 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                          name,
-						"version":                       "1.26.15-aliyun.1",
 						"master_disk_category":          "cloud_essd",
 						"master_disk_performance_level": "PL0",
 						"master_disk_size":              "80",
@@ -270,7 +269,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 						"deletion_protection":           "false",
 						"timezone":                      "Asia/Shanghai",
 						"os_type":                       "Linux",
-						"platform":                      "CentOS",
+						"platform":                      "AliyunLinux3",
 						"cluster_domain":                "cluster.local",
 						"custom_san":                    "www.terraform.io",
 						"rds_instances.#":               "1",
@@ -291,7 +290,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "rds_instances",
 					"cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password",
 					"retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime",
-					"api_audiences", "service_account_issuer", "load_balancer_spec",
+					"api_audiences", "service_account_issuer", "load_balancer_spec", "platform",
 				},
 			},
 			{
@@ -360,12 +359,13 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				),
 			},
 			{
+				// upgrade
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.28.9-aliyun.1",
+					"version": "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.1.version}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.28.9-aliyun.1",
+						"version": CHECKSET,
 					}),
 				),
 			},
@@ -436,7 +436,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name_prefix":                  "tf-testAccKubernetes_prepaid",
-					"version":                      "1.26.15-aliyun.1",
 					"master_vswitch_ids":           []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"master_disk_category":         "cloud_ssd",
@@ -455,7 +454,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 					"deletion_protection":          "false",
 					"timezone":                     "Asia/Shanghai",
 					"os_type":                      "Linux",
-					"platform":                     "CentOS",
+					"platform":                     "AliyunLinux3",
 					"cluster_domain":               "cluster.local",
 					"custom_san":                   "www.terraform.io",
 					"proxy_mode":                   "ipvs",
@@ -483,7 +482,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 						"deletion_protection":          "false",
 						"timezone":                     "Asia/Shanghai",
 						"os_type":                      "Linux",
-						"platform":                     "CentOS",
+						"platform":                     "AliyunLinux3",
 						"cluster_domain":               "cluster.local",
 						"custom_san":                   "www.terraform.io",
 						"proxy_mode":                   "ipvs",
@@ -500,7 +499,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "runtime",
 					"rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context",
 					"kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons",
-					"load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled",
+					"load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform",
 				},
 			},
 		},
@@ -543,6 +542,11 @@ data "alicloud_instance_types" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
+
+data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
+  cluster_type       = "Kubernetes"
+}
+
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"

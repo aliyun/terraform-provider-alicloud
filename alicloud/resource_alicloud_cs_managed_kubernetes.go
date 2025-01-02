@@ -53,16 +53,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:  StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
-			// worker configurations，TODO: name issue
 			"worker_vswitch_ids": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
+				Type: schema.TypeList,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems: 1,
+				Optional:   true,
+				Deprecated: "Field 'worker_vswitch_ids' has been deprecated from provider version 1.241.0. Please use 'vswitch_ids' to managed control plane vswtiches",
 			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
@@ -201,6 +199,18 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Removed:  "Field 'exclude_autoscaler_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
 			},
 			// global configurations
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+				},
+				MinItems:     1,
+				MaxItems:     5,
+				ExactlyOneOf: []string{"worker_vswitch_ids", "vswitch_ids"},
+			},
 			"pod_vswitch_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -332,8 +342,8 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
-				Default:      "slb.s1.small",
-				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The load balancer has been changed to PayByCLCU so that the spec is no need anymore.",
+				Computed:     true,
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU",
 			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
@@ -563,19 +573,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				Removed:  "Field 'availability_zone' has been removed from provider version 1.212.0.",
-			},
-			// remove parameters below
-			// mix vswitch_ids between master and worker is not a good guidance to create cluster
-			"vswitch_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
-				},
-				MinItems: 3,
-				MaxItems: 5,
-				Removed:  "Field 'vswitch_ids' has been deprecated from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
 			},
 			// force update is a high risk operation
 			"force_update": {
@@ -1025,6 +1022,11 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
+	// compat for default value
+	if spec := d.Get("load_balancer_spec").(string); spec != "" {
+		d.Set("load_balancer_spec", spec)
+	}
+
 	if object.Name != nil {
 		d.Set("name", object.Name)
 	}
@@ -1033,8 +1035,13 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("vpc_id", object.VpcId)
 	}
 
-	if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
-		d.Set("worker_vswitch_ids", strings.Split(Interface2String(tea.StringValue(v)), ","))
+	if object.VswitchIds != nil {
+		d.Set("vswitch_ids", tea.StringSliceValue(object.VswitchIds))
+	}
+
+	// compat for old value
+	if v := d.Get("worker_vswitch_ids"); v != nil {
+		d.Set("worker_vswitch_ids", v)
 	}
 
 	if object.SecurityGroupId != nil {
@@ -1201,7 +1208,7 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 	d.Partial(true)
 	invoker := NewInvoker()
 	// modifyCluster
-	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "vswitch_ids", "maintenance_window", "operation_policy", "enable_rrsa") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}

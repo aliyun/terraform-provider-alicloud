@@ -1032,13 +1032,19 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 	}
 
 	if d.HasChange("custom_san") {
-		custom_san := d.Get("custom_san").(string)
+		customSan := d.Get("custom_san").(string)
 		request.SetApiServerCustomCertSans(
 			&roacs.ModifyClusterRequestApiServerCustomCertSans{
-				SubjectAlternativeNames: tea.StringSlice(strings.Split(custom_san, ",")),
+				SubjectAlternativeNames: tea.StringSlice(strings.Split(customSan, ",")),
 				Action:                  tea.String("overwrite"),
 			},
 		)
+		updated = true
+	}
+
+	if d.HasChange("vswitch_ids") {
+		vSwitchIds := expandStringList(d.Get("vswitch_ids").([]interface{}))
+		request.SetVswitchIds(tea.StringSlice(vSwitchIds))
 		updated = true
 	}
 
@@ -1099,9 +1105,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if d.Get("os_type") == "" {
 		d.Set("os_type", "Linux")
 	}
-	if d.Get("platform") == "" {
-		d.Set("platform", "CentOS")
-	}
+
 	if d.Get("cluster_domain") == "" {
 		d.Set("cluster_domain", "cluster.local")
 	}

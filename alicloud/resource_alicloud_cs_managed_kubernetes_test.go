@@ -56,7 +56,6 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"pod_cidr":                "10.93.0.0/16",
 					"service_cidr":            "172.21.0.0/16",
 					"slb_internet_enabled":    "true",
-					"load_balancer_spec":      "slb.s2.small",
 					"cluster_spec":            "ack.pro.small",
 					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"security_group_id":       "${alicloud_security_group.default.id}",
@@ -125,7 +124,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences",
-					"service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert",
+					"service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert", "worker_vswitch_ids",
 				},
 			},
 			{
@@ -251,7 +250,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 					"cluster_spec":        "ack.standard",
 					"new_nat_gateway":     "true",
 					"proxy_mode":          "ipvs",
-					"worker_vswitch_ids":  []string{"${local.vswitch_id}"},
+					"vswitch_ids":         []string{"${local.vswitch_id}"},
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
@@ -368,7 +367,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					"node_cidr_mask":               "26",
 					"service_cidr":                 "172.23.0.0/16",
 					"proxy_mode":                   "ipvs",
-					"worker_vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":                  []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
 					"pod_vswitch_ids":              []string{"${local.vswitch_id}"},
 					"control_plane_log_ttl":        "30",
 					"control_plane_log_components": []string{"apiserver", "kcm", "scheduler"},
@@ -385,6 +384,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"nat_gateway_id":                 CHECKSET,
 						"service_cidr":                   "172.23.0.0/16",
 						"proxy_mode":                     "ipvs",
+						"vswitch_ids.#":                  "2",
 						"control_plane_log_ttl":          "30",
 						"control_plane_log_components.0": "apiserver",
 						"control_plane_log_components.1": "kcm",
@@ -392,6 +392,15 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"control_plane_log_project":      CHECKSET,
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_ids": []string{"${local.vswitch_id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_ids.#": "1",
+					})),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -463,6 +472,11 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_zones.default.zones.0.id
 }
 
+data "alicloud_vswitches" "default_1" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = length(data.alicloud_zones.default.zones) > 0 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
+}
+
 resource "alicloud_vswitch" "vswitch" {
   count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id       = data.alicloud_vpcs.default.ids.0
@@ -474,10 +488,16 @@ resource "alicloud_vswitch" "vswitch" {
 resource "alicloud_log_project" "log" {
   name        = var.name
   description = "created by terraform for managedkubernetes cluster"
+  lifecycle {
+    ignore_changes = [
+      policy
+    ]
+  }
 }
 
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 `, name)
 }
