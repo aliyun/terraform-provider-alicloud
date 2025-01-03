@@ -386,9 +386,12 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the SLB client if necessary
 	if client.slbconn == nil {
-		endpoint := client.config.SlbEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, SLBCode)
+		productCode := "slb"
+		endpoint := ""
+		if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+			if err := client.loadEndpoint(productCode); err != nil {
+				return nil, err
+			}
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(SLBCode), endpoint)
@@ -407,6 +410,11 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		slbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.slbconn = slbconn
+	} else {
+		err := client.slbconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
+		}
 	}
 
 	return do(client.slbconn)
