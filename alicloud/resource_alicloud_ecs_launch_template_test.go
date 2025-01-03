@@ -193,12 +193,14 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":          name,
-						"description":   name,
-						"host_name":     name,
-						"instance_name": name,
-						"key_pair_name": name,
-						"ram_role_name": name,
+						"name":                   name,
+						"description":            name,
+						"host_name":              name,
+						"instance_name":          name,
+						"key_pair_name":          name,
+						"ram_role_name":          name,
+						"default_version_number": "1",
+						"latest_version_number":  "1",
 					}),
 				),
 			},
@@ -223,7 +225,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"system_disk.#": "1",
+						"system_disk.#":         "1",
+						"latest_version_number": "2",
 					}),
 				),
 			},
@@ -237,7 +240,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"system_disk.#": "1",
+						"system_disk.#":         "1",
+						"latest_version_number": "3",
 					}),
 				),
 			},
@@ -247,7 +251,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"io_optimized": "none",
+						"io_optimized":          "none",
+						"latest_version_number": "4",
 					}),
 				),
 			},
@@ -257,7 +262,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name + ":_.-,][[" + name + "]" + "_change",
+						"instance_name":         name + ":_.-,][[" + name + "]" + "_change",
+						"latest_version_number": "5",
 					}),
 				),
 			},
@@ -267,7 +273,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"internet_charge_type": "PayByTraffic",
+						"internet_charge_type":  "PayByTraffic",
+						"latest_version_number": "6",
 					}),
 				),
 			},
@@ -296,7 +303,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_disks.#": "2",
+						"data_disks.#":          "2",
+						"latest_version_number": "7",
 					}),
 				),
 			},
@@ -306,7 +314,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_pair_name": name + "_change",
+						"key_pair_name":         name + "_change",
+						"latest_version_number": "8",
 					}),
 				),
 			},
@@ -316,7 +325,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_ids.#": "1",
+						"security_group_ids.#":  "1",
+						"latest_version_number": "9",
 					}),
 				),
 			},
@@ -326,7 +336,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": "ecs.g6.xlarge",
+						"instance_type":         "ecs.g6.xlarge",
+						"latest_version_number": "10",
 					}),
 				),
 			},
@@ -336,7 +347,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy": "NoSpot",
+						"spot_strategy":         "NoSpot",
+						"latest_version_number": "11",
 					}),
 				),
 			},
@@ -346,7 +358,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_data": CHECKSET,
+						"user_data":             CHECKSET,
+						"latest_version_number": "12",
 					}),
 				),
 			},
@@ -356,7 +369,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id": CHECKSET,
+						"vswitch_id":            CHECKSET,
+						"latest_version_number": "13",
 					}),
 				),
 			},
@@ -366,7 +380,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_type": "classic",
+						"network_type":          "classic",
+						"latest_version_number": "14",
 					}),
 				),
 			},
@@ -376,7 +391,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_price_limit": "1",
+						"spot_price_limit":      "1",
+						"latest_version_number": "15",
 					}),
 				),
 			},
@@ -386,7 +402,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ram_role_name": name + "_change",
+						"ram_role_name":         name + "_change",
+						"latest_version_number": "16",
 					}),
 				),
 			},
@@ -396,7 +413,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"host_name": name + "_change",
+						"host_name":             name + "_change",
+						"latest_version_number": "17",
 					}),
 				),
 			},
@@ -406,7 +424,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id":     CHECKSET,
+						"latest_version_number": "18",
 					}),
 				),
 			},
@@ -416,7 +435,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name + "_change",
+						"description":           name + "_change",
+						"latest_version_number": "19",
 					}),
 				),
 			},
@@ -426,7 +446,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id": "cn-hangzhou-f",
+						"zone_id":               "cn-hangzhou-f",
+						"latest_version_number": "20",
 					}),
 				),
 			},
@@ -437,6 +458,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_enhancement_strategy": "Deactive",
+						"latest_version_number":         "21",
 					}),
 				),
 			},
@@ -447,6 +469,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"internet_max_bandwidth_out": "5",
+						"latest_version_number":      "22",
 					}),
 				),
 			},
@@ -457,6 +480,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"internet_max_bandwidth_in": "6",
+						"latest_version_number":     "23",
 					}),
 				),
 			},
@@ -469,9 +493,10 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":    "2",
-						"tags.tag1": "tag1",
-						"tags.tag2": "tag2",
+						"tags.%":                "2",
+						"tags.tag1":             "tag1",
+						"tags.tag2":             "tag2",
+						"latest_version_number": "24",
 					}),
 				),
 			},
@@ -489,7 +514,29 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_interfaces.#": "1",
+						"network_interfaces.#":  "1",
+						"latest_version_number": "25",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_version_number": "25",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_version_number": "25",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_version_number":        REMOVEKEY,
+					"update_default_version_number": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_version_number": "25",
 					}),
 				),
 			},
@@ -591,6 +638,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 						"system_disk.#":                 "1",
 						"network_interfaces.#":          "1",
 						"data_disks.#":                  "2",
+						"latest_version_number":         "26",
+						"default_version_number":        "26",
 					}),
 				),
 			},
@@ -706,20 +755,22 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"launch_template_name": name,
-						"description":          name,
-						"host_name":            name,
-						"instance_name":        name + ":_.-,][[" + name + "]",
-						"key_pair_name":        name,
-						"ram_role_name":        name,
-						"auto_release_time":    CHECKSET,
-						"deployment_set_id":    CHECKSET,
-						"enable_vm_os_config":  CHECKSET,
-						"image_owner_alias":    CHECKSET,
-						"period":               "1",
-						"private_ip_address":   CHECKSET,
-						"version_description":  name,
-						"data_disks.#":         "4",
+						"launch_template_name":   name,
+						"description":            name,
+						"host_name":              name,
+						"instance_name":          name + ":_.-,][[" + name + "]",
+						"key_pair_name":          name,
+						"ram_role_name":          name,
+						"auto_release_time":      CHECKSET,
+						"deployment_set_id":      CHECKSET,
+						"enable_vm_os_config":    CHECKSET,
+						"image_owner_alias":      CHECKSET,
+						"period":                 "1",
+						"private_ip_address":     CHECKSET,
+						"version_description":    name,
+						"data_disks.#":           "4",
+						"latest_version_number":  "1",
+						"default_version_number": "1",
 					}),
 				),
 			},
@@ -763,7 +814,9 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_disks.#": "4",
+						"data_disks.#":           "4",
+						"latest_version_number":  "2",
+						"default_version_number": "1",
 					}),
 				),
 			},
@@ -895,20 +948,22 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"launch_template_name": name,
-						"description":          name,
-						"host_name":            name,
-						"instance_name":        name,
-						"key_pair_name":        name,
-						"ram_role_name":        name,
-						"auto_release_time":    CHECKSET,
-						"deployment_set_id":    CHECKSET,
-						"enable_vm_os_config":  CHECKSET,
-						"image_owner_alias":    CHECKSET,
-						"period":               "1",
-						"private_ip_address":   CHECKSET,
-						"version_description":  name,
-						"data_disks.#":         "4",
+						"launch_template_name":   name,
+						"description":            name,
+						"host_name":              name,
+						"instance_name":          name,
+						"key_pair_name":          name,
+						"ram_role_name":          name,
+						"auto_release_time":      CHECKSET,
+						"deployment_set_id":      CHECKSET,
+						"enable_vm_os_config":    CHECKSET,
+						"image_owner_alias":      CHECKSET,
+						"period":                 "1",
+						"private_ip_address":     CHECKSET,
+						"version_description":    name,
+						"data_disks.#":           "4",
+						"latest_version_number":  "1",
+						"default_version_number": "1",
 					}),
 				),
 			},
@@ -1004,13 +1059,15 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 name + "4",
-						"description":          name,
-						"host_name":            name,
-						"instance_name":        name,
-						"key_pair_name":        name,
-						"ram_role_name":        name,
-						"security_group_ids.#": "2",
+						"name":                   name + "4",
+						"description":            name,
+						"host_name":              name,
+						"instance_name":          name,
+						"key_pair_name":          name,
+						"ram_role_name":          name,
+						"security_group_ids.#":   "2",
+						"latest_version_number":  "1",
+						"default_version_number": "1",
 					}),
 				),
 			},

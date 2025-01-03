@@ -330,6 +330,22 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"default_version_number": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"update_default_version_number"},
+				ValidateFunc:  validation.IntAtLeast(1),
+			},
+			"update_default_version_number": {
+				Type:          schema.TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"default_version_number"},
+			},
+			"latest_version_number": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"user_data": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -741,16 +757,12 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	}
 	d.Set("launch_template_name", object["LaunchTemplateName"])
 	d.Set("name", object["LaunchTemplateName"])
+	d.Set("default_version_number", object["DefaultVersionNumber"])
+	d.Set("latest_version_number", object["LatestVersionNumber"])
 
-	describeLaunchTemplateVersions, err := ecsService.DescribeLaunchTemplateVersions(d.Id())
+	describeLaunchTemplateVersionsObject, err := ecsService.DescribeLaunchTemplateVersions(d.Id(), object["LatestVersionNumber"])
 	if err != nil {
 		return WrapError(err)
-	}
-	describeLaunchTemplateVersionsObject := make(map[string]interface{})
-	for _, version := range describeLaunchTemplateVersions {
-		if version.(map[string]interface{})["VersionNumber"] == object["LatestVersionNumber"] {
-			describeLaunchTemplateVersionsObject = version.(map[string]interface{})
-		}
 	}
 	d.Set("auto_release_time", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoReleaseTime"])
 
@@ -895,6 +907,7 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		}
 	}
 
+	latestVersion := d.Get("latest_version_number")
 	update := false
 	request := map[string]interface{}{
 		"LaunchTemplateId": d.Id(),
@@ -1252,49 +1265,38 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_release_time")
-		d.SetPartial("data_disks")
-		d.SetPartial("deployment_set_id")
-		d.SetPartial("description")
-		d.SetPartial("enable_vm_os_config")
-		d.SetPartial("host_name")
-		d.SetPartial("image_id")
-		d.SetPartial("image_owner_alias")
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("instance_name")
-		d.SetPartial("instance_type")
-		d.SetPartial("internet_charge_type")
-		d.SetPartial("internet_max_bandwidth_in")
-		d.SetPartial("internet_max_bandwidth_out")
-		d.SetPartial("io_optimized")
-		d.SetPartial("key_pair_name")
-		d.SetPartial("launch_template_name")
-		d.SetPartial("name")
-		d.SetPartial("network_interfaces")
-		d.SetPartial("network_type")
-		d.SetPartial("password_inherit")
-		d.SetPartial("period")
-		d.SetPartial("private_ip_address")
-		d.SetPartial("ram_role_name")
-		d.SetPartial("resource_group_id")
-		d.SetPartial("security_enhancement_strategy")
-		d.SetPartial("security_group_id")
-		d.SetPartial("security_group_ids")
-		d.SetPartial("spot_duration")
-		d.SetPartial("spot_price_limit")
-		d.SetPartial("spot_strategy")
-		d.SetPartial("system_disk")
-		d.SetPartial("system_disk_category")
-		d.SetPartial("system_disk_description")
-		d.SetPartial("system_disk_name")
-		d.SetPartial("system_disk_size")
-		d.SetPartial("tags")
-		d.SetPartial("user_data")
-		d.SetPartial("userdata")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("version_description")
-		d.SetPartial("vpc_id")
-		d.SetPartial("zone_id")
+		latestVersion = response["LaunchTemplateVersionNumber"]
+	}
+
+	if d.Get("update_default_version_number").(bool) || d.HasChange("default_version_number") {
+		action := "ModifyLaunchTemplateDefaultVersion"
+		request = map[string]interface{}{
+			"LaunchTemplateId": d.Id(),
+			"RegionId":         client.RegionId,
+		}
+
+		if d.Get("update_default_version_number").(bool) {
+			request["DefaultVersionNumber"] = latestVersion
+		} else if d.HasChange("default_version_number") {
+			request["DefaultVersionNumber"] = d.Get("default_version_number")
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 	d.Partial(false)
 	return resourceAliCloudEcsLaunchTemplateRead(d, meta)
