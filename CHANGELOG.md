@@ -1,4 +1,26 @@
 ## 1.241.0 (Unreleased)
+
+- **New Data Source:** `alicloud_vpc_ipam_ipams` [GH-8064]
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pools` [GH-8064]
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_allocations` [GH-8064]
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_cidrs` [GH-8068]
+- **New Data Source:** `alicloud_vpc_ipam_ipam_scopes` [GH-8068]
+
+ENHANCEMENTS:
+
+- client: improves getting endpoints method for cas serivce. [GH-8061]
+- resource/alicloud_snat_entry: Refactored the resource alicloud_snat_entry; Added the field eip_affinity; Removed the ForceNew for field snat_ip. [GH-8062]
+- resource/alicloud_alb_listener: Removed the idle_timeout, request_timeout enums limitation. [GH-8063]
+- resource/alicloud_ecs_launch_template: Supports to setting default version number and output latest version number; data-source/alicloud_ecs_launch_templates: Improves the fetching logics. [GH-8066]
+- resource/alicloud_oos_secret_parameter: add new attribute dkms_instance_id. [GH-8067]
+- testcase: Fixed alicloud_ga_accelerator_spare_ip_attachment testcase. [GH-8058]
+- testcase: Fixed alicloud_config_rule testcase. [GH-8059]
+- testcase: Fixed ecs testcase. [GH-8060]
+
+BUG FIXES:
+
+- resource/alicloud_oss_*: Fixes the panic error while resposne is nil. [GH-8070]
+
 ## 1.240.0 (December 30, 2024)
 
 - **New Resource:** `alicloud_schedulerx_app_group` [GH-8023]
@@ -13,9 +35,8 @@
 
 ENHANCEMENTS:
 
-- docs: Describes new provider argument account_type [GH-8056]
-- client: corrects the getting cas endpoint method [GH-8055]
 - client: Improves the method of setting endpoint; provider: add new parameter account_type to fix international account site issue. [GH-7736]
+- client: corrects the getting cas endpoint method. [GH-8055]
 - CloudFirewall: Improves the invoking cloud firewall api method and supports refreshing credential automatically. [GH-7931]
 - WAF: Improves the invoking waf api method and supports refreshing credential automatically. [GH-7959]
 - ESA: Improves the invoking esa api method and supports refreshing credential automatically. [GH-7969]
@@ -56,6 +77,7 @@ ENHANCEMENTS:
 - resource/alicloud_oss_bucket_logging: add wait for status while create and update opertion. [GH-8053]
 - data-source/alicloud_ess_scaling_configurations: support attribute of instance_pattern_info. [GH-8004]
 - data-source/alicloud_ecs_disks: Removed the default value of the field enable_auto_snapshot; Improved the document. [GH-8048]
+- docs: Describes new provider argument account_type. [GH-8056]
 
 BUG FIXES:
 
