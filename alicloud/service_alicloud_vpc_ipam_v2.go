@@ -84,6 +84,13 @@ func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFunc(id string, field string, 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -339,6 +346,13 @@ func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFunc(id string, field stri
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -427,6 +441,7 @@ func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFunc(id string, field 
 }
 
 // DescribeVpcIpamIpamPoolCidr >>> Encapsulated.
+
 // DescribeVpcIpamIpamPoolAllocation <<< Encapsulated get interface for VpcIpam IpamPoolAllocation.
 
 func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolAllocation(id string) (object map[string]interface{}, err error) {
