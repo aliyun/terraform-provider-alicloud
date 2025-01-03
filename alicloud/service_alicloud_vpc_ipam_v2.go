@@ -268,6 +268,13 @@ func (s *VpcIpamServiceV2) VpcIpamIpamScopeStateRefreshFunc(id string, field str
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -430,6 +437,13 @@ func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFunc(id string, field 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
