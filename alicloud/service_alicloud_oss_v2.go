@@ -59,6 +59,9 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketAcl", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.AccessControlPolicy.AccessControlList", response)
@@ -129,6 +132,9 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketReferer", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -202,6 +208,9 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketHttpsConfig", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -277,6 +286,9 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCors", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.CORSConfiguration", response)
@@ -348,7 +360,7 @@ func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]int
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response["body"] == nil {
+	if response == nil || response["body"] == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketPolicy", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 	response = response["body"].(map[string]interface{})
@@ -421,6 +433,9 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketVersioning", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.VersioningConfiguration", response)
@@ -492,6 +507,9 @@ func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map
 		addDebug(action, response, request)
 		return nil
 	})
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketArchiveDirect", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 	if err != nil {
 		addDebug(action, response, request)
@@ -567,6 +585,9 @@ func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[st
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketRequestPayment", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.RequestPaymentConfiguration", response)
@@ -641,6 +662,9 @@ func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketTransferAcceleration", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.TransferAccelerationConfiguration", response)
@@ -714,6 +738,9 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketAccessMonitor", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.AccessMonitorConfiguration", response)
@@ -783,6 +810,9 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLogging", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -870,6 +900,9 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketServerSideEncryption", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.ServerSideEncryptionRule.ApplyServerSideEncryptionByDefault", response)
@@ -943,6 +976,9 @@ func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketUserDefinedLogFields", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	return response, nil
@@ -1010,6 +1046,9 @@ func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketMetaQuery", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -1089,6 +1128,9 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketStyle", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.Style", response)
@@ -1167,6 +1209,9 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketDataRedundancyTransition", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	return response, nil
@@ -1239,6 +1284,9 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AccountPublicAccessBlock", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.PublicAccessBlockConfiguration", response)
@@ -1308,6 +1356,9 @@ func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketPublicAccessBlock", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -1384,6 +1435,9 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 			return object, WrapErrorf(Error(GetNotFoundMessage("BucketCname", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCname", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -1478,6 +1532,9 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCnameToken", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.CnameToken", response)
@@ -1550,6 +1607,9 @@ func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]in
 			return object, WrapErrorf(Error(GetNotFoundMessage("BucketWebsite", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketWebsite", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -1637,6 +1697,9 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AccessPoint", id)), NotFoundMsg, response)
+	}
 	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.GetAccessPointResult", response)
@@ -1715,6 +1778,9 @@ func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]
 			return object, WrapErrorf(Error(GetNotFoundMessage("BucketLifecycle", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLifecycle", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
@@ -1798,6 +1864,9 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 			return object, WrapErrorf(Error(GetNotFoundMessage("BucketWorm", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil || response["body"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("BucketWorm", id)), NotFoundMsg, response)
 	}
 	response = response["body"].(map[string]interface{})
 
