@@ -868,7 +868,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_5_7_HighAvailabilityInstance(t *testing.
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
 					"engine_version":           "5.7",
-					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type":            "rds.mysql.t1.small",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.1.storage_range.min}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
@@ -1382,7 +1382,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"security_group_ids":       []string{},
 					"monitoring_period":        "60",
-					"encryption_key":           "${alicloud_kms_key.default.id}",
 					"category":                 "HighAvailability",
 					"db_instance_storage_type": "cloud_essd2",
 					"connection_string_prefix": connectionStringPrefixSecond,
@@ -3925,6 +3924,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "general_essd",
+					"bursting_enabled":         "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3936,6 +3936,27 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 						"instance_name":            name,
 						"db_instance_storage_type": "general_essd",
 						"monitoring_period":        CHECKSET,
+						"bursting_enabled":         CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bursting_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bursting_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bursting_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bursting_enabled": "true",
 					}),
 				),
 			},
