@@ -27,8 +27,14 @@ Provides a Alidns domain resource.
 resource "alicloud_alidns_domain_group" "default" {
   domain_group_name = "tf-example"
 }
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_alidns_domain" "default" {
-  domain_name = "starmove.com"
+  domain_name = "starmove-${random_integer.default.result}.abc"
   group_id    = alicloud_alidns_domain_group.default.id
   tags = {
     Created = "TF",
