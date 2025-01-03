@@ -119,7 +119,7 @@ func testSweepOosSecretParameter(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSSecretParameter_basic0(t *testing.T) {
+func TestAccAliCloudOOSSecretParameter_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_secret_parameter.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -222,7 +222,7 @@ func TestAccAlicloudOOSSecretParameter_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSSecretParameter_basic1(t *testing.T) {
+func TestAccAliCloudOOSSecretParameter_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_secret_parameter.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -403,7 +403,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudOosSecretParameterCreate(d, rawClient)
+		err := resourceAliCloudOosSecretParameterCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -420,7 +420,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterCreate(d, rawClient)
+		err := resourceAliCloudOosSecretParameterCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -437,7 +437,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterCreate(dCreate, rawClient)
+		err := resourceAliCloudOosSecretParameterCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -455,7 +455,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudOosSecretParameterUpdate(d, rawClient)
+		err := resourceAliCloudOosSecretParameterUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -490,7 +490,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterUpdate(resourceData1, rawClient)
+		err := resourceAliCloudOosSecretParameterUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -525,7 +525,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterUpdate(resourceData1, rawClient)
+		err := resourceAliCloudOosSecretParameterUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -540,7 +540,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudOosSecretParameterDelete(d, rawClient)
+		err := resourceAliCloudOosSecretParameterDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -557,7 +557,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterDelete(d, rawClient)
+		err := resourceAliCloudOosSecretParameterDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -574,7 +574,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterDelete(d, rawClient)
+		err := resourceAliCloudOosSecretParameterDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -591,7 +591,7 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterRead(d, rawClient)
+		err := resourceAliCloudOosSecretParameterRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -607,8 +607,131 @@ func TestUnitAlicloudOOSSecretParameter(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudOosSecretParameterRead(d, rawClient)
+		err := resourceAliCloudOosSecretParameterRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Oos SecretParameter. >>> Resource test cases, automatically generated.
+// Case 测试 9594
+func TestAccAliCloudOOSSecretParameter_basic9594(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_secret_parameter.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosSecretParameterMap9594)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosSecretParameter")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soossecretparameter%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosSecretParameterBasicDependence9594)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"type":                  "Secret",
+					"secret_parameter_name": name,
+					"constraints":           "{\\\"MinLength\\\": 0, \\\"MaxLength\\\": 20}",
+					"description":           "test",
+					"value":                 "vv",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"key_id":                "${alicloud_kms_key.defaultJQ2G32.id}",
+					"dkms_instance_id":      "${alicloud_kms_instance.defaultW7KAp3.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"type":                  "Secret",
+						"secret_parameter_name": name,
+						"constraints":           "{\"MinLength\": 0, \"MaxLength\": 20}",
+						"description":           "test",
+						"value":                 "vv",
+						"resource_group_id":     CHECKSET,
+						"key_id":                CHECKSET,
+						"dkms_instance_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "test-update",
+					"value":             "''",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "test-update",
+						"value":             "''",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"value"},
+			},
+		},
+	})
+}
+
+var AlicloudOosSecretParameterMap9594 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosSecretParameterBasicDependence9594(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultifbFgn" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "defaultz4ctMQ" {
+  vpc_id     = alicloud_vpc.defaultifbFgn.id
+  zone_id    = "cn-hangzhou-j"
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_kms_instance" "defaultW7KAp3" {
+  vpc_num         = "8"
+  key_num         = "2000"
+  renew_period    = "1"
+  secret_num      = "1"
+  product_version = "3"
+  renew_status    = "AutoRenewal"
+  vpc_id          = alicloud_vpc.defaultifbFgn.id
+  vswitch_ids     = ["${alicloud_vswitch.defaultz4ctMQ.id}"]
+  zone_ids        = ["cn-hangzhou-j", "cn-hangzhou-k"]
+  spec            = "2000"
+}
+
+resource "alicloud_kms_key" "defaultJQ2G32" {
+  origin           = "Aliyun_KMS"
+  status           = "Enabled"
+  protection_level = "SOFTWARE"
+  key_spec         = "Aliyun_AES_256"
+  key_usage        = "ENCRYPT/DECRYPT"
+  dkms_instance_id = alicloud_kms_instance.defaultW7KAp3.id
+  pending_window_in_days = 7
+}
+
+
+`, name)
+}
+
+// Test Oos SecretParameter. <<< Resource test cases, automatically generated.

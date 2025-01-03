@@ -2,28 +2,23 @@
 subcategory: "Operation Orchestration Service (OOS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_oos_secret_parameter"
-sidebar_current: "docs-alicloud-resource-oos-secret-parameter"
 description: |-
-  Provides a Alicloud OOS Secret Parameter resource.
+  Provides a Alicloud Operation Orchestration Service (OOS) Secret Parameter resource.
 ---
 
 # alicloud_oos_secret_parameter
 
-Provides a OOS Secret Parameter resource.
+Provides a Operation Orchestration Service (OOS) Secret Parameter resource.
 
-For information about OOS Secret Parameter and how to use it, see [What is Secret Parameter](https://www.alibabacloud.com/help/en/doc-detail/183418.html).
+
+
+For information about Operation Orchestration Service (OOS) Secret Parameter and how to use it, see [What is Secret Parameter](https://www.alibabacloud.com/help/en/doc-detail/183418.html).
 
 -> **NOTE:** Available since v1.147.0+.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oos_secret_parameter&exampleId=8c543ccd-d749-f61b-98d8-0fa20346ebaebdb4d661&activeTab=example&spm=docs.r.oos_secret_parameter.0.8c543ccdd7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 data "alicloud_resource_manager_resource_groups" "example" {}
@@ -64,17 +59,25 @@ The following arguments are supported:
 * `type` - (Optional, ForceNew) The data type of the encryption parameter. Valid values: `Secret`.
 * `value` - (Required, Sensitive) The value of the encryption parameter. The value must be `1` to `4096` characters in length.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `dkms_instance_id` - (Optional, ForceNew, Available since v1.241.0) The ID of the KMS instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - Parameter creation time
 
-* `id` - The resource ID in terraform of Secret Parameter. Its value is same as `secret_parameter_name`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Secret Parameter.
+* `delete` - (Defaults to 5 mins) Used when delete the Secret Parameter.
+* `update` - (Defaults to 5 mins) Used when update the Secret Parameter.
 
 ## Import
 
-OOS Secret Parameter can be imported using the id, e.g.
+Operation Orchestration Service (OOS) Secret Parameter can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_oos_secret_parameter.example <secret_parameter_name>
+$ terraform import alicloud_oos_secret_parameter.example <id>
 ```
