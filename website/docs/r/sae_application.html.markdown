@@ -141,7 +141,18 @@ The following arguments are supported:
 * `envs` - (Optional) Container environment variable parameters. For example,`	[{"name":"envtmp","value":"0"}]`. The value description is as follows:
   * `name` - environment variable name.
   * `value` - Environment variable value or environment variable reference.
-* `sls_configs` - (Optional) SLS  configuration.
+* `sls_configs` - (Optional, String) Configuration for log collection to SLS. Valid parameter descriptions are as follows:
+  * `projectName`: Configures the project name on SLS. 
+  * `logDir`: Path to the logs. 
+  * `logType`: Type of logs. stdout indicates container standard output logs, and only one can be set; if not set, it means collecting file logs. 
+  * `logstoreName`: Configures the log store name on SLS. 
+  * `logtailName`: Configures the log tail name on SLS; if not specified, it means creating a new log tail.
+
+  If you no longer need to use the SLS collection feature, you should set the value of this field to an empty string. There are two examples:
+  - Using SAE automatically created SLS resources: [{"logDir":"","logType":"stdout"},{"logDir":"/tmp/a.log"}]. 
+  - Using custom SLS resources: [{"projectName":"test-sls","logType":"stdout","logDir":"","logstoreName":"sae","logtailName":""},{"projectName":"test","logDir":"/tmp/a.log","logstoreName":"sae","logtailName":""}].
+
+  **NOTE:** Projects that are automatically created with applications will be deleted along with the application deletion. Therefore, when selecting existing projects, you cannot choose projects automatically created by SAE.
 * `php` - (Optional, Available since v1.211.0) The Php environment.
 * `image_pull_secrets` - (Optional, Available since v1.211.0) The ID of the corresponding Secret.
 * `programming_language` - (Optional, ForceNew, Available since v1.211.0) The programming language that is used to create the application. Valid values: `java`, `php`, `other`.
