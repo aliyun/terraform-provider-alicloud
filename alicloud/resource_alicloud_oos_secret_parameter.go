@@ -2,41 +2,52 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
-	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudOosSecretParameter() *schema.Resource {
+func resourceAliCloudOosSecretParameter() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudOosSecretParameterCreate,
-		Read:   resourceAlicloudOosSecretParameterRead,
-		Update: resourceAlicloudOosSecretParameterUpdate,
-		Delete: resourceAlicloudOosSecretParameterDelete,
+		Create: resourceAliCloudOosSecretParameterCreate,
+		Read:   resourceAliCloudOosSecretParameterRead,
+		Update: resourceAliCloudOosSecretParameterUpdate,
+		Delete: resourceAliCloudOosSecretParameterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"constraints": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(1, 200),
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"key_id": {
 				Type:     schema.TypeString,
@@ -49,49 +60,57 @@ func resourceAlicloudOosSecretParameter() *schema.Resource {
 				Computed: true,
 			},
 			"secret_parameter_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^ALIYUN.*)|(^ACS.*)|(^ALIBABA.*)|(^ALICLOUD.*)|(^OOS.*)`), "It cannot start with `ALIYUN`, `ACS`, `ALIBABA`, `ALICLOUD`, or `OOS`"), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9_/-]{2,180}`), "The name must be `2` to `180` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/) and underscores (_).")),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaComputed(),
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Secret"}, false),
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Secret"}, false),
 			},
 			"value": {
-				Type:         schema.TypeString,
-				Required:     true,
-				Sensitive:    true,
-				ValidateFunc: validation.StringLenBetween(1, 4096),
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudOosSecretParameterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudOosSecretParameterCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateSecretParameter"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewOosClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("secret_parameter_name"); ok {
+		request["Name"] = v
+	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
 	if v, ok := d.GetOk("constraints"); ok {
 		request["Constraints"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	if v, ok := d.GetOk("key_id"); ok {
-		request["KeyId"] = v
-	}
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
@@ -100,18 +119,18 @@ func resourceAlicloudOosSecretParameterCreate(d *schema.ResourceData, meta inter
 		}
 		request["Tags"] = respJson
 	}
-	if v, ok := d.GetOk("type"); ok {
-		request["Type"] = v
-	}
-	request["RegionId"] = client.RegionId
-	request["Name"] = d.Get("secret_parameter_name")
 	request["Value"] = d.Get("value")
-	request["ClientToken"] = buildClientToken("CreateSecretParameter")
+	if v, ok := d.GetOk("key_id"); ok {
+		request["KeyId"] = v
+	}
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -122,63 +141,97 @@ func resourceAlicloudOosSecretParameterCreate(d *schema.ResourceData, meta inter
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oos_secret_parameter", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["Name"]))
 
-	return resourceAlicloudOosSecretParameterRead(d, meta)
+	return resourceAliCloudOosSecretParameterRead(d, meta)
 }
-func resourceAlicloudOosSecretParameterRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudOosSecretParameterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	oosService := OosService{client}
-	object, err := oosService.DescribeOosSecretParameter(d.Id())
+	oosServiceV2 := OosServiceV2{client}
+
+	objectRaw, err := oosServiceV2.DescribeOosSecretParameter(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_oos_secret_parameter oosService.DescribeOosSecretParameter Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_oos_secret_parameter DescribeOosSecretParameter Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("secret_parameter_name", object["Name"])
-	d.Set("constraints", object["Constraints"])
-	d.Set("description", object["Description"])
-	d.Set("key_id", object["KeyId"])
-	d.Set("resource_group_id", object["ResourceGroupId"])
-	d.Set("tags", tagsToMap(object["Tags"]))
-	d.Set("type", object["Type"])
+
+	if objectRaw["Constraints"] != nil {
+		d.Set("constraints", objectRaw["Constraints"])
+	}
+	if objectRaw["CreatedDate"] != nil {
+		d.Set("create_time", objectRaw["CreatedDate"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["DKMSInstanceId"] != nil {
+		d.Set("dkms_instance_id", objectRaw["DKMSInstanceId"])
+	}
+	if objectRaw["KeyId"] != nil {
+		d.Set("key_id", objectRaw["KeyId"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Type"] != nil {
+		d.Set("type", objectRaw["Type"])
+	}
+	if objectRaw["Value"] != nil {
+		d.Set("value", objectRaw["Value"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("secret_parameter_name", objectRaw["Name"])
+	}
+
+	objectRaw, err = oosServiceV2.DescribeSecretParameterListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	d.Set("secret_parameter_name", d.Id())
+
 	return nil
 }
-func resourceAlicloudOosSecretParameterUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudOosSecretParameterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	action := "UpdateSecretParameter"
 	conn, err := client.NewOosClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	update := false
-	request := map[string]interface{}{
-		"Name": d.Id(),
-	}
-	if d.HasChange("value") {
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Name"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
+		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
-	request["Value"] = d.Get("value")
+
 	if d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
+		request["Description"] = d.Get("description")
 	}
-	request["RegionId"] = client.RegionId
-	if d.HasChange("resource_group_id") {
-		update = true
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			request["ResourceGroupId"] = v
-		}
-	}
+
 	if d.HasChange("tags") {
 		update = true
 		if v, ok := d.GetOk("tags"); ok {
@@ -189,11 +242,17 @@ func resourceAlicloudOosSecretParameterUpdate(d *schema.ResourceData, meta inter
 			}
 		}
 	}
+
+	if d.HasChange("value") {
+		update = true
+	}
+	request["Value"] = d.Get("value")
 	if update {
-		action := "UpdateSecretParameter"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -208,24 +267,31 @@ func resourceAlicloudOosSecretParameterUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudOosSecretParameterRead(d, meta)
+
+	return resourceAliCloudOosSecretParameterRead(d, meta)
 }
-func resourceAlicloudOosSecretParameterDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudOosSecretParameterDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSecretParameter"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewOosClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"Name": d.Id(),
-	}
-
+	request = make(map[string]interface{})
+	request["Name"] = d.Id()
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -236,8 +302,13 @@ func resourceAlicloudOosSecretParameterDelete(d *schema.ResourceData, meta inter
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
