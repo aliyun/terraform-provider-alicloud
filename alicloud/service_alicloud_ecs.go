@@ -1857,7 +1857,7 @@ func (s *EcsService) EcsAutoSnapshotPolicyStateRefreshFunc(id string, failStates
 	}
 }
 
-func (s *EcsService) DescribeLaunchTemplateVersions(id string) (object []interface{}, err error) {
+func (s *EcsService) DescribeLaunchTemplateVersions(id string, version interface{}) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewEcsClient()
 	if err != nil {
@@ -1865,8 +1865,9 @@ func (s *EcsService) DescribeLaunchTemplateVersions(id string) (object []interfa
 	}
 	action := "DescribeLaunchTemplateVersions"
 	request := map[string]interface{}{
-		"RegionId":         s.client.RegionId,
-		"LaunchTemplateId": id,
+		"RegionId":              s.client.RegionId,
+		"LaunchTemplateId":      id,
+		"LaunchTemplateVersion": []interface{}{version},
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -1891,7 +1892,7 @@ func (s *EcsService) DescribeLaunchTemplateVersions(id string) (object []interfa
 			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 		}
 	}
-	object = v.([]interface{})
+	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 

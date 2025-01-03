@@ -180,7 +180,9 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `template_tags` - (Optional) A mapping of tags to assign to the launch template.
+* `template_tags` - (Optional) A mapping of tags to assign to the launch template. 
+* `default_version_number` - (Optional, Int, Computed, Available since v1.241.0) The version number of the default launch template version. Default to 1. It is conflict with `update_default_version_number`.
+* `update_default_version_number` - (Optional, Bool, Available since v1.241.0) Whether to update the default version of the launch template to the latest version automatically. It is conflict with `default_version_number`.
 * `name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `launch_template_name` instead.
 * `userdata` - (Deprecated) It has been deprecated from version 1.120.0, and use field `user_data` instead.
 * `system_disk_name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
@@ -230,6 +232,7 @@ The data_disks supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Launch Template.
+* `latest_version_number` - The latest version number of the launch template.
 
 ## Import
 

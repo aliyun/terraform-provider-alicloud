@@ -459,18 +459,10 @@ func dataSourceAlicloudEcsLaunchTemplatesRead(d *schema.ResourceData, meta inter
 
 		ecsService := EcsService{client}
 		id := fmt.Sprint(object["LaunchTemplateId"])
-		getResp, err := ecsService.DescribeLaunchTemplateVersions(id)
+		describeLaunchTemplateVersionsObject, err := ecsService.DescribeLaunchTemplateVersions(id, object["LatestVersionNumber"])
 		if err != nil {
 			return WrapError(err)
 		}
-
-		describeLaunchTemplateVersionsObject := make(map[string]interface{})
-		for _, version := range getResp {
-			if version.(map[string]interface{})["VersionNumber"] == object["LatestVersionNumber"] {
-				describeLaunchTemplateVersionsObject = version.(map[string]interface{})
-			}
-		}
-
 		mapping["auto_release_time"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoReleaseTime"]
 
 		dataDisk := make([]map[string]interface{}, 0)
