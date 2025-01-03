@@ -882,6 +882,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_data_works_di_job":                                    resourceAliCloudDataWorksDiJob(),
+			"alicloud_data_works_di_alarm_rule":                             resourceAliCloudDataWorksDiAlarmRule(),
 			"alicloud_oss_access_point":                                     resourceAliCloudOssAccessPoint(),
 			"alicloud_oss_bucket_worm":                                      resourceAliCloudOssBucketWorm(),
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
