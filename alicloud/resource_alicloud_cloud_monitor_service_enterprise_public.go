@@ -42,33 +42,35 @@ func resourceAliCloudCloudMonitorServiceEnterprisePublicCreate(d *schema.Resourc
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
+	var isIntl bool
+	if client.GetAccountType() == "International" {
+		isIntl = true
 	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
-
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_enterprise_public_cn"
+	if isIntl {
+		request["ProductType"] = "cms_enterprise_public_intl"
+	}
 	request["SubscriptionType"] = "PayAsYouGo"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !isIntl && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cms_enterprise_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
