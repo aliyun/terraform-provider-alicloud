@@ -32,9 +32,8 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_id":     "${alicloud_dcdn_waf_policy.default.id}",
-					"rule_name":     "${var.name}",
-					"waf_group_ids": "1012",
+					"policy_id": "${alicloud_dcdn_waf_policy.default.id}",
+					"rule_name": "${var.name}",
 					"conditions": []map[string]interface{}{
 						{
 							"key":      "URI",
@@ -71,7 +70,6 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_id":                   CHECKSET,
 						"rule_name":                   name,
-						"waf_group_ids":               "1012",
 						"status":                      "on",
 						"cc_status":                   "on",
 						"action":                      "monitor",
@@ -420,6 +418,89 @@ variable "name" {
 
 resource "alicloud_dcdn_waf_policy" "default" {
   defense_scene = "region_block"
+  policy_name   = var.name
+  policy_type   = "custom"
+  status        = "on"
+}
+
+
+`, name)
+}
+
+// Case 7
+func TestAccAliCloudDcdnWafRule_basic_for_waf_group(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dcdn_waf_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudDcdnWafRuleMap2753)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDcdnWafRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testaccDcdnWafRule%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDcdnWafRuleBasicDependenceForWafGroup)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_id":     "${alicloud_dcdn_waf_policy.default.id}",
+					"rule_name":     "${var.name}",
+					"waf_group_ids": "1012",
+					"status":        "on",
+					"action":        "monitor",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_id":     CHECKSET,
+						"rule_name":     name,
+						"waf_group_ids": "1012",
+						"status":        "on",
+						"action":        "monitor",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// the rule name can not be changed when the rule is waf_group
+					//"rule_name": "${var.name}_update",
+					"status": "off",
+					"action": "block",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						//"rule_name": name + "_update",
+						"status": "off",
+						"action": "block",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudDcdnWafRuleMapForWafGroup = map[string]string{}
+
+func AlicloudDcdnWafRuleBasicDependenceForWafGroup(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_dcdn_waf_policy" "default" {
+  defense_scene = "waf_group"
   policy_name   = var.name
   policy_type   = "custom"
   status        = "on"

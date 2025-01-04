@@ -74,7 +74,7 @@ resource "alicloud_dcdn_waf_rule" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `action` - (Optional) Specifies the action of the rule. Valid values: `block`, `monitor`, `js`.
+* `action` - (Optional) Specifies the action of the rule. Valid values: `block`, `monitor`, `js`, `deny`.
 * `cc_status` - (Optional) Specifies whether to enable rate limiting. Valid values: `on` and `off`. **NOTE:** This parameter is required when policy is of type `custom_acl`.
 * `cn_region_list` - (Optional) The blocked regions in the Chinese mainland, separated by commas (,).
 * `conditions` - (Optional) Conditions that trigger the rule. See [`conditions`](#conditions) below. **NOTE:** This parameter is required when policy is of type `custom_acl` or `whitelist`.
@@ -88,11 +88,11 @@ The following arguments are supported:
 * `rule_name` - (Required) The name of the protection rule. The name can be up to 64 characters in length and can contain letters, digits, and underscores (_). **NOTE:** This parameter cannot be modified when policy is of type `region_block`.
 * `scenes` - (Optional) The types of the protection policies.
 * `status` - (Optional) The status of the waf rule. Valid values: `on` and `off`. Default value: on.
-* `waf_group_ids` - (Optional) The id of the waf rule group. The default value is "1012". Multiple rules are separated by commas.
+* `waf_group_ids` - (Optional) The id of the waf rule group. The default value is "1012". Multiple rules are separated by commas. **NOTE:** This parameter is valid only when policy is of type `waf_group`.
 
 ### `conditions`
 
-The conditions supports the following:
+The conditions support the following:
 * `key` - (Required) The match field.
 * `op_value` - (Required) The logical symbol.
 * `sub_key` - (Optional) The match subfield.
