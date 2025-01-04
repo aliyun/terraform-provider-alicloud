@@ -49,8 +49,6 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 resource "alicloud_oss_bucket_policy" "default" {
-  depends_on = [alicloud_oss_bucket.CreateBucket]
-
   policy = jsonencode({ "Version" : "1", "Statement" : [{ "Action" : ["oss:PutObject", "oss:GetObject"], "Effect" : "Deny", "Principal" : ["1234567890"], "Resource" : ["acs:oss:*:1234567890:*/*"] }] })
   bucket = alicloud_oss_bucket.CreateBucket.bucket
 }
