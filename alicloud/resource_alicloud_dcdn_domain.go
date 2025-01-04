@@ -361,7 +361,7 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if !d.IsNewResource() && d.HasChange("scope") {
 		update = true
-		request["Property"] = d.Get("scope")
+		request["Property"] = fmt.Sprintf(`{"coverage":"%s"}`, d.Get("scope"))
 	}
 
 	if update {
