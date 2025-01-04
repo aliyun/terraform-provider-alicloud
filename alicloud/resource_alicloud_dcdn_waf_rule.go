@@ -185,7 +185,7 @@ func resourceAlicloudDcdnWafRule() *schema.Resource {
 			"action": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"deny", "js", "monitor"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"deny", "js", "monitor", "block"}, false),
 			},
 		},
 	}
@@ -195,7 +195,7 @@ func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
 	var err error
-	ruleConfigMap := make(map[string]interface{}, 0)
+	ruleConfigMap := make(map[string]interface{})
 	if v, ok := d.GetOk("cc_status"); ok {
 		ruleConfigMap["ccStatus"] = v
 	}
@@ -351,16 +351,16 @@ func resourceAlicloudDcdnWafRuleRead(d *schema.ResourceData, meta interface{}) e
 		d.Set("conditions", conditions52Maps)
 	}
 
-	if v, ok := ruleConfigObj["rateLimit"]; ok {
-		rateLimitMap := make(map[string]interface{}, 0)
+	if v, ok := ruleConfigObj["rateLimit"]; ok && v != nil {
+		rateLimitMap := make(map[string]interface{})
 		rateLimitObj := v.(map[string]interface{})
 		rateLimitMap["ttl"] = rateLimitObj["ttl"]
 		rateLimitMap["sub_key"] = rateLimitObj["subKey"]
 		rateLimitMap["target"] = rateLimitObj["target"]
 		rateLimitMap["interval"] = rateLimitObj["interval"]
 		rateLimitMap["threshold"] = rateLimitObj["threshold"]
-		if v, ok := rateLimitObj["status"]; ok {
-			statusMap := make(map[string]interface{}, 0)
+		if v, ok := rateLimitObj["status"]; ok && v != nil {
+			statusMap := make(map[string]interface{})
 			statusObj := v.(map[string]interface{})
 			statusMap["code"] = statusObj["code"]
 			statusMap["ratio"] = statusObj["ratio"]
@@ -435,7 +435,7 @@ func resourceAlicloudDcdnWafRuleUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 
-	ruleConfigMap := make(map[string]interface{}, 0)
+	ruleConfigMap := make(map[string]interface{})
 	if v, ok := d.GetOk("cc_status"); ok {
 		ruleConfigMap["ccStatus"] = v
 	}
