@@ -50,8 +50,6 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 
 resource "alicloud_oss_bucket_referer" "default" {
-  depends_on = [alicloud_oss_bucket.CreateBucket]
-
   allow_empty_referer = "true"
   referer_blacklist = [
     "*.forbidden.com"
