@@ -131,6 +131,7 @@ func TestAccAliCloudDcdnDomain_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"domain_name": name,
 						"sources.#":   "1",
+						"scope":       "overseas",
 					}),
 				),
 			},
@@ -737,6 +738,16 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 					testAccCheck(map[string]string{
 						"cert_id":   CHECKSET,
 						"cert_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope": "global",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope": "global",
 					}),
 				),
 			},
