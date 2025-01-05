@@ -23,6 +23,15 @@ func TestAccAlicloudVPCsDataSourceBasic(t *testing.T) {
 			"name_regex": fmt.Sprintf(`"tf-testAccVpcsdatasource%d_fake"`, rand),
 		}),
 	}
+	dhcpSetConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"dhcp_options_set_id": `"${alicloud_vpc_dhcp_options_set_attachment.example.dhcp_options_set_id}"`,
+		}),
+		// There is a bug in API, so we can not use fakeConfig on dhcp_options_set_id
+		//fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+		//	"dhcp_options_set_id": `"${alicloud_vpc_dhcp_options_set_attachment.example.dhcp_options_set_id}_fake"`,
+		//}),
+	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_vpc.default.id}" ]`,
@@ -128,7 +137,7 @@ func TestAccAlicloudVPCsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, pagingConf, allConf)
+	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, dhcpSetConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, pagingConf, allConf)
 }
 
 func testAccCheckAlicloudVpcsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -156,6 +165,17 @@ resource "alicloud_vpc" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 
+resource "alicloud_vpc_dhcp_options_set" "example" {
+  dhcp_options_set_name        = var.name
+  dhcp_options_set_description = var.name
+  domain_name                  = "example.com"
+  domain_name_servers          = "100.100.2.136"
+}
+resource "alicloud_vpc_dhcp_options_set_attachment" "example" {
+  vpc_id              = alicloud_vpc.default.id
+  dhcp_options_set_id = alicloud_vpc_dhcp_options_set.example.id
+}
+
 data "alicloud_zones" "default" {
 
 }
@@ -163,7 +183,7 @@ data "alicloud_zones" "default" {
 resource "alicloud_vswitch" "default" {
 	name = "${var.name}"
 	cidr_block = "172.16.0.0/16"
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc_dhcp_options_set_attachment.example.vpc_id
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
@@ -177,23 +197,26 @@ data "alicloud_vpcs" "default" {
 
 var existVpcsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                    "1",
-		"names.#":                  "1",
-		"vpcs.#":                   "1",
-		"total_count":              CHECKSET,
-		"vpcs.0.id":                CHECKSET,
-		"vpcs.0.region_id":         CHECKSET,
-		"vpcs.0.status":            "Available",
-		"vpcs.0.vpc_name":          fmt.Sprintf("tf-testAccVpcsdatasource%d", rand),
-		"vpcs.0.vswitch_ids.#":     "1",
-		"vpcs.0.cidr_block":        "172.16.0.0/12",
-		"vpcs.0.vrouter_id":        CHECKSET,
-		"vpcs.0.router_id":         CHECKSET,
-		"vpcs.0.route_table_id":    CHECKSET,
-		"vpcs.0.description":       "",
-		"vpcs.0.is_default":        "false",
-		"vpcs.0.creation_time":     CHECKSET,
-		"vpcs.0.resource_group_id": CHECKSET,
+		"ids.#":                          "1",
+		"names.#":                        "1",
+		"vpcs.#":                         "1",
+		"total_count":                    CHECKSET,
+		"vpcs.0.id":                      CHECKSET,
+		"vpcs.0.region_id":               CHECKSET,
+		"vpcs.0.status":                  "Available",
+		"vpcs.0.vpc_name":                fmt.Sprintf("tf-testAccVpcsdatasource%d", rand),
+		"vpcs.0.vswitch_ids.#":           "1",
+		"vpcs.0.cidr_block":              "172.16.0.0/12",
+		"vpcs.0.vrouter_id":              CHECKSET,
+		"vpcs.0.router_id":               CHECKSET,
+		"vpcs.0.route_table_id":          CHECKSET,
+		"vpcs.0.description":             "",
+		"vpcs.0.dhcp_options_set_id":     CHECKSET,
+		"vpcs.0.dhcp_options_set_status": "InUse",
+		"vpcs.0.dns_hostname_status":     "DISABLED",
+		"vpcs.0.is_default":              "false",
+		"vpcs.0.creation_time":           CHECKSET,
+		"vpcs.0.resource_group_id":       CHECKSET,
 	}
 }
 
