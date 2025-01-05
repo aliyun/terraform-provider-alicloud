@@ -12,7 +12,7 @@ import (
 // Test CloudMonitorService EnterprisePublic. >>> Resource test cases, automatically generated.
 // Case 5536
 func TestAccAliCloudCloudMonitorServiceEnterprisePublic_basic5536(t *testing.T) {
-	t.Skipf("Skipping alicloud_cloud_monitor_service_enterprise_public testing.")
+	t.Skipf("Skipping alicloud_cloud_monitor_service_enterprise_public testing because of the service limitation that only run once per day.")
 	t.Skipped()
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_monitor_service_enterprise_public.default"
