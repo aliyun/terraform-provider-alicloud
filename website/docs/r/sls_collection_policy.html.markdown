@@ -18,7 +18,7 @@ For information about SLS Collection Policy and how to use it, see [What is Coll
 
 ## Example Usage
 
-Basic Usage
+Enable real-time log query for all of OSS buckets.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_sls_collection_policy&exampleId=260f3fed-9de1-c582-2eee-b0c0657d8292b81d0b6e&activeTab=example&spm=docs.r.sls_collection_policy.0.260f3fed9d&intl_lang=EN_US" target="_blank">
@@ -88,6 +88,61 @@ resource "alicloud_sls_collection_policy" "default" {
     account_group_type = "custom"
     members            = ["1936728897040477"]
   }
+}
+```
+
+Enable real-time log query for one or more specific OSS buckets
+```terraform
+variable "name" {
+  default = "terraform-example-on-single-bucket"
+}
+
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_log_project" "project_create_01" {
+  description  = var.name
+  project_name = format("%s1%s", var.name, random_integer.default.result)
+}
+
+resource "alicloud_log_store" "logstore_create_01" {
+  retention_period = "30"
+  shard_count      = "2"
+  project_name     = alicloud_log_project.project_create_01.project_name
+  logstore_name    = format("%s1%s", var.name, random_integer.default.result)
+}
+
+resource "alicloud_log_project" "update_01" {
+  description  = var.name
+  project_name = format("%s2%s", var.name, random_integer.default.result)
+}
+
+resource "alicloud_log_store" "logstore002" {
+  retention_period = "30"
+  shard_count      = "2"
+  project_name     = alicloud_log_project.update_01.project_name
+  logstore_name    = format("%s2%s", var.name, random_integer.default.result)
+}
+
+resource "alicloud_oss_bucket" "bucket" {
+  bucket = format("%s1%s", var.name, random_integer.default.result)
+}
+resource "alicloud_sls_collection_policy" "default" {
+  policy_config {
+    resource_mode = "instanceMode"
+    instance_ids  = [alicloud_oss_bucket.bucket.id]
+  }
+  data_code          = "access_log"
+  centralize_enabled = false
+  product_code       = "oss"
+  policy_name        = "xc-example-oss-01"
+  enabled            = true
 }
 ```
 
