@@ -363,11 +363,12 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
+	var endpoint string
+	var isIntl bool
+	if client.GetAccountType() == "International" {
+		isIntl = true
 	}
+	action := "QueryAvailableInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
@@ -375,20 +376,23 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	request["SubscriptionType"] = "PayAsYouGo"
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_enterprise_public_cn"
+	if isIntl {
+		request["ProductType"] = "cms_enterprise_public_intl"
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !isIntl && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cms_enterprise_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
