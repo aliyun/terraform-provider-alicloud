@@ -169,7 +169,7 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 		"ProductCode": "vipcloudfw",
 		"ProductType": "vipcloudfw",
 	}
-	if client.GetAccountType() == "International" {
+	if client.IsInternationalAccount() {
 		request["ProductCode"] = "cfw"
 		request["ProductType"] = "cfw_pre_intl"
 	}
@@ -299,7 +299,7 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 		"ProductCode": productCode,
 		"ProductType": productType,
 	}
-	if s.client.GetAccountType() == "International" {
+	if s.client.IsInternationalAccount() {
 		request = map[string]interface{}{
 			"ProductCode": productCodeIntl,
 			"ProductType": productTypeIntl,

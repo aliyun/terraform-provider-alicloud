@@ -76,10 +76,6 @@ func dataSourceAlicloudCloudFirewallInstancesRead(d *schema.ResourceData, meta i
 	var objects []map[string]interface{}
 	var response map[string]interface{}
 	var err error
-	var isIntl bool
-	if client.GetAccountType() == "International" {
-		isIntl = true
-	}
 	var productTypes []string
 	paymentType := d.Get("payment_type").(string)
 	productMapping := map[string]string{
@@ -95,19 +91,19 @@ func dataSourceAlicloudCloudFirewallInstancesRead(d *schema.ResourceData, meta i
 		"cfw_elasticity_public_intl": "PayAsYouGo",
 	}
 	if paymentType == "Subscription" {
-		if isIntl {
+		if client.IsInternationalAccount() {
 			productTypes = []string{"cfw_pre_intl"}
 		} else {
 			productTypes = []string{"vipcloudfw"}
 		}
 	} else if paymentType == "PayAsYouGo" {
-		if isIntl {
+		if client.IsInternationalAccount() {
 			productTypes = []string{"cfw_elasticity_public_intl"}
 		} else {
 			productTypes = []string{"cfw_elasticity_public_cn"}
 		}
 	} else {
-		if isIntl {
+		if client.IsInternationalAccount() {
 			productTypes = []string{"cfw_pre_intl", "cfw_elasticity_public_intl"}
 		} else {
 			productTypes = []string{"vipcloudfw", "cfw_elasticity_public_cn"}

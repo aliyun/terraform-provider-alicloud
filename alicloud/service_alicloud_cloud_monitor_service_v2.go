@@ -365,7 +365,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	var query map[string]interface{}
 	var endpoint string
 	var isIntl bool
-	if client.GetAccountType() == "International" {
+	if client.IsInternationalAccount() {
 		isIntl = true
 	}
 	action := "QueryAvailableInstances"
