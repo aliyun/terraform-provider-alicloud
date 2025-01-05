@@ -114,6 +114,18 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"dhcp_options_set_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"dhcp_options_set_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"dns_hostname_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"ipv6_cidr_block": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -310,22 +322,25 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
-			"region_id":             object["RegionId"],
-			"creation_time":         object["CreationTime"],
-			"cidr_block":            object["CidrBlock"],
-			"description":           object["Description"],
-			"ipv6_cidr_block":       object["Ipv6CidrBlock"],
-			"is_default":            object["IsDefault"],
-			"resource_group_id":     object["ResourceGroupId"],
-			"router_id":             object["VRouterId"],
-			"vrouter_id":            object["VRouterId"],
-			"secondary_cidr_blocks": object["SecondaryCidrBlocks"].(map[string]interface{})["SecondaryCidrBlock"],
-			"status":                object["Status"],
-			"user_cidrs":            object["UserCidrs"].(map[string]interface{})["UserCidr"],
-			"vswitch_ids":           object["VSwitchIds"].(map[string]interface{})["VSwitchId"],
-			"id":                    fmt.Sprint(object["VpcId"]),
-			"vpc_id":                fmt.Sprint(object["VpcId"]),
-			"vpc_name":              object["VpcName"],
+			"region_id":               object["RegionId"],
+			"creation_time":           object["CreationTime"],
+			"cidr_block":              object["CidrBlock"],
+			"description":             object["Description"],
+			"dhcp_options_set_id":     object["DhcpOptionsSetId"],
+			"dhcp_options_set_status": object["DhcpOptionsSetStatus"],
+			"dns_hostname_status":     object["DnsHostnameStatus"],
+			"ipv6_cidr_block":         object["Ipv6CidrBlock"],
+			"is_default":              object["IsDefault"],
+			"resource_group_id":       object["ResourceGroupId"],
+			"router_id":               object["VRouterId"],
+			"vrouter_id":              object["VRouterId"],
+			"secondary_cidr_blocks":   object["SecondaryCidrBlocks"].(map[string]interface{})["SecondaryCidrBlock"],
+			"status":                  object["Status"],
+			"user_cidrs":              object["UserCidrs"].(map[string]interface{})["UserCidr"],
+			"vswitch_ids":             object["VSwitchIds"].(map[string]interface{})["VSwitchId"],
+			"id":                      fmt.Sprint(object["VpcId"]),
+			"vpc_id":                  fmt.Sprint(object["VpcId"]),
+			"vpc_name":                object["VpcName"],
 		}
 
 		tags := make(map[string]interface{})

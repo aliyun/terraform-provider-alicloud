@@ -7,7 +7,7 @@ description: |-
     Provides a list of VPCs owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_vpcs
+# alicloud_vpcs
 
 This data source provides VPCs available to the user.
 
@@ -60,6 +60,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `vrouter_id` - ID of the VRouter.
   * `route_table_id` - Route table ID of the VRouter.
   * `description` - Description of the VPC
+  * `dhcp_options_set_id` - The ID of the DHCP options set.
+  * `dhcp_options_set_status` - The status of the DHCP options set. Valid values: `Available`, `InUse`, `Deleted`, `Pending`.
+  * `dns_hostname_status` - Indicates whether the Domain Name System (DNS) feature is enabled.
   * `is_default` - Whether the VPC is the default VPC in the region.
   * `creation_time` - Time of creation.
   * `tags` - A map of tags assigned to the VPC.
