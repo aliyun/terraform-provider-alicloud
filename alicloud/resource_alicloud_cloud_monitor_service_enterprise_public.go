@@ -45,16 +45,12 @@ func resourceAliCloudCloudMonitorServiceEnterprisePublicCreate(d *schema.Resourc
 	var err error
 	var endpoint string
 	query := make(map[string]interface{})
-	var isIntl bool
-	if client.GetAccountType() == "International" {
-		isIntl = true
-	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_enterprise_public_cn"
-	if isIntl {
+	if client.IsInternationalAccount() {
 		request["ProductType"] = "cms_enterprise_public_intl"
 	}
 	request["SubscriptionType"] = "PayAsYouGo"
@@ -68,7 +64,7 @@ func resourceAliCloudCloudMonitorServiceEnterprisePublicCreate(d *schema.Resourc
 				wait()
 				return resource.RetryableError(err)
 			}
-			if !isIntl && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cms_enterprise_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)

@@ -263,7 +263,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		skipRegionValidation:         c.SkipRegionValidation,
 	}
 	if c.AccountType == "" {
-		c.AccountType = client.GetAccountType()
+		c.AccountType = client.getAccountType()
 		client.config = c
 	}
 	log.Printf("[INFO] caller identity's account type is %s.", client.config.AccountType)
@@ -1581,12 +1581,12 @@ func (client *AliyunClient) AccountId() (string, error) {
 	return client.accountId, nil
 }
 
-// GetAccountType determines and returns the account type (Domestic or International) based on the client's configuration and API endpoint.
+// getAccountType determines and returns the account type (Domestic or International) based on the client's configuration and API endpoint.
 // This function first checks if the AccountType is already set in the client configuration. If so, it returns that value directly.
 // Otherwise, it defaults the account type to "Domestic" and initializes a request to query available instances through the BssOpenApi API.
 // It then determines whether the account is domestic or international based on the API specific errors.
 // If there is a specific error, the account type should be updates, and meantime corrects the BssOpenApi endpoint.
-func (client *AliyunClient) GetAccountType() string {
+func (client *AliyunClient) getAccountType() string {
 	if client.config.AccountType != "" {
 		return client.config.AccountType
 	}
@@ -1632,6 +1632,9 @@ func (client *AliyunClient) GetAccountType() string {
 		return nil
 	})
 	return accountType
+}
+func (client *AliyunClient) IsInternationalAccount() bool {
+	return client.config.AccountType == "International"
 }
 
 func (client *AliyunClient) getSdkConfig() *sdk.Config {
