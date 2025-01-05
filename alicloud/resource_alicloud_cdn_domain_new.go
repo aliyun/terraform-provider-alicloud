@@ -91,10 +91,9 @@ func resourceAliCloudCdnDomain() *schema.Resource {
 				Computed: true,
 			},
 			"domain_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^([a-z0-9]([a-z0-9\\-]{0,61}[a-z0-9])?\\.)+[a-z][a-z0-9\\-]{0,62}$"), "Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or \"-\", and must not begin or end with \"-\", and \"-\" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported."),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"env": {
 				Type:     schema.TypeString,
