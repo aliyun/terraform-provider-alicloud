@@ -364,10 +364,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	var response map[string]interface{}
 	var query map[string]interface{}
 	var endpoint string
-	var isIntl bool
-	if client.IsInternationalAccount() {
-		isIntl = true
-	}
 	action := "QueryAvailableInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -376,7 +372,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	request["SubscriptionType"] = "PayAsYouGo"
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_enterprise_public_cn"
-	if isIntl {
+	if client.IsInternationalAccount() {
 		request["ProductType"] = "cms_enterprise_public_intl"
 	}
 	runtime := util.RuntimeOptions{}
@@ -390,7 +386,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 				wait()
 				return resource.RetryableError(err)
 			}
-			if !isIntl && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cms_enterprise_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -38,27 +37,30 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		d.Set("status", "")
 		return nil
 	}
+	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	action := "CreateInstance"
 	request := map[string]interface{}{
 		"ProductCode":      "eventbridge",
+		"ProductType":      "eventbridge_post_public_cn",
 		"SubscriptionType": "PayAsYouGo",
 	}
-	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "eventbridge_post_public_intl"
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "eventbridge_post_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -75,17 +77,11 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service", action, AlibabaCloudSdkGoERROR)
 	}
 	action = "GetEventBridgeStatus"
-	conn, err = client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	timeout := time.Now().Add(10 * time.Minute)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait = incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-04-01"), StringPointer("AK"), nil, nil, &runtime)
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, nil, true)
 			if err != nil {
 				wait()
 				return resource.RetryableError(err)
@@ -94,7 +90,7 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_rules", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Data.Components", response)
 		if err != nil {
