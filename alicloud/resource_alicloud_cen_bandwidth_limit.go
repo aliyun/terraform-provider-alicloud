@@ -113,10 +113,13 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 		if bandwidthLimit == 0 {
 			return WrapError(Error("the bandwidth limit should be at least than 1 Mbps"))
 		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, bandwidthLimit)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
+				if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) || NeedRetry(err) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -159,10 +162,12 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, 0)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

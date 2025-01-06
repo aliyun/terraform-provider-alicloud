@@ -2100,6 +2100,15 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
+		totalCount, err := jsonpath.Get("$.TotalCount", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+		}
+
+		if fmt.Sprint(totalCount) == "0" {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterMulticastDomainMember", id)), NotFoundWithResponse, response)
+		}
+
 		resp, err := jsonpath.Get("$.TransitRouterMulticastGroups", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastGroups", response)
