@@ -5,18 +5,83 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+type lockWithRefCount struct {
+	refCount int
+	m        *sync.Mutex
+}
+
+type KeyLock struct {
+	locks sync.Map
+	mu    sync.Mutex
+}
+
+func NewKeyLock() *KeyLock {
+	return &KeyLock{}
+}
+
+type UnlockFn func()
+
+func (kl *KeyLock) acquireLock(key string) *sync.Mutex {
+	kl.mu.Lock()
+	defer kl.mu.Unlock()
+
+	v, _ := kl.locks.LoadOrStore(key, &lockWithRefCount{refCount: 0, m: &sync.Mutex{}})
+	r := v.(*lockWithRefCount)
+	r.refCount++
+
+	return r.m
+}
+
+func (kl *KeyLock) releaseLock(key string) *sync.Mutex {
+	kl.mu.Lock()
+	defer kl.mu.Unlock()
+
+	v, _ := kl.locks.LoadOrStore(key, &lockWithRefCount{refCount: 0, m: &sync.Mutex{}})
+	r := v.(*lockWithRefCount)
+	r.refCount--
+	if r.refCount <= 0 {
+		kl.locks.Delete(key)
+	}
+
+	return r.m
+}
+
+func (kl *KeyLock) Lock(key string) {
+	l := kl.acquireLock(key)
+	l.Lock()
+}
+
+func (kl *KeyLock) Unlock(key string) {
+	l := kl.releaseLock(key)
+	l.Unlock()
+}
+
+var (
+	// make "ModifyDBInstanceConnectionString" executed by tf in-sequence per instance, otherwise users can't modify
+	// multiple connection string in a same tf scripts.
+	globalMongoServiceLock     *KeyLock
+	initGlobalMongoServiceLock sync.Once
+)
+
+func init() {
+	initGlobalMongoServiceLock.Do(func() {
+		globalMongoServiceLock = NewKeyLock()
+	})
+}
 
 type MongoDBService struct {
 	client *connectivity.AliyunClient
@@ -1576,4 +1641,189 @@ func (s *MongoDBService) DescribeParameters(id string) (map[string]interface{}, 
 	})
 	addDebug(action, response, request)
 	return response, err
+}
+
+func (s *MongoDBService) AllocatePublicNetworkAddress(id string) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "AllocatePublicNetworkAddress"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return err
+}
+
+func (s *MongoDBService) ReleasePublicNetworkAddress(id string) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "ReleasePublicNetworkAddress"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	log.Printf("[INFO] acquiring lock to release public network address, instance id: %s", id)
+
+	globalMongoServiceLock.Lock(id)
+	log.Printf("[INFO] lock of %s acquired, trying to release public network address", id)
+	defer globalMongoServiceLock.Unlock(id)
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return err
+}
+
+func getPrefixOfConnectionDomain(domain string) string {
+	parts := strings.Split(domain, ".")
+	// in fact, len(parts) should be equal to 5
+	return parts[0]
+}
+
+func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData, instanceId string, currentConnectionString, newConnectionStringPrefix string, port string) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+
+	action := "ModifyDBInstanceConnectionString"
+	request := map[string]interface{}{
+		"DBInstanceId":            instanceId,
+		"CurrentConnectionString": currentConnectionString,
+		"NewConnectionString":     newConnectionStringPrefix,
+		"NewPort":                 port,
+	}
+
+	log.Printf("[INFO] trying to modify connection string of mongodb, acquiring lock, instance: %s, currentConnectionString: %s, newConnectionStringPrefix: %s, port: %s",
+		instanceId, currentConnectionString, newConnectionStringPrefix, port)
+
+	globalMongoServiceLock.Lock(instanceId)
+	log.Printf("[INFO] lock acquired, instance: %s", instanceId)
+
+	// release the lock after the instance become running.
+	defer globalMongoServiceLock.Unlock(instanceId)
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return err
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, s.RdsMongodbDBInstanceStateRefreshFunc(instanceId, []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
+func (s *MongoDBService) DescribeReplicaSetRole(id string) (map[string]interface{}, error) {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "DescribeReplicaSetRole"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return response, err
+}
+
+func transferToMongoReplicaSets(objects map[string]interface{}, sortByRoleId bool) []map[string]interface{} {
+	if replicaSetsMap, ok := objects["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+		if replicaSetsListInterface, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsListInterface != nil {
+			replicaSetsList := replicaSetsListInterface.([]interface{})
+			ret := make([]map[string]interface{}, 0, len(replicaSetsList))
+			for _, replicaSets := range replicaSetsList {
+				replicaSetsArg := replicaSets.(map[string]interface{})
+				replicaSetsItemMap := make(map[string]interface{})
+
+				if connectionPort, ok := replicaSetsArg["ConnectionPort"]; ok {
+					replicaSetsItemMap["connection_port"] = connectionPort
+				}
+
+				if replicaSetRole, ok := replicaSetsArg["ReplicaSetRole"]; ok {
+					replicaSetsItemMap["replica_set_role"] = replicaSetRole
+				}
+
+				if connectionDomain, ok := replicaSetsArg["ConnectionDomain"]; ok {
+					replicaSetsItemMap["connection_domain"] = connectionDomain
+				}
+
+				if networkType, ok := replicaSetsArg["NetworkType"]; ok {
+					replicaSetsItemMap["network_type"] = networkType
+				}
+
+				if roleID, ok := replicaSetsArg["RoleId"]; ok {
+					replicaSetsItemMap["role_id"] = roleID
+				}
+
+				ret = append(ret, replicaSetsItemMap)
+			}
+
+			if sortByRoleId {
+				sort.Slice(ret, func(i, j int) bool {
+					r1, ok := ret[i]["role_id"]
+					if !ok {
+						return false
+					}
+					r2, ok := ret[j]["role_id"]
+					if !ok {
+						return true
+					}
+					return strings.Compare(r1.(string), r2.(string)) >= 0
+				})
+			}
+
+			return ret
+		}
+	}
+	return nil
 }
