@@ -1577,3 +1577,217 @@ func (s *MongoDBService) DescribeParameters(id string) (map[string]interface{}, 
 	addDebug(action, response, request)
 	return response, err
 }
+
+func (s *MongoDBService) AllocatePublicNetworkAddress(id string) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "AllocatePublicNetworkAddress"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return err
+}
+
+func (s *MongoDBService) ReleasePublicNetworkAddress(id string) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "ReleasePublicNetworkAddress"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return err
+}
+
+func getPrefixOfConnectionDomain(domain string) (string, error) {
+	parts := strings.Split(domain, ".")
+	// in fact, len(parts) should be equal to 5
+	if len(parts) < 1 {
+		return "", WrapError(fmt.Errorf("invalid domain: %s", domain))
+	}
+	return parts[0], nil
+}
+
+func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData, currentConnectionString, newConnectionStringPrefix string, port int) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+
+	log.Printf("[INFO] trying to modify connection string of mongodb, instance: %s, currentConnectionString: %s, newConnectionStringPrefix: %s, port: %d",
+		d.Id(), currentConnectionString, newConnectionStringPrefix, port)
+
+	action := "ModifyDBInstanceConnectionString"
+	request := map[string]interface{}{
+		"DBInstanceId":            d.Id(),
+		"CurrentConnectionString": currentConnectionString,
+		"NewConnectionString":     newConnectionStringPrefix,
+		"NewPort":                 port,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return err
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
+func (s *MongoDBService) ModifyAllPrivateNetworkAddress(d *schema.ResourceData, newConnectionStringPrefix string, port int, connectionPrefixChanged bool) error {
+	object, err := s.DescribeMongoDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+		if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
+			counter := 0
+			for _, replicaSets := range replicaSetsList.([]interface{}) {
+				replicaSetsArg := replicaSets.(map[string]interface{})
+
+				if networkType, ok := replicaSetsArg["NetworkType"]; !ok || networkType.(string) != "VPC" {
+					// make sure we are modifying a private network address.
+					continue
+				}
+
+				connectionDomain, ok := replicaSetsArg["ConnectionDomain"]
+				if !ok {
+					return WrapError(fmt.Errorf("no connection domain found in replica set role"))
+				}
+
+				currentPrefix, err := getPrefixOfConnectionDomain(connectionDomain.(string))
+				if err != nil {
+					return WrapError(err)
+				}
+
+				if connectionPrefixChanged {
+					// change the prefix, and change the port anyway.
+					prefix := fmt.Sprintf("%s-%d", newConnectionStringPrefix, counter)
+					counter++
+					if err := s.ModifyDBInstanceConnectionString(d, connectionDomain.(string), prefix, port); err != nil {
+						return err
+					}
+				} else {
+					// only change the port.
+					if err := s.ModifyDBInstanceConnectionString(d, connectionDomain.(string), currentPrefix, port); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *MongoDBService) DescribeReplicaSetRole(id string) (map[string]interface{}, error) {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "DescribeReplicaSetRole"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return response, err
+}
+
+func (s *MongoDBService) ModifyAllPublicNetworkAddress(d *schema.ResourceData, newConnectionStringPrefix string, port int, connectionPrefixChanged bool) error {
+	object, err := s.DescribeReplicaSetRole(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+		if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
+			counter := 0
+			for _, replicaSets := range replicaSetsList.([]interface{}) {
+				replicaSetsArg := replicaSets.(map[string]interface{})
+
+				if networkType, ok := replicaSetsArg["NetworkType"]; !ok || networkType.(string) != "Public" {
+					// make sure we are modifying a public network address.
+					continue
+				}
+
+				connectionDomain, ok := replicaSetsArg["ConnectionDomain"]
+				if !ok {
+					return WrapError(fmt.Errorf("no connection domain found in replica set role"))
+				}
+
+				currentPrefix, err := getPrefixOfConnectionDomain(connectionDomain.(string))
+				if err != nil {
+					return WrapError(err)
+				}
+
+				if connectionPrefixChanged {
+					// change the prefix, and change the port anyway.
+					prefix := fmt.Sprintf("%s-%d", newConnectionStringPrefix, counter)
+					counter++
+					if err := s.ModifyDBInstanceConnectionString(d, connectionDomain.(string), prefix, port); err != nil {
+						return err
+					}
+				} else {
+					// only change the port.
+					if err := s.ModifyDBInstanceConnectionString(d, connectionDomain.(string), currentPrefix, port); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
