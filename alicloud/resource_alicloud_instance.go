@@ -617,7 +617,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				MaxItems:      10,
-				ForceNew:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ipv6_address_count"},
 			},
@@ -1144,13 +1143,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprint(response["InstanceIdSets"].(map[string]interface{})["InstanceIdSet"].([]interface{})[0]))
 
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}))
-
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -1789,8 +1789,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if d.HasChange("secondary_private_ips") {
-		client := meta.(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
 		var response map[string]interface{}
 		instance, err := ecsService.DescribeInstance(d.Id())
 		if err != nil {
@@ -1869,8 +1867,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if d.HasChange("secondary_private_ip_address_count") {
-		client := meta.(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
 		var response map[string]interface{}
 		instance, err := ecsService.DescribeInstance(d.Id())
 		if err != nil {
@@ -1946,6 +1942,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 	}
+
 	if !d.IsNewResource() && d.HasChange("deployment_set_id") {
 		action := "ModifyInstanceDeployment"
 		var response map[string]interface{}
@@ -2072,7 +2069,92 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		d.SetPartial("http_tokens")
 	}
 
+	if !d.IsNewResource() && d.HasChange("ipv6_addresses") {
+		var response map[string]interface{}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		networkInterfaceId := ""
+		for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+			if obj.Type == "Primary" {
+				networkInterfaceId = obj.NetworkInterfaceId
+				break
+			}
+		}
+
+		oldIpv6Addresses, newIpv6Addresses := d.GetChange("ipv6_addresses")
+		removed := oldIpv6Addresses.(*schema.Set).Difference(newIpv6Addresses.(*schema.Set)).List()
+		added := newIpv6Addresses.(*schema.Set).Difference(oldIpv6Addresses.(*schema.Set)).List()
+
+		if len(removed) > 0 {
+			action := "UnassignIpv6Addresses"
+
+			unassignIpv6AddressesReq := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"ClientToken":        buildClientToken("UnassignIpv6Addresses"),
+				"NetworkInterfaceId": networkInterfaceId,
+				"Ipv6Address":        removed,
+			}
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, unassignIpv6AddressesReq, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, unassignIpv6AddressesReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if len(added) > 0 {
+			action := "AssignIpv6Addresses"
+
+			assignIpv6AddressesReq := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"ClientToken":        buildClientToken("AssignIpv6Addresses"),
+				"NetworkInterfaceId": networkInterfaceId,
+				"Ipv6Address":        added,
+			}
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, assignIpv6AddressesReq, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, assignIpv6AddressesReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		d.SetPartial("ipv6_addresses")
+	}
+
 	d.Partial(false)
+
 	return resourceAliCloudInstanceRead(d, meta)
 }
 

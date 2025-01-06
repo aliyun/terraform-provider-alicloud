@@ -235,32 +235,66 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 		request := ecs.CreateUntagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
-
 		var tagsKey []string
-		for _, t := range remove {
-			tagsKey = append(tagsKey, t.Key)
-		}
-		request.TagKey = &tagsKey
 
-		wait := incrementalWait(1*time.Second, 1*time.Second)
-		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.UntagResources(request)
-			})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+		for i := 0; i < len(remove); i = i + 20 {
+			tagsKey = tagsKey[:0]
 
+			if len(remove[i:]) <= 20 {
+				for _, t := range remove[i:] {
+					tagsKey = append(tagsKey, t.Key)
 				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				request.TagKey = &tagsKey
+
+				wait := incrementalWait(1*time.Second, 1*time.Second)
+				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+						return ecsClient.UntagResources(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
+				})
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			} else {
+				for _, t := range remove[i : i+20] {
+					tagsKey = append(tagsKey, t.Key)
+				}
+
+				request.TagKey = &tagsKey
+
+				wait := incrementalWait(1*time.Second, 1*time.Second)
+				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+						return ecsClient.UntagResources(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
+				})
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
 		}
 	}
 
@@ -268,35 +302,72 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 		request := ecs.CreateTagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
-
 		var tags []ecs.TagResourcesTag
-		for _, t := range create {
-			tags = append(tags, ecs.TagResourcesTag{
-				Key:   t.Key,
-				Value: t.Value,
-			})
-		}
-		request.Tag = &tags
 
-		wait := incrementalWait(1*time.Second, 1*time.Second)
-		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.TagResources(request)
-			})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+		for i := 0; i < len(create); i = i + 20 {
+			tags = tags[:0]
 
+			if len(create[i:]) <= 20 {
+				for _, t := range create[i:] {
+					tags = append(tags, ecs.TagResourcesTag{
+						Key:   t.Key,
+						Value: t.Value,
+					})
 				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				request.Tag = &tags
+
+				wait := incrementalWait(1*time.Second, 1*time.Second)
+				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+						return ecsClient.TagResources(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
+				})
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			} else {
+				for _, t := range create[i : i+20] {
+					tags = append(tags, ecs.TagResourcesTag{
+						Key:   t.Key,
+						Value: t.Value,
+					})
+				}
+
+				request.Tag = &tags
+
+				wait := incrementalWait(1*time.Second, 1*time.Second)
+				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+						return ecsClient.TagResources(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
+				})
+
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
 		}
 	}
 
