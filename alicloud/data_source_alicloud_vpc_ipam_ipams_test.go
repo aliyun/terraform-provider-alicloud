@@ -110,7 +110,7 @@ resource "alicloud_vpc_ipam_ipam" "default" {
   ipam_name         = var.name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   tags = {
-    "k1": "v1"
+    ipamKey = "ipamValue"
   }
   operating_region_list = ["cn-hangzhou"]
 }

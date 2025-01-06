@@ -256,6 +256,9 @@ func dataSourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("ipams", s); err != nil {
 		return WrapError(err)
 	}
