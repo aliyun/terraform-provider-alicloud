@@ -326,6 +326,14 @@ var irregularProductEndpoint = map[string]string{
 	"cas":              "cas.aliyuncs.com",
 }
 
+// irregularProductEndpointForIntlRegion specially records those product codes that
+// cannot be parsed out by the location service and sensitive to region.
+// These products adapt to international region, and conflict with irregularProductEndpointForIntlAccount
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is higher than location service, lower than user environment variable configuration
+var irregularProductEndpointForIntlRegion = map[string]string{}
+
 // irregularProductEndpointForIntlAccount specially records those product codes that
 // cannot be parsed out by the location service and sensitive to account type.
 // These products adapt to international account.
@@ -339,13 +347,13 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"esa":            "esa.ap-southeast-1.aliyuncs.com",
 }
 
-// irregularProductEndpointForIntlRegion specially records those product codes that
-// cannot be parsed out by the location service and sensitive to region.
-// These products adapt to international region, and conflict with irregularProductEndpointForIntlAccount
+// irregularProductEndpointForIntlAccountIntlRegion specially records those product codes that
+// cannot be parsed out by the location service and sensitive to account type and region.
+// These products adapt to international account.
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
-var irregularProductEndpointForIntlRegion = map[string]string{
+var irregularProductEndpointForIntlAccountIntlRegion = map[string]string{
 	"cas": "cas.ap-southeast-1.aliyuncs.com",
 }
 
@@ -450,17 +458,6 @@ var regularProductEndpoint = map[string]string{
 	"live":                 "live.aliyuncs.com",
 }
 
-// regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
-// regional or central endpoints. But the endpoints are sensitive to account type.
-// These products adapt to international account.
-// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
-// Value: product endpoint
-// The priority of this configuration is lower than location service, and as a backup endpoint
-var regularProductEndpointForIntlAccount = map[string]string{
-	"config":              "config.ap-southeast-1.aliyuncs.com",
-	"mscopensubscription": "mscopensubscription.ap-southeast-1.aliyuncs.com",
-}
-
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
 // regional or central endpoints. But the endpoints are sensitive to region.
 // These products adapt to international region, and conflict with regularProductEndpointForIntlAccount
@@ -475,6 +472,25 @@ var regularProductEndpointForIntlRegion = map[string]string{
 	"governance":  "governance.ap-southeast-1.aliyuncs.com",
 	"waf_openapi": "wafopenapi.ap-southeast-1.aliyuncs.com",
 }
+
+// regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
+// regional or central endpoints. But the endpoints are sensitive to account type.
+// These products adapt to international account.
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is lower than location service, and as a backup endpoint
+var regularProductEndpointForIntlAccount = map[string]string{
+	"config":              "config.ap-southeast-1.aliyuncs.com",
+	"mscopensubscription": "mscopensubscription.ap-southeast-1.aliyuncs.com",
+}
+
+// regularProductEndpointForIntlAccountIntlRegion specially records those product codes that have been confirmed to be
+// regional or central endpoints. But the endpoints are sensitive to account type and region.
+// These products adapt to international account.
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is lower than location service, and as a backup endpoint
+var regularProductEndpointForIntlAccountIntlRegion = map[string]string{}
 
 // NOTE: The productCode must be lowed.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
@@ -491,10 +507,13 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 
 	// Secondly, load endpoint from known rules
 	if endpointFmt, ok := irregularProductEndpoint[productCode]; ok {
-		if v, ok := irregularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+		if v, ok := irregularProductEndpointForIntlRegion[productCode]; ok && client.isInternationalRegion() {
 			endpointFmt = v
 		}
-		if v, ok := irregularProductEndpointForIntlRegion[productCode]; ok && !strings.HasPrefix(client.RegionId, "cn-") {
+		if v, ok := irregularProductEndpointForIntlAccount[productCode]; ok && client.IsInternationalAccount() {
+			endpointFmt = v
+		}
+		if v, ok := irregularProductEndpointForIntlAccountIntlRegion[productCode]; ok && client.IsInternationalAccount() && client.isInternationalRegion() {
 			endpointFmt = v
 		}
 		if strings.Contains(endpointFmt, "%s") {
@@ -507,17 +526,21 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Thirdly, load endpoint from location
 	endpoint, err := client.describeEndpointForService(productCode)
 	if err == nil {
-		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && client.IsInternationalAccount() {
 			endpoint = v
 		}
 		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
 	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
-		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && client.isInternationalRegion() {
 			endpointFmt = v
 		}
-		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && !strings.HasPrefix(client.RegionId, "cn-") {
+		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && client.IsInternationalAccount() {
 			endpointFmt = v
 		}
+		if v, ok := regularProductEndpointForIntlAccountIntlRegion[productCode]; ok && client.IsInternationalAccount() && client.isInternationalRegion() {
+			endpointFmt = v
+		}
+
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
