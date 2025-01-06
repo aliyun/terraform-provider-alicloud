@@ -63,6 +63,10 @@ func resourceAliCloudImsOidcProvider() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -138,6 +142,7 @@ func resourceAliCloudImsOidcProviderRead(d *schema.ResourceData, meta interface{
 	d.Set("issuance_limit_time", objectRaw["IssuanceLimitTime"])
 	d.Set("issuer_url", objectRaw["IssuerUrl"])
 	d.Set("oidc_provider_name", objectRaw["OIDCProviderName"])
+	d.Set("arn", objectRaw["Arn"])
 
 	e := jsonata.MustCompile("$split($.ClientIds, \",\")")
 	evaluation, _ := e.Eval(objectRaw)
