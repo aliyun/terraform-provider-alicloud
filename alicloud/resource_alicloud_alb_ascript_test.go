@@ -25,6 +25,7 @@ func TestAccAliCloudAlbAscript_basic2051(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -296,3 +297,522 @@ resource "alicloud_alb_listener" "default" {
 }
 `, name)
 }
+
+// Test Alb AScript. >>> Resource test cases, automatically generated.
+// Case Ascript_test241227_RequestFoot 9755
+func TestAccAliCloudAlbAScript_basic9755(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_ascript.default"
+	ra := resourceAttrInit(resourceId, AlicloudAlbAScriptMap9755)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbAScript")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAScriptBasicDependence9755)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script_content":        "if and(match_re($uri, '^/1.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+					"position":              "RequestFoot",
+					"ascript_name":          name,
+					"listener_id":           "${alicloud_alb_listener.defaultc8auOh.id}",
+					"enabled":               "true",
+					"ext_attribute_enabled": "true",
+					"ext_attributes": []map[string]interface{}{
+						{
+							"attribute_key":   "EsDebug",
+							"attribute_value": "aaa",
+						},
+					},
+					"dry_run": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"script_content":        "if and(match_re($uri, '^/1.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+						"position":              "RequestFoot",
+						"ascript_name":          name,
+						"listener_id":           CHECKSET,
+						"enabled":               "true",
+						"ext_attribute_enabled": "true",
+						"ext_attributes.#":      "1",
+						"dry_run":               "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudAlbAScriptMap9755 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudAlbAScriptBasicDependence9755(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zoneid-1" {
+  default = "cn-hangzhou-j"
+}
+
+variable "zoneid-2" {
+  default = "cn-hangzhou-k"
+}
+
+variable "regionid" {
+  default = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vsw-1" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-1
+  cidr_block   = "10.0.0.0/24"
+  vswitch_name = format("%%s1", var.name)
+}
+
+resource "alicloud_vswitch" "vsw-2" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-2
+  cidr_block   = "10.0.1.0/24"
+  vswitch_name = format("%%s2", var.name)
+}
+
+resource "alicloud_alb_load_balancer" "lb" {
+  load_balancer_edition = "Standard"
+  vpc_id                = alicloud_vpc.vpc.id
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+  address_type           = "Intranet"
+  address_allocated_mode = "Fixed"
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-1.id
+    zone_id    = alicloud_vswitch.vsw-1.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-2.id
+    zone_id    = alicloud_vswitch.vsw-2.zone_id
+  }
+}
+
+resource "alicloud_alb_server_group" "defaultBJ6wNY" {
+  vpc_id    = alicloud_vpc.vpc.id
+  scheduler = "Wrr"
+  sticky_session_config {
+    cookie_timeout      = "1000"
+    sticky_session_type = "Insert"
+  }
+  health_check_config {
+    health_check_http_version = "HTTP1.1"
+    health_check_interval     = "2"
+    health_check_method       = "HEAD"
+    health_check_timeout      = "5"
+    healthy_threshold         = "3"
+    unhealthy_threshold       = "3"
+    health_check_enabled      = true
+  }
+  protocol          = "HTTP"
+  server_group_name = format("%%s4", var.name)
+  server_group_type = "Ip"
+}
+
+resource "alicloud_alb_listener" "defaultc8auOh" {
+  request_timeout = "60"
+  listener_port   = "7788"
+  default_actions {
+    forward_group_config {
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.defaultBJ6wNY.id
+      }
+    }
+    type = "ForwardGroup"
+  }
+  idle_timeout      = "15"
+  load_balancer_id  = alicloud_alb_load_balancer.lb.id
+  listener_protocol = "HTTP"
+}
+
+
+`, name)
+}
+
+// Case Ascript_test241227_RequestHead 9640
+func TestAccAliCloudAlbAScript_basic9640(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_ascript.default"
+	ra := resourceAttrInit(resourceId, AlicloudAlbAScriptMap9640)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbAScript")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAScriptBasicDependence9640)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script_content":        "if and(match_re($uri, '^/1.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+					"position":              "RequestHead",
+					"ascript_name":          name,
+					"listener_id":           "${alicloud_alb_listener.defaultc8auOh.id}",
+					"enabled":               "true",
+					"ext_attribute_enabled": "true",
+					"ext_attributes": []map[string]interface{}{
+						{
+							"attribute_key":   "EsDebug",
+							"attribute_value": "aaa",
+						},
+					},
+					"dry_run": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"script_content":        "if and(match_re($uri, '^/1.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+						"position":              "RequestHead",
+						"ascript_name":          name,
+						"listener_id":           CHECKSET,
+						"enabled":               "true",
+						"ext_attribute_enabled": "true",
+						"ext_attributes.#":      "1",
+						"dry_run":               "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script_content": "if and(match_re($uri, '^/2.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+					"ascript_name":   name + "_update",
+					"ext_attributes": []map[string]interface{}{
+						{
+							"attribute_key":   "EsDebug",
+							"attribute_value": "bbb",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"script_content":   "if and(match_re($uri, '^/2.txt$'), $arg_type) { rewrite(concat('/1.', $arg_type), 'break') }",
+						"ascript_name":     name + "_update",
+						"ext_attributes.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enabled":               "false",
+					"ext_attribute_enabled": "false",
+					"ext_attributes":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enabled":               "false",
+						"ext_attribute_enabled": "false",
+						"ext_attributes.#":      "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudAlbAScriptMap9640 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudAlbAScriptBasicDependence9640(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zoneid-1" {
+  default = "cn-hangzhou-j"
+}
+
+variable "zoneid-2" {
+  default = "cn-hangzhou-k"
+}
+
+variable "regionid" {
+  default = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vsw-1" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-1
+  cidr_block   = "10.0.0.0/24"
+  vswitch_name = format("%%s1", var.name)
+}
+
+resource "alicloud_vswitch" "vsw-2" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-2
+  cidr_block   = "10.0.1.0/24"
+  vswitch_name = format("%%s2", var.name)
+}
+
+resource "alicloud_alb_load_balancer" "lb" {
+  load_balancer_edition = "Standard"
+  vpc_id                = alicloud_vpc.vpc.id
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+  address_type           = "Intranet"
+  address_allocated_mode = "Fixed"
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-1.id
+    zone_id    = alicloud_vswitch.vsw-1.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-2.id
+    zone_id    = alicloud_vswitch.vsw-2.zone_id
+  }
+}
+
+resource "alicloud_alb_server_group" "defaultBJ6wNY" {
+  vpc_id    = alicloud_vpc.vpc.id
+  scheduler = "Wrr"
+  sticky_session_config {
+    cookie_timeout      = "1000"
+    sticky_session_type = "Insert"
+  }
+  health_check_config {
+    health_check_http_version = "HTTP1.1"
+    health_check_interval     = "2"
+    health_check_method       = "HEAD"
+    health_check_timeout      = "5"
+    healthy_threshold         = "3"
+    unhealthy_threshold       = "3"
+    health_check_enabled      = true
+  }
+  protocol          = "HTTP"
+  server_group_name = format("%%s4", var.name)
+  server_group_type = "Ip"
+}
+
+resource "alicloud_alb_listener" "defaultc8auOh" {
+  request_timeout = "60"
+  listener_port   = "7788"
+  default_actions {
+    forward_group_config {
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.defaultBJ6wNY.id
+      }
+    }
+    type = "ForwardGroup"
+  }
+  idle_timeout      = "15"
+  load_balancer_id  = alicloud_alb_load_balancer.lb.id
+  listener_protocol = "HTTP"
+}
+
+
+`, name)
+}
+
+// Case Ascript_test241227_ResponseHead 9756
+func TestAccAliCloudAlbAScript_basic9756(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_ascript.default"
+	ra := resourceAttrInit(resourceId, AlicloudAlbAScriptMap9756)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbAScript")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAScriptBasicDependence9756)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script_content":        "id1 = rand(1, 99999)",
+					"position":              "ResponseHead",
+					"ascript_name":          name,
+					"listener_id":           "${alicloud_alb_listener.defaultc8auOh.id}",
+					"enabled":               "true",
+					"ext_attribute_enabled": "true",
+					"ext_attributes": []map[string]interface{}{
+						{
+							"attribute_key":   "EsDebug",
+							"attribute_value": "aaa",
+						},
+					},
+					"dry_run": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"script_content":        "id1 = rand(1, 99999)",
+						"position":              "ResponseHead",
+						"ascript_name":          name,
+						"listener_id":           CHECKSET,
+						"enabled":               "true",
+						"ext_attribute_enabled": "true",
+						"ext_attributes.#":      "1",
+						"dry_run":               "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudAlbAScriptMap9756 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudAlbAScriptBasicDependence9756(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zoneid-1" {
+  default = "cn-hangzhou-j"
+}
+
+variable "zoneid-2" {
+  default = "cn-hangzhou-k"
+}
+
+variable "regionid" {
+  default = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vsw-1" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-1
+  cidr_block   = "10.0.0.0/24"
+  vswitch_name = format("%%s1", var.name)
+}
+
+resource "alicloud_vswitch" "vsw-2" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = var.zoneid-2
+  cidr_block   = "10.0.1.0/24"
+  vswitch_name = format("%%s2", var.name)
+}
+
+resource "alicloud_alb_load_balancer" "lb" {
+  load_balancer_edition = "Standard"
+  vpc_id                = alicloud_vpc.vpc.id
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+  address_type           = "Intranet"
+  address_allocated_mode = "Fixed"
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-1.id
+    zone_id    = alicloud_vswitch.vsw-1.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw-2.id
+    zone_id    = alicloud_vswitch.vsw-2.zone_id
+  }
+}
+
+resource "alicloud_alb_server_group" "defaultBJ6wNY" {
+  vpc_id    = alicloud_vpc.vpc.id
+  scheduler = "Wrr"
+  sticky_session_config {
+    cookie_timeout      = "1000"
+    sticky_session_type = "Insert"
+  }
+  health_check_config {
+    health_check_http_version = "HTTP1.1"
+    health_check_interval     = "2"
+    health_check_method       = "HEAD"
+    health_check_timeout      = "5"
+    healthy_threshold         = "3"
+    unhealthy_threshold       = "3"
+    health_check_enabled      = true
+  }
+  protocol          = "HTTP"
+  server_group_name = format("%%s4", var.name)
+  server_group_type = "Ip"
+}
+
+resource "alicloud_alb_listener" "defaultc8auOh" {
+  request_timeout = "60"
+  listener_port   = "7788"
+  default_actions {
+    forward_group_config {
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.defaultBJ6wNY.id
+      }
+    }
+    type = "ForwardGroup"
+  }
+  idle_timeout      = "15"
+  load_balancer_id  = alicloud_alb_load_balancer.lb.id
+  listener_protocol = "HTTP"
+}
+
+
+`, name)
+}
+
+// Test Alb AScript. <<< Resource test cases, automatically generated.
