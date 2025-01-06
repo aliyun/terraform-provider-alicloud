@@ -1,8 +1,11 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -10,130 +13,153 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/tidwall/sjson"
 )
 
-func resourceAlicloudAlbAscript() *schema.Resource {
+func resourceAliCloudAlbAScript() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlbAscriptCreate,
-		Read:   resourceAlicloudAlbAscriptRead,
-		Update: resourceAlicloudAlbAscriptUpdate,
-		Delete: resourceAlicloudAlbAscriptDelete,
+		Create: resourceAliCloudAlbAScriptCreate,
+		Read:   resourceAliCloudAlbAScriptRead,
+		Update: resourceAliCloudAlbAScriptUpdate,
+		Delete: resourceAliCloudAlbAScriptDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"listener_id": {
-				Required: true,
-				ForceNew: true,
-				Type:     schema.TypeString,
-			},
-			"position": {
-				Required: true,
-				ForceNew: true,
-				Type:     schema.TypeString,
-			},
 			"ascript_name": {
-				Required: true,
 				Type:     schema.TypeString,
+				Required: true,
 			},
-			"script_content": {
-				Required: true,
-				Type:     schema.TypeString,
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"enabled": {
-				Required: true,
 				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"ext_attribute_enabled": {
-				Optional: true,
-				Computed: true,
 				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"ext_attributes": {
-				Optional: true,
-				Computed: true,
 				Type:     schema.TypeList,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"attribute_key": {
-							Optional: true,
-							Computed: true,
-							Type:     schema.TypeString,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"EsDebug"}, false),
 						},
 						"attribute_value": {
-							Optional: true,
-							Computed: true,
-							Type:     schema.TypeString,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9]{1,127}$"), "The value of the extended attribute"),
 						},
 					},
 				},
 			},
-			"load_balancer_id": {
-				Computed: true,
+			"listener_id": {
 				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"position": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"RequestHead", "RequestFoot", "ResponseHead"}, false),
+			},
+			"script_content": {
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"status": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudAlbAscriptCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbAScriptCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
-	request := make(map[string]interface{})
+
+	action := "CreateAScripts"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("ascript_name"); ok {
-		request["AScripts.1.AScriptName"] = v
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
 	}
+	request["ListenerId"] = d.Get("listener_id")
+	objectDataLocalMap := make(map[string]interface{})
 
 	if v, ok := d.GetOk("position"); ok {
-		request["AScripts.1.Position"] = v
+		objectDataLocalMap["Position"] = v
 	}
 
 	if v, ok := d.GetOk("enabled"); ok {
-		request["AScripts.1.Enabled"] = v
+		objectDataLocalMap["Enabled"] = v
 	}
 
 	if v, ok := d.GetOk("script_content"); ok {
-		request["AScripts.1.ScriptContent"] = v
+		objectDataLocalMap["ScriptContent"] = v
 	}
 
-	if v, ok := d.GetOk("ext_attributes"); ok {
-		for index, value0 := range v.(*schema.Set).List() {
-			extAttributes := value0.(map[string]interface{})
-			request["AScripts.1.ExtAttributes."+fmt.Sprint(index+1)+".AttributeKey"] = extAttributes["attribute_key"]
-			request["AScripts.1.ExtAttributes."+fmt.Sprint(index+1)+".AttributeValue"] = extAttributes["attribute_value"]
+	if v := d.Get("ext_attributes"); !IsNil(v) {
+		if v, ok := d.GetOk("ext_attributes"); ok {
+			localData, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData = make([]interface{}, 0)
+			}
+			localMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData.([]interface{}) {
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["AttributeKey"] = dataLoopTmp["attribute_key"]
+				dataLoopMap["AttributeValue"] = dataLoopTmp["attribute_value"]
+				localMaps = append(localMaps, dataLoopMap)
+			}
+			objectDataLocalMap["ExtAttributes"] = localMaps
 		}
+
 	}
 
 	if v, ok := d.GetOk("ext_attribute_enabled"); ok {
-		request["AScripts.1.ExtAttributeEnabled"] = v
+		objectDataLocalMap["ExtAttributeEnabled"] = v
 	}
 
-	if v, ok := d.GetOk("listener_id"); ok {
-		request["ListenerId"] = v
+	if v, ok := d.GetOk("ascript_name"); ok {
+		objectDataLocalMap["AScriptName"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("CreateAScripts")
-	var response map[string]interface{}
-	action := "CreateAScripts"
+	AScriptsMap := make([]interface{}, 0)
+	AScriptsMap = append(AScriptsMap, objectDataLocalMap)
+	request["AScripts"] = AScriptsMap
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -141,113 +167,170 @@ func resourceAlicloudAlbAscriptCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alb_ascript", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if v, err := jsonpath.Get("$.AScriptIds[0].AScriptId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_alb_ascript")
-	} else {
-		d.SetId(fmt.Sprint(v))
-	}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbAscriptStateRefreshFunc(d, []string{}))
+	id, _ := jsonpath.Get("$.AScriptIds[0].AScriptId", response)
+	d.SetId(fmt.Sprint(id))
+
+	albServiceV2 := AlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albServiceV2.AlbAScriptStateRefreshFunc(d.Id(), "AScriptStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudAlbAscriptUpdate(d, meta)
+
+	return resourceAliCloudAlbAScriptRead(d, meta)
 }
 
-func resourceAlicloudAlbAscriptRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbAScriptRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
+	albServiceV2 := AlbServiceV2{client}
 
-	object, err := albService.DescribeAlbAscript(d.Id())
+	objectRaw, err := albServiceV2.DescribeAlbAScript(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_alb_ascript albService.DescribeAlbAscript Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alb_ascript DescribeAlbAScript Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("ascript_name", object["AScriptName"])
-	d.Set("enabled", object["Enabled"])
-	d.Set("ext_attribute_enabled", object["ExtAttributeEnabled"])
-	extAttributes19Maps := make([]map[string]interface{}, 0)
-	extAttributes19Raw := object["ExtAttributes"]
-	for _, value0 := range extAttributes19Raw.([]interface{}) {
-		extAttributes19 := value0.(map[string]interface{})
-		extAttributes19Map := make(map[string]interface{})
-		extAttributes19Map["attribute_key"] = extAttributes19["AttributeKey"]
-		extAttributes19Map["attribute_value"] = extAttributes19["AttributeValue"]
-		extAttributes19Maps = append(extAttributes19Maps, extAttributes19Map)
+
+	if objectRaw["AScriptName"] != nil {
+		d.Set("ascript_name", objectRaw["AScriptName"])
 	}
-	d.Set("ext_attributes", extAttributes19Maps)
-	d.Set("listener_id", object["ListenerId"])
-	d.Set("load_balancer_id", object["LoadBalancerId"])
-	d.Set("position", object["Position"])
-	d.Set("script_content", object["ScriptContent"])
-	d.Set("status", object["AScriptStatus"])
+	if objectRaw["Enabled"] != nil {
+		d.Set("enabled", objectRaw["Enabled"])
+	}
+	if objectRaw["ExtAttributeEnabled"] != nil {
+		d.Set("ext_attribute_enabled", objectRaw["ExtAttributeEnabled"])
+	}
+	if objectRaw["ListenerId"] != nil {
+		d.Set("listener_id", objectRaw["ListenerId"])
+	}
+	if objectRaw["Position"] != nil {
+		d.Set("position", objectRaw["Position"])
+	}
+	if objectRaw["ScriptContent"] != nil {
+		d.Set("script_content", objectRaw["ScriptContent"])
+	}
+	if objectRaw["AScriptStatus"] != nil {
+		d.Set("status", objectRaw["AScriptStatus"])
+	}
+
+	extAttributes1Raw := objectRaw["ExtAttributes"]
+	extAttributesMaps := make([]map[string]interface{}, 0)
+	if extAttributes1Raw != nil {
+		for _, extAttributesChild1Raw := range extAttributes1Raw.([]interface{}) {
+			extAttributesMap := make(map[string]interface{})
+			extAttributesChild1Raw := extAttributesChild1Raw.(map[string]interface{})
+			extAttributesMap["attribute_key"] = extAttributesChild1Raw["AttributeKey"]
+			extAttributesMap["attribute_value"] = extAttributesChild1Raw["AttributeValue"]
+
+			extAttributesMaps = append(extAttributesMaps, extAttributesMap)
+		}
+	}
+	if objectRaw["ExtAttributes"] != nil {
+		if err := d.Set("ext_attributes", extAttributesMaps); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func resourceAlicloudAlbAscriptUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbAScriptUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
 
-	albService := AlbService{client}
+	action := "UpdateAScripts"
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
-	request := map[string]interface{}{
-		"AScripts.1.AScriptId": d.Id(),
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	jsonString := "{}"
+	jsonString, _ = sjson.Set(jsonString, "AScripts.0.AScriptId", d.Id())
+	err = json.Unmarshal([]byte(jsonString), &request)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	objectDataLocalMap := make(map[string]interface{})
+
+	objectDataLocalMap["AScriptId"] = d.Id()
+	if d.HasChange("enabled") {
+		update = true
+		objectDataLocalMap["Enabled"] = d.Get("enabled")
+	}
+
+	if d.HasChange("script_content") {
+		update = true
+		objectDataLocalMap["ScriptContent"] = d.Get("script_content")
+	}
+
+	if d.HasChange("ext_attributes") {
+		update = true
+		if v := d.Get("ext_attributes"); v != nil {
+			if v, ok := d.GetOk("ext_attributes"); ok {
+				localData, err := jsonpath.Get("$", v)
+				if err != nil {
+					localData = make([]interface{}, 0)
+				}
+				localMaps := make([]interface{}, 0)
+				for _, dataLoop := range localData.([]interface{}) {
+					dataLoopTmp := make(map[string]interface{})
+					if dataLoop != nil {
+						dataLoopTmp = dataLoop.(map[string]interface{})
+					}
+					dataLoopMap := make(map[string]interface{})
+					dataLoopMap["AttributeKey"] = dataLoopTmp["attribute_key"]
+					dataLoopMap["AttributeValue"] = dataLoopTmp["attribute_value"]
+					localMaps = append(localMaps, dataLoopMap)
+				}
+				objectDataLocalMap["ExtAttributes"] = localMaps
+			}
+
+		}
+	}
+
+	if d.HasChange("ext_attribute_enabled") {
+		update = true
+		objectDataLocalMap["ExtAttributeEnabled"] = d.Get("ext_attribute_enabled")
+	}
+
+	if d.HasChange("ascript_id") {
+		update = true
+		objectDataLocalMap["AScriptId"] = d.Get("ascript_id")
 	}
 
 	if d.HasChange("ascript_name") {
 		update = true
-		if v, ok := d.GetOk("ascript_name"); ok {
-			request["AScripts.1.AScriptName"] = v
-		}
+		objectDataLocalMap["AScriptName"] = d.Get("ascript_name")
 	}
 
-	if d.HasChange("enabled") {
-		update = true
-		request["AScripts.1.Enabled"] = d.Get("enabled")
-	}
-	if d.HasChange("ext_attribute_enabled") {
-		update = true
-		request["AScripts.1.ExtAttributeEnabled"] = d.Get("ext_attribute_enabled")
-	}
-	if d.HasChange("ext_attributes") {
-		update = true
-		if v, ok := d.GetOk("ext_attributes"); ok {
-			for index, value0 := range v.([]interface{}) {
-				extAttributes := value0.(map[string]interface{})
-				request["AScripts.1.ExtAttributes."+fmt.Sprint(index+1)+".AttributeKey"] = extAttributes["attribute_key"]
-				request["AScripts.1.ExtAttributes."+fmt.Sprint(index+1)+".AttributeValue"] = extAttributes["attribute_value"]
-			}
-		}
-	}
-	if d.HasChange("script_content") {
-		update = true
-		if v, ok := d.GetOk("script_content"); ok {
-			request["AScripts.1.ScriptContent"] = v
-		}
-	}
-
+	AScriptsMap := make([]interface{}, 0)
+	AScriptsMap = append(AScriptsMap, objectDataLocalMap)
+	request["AScripts"] = AScriptsMap
 	if update {
-		action := "UpdateAScripts"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -255,40 +338,48 @@ func resourceAlicloudAlbAscriptUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbAscriptStateRefreshFunc(d, []string{}))
+		albServiceV2 := AlbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albServiceV2.AlbAScriptStateRefreshFunc(d.Id(), "AScriptStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
-	return resourceAlicloudAlbAscriptRead(d, meta)
+	return resourceAliCloudAlbAScriptRead(d, meta)
 }
 
-func resourceAlicloudAlbAscriptDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbAScriptDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteAScripts"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["AScriptIds.1"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
-	request := map[string]interface{}{
-
-		"AScriptIds.1": d.Id(),
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
 	}
-
-	request["ClientToken"] = buildClientToken("DeleteAScripts")
-	action := "DeleteAScripts"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -296,14 +387,22 @@ func resourceAlicloudAlbAscriptDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
+	albServiceV2 := AlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albServiceV2.AlbAScriptStateRefreshFunc(d.Id(), "AScriptStatus", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }

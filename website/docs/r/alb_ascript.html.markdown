@@ -2,28 +2,23 @@
 subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_ascript"
-sidebar_current: "docs-alicloud-resource-alb-ascript"
 description: |-
-  Provides a Alicloud Alb Ascript resource.
+  Provides a Alicloud Application Load Balancer (ALB) A Script resource.
 ---
 
 # alicloud_alb_ascript
 
-Provides a Alb Ascript resource.
+Provides a Application Load Balancer (ALB) A Script resource.
 
-For information about Alb Ascript and how to use it, see [What is AScript](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createascripts).
+
+
+For information about Application Load Balancer (ALB) A Script and how to use it, see [What is A Script](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createascripts).
 
 -> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_ascript&exampleId=d74c0c5f-2b1a-bc8c-1003-4229b402a07186b2b332&activeTab=example&spm=docs.r.alb_ascript.0.d74c0c5f2b&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -111,39 +106,38 @@ resource "alicloud_alb_ascript" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `ascript_name` - (Required) AScript name.
+* `dry_run` - (Optional, Available since v1.241.0) Whether to PreCheck only this request
+* `enabled` - (Optional) Whether AScript is enabled.
+* `ext_attribute_enabled` - (Optional) Whether extension parameters are enabled. When ExtAttributeEnabled is true, ExtAttributes must be set.
+* `ext_attributes` - (Optional, List) Expand the list of attributes. When ExtAttributeEnabled is true, ExtAttributes must be set. See [`ext_attributes`](#ext_attributes) below.
 * `listener_id` - (Required, ForceNew) Listener ID of script attribution
-* `position` - (Required, ForceNew) Execution location of AScript.
-* `ascript_name` - (Required) The name of AScript.
-* `script_content` - (Required) The content of AScript.
-* `enabled` - (Required) Whether scripts are enabled.
-* `ext_attribute_enabled` - (Optional) Whether extension parameters are enabled.
-* `ext_attributes` - (Optional) Extended attribute list. See [`ext_attributes`](#ext_attributes) below for details.
+* `position` - (Required, ForceNew) Script execution location.
+* `script_content` - (Required) AScript script content.
 
 ### `ext_attributes`
 
 The ext_attributes supports the following:
-* `attribute_key` - (Optional) The key of the extended attribute.
-* `attribute_value` - (Optional) The value of the extended attribute.
-
+* `attribute_key` - (Optional) Key to extend attribute
+* `attribute_value` - (Optional) The value of the extended attribute
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.
-* `load_balancer_id` - The ID of load balancer instance.
-* `status` - The status of AScript.
+* `id` - The ID of the resource supplied above.
+* `status` - Script status
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Ascript.
-* `delete` - (Defaults to 5 mins) Used when delete the Ascript.
-* `update` - (Defaults to 5 mins) Used when update the Ascript.
+* `create` - (Defaults to 5 mins) Used when create the A Script.
+* `delete` - (Defaults to 5 mins) Used when delete the A Script.
+* `update` - (Defaults to 5 mins) Used when update the A Script.
 
 ## Import
 
-Alb AScript can be imported using the id, e.g.
+Application Load Balancer (ALB) A Script can be imported using the id, e.g.
 
 ```shell
-$terraform import alicloud_alb_ascript.example <id>
+$ terraform import alicloud_alb_ascript.example <id>
 ```
