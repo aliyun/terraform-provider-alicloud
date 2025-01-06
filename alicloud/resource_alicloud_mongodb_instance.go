@@ -299,7 +299,7 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Computed: true,
 			},
 			"replica_sets": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -333,6 +333,15 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 						},
 					},
 				},
+			},
+			"connection_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"port": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  3717,
 			},
 		},
 	}
@@ -1237,6 +1246,31 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("parameters") {
 		if err := ddsService.ModifyParameters(d, "parameters"); err != nil {
 			return WrapError(err)
+		}
+	}
+
+	needUpdatePrivateNetworkAddress := false
+	connectionPrefixChanged := false
+	if d.HasChange("connection_prefix") {
+		needUpdatePrivateNetworkAddress = true
+		connectionPrefixChanged = true
+	}
+	if d.HasChange("port") {
+		needUpdatePrivateNetworkAddress = true
+	}
+
+	if needUpdatePrivateNetworkAddress {
+		connectionPrefix := ""
+		port := 3717
+		if v, ok := d.GetOk("connection_prefix"); ok {
+			connectionPrefix = v.(string)
+		}
+		if v, ok := d.GetOk("port"); ok {
+			port = v.(int)
+		}
+
+		if err := ddsService.ModifyAllPrivateNetworkAddress(d, connectionPrefix, port, connectionPrefixChanged); err != nil {
+			return err
 		}
 	}
 
