@@ -26,18 +26,17 @@ provider "alicloud" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
+
 resource "alicloud_vpc_ipam_ipam" "default" {
-  ipam_description  = "This is my first Ipam."
-  ipam_name         = var.name
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
-  tags = {
-    "k1" : "v1"
-  }
+  ipam_description      = "This is my first Ipam."
+  ipam_name             = var.name
   operating_region_list = ["cn-hangzhou"]
 }
 
 data "alicloud_vpc_ipam_ipams" "default" {
-  name_regex = alicloud_vpc_ipam_ipam.default.name
+  ids        = ["${alicloud_vpc_ipam_ipam.default.id}"]
+  name_regex = alicloud_vpc_ipam_ipam.default.ipam_name
+  ipam_name  = var.name
 }
 
 output "alicloud_vpc_ipam_ipam_example_id" {
