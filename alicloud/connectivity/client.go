@@ -1636,6 +1636,12 @@ func (client *AliyunClient) getAccountType() string {
 func (client *AliyunClient) IsInternationalAccount() bool {
 	return client.config.AccountType == "International"
 }
+func (client *AliyunClient) isInternationalRegion() bool {
+	if client.config.RegionId == "cn-hongkong" {
+		return true
+	}
+	return !strings.HasPrefix(client.config.RegionId, "cn-")
+}
 
 func (client *AliyunClient) getSdkConfig() *sdk.Config {
 	return sdk.NewConfig().
