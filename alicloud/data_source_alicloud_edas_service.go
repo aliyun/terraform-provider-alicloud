@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -42,6 +41,8 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	action := "CreateInstance"
 	request := map[string]interface{}{
 		"ProductCode":       "edas",
@@ -50,20 +51,20 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 		"Parameter.1.Code":  "env",
 		"Parameter.1.Value": "env_public",
 	}
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "edaspostpay_intl"
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "edaspostpay_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -79,15 +80,6 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_edas_service", "CreateInstance", AlibabaCloudSdkGoERROR)
-	}
-
-	if response["Success"] != nil && !response["Success"].(bool) {
-		if response["Code"] != nil && response["Code"].(string) == "SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED" {
-			d.SetId("EdasServiceHasBeenOpened")
-			d.Set("status", "Opened")
-			return nil
-		}
-		return WrapErrorf(fmt.Errorf("%s", response), DataDefaultErrorMsg, "alicloud_edas_service", "CreateInstance", AlibabaCloudSdkGoERROR)
 	}
 
 	if response["Data"] != nil {
