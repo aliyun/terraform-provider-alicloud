@@ -59,6 +59,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation Time (UTC time).
+* `arn` - The Alibaba Cloud Resource Name (ARN) of the OIDC IdP.
 
 ## Timeouts
 

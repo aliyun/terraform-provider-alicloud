@@ -186,6 +186,7 @@ func TestAccAliCloudImsOidcProvider_basic4434(t *testing.T) {
 var AlicloudImsOidcProviderMap4434 = map[string]string{
 	"create_time":         CHECKSET,
 	"issuance_limit_time": "12",
+	"arn":                 CHECKSET,
 }
 
 func AlicloudImsOidcProviderBasicDependence4434(name string) string {
