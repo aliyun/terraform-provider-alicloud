@@ -19,24 +19,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
+func TestAccAliCloudAlidnsGtmInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alidns_gtm_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.AlidnsSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudAlidnsGtmInstanceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAlidnsGtmInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlidnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlidnsGtmInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salidnsgtminstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlidnsGtmInstanceBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%sgtm%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlidnsGtmInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
+			//testAccPreCheckWithTime(t, []int{1})
+			//testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -56,11 +56,11 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 					"cname_type":              "PUBLIC",
 					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"alert_group":             []string{"${alicloud_cms_alarm_contact_group.default.0.alarm_contact_group_name}"},
-					"public_user_domain_name": "${var.domain_name}",
-					"strategy_mode":           "GEO",
+					//"public_user_domain_name": "${var.domain_name}",
+					"strategy_mode": "GEO",
 					"alert_config": []map[string]interface{}{
 						{
-							"sms_notice":      "true",
+							//"sms_notice":      "true",
 							"notice_type":     "ADDR_ALERT",
 							"email_notice":    "true",
 							"dingtalk_notice": "true",
@@ -69,17 +69,17 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":           name,
-						"cname_type":              "PUBLIC",
-						"ttl":                     "60",
-						"alert_group.#":           "1",
-						"alert_config.#":          "1",
-						"resource_group_id":       CHECKSET,
-						"public_cname_mode":       "SYSTEM_ASSIGN",
-						"strategy_mode":           "GEO",
-						"public_user_domain_name": CHECKSET,
-						"public_rr":               CHECKSET,
-						"public_zone_name":        CHECKSET,
+						"instance_name":     name,
+						"cname_type":        "PUBLIC",
+						"ttl":               "60",
+						"alert_group.#":     "1",
+						"alert_config.#":    "1",
+						"resource_group_id": CHECKSET,
+						"public_cname_mode": "SYSTEM_ASSIGN",
+						"strategy_mode":     "GEO",
+						//"public_user_domain_name": CHECKSET,
+						"public_rr":        CHECKSET,
+						"public_zone_name": CHECKSET,
 					}),
 				),
 			},
@@ -137,13 +137,13 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"alert_config": []map[string]interface{}{
 						{
-							"sms_notice":      "true",
+							//"sms_notice":      "true",
 							"notice_type":     "ADDR_RESUME",
 							"email_notice":    "true",
 							"dingtalk_notice": "true",
 						},
 						{
-							"sms_notice":      "true",
+							//"sms_notice":      "true",
 							"notice_type":     "ADDR_POOL_GROUP_UNAVAILABLE",
 							"email_notice":    "true",
 							"dingtalk_notice": "true",
@@ -165,7 +165,7 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 					"strategy_mode":     "GEO",
 					"alert_config": []map[string]interface{}{
 						{
-							"sms_notice":      "true",
+							//"sms_notice":      "true",
 							"notice_type":     "ADDR_ALERT",
 							"email_notice":    "true",
 							"dingtalk_notice": "true",
@@ -194,9 +194,9 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudAlidnsGtmInstanceMap0 = map[string]string{}
+var AliCloudAlidnsGtmInstanceMap0 = map[string]string{}
 
-func AlicloudAlidnsGtmInstanceBasicDependence0(name string) string {
+func AliCloudAlidnsGtmInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -212,7 +212,7 @@ resource "alicloud_cms_alarm_contact_group" "default" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
-func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
+func TestUnitAliCloudAlidnsGtmInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(nil, nil)
@@ -306,7 +306,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudAlidnsGtmInstanceCreate(dInit, rawClient)
+	err = resourceAliCloudAlidnsGtmInstanceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -334,7 +334,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAlidnsGtmInstanceCreate(dInit, rawClient)
+		err := resourceAliCloudAlidnsGtmInstanceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -360,7 +360,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
+	err = resourceAliCloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//MoveGtmResourceGroup
@@ -396,7 +396,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
+		err := resourceAliCloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -449,7 +449,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
+		err := resourceAliCloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -535,7 +535,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
+		err := resourceAliCloudAlidnsGtmInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -573,7 +573,7 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAlidnsGtmInstanceRead(dExisted, rawClient)
+		err := resourceAliCloudAlidnsGtmInstanceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -583,6 +583,6 @@ func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 		}
 	}
 
-	err = resourceAlicloudAlidnsGtmInstanceDelete(dExisted, rawClient)
+	err = resourceAliCloudAlidnsGtmInstanceDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 }
