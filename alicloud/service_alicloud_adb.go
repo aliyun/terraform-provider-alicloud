@@ -990,6 +990,7 @@ func (s *AdbService) DescribeAdbDbClusterSSL(id string) (object map[string]inter
 	var response map[string]interface{}
 	action := "DescribeDBClusterSSL"
 	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
 	}
 

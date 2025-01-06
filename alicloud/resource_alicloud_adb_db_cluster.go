@@ -538,6 +538,7 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	request := map[string]interface{}{
 		"DbClusterId": d.Id(),
 	}
+	request["RegionId"] = client.RegionId
 
 	if !d.IsNewResource() && (d.HasChange("pay_type") || d.HasChange("payment_type")) {
 		update = true
