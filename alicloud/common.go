@@ -1809,3 +1809,13 @@ func convertPaymentTypeToChargeType(source interface{}) interface{} {
 	}
 	return source
 }
+
+func bytesToTB(bytes int64) float64 {
+	const (
+		KiB = 1024
+		MiB = KiB * KiB
+		GiB = MiB * KiB
+		TiB = GiB * KiB
+	)
+	return float64(bytes) / float64(TiB)
+}

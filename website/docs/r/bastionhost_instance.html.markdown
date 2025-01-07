@@ -193,7 +193,7 @@ The ad_auth_server supports the following:
 * `is_ssl` - (Required) Specifies whether to support SSL.
 * `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the AD server.
 * `name_mapping` - (Optional) The field that is used to indicate the name of a user on the AD server.
-* `password` - (Required, Sensitive) The password of the account that is used for the AD server.
+* `password` - (Optional, Sensitive) The password of the account that is used for the AD server.
 * `port` - (Required) The port that is used to access the AD server.
 * `server` - (Required) The address of the AD server.
 * `standby_server` - (Optional) The address of the secondary AD server.
@@ -210,7 +210,7 @@ The ldap_auth_server supports the following:
 * `login_name_mapping` - (Optional) The field that is used to indicate the logon name of a user on the LDAP server.
 * `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the LDAP server.
 * `name_mapping` - (Optional) The field that is used to indicate the name of a user on the LDAP server.
-* `password` - (Required, Sensitive) The password of the account that is used for the LDAP server.
+* `password` - (Optional, Sensitive) The password of the account that is used for the LDAP server.
 * `port` - (Required) The port that is used to access the LDAP server.
 * `server` - (Required) The address of the LDAP server.
 * `standby_server` - (Optional) The address of the secondary LDAP server.

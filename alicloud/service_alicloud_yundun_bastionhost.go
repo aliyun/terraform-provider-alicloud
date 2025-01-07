@@ -2,16 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,7 +38,6 @@ const (
 		],
 		"Version": "1"
 	}`
-	BastionhostResourceType = "INSTANCE"
 )
 
 var bastionhostpolicyRequired = []BastionhostPolicyRequired{
@@ -55,21 +48,17 @@ var bastionhostpolicyRequired = []BastionhostPolicyRequired{
 }
 
 func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeInstanceAttribute"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidApi"}) {
 				wait()
@@ -96,20 +85,15 @@ func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (objec
 
 func (s *YundunBastionhostService) DescribeBastionhostInstances(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeInstances"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidApi"}) {
 				wait()
@@ -133,94 +117,138 @@ func (s *YundunBastionhostService) DescribeBastionhostInstances(id string) (obje
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
-func (s *YundunBastionhostService) StartBastionhostInstance(instanceId string, vSwitchId string, securityGroupIds []string) error {
-	request := yundun_bastionhost.CreateStartInstanceRequest()
-	request.InstanceId = instanceId
-	request.VswitchId = vSwitchId
-	request.SecurityGroupIds = &securityGroupIds
-	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-		return BastionhostClient.StartInstance(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *YundunBastionhostService) UpdateBastionhostInstanceDescription(instanceId string, description string) error {
-	request := yundun_bastionhost.CreateModifyInstanceAttributeRequest()
-	request.InstanceId = instanceId
-	request.Description = description
-	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-		return BastionhostClient.ModifyInstanceAttribute(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *YundunBastionhostService) UpdateBastionhostSecurityGroups(instanceId string, securityGroups []string) error {
-	request := yundun_bastionhost.CreateConfigInstanceSecurityGroupsRequest()
-	request.InstanceId = instanceId
-	request.SecurityGroupIds = &securityGroups
-	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-		return BastionhostClient.ConfigInstanceSecurityGroups(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]string, d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	request.ProductCode = "bastionhost"
-	request.ProductType = "bastionhost"
-	request.SubscriptionType = "Subscription"
-	// only support upgrade
-	request.ModifyType = "Upgrade"
-
-	params := make([]bssopenapi.ModifyInstanceParameter, 0, len(schemaSpecMap))
-	for schemaName, spec := range schemaSpecMap {
-		params = append(params, bssopenapi.ModifyInstanceParameter{Code: schemaName, Value: d.Get(spec).(string)})
+func (s *YundunBastionhostService) StartBastionhostInstance(instanceId string, vSwitchId string, securityGroupIds []string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "StartInstance"
+	request := map[string]interface{}{
+		"VswitchId":        vSwitchId,
+		"InstanceId":       instanceId,
+		"SecurityGroupIds": securityGroupIds,
 	}
 
-	request.Parameter = &params
-	request.RegionId = string(connectivity.Hangzhou)
-	var response *bssopenapi.ModifyInstanceResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-			return bssopenapiClient.ModifyInstance(request)
-		})
-
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request.RegionId = string(connectivity.APSouthEast1)
-				request.ProductType = "bastionhost_std_public_intl"
-				request.Domain = connectivity.BssOpenAPIEndpointInternational
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*bssopenapi.ModifyInstanceResponse)
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func (s *YundunBastionhostService) UpdateBastionhostInstanceDescription(instanceId string, description string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "ModifyInstanceAttribute"
+	request := map[string]interface{}{
+		"Description": description,
+		"InstanceId":  instanceId,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func (s *YundunBastionhostService) UpdateBastionhostSecurityGroups(instanceId string, securityGroups []string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "ConfigInstanceSecurityGroups"
+	request := map[string]interface{}{
+		"AuthorizedSecurityGroups": securityGroups,
+		"InstanceId":               instanceId,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]string, d *schema.ResourceData, meta interface{}) (err error) {
+	client := s.client
+	var endpoint string
+	action := "ModifyInstance"
+	request := map[string]interface{}{
+		"RegionId":         connectivity.Hangzhou,
+		"InstanceId":       d.Id(),
+		"ProductCode":      "bastionhost",
+		"ProductType":      "bastionhost",
+		"SubscriptionType": "Subscription",
+		"ModifyType":       "Upgrade",
+	}
+	if client.IsInternationalAccount() {
+		request["RegionId"] = connectivity.APSouthEast1
+		request["ProductType"] = "bastionhost_std_public_intl"
+	}
+	parameterMapList := make([]map[string]interface{}, 0)
+	for schemaName, spec := range schemaSpecMap {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  schemaName,
+			"Value": d.Get(spec),
+		})
+	}
+	request["Parameter"] = parameterMapList
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		_, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["RegionId"] = connectivity.APSouthEast1
+				request["ProductType"] = "bastionhost_std_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	if !response.Success {
-		return WrapError(Error(response.Message))
-	}
 	return nil
 }
 
@@ -325,10 +353,7 @@ func (s *YundunBastionhostService) ProcessRolePolicy() error {
 }
 
 func (s *YundunBastionhostService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -341,7 +366,7 @@ func (s *YundunBastionhostService) ListTagResources(id string, resourceType stri
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -372,161 +397,112 @@ func (s *YundunBastionhostService) ListTagResources(id string, resourceType stri
 	return tags, nil
 }
 
-func (s *YundunBastionhostService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []yundun_bastionhost.TagResource, err error) {
-	request := yundun_bastionhost.CreateListTagResourcesRequest()
-	request.RegionId = s.client.RegionId
-	request.ResourceType = strings.ToUpper(string(resourceType))
-	request.ResourceId = &[]string{resourceId}
-	if resourceTags != nil && len(resourceTags) > 0 {
-		var reqTags []yundun_bastionhost.ListTagResourcesTag
-		for key, value := range resourceTags {
-			reqTags = append(reqTags, yundun_bastionhost.ListTagResourcesTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &reqTags
-	}
-
-	var raw interface{}
-
-	raw, err = s.client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
-		return client.ListTagResources(request)
-	})
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
-	}
-	response, _ := raw.(*yundun_bastionhost.ListTagResourcesResponse)
-
-	return response.TagResources.TagResource, nil
-}
-
-func (s *YundunBastionhostService) tagsToMap(tags []yundun_bastionhost.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ignoreTag(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-	return result
-}
-
-func (s *YundunBastionhostService) ignoreTag(t yundun_bastionhost.TagResource) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *YundunBastionhostService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
+func (s *YundunBastionhostService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) (err error) {
+	client := s.client
 	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+		added, removed := parsingTags(d)
+		if len(removed) > 0 {
+			var response map[string]interface{}
+			action := "UntagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			for i, key := range removed {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
 
-		if len(remove) > 0 {
-			var tagKey []string
-			for _, v := range remove {
-				tagKey = append(tagKey, v.Key)
-			}
-			request := yundun_bastionhost.CreateUntagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = strings.ToUpper(string(resourceType))
-			request.TagKey = &tagKey
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
-				return client.UntagResources(request)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		}
 
-		if len(create) > 0 {
-			request := yundun_bastionhost.CreateTagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.Tag = &create
-			request.ResourceType = strings.ToUpper(string(resourceType))
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
-				return client.TagResources(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if len(added) > 0 {
+			var response map[string]interface{}
+			action := "TagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
 
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			return nil
+		}
 	}
 
 	return nil
 }
 
-func (s *YundunBastionhostService) diffTags(oldTags, newTags []yundun_bastionhost.TagResourcesTag) ([]yundun_bastionhost.TagResourcesTag, []yundun_bastionhost.TagResourcesTag) {
-	// First, we're creating everything we have
-	create := make(map[string]interface{})
-	for _, t := range newTags {
-		create[t.Key] = t.Value
+func (s *YundunBastionhostService) UpdateResourceGroup(resourceId, resourceType, resourceGroupId string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "MoveResourceGroup"
+	request := map[string]interface{}{
+		"RegionId":        client.RegionId,
+		"ResourceType":    resourceType,
+		"ResourceId":      resourceId,
+		"ResourceGroupId": resourceGroupId,
 	}
 
-	// Build the list of what to remove
-	var remove []yundun_bastionhost.TagResourcesTag
-	for _, t := range oldTags {
-		old, ok := create[t.Key]
-		if !ok || old != t.Value {
-			// Delete it!
-			remove = append(remove, t)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-	}
-
-	return s.tagsFromMap(create), remove
-}
-
-func (s *YundunBastionhostService) tagsFromMap(m map[string]interface{}) []yundun_bastionhost.TagResourcesTag {
-	result := make([]yundun_bastionhost.TagResourcesTag, 0, len(m))
-	for k, v := range m {
-		result = append(result, yundun_bastionhost.TagResourcesTag{
-			Key:   k,
-			Value: v.(string),
-		})
-	}
-
-	return result
-}
-
-func (s *YundunBastionhostService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
-	request := yundun_bastionhost.CreateMoveResourceGroupRequest()
-	request.RegionId = s.client.RegionId
-	request.ResourceId = resourceId
-	request.ResourceType = BastionhostResourceType
-	request.ResourceGroupId = resourceGroupId
-	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-		return BastionhostClient.MoveResourceGroup(request)
+		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetUserGroup"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -538,11 +514,9 @@ func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (obje
 		"InstanceId":  parts[0],
 		"UserGroupId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -569,10 +543,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (obje
 
 func (s *YundunBastionhostService) DescribeBastionhostUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetUser"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -584,11 +555,9 @@ func (s *YundunBastionhostService) DescribeBastionhostUser(id string) (object ma
 		"InstanceId": parts[0],
 		"UserId":     parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -614,10 +583,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUser(id string) (object ma
 }
 func (s *YundunBastionhostService) DescribeBastionhostHostGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHostGroup"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -629,11 +595,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroup(id string) (obje
 		"HostGroupId": parts[1],
 		"InstanceId":  parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -660,10 +624,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroup(id string) (obje
 
 func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListUsers"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -679,11 +640,9 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -726,10 +685,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 
 func (s *YundunBastionhostService) DescribeBastionhostHost(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHost"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -741,11 +697,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHost(id string) (object ma
 		"HostId":     parts[1],
 		"InstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(false)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -772,10 +726,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHost(id string) (object ma
 
 func (s *YundunBastionhostService) DescribeBastionhostHostAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHostAccount"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -787,11 +738,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccount(id string) (ob
 		"HostAccountId": parts[1],
 		"InstanceId":    parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -817,10 +766,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccount(id string) (ob
 }
 func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHosts"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -836,11 +782,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -882,10 +826,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 }
 func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserAttachment(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHostAccountsForUser"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -898,11 +839,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserAttachment(
 		"InstanceId": parts[0],
 		"UserId":     parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Second, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -931,10 +870,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserAttachment(
 
 func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserGroupAttachment(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHostAccountsForUserGroup"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -947,11 +883,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserGroupAttach
 		"InstanceId":  parts[0],
 		"UserGroupId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Second, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -980,10 +914,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserGroupAttach
 
 func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserAttachment(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHostGroupAccountNamesForUser"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -996,11 +927,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserAttach
 		"InstanceId":  parts[0],
 		"UserId":      parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Second, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1029,10 +958,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserAttach
 
 func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserGroupAttachment(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHostGroupAccountNamesForUserGroup"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -1045,11 +971,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserGroupA
 		"InstanceId":  parts[0],
 		"UserGroupId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Second, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1078,20 +1002,15 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserGroupA
 
 func (s *YundunBastionhostService) EnableInstancePublicAccess(id string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "EnableInstancePublicAccess"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1109,20 +1028,15 @@ func (s *YundunBastionhostService) EnableInstancePublicAccess(id string) (err er
 }
 func (s *YundunBastionhostService) DisableInstancePublicAccess(id string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "DisableInstancePublicAccess"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1140,10 +1054,7 @@ func (s *YundunBastionhostService) DisableInstancePublicAccess(id string) (err e
 }
 func (s *YundunBastionhostService) DescribeBastionhostHostShareKey(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHostShareKey"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1154,11 +1065,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostShareKey(id string) (o
 		"HostShareKeyId": parts[1],
 		"InstanceId":     parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1181,10 +1090,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostShareKey(id string) (o
 }
 func (s *YundunBastionhostService) GetHostShareKey(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHostShareKey"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1195,11 +1101,9 @@ func (s *YundunBastionhostService) GetHostShareKey(id string) (object map[string
 		"HostShareKeyId": parts[1],
 		"InstanceId":     parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1222,10 +1126,7 @@ func (s *YundunBastionhostService) GetHostShareKey(id string) (object map[string
 }
 func (s *YundunBastionhostService) DescribeBastionhostHostAccountShareKeyAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListHostAccountsForHostShareKey"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -1241,11 +1142,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountShareKeyAttachm
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1285,20 +1184,15 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountShareKeyAttachm
 
 func (s *YundunBastionhostService) DescribeBastionhostAdAuthServer(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceADAuthServer"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1322,20 +1216,15 @@ func (s *YundunBastionhostService) DescribeBastionhostAdAuthServer(id string) (o
 
 func (s *YundunBastionhostService) DescribeBastionhostLdapAuthServer(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBastionhostClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceLDAPAuthServer"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
