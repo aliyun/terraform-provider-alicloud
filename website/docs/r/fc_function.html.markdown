@@ -153,9 +153,10 @@ The custom_container_config following arguments:
 
 The following arguments are exported:
 
-* `id` - The ID of the function. The value is formate as `<service>:<name>`.
+* `id` - The ID of the function. It formats as `<service>:<name>`.
 * `last_modified` - The date this resource was last modified.
-* `function_id` - The Function Compute service ID.
+* `function_id` - The Function Compute service function ID.
+* `function_arn` - The Function Compute service function arn. It formats as `acs:fc:<region>:<uid>:services/<serviceName>.LATEST/functions/<functionName>`.
 
 ## Import
 
