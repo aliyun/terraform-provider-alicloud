@@ -1,13 +1,13 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -66,7 +66,6 @@ func dataSourceAlicloudBastionhostInstances() *schema.Resource {
 						"public_domain": {
 							Type:     schema.TypeString,
 							Computed: true,
-							Optional: true,
 						},
 						"instance_status": {
 							Type:     schema.TypeString,
@@ -80,12 +79,23 @@ func dataSourceAlicloudBastionhostInstances() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"storage": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"security_group_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"tags": tagsSchema(),
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -139,16 +149,11 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 		request["Tag.*"] = tags
 	}
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -210,8 +215,16 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 			return WrapError(err)
 		}
 		mapping["security_group_ids"] = getResp["AuthorizedSecurityGroups"]
+		// instance["Storage"] is in byte, and it is larger than request param
+		if v, err := strconv.ParseInt(getResp["Storage"].(json.Number).String(), 10, 64); err != nil {
+			return WrapError(err)
+		} else {
+			d.Set("storage", fmt.Sprint(bytesToTB(v)-1))
+		}
 
-		getResp2, err := bastionhostService.ListTagResources(id, "instance")
+		d.Set("bandwidth", getResp["BandwidthPackage"])
+
+		getResp2, err := bastionhostService.ListTagResources(id, "INSTANCE")
 		if err != nil {
 			return WrapError(err)
 		}

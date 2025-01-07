@@ -7,23 +7,23 @@ description: |-
   Provides a list of cloud Bastionhost instances available to the user.
 ---
 
-# alicloud\_yundun_bastionhost\_instances
+# alicloud_bastionhost_instances
 
 -> **NOTE:** From the version 1.132.0, the data source has been renamed to `alicloud_bastionhost_instances`.
 
 This data source provides a list of cloud Bastionhost instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.63.0+ .
+-> **NOTE:** Available since v1.63.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_bastionhost_instances" "instance" {
   description_regex = "^bastionhost"
 }
 
 output "instance" {
-  value = "${alicloud_bastionhost_instances.instance.*.id}"
+  value = data.alicloud_bastionhost_instances.instance.*.id
 }
 ```
 
@@ -32,18 +32,10 @@ output "instance" {
 The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to filter results by the instance description.
-* `ids` - (Optional) Matched instance IDs to filter data source result.
+* `ids` - (Optional, ForceNew) Matched instance IDs to filter data source result.
 * `output_file` - (Optional) File name to persist data source output.
 * `descriptions` - (Optional) Descriptions to filter data source result.
-* `tags` - (Optional, Available in v1.67.0+) A map of tags assigned to the bastionhost instance. It must be in the format:
-  ```
-  data "alicloud_bastionhost_instances" "instance" {
-    tags = {
-      tagKey1 = "tagValue1"
-    }
-  }
-  ```
-
+* `tags` - (Optional) A map of tags assigned to the bastionhost instance.
 
 ## Attributes Reference
 
@@ -57,4 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_status` - The instance's status.
   * `public_network_access` - The instance's public network access configuration.
   * `security_group_ids` - The instance's security group configuration.
+  * `license_code` - The instance's license code.
   * `tags` - A map of tags assigned to the bastionhost instance.
+  * `storage` - The storage of Cloud Bastionhost instance in TB.
+  * `bandwidth` - The bandwidth of Cloud Bastionhost instance.
