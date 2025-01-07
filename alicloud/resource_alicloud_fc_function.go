@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -104,6 +105,10 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				Computed: true,
 			},
 			"function_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"function_arn": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -278,6 +283,11 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("code_checksum", object.CodeChecksum)
 	d.Set("name", object.FunctionName)
 	d.Set("function_id", object.FunctionID)
+	if accountId, err := client.AccountId(); err != nil {
+		log.Print(WrapError(err))
+	} else {
+		d.Set("function_arn", fmt.Sprintf("acs:fc:%s:%s:services/%s.LATEST/functions/%s", client.RegionId, accountId, parts[0], parts[1]))
+	}
 	d.Set("description", object.Description)
 	d.Set("handler", object.Handler)
 	d.Set("memory_size", object.MemorySize)

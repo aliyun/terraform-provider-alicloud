@@ -106,13 +106,14 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testaccalicloudfcfunction-%d", rand)
 	var basicMap = map[string]string{
-		"service":     CHECKSET,
-		"name":        name,
-		"runtime":     "nodejs12",
-		"description": "tf",
-		"handler":     "hello.handler",
-		"oss_bucket":  CHECKSET,
-		"oss_key":     CHECKSET,
+		"service":      CHECKSET,
+		"name":         name,
+		"runtime":      "nodejs12",
+		"description":  "tf",
+		"handler":      "hello.handler",
+		"oss_bucket":   CHECKSET,
+		"oss_key":      CHECKSET,
+		"function_arn": CHECKSET,
 	}
 	resourceId := "alicloud_fc_function.default"
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -444,6 +445,11 @@ output "container_args" {
 resource "alicloud_log_project" "default" {
   name = "${var.name}"
   description = "tf unit test"
+  lifecycle {
+    ignore_changes = [
+      policy
+    ]
+  }
 }
 
 resource "alicloud_log_store" "default" {
@@ -561,6 +567,11 @@ php server.php`)
 		resource "alicloud_log_project" "default" {
 		  name = "${var.name}"
 		  description = "tf unit test"
+		  lifecycle {
+			ignore_changes = [
+			  policy
+			]
+		  }
 		}
 		
 		resource "alicloud_log_store" "default" {
@@ -673,6 +684,11 @@ func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
 		resource "alicloud_log_project" "default" {
 		  name = "${var.name}"
 		  description = "tf unit test"
+		  lifecycle {
+			ignore_changes = [
+			  policy
+			]
+		  }
 		}
 		
 		resource "alicloud_log_store" "default" {
