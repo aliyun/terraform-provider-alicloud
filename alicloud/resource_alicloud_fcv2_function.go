@@ -297,6 +297,10 @@ func resourceAliCloudFcv2Function() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"function_arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -707,6 +711,11 @@ func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("service_name", parts[0])
+	if accountId, err := client.AccountId(); err != nil {
+		log.Print(WrapError(err))
+	} else {
+		d.Set("function_arn", fmt.Sprintf("acs:fc:%s:%s:services/%s.LATEST/functions/%s", client.RegionId, accountId, parts[0], parts[1]))
+	}
 
 	return nil
 }
