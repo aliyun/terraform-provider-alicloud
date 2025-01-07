@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,7 +43,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip"}, true),
+				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip", "serverless"}, true),
 			},
 			"max_connections": {
 				Type:     schema.TypeInt,
@@ -178,11 +177,8 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewOnsproxyClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -239,11 +235,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("max_tps"); ok {
 		request["MaxPrivateTps"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -259,11 +253,6 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_amqp_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_amqp_instance CreateInstance Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_amqp_instance", action, AlibabaCloudSdkGoERROR, response)
 	}
 
 	d.SetId(fmt.Sprint(response["Data"]))
@@ -327,14 +316,12 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "SetRenewal"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = d.Id()
@@ -365,20 +352,17 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 
 	request["ProductCode"] = "ons"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-					request["ProductType"] = "ons_onsproxy_public_intl"
-					return resource.RetryableError(err)
-				}
 				if NeedRetry(err) {
 					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductType"] = "ons_onsproxy_public_intl"
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -395,10 +379,6 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	update = false
 	action = "UpdateInstanceName"
-	conn, err = client.NewOnsproxyClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -408,11 +388,9 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -431,10 +409,6 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	update = false
 	action = "UpdateInstance"
-	conn, err = client.NewOnsproxyClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -445,7 +419,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("instance_type") {
 		update = true
 	}
-	if v, ok := d.GetOk("instance_type"); ok && fmt.Sprint(v) != "SERVERLESS" {
+	if v, ok := d.GetOk("instance_type"); ok && fmt.Sprint(v) != "serverless" {
 		request["InstanceType"] = v
 	}
 
@@ -509,11 +483,9 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -567,11 +539,9 @@ func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 	action := "RefundInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
 
@@ -580,21 +550,20 @@ func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 	request["ImmediatelyRelease"] = "1"
 	request["ProductCode"] = "ons"
 	request["ProductType"] = "ons_onsproxy_pre"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "ons_onsproxy_public_intl"
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-				request["ProductType"] = "ons_onsproxy_public_intl"
-				return resource.RetryableError(err)
-			}
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "ons_onsproxy_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -662,6 +631,8 @@ func convertAmqpInstanceDataInstanceTypeResponse(source interface{}) interface{}
 		return "vip"
 	case "ENTERPRISE":
 		return "enterprise"
+	case "SERVERLESS":
+		return "serverless"
 	}
 	return source
 }
