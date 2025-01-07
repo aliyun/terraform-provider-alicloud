@@ -118,7 +118,7 @@ The following arguments are supported:
 * `escalations_info` - (Optional, Set, Available since v1.94.0) A configuration of critical info. See [`escalations_info`](#escalations_info) below.
 * `escalations_warn` - (Optional, Set, Available since v1.94.0) A configuration of critical warn. See [`escalations_warn`](#escalations_warn) below.
 * `prometheus` - (Optional, Set, Available since v1.179.0) The Prometheus alert rule. See [`prometheus`](#prometheus) below. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
-* `targets` - (Optional, Set, Available since v1.216.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
+* `targets` - (Optional, Set, Available since v1.216.0) Adds or modifies the push channels of an alert rule. See [`targets`](#targets) below.
 * `composite_expression` - (Optional, Set, Available since v1.228.0) The trigger conditions for multiple metrics. See [`composite_expression`](#composite_expression) below.
 * `tags` - (Optional, Available since v1.180.0) A mapping of tags to assign to the resource.
 * `dimensions` - (Optional, Map, Deprecated since v1.173.0) Field `dimensions` has been deprecated from provider version 1.173.0. New field `metric_dimensions` instead.
@@ -172,12 +172,14 @@ The prometheus supports the following:
 
 The targets supports the following:
 
-* `target_id` - (Optional) The ID of the resource for which alerts are triggered. This is typically used to specify individual resources that should respond to the alert.
-* `json_params` - (Optional) Specifies additional parameters for the alert callback in JSON format. This can include configuration settings specific to the alert action.
+* `target_id` - (Optional) The ID of the resource for which alerts are triggered. For more information about how to obtain the ID of the resource for which alerts are triggered, see [DescribeMetricRuleTargets](https://www.alibabacloud.com/help/en/cms/developer-reference/api-describemetricruletargets) .
+* `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
 * `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
-* `arn` - (Optional) ARN uniquely identifies the resource that the alert targets.
--> **NOTE:** The targets attribute is used to specify where notifications or actions should be directed when an alarm condition is met. This attribute corresponds to what is referred to as the "Push Channel" in the Alibaba Cloud console.
--> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
+* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource. Simple Message Queue (formerly MNS) (SMQ), Auto Scaling, Simple Log Service, and Function Compute are supported:
+  - SMQ: `acs:mns:{regionId}:{userId}:/{Resource type}/{Resource name}/message`. {regionId}: the region ID of the SMQ queue or topic. {userId}: the ID of the Alibaba Cloud account that owns the resource. {Resource type}: the type of the resource for which alerts are triggered. Valid values:queues, topics. {Resource name}: the resource name. If the resource type is queues, the resource name is the queue name. If the resource type is topics, the resource name is the topic name.
+  - Auto Scaling: `acs:ess:{regionId}:{userId}:scalingGroupId/{Scaling group ID}:scalingRuleId/{Scaling rule ID}`
+  - Simple Log Service: `acs:log:{regionId}:{userId}:project/{Project name}/logstore/{Logstore name}`
+  - Function Compute: `acs:fc:{regionId}:{userId}:services/{Service name}/functions/{Function name}`
 
 ### `composite_expression`
 
