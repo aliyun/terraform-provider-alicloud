@@ -407,6 +407,7 @@ The pre_stop supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<service_name>:<function_name>`.
 * `create_time` - create time of function.
+* `function_arn` - The Function Compute service function arn. It formats as `acs:fc:<region>:<uid>:services/<serviceName>.LATEST/functions/<functionName>`.
 
 ## Timeouts
 

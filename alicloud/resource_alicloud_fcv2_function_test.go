@@ -662,6 +662,7 @@ var AlicloudFcv2FunctionMap3393 = map[string]string{
 	"create_time":            CHECKSET,
 	"initialization_timeout": CHECKSET,
 	"code_checksum":          CHECKSET,
+	"function_arn":           CHECKSET,
 }
 
 func AlicloudFcv2FunctionBasicDependence3393(name string) string {
