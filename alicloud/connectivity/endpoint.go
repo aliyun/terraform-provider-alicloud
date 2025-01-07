@@ -290,6 +290,7 @@ var productCodeToLocationCode = map[string]string{
 	"waf_openapi":          "waf",             //WAFV3,WAF
 	"dfs":                  "alidfs",          //DFS
 	"amqp":                 "onsproxy",        // Amqp
+	"amqp_open":            "onsproxy",        // Amqp
 	"cbn":                  "cbn",             // CEN
 	"expressconnectrouter": "ecr",             // ExpressConnectRouter
 	"green":                "green",           // Aligreen
@@ -428,6 +429,7 @@ var regularProductEndpoint = map[string]string{
 	"waf_openapi":          "wafopenapi.cn-hangzhou.aliyuncs.com",
 	"dfs":                  "dfs.%s.aliyuncs.com",
 	"amqp":                 "amqp-open.%s.aliyuncs.com",
+	"amqp_open":            "amqp-open.%s.aliyuncs.com",
 	"cbn":                  "cbn.aliyuncs.com",
 	"expressconnectrouter": "expressconnectrouter.cn-shanghai.aliyuncs.com",
 	"green":                "green.%s.aliyuncs.com",

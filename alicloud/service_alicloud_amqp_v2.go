@@ -22,19 +22,13 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetInstance"
-	conn, err := client.NewOnsproxyClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("amqp-open", "2019-12-12", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -71,12 +65,9 @@ func (s *AmqpServiceV2) DescribeQueryAvailableInstances(id string) (object map[s
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
 	var query map[string]interface{}
 	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
@@ -86,16 +77,15 @@ func (s *AmqpServiceV2) DescribeQueryAvailableInstances(id string) (object map[s
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-				request["ProductType"] = "ons_onsproxy_public_intl"
-				return resource.RetryableError(err)
-			}
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "ons_onsproxy_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

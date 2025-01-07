@@ -21,7 +21,8 @@ import (
 )
 
 func TestAccAliCloudAmqpInstance_professional(t *testing.T) {
-
+	// professional instance only supports minority regions
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Qingdao})
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
 	ra := resourceAttrInit(resourceId, AmqpInstanceBasicMap)
@@ -1243,66 +1244,4 @@ variable "name" {
 
 
 `, name)
-}
-
-func TestAccAliCloudAmqpInstance_ApSouthEast(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_instance.default"
-	ra := resourceAttrInit(resourceId, AmqpInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpInstanceprofessional%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		//CheckDestroy:  nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name":  "${var.name}",
-					"instance_type":  "professional",
-					"max_tps":        "1000",
-					"payment_type":   "Subscription",
-					"period":         "1",
-					"queue_capacity": "50",
-					"support_eip":    "false",
-					"auto_renew":     "true",
-					"period_cycle":   "Year",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name":         name,
-						"instance_type":         "professional",
-						"max_tps":               "1000",
-						"payment_type":          "Subscription",
-						"queue_capacity":        "50",
-						"support_eip":           "false",
-						"renewal_status":        "AutoRenewal",
-						"renewal_duration_unit": "Month",
-						"status":                "SERVING",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "period", "max_tps", "max_eip_tps", "queue_capacity", "auto_renew"},
-			},
-		},
-	})
 }

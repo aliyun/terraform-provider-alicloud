@@ -16,7 +16,7 @@ For information about RabbitMQ (AMQP) Instance and how to use it, see [What is I
 
 ## Example Usage
 
-Basic Usage
+Create a RabbitMQ (AMQP) enterprise edition Instance.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=45cec220-2e60-4a5f-0eaa-39abcd8e5e46e0861292&activeTab=example&spm=docs.r.amqp_instance.0.45cec2202e&intl_lang=EN_US" target="_blank">
@@ -33,10 +33,9 @@ provider "alicloud" {
   region = "cn-shanghai"
 }
 
-
 resource "alicloud_amqp_instance" "default" {
   instance_name  = var.name
-  instance_type  = "professional"
+  instance_type  = "enterprise"
   max_tps        = "1000"
   queue_capacity = "50"
   period_cycle   = "Year"
@@ -44,6 +43,23 @@ resource "alicloud_amqp_instance" "default" {
   period         = "1"
   auto_renew     = "true"
   payment_type   = "Subscription"
+}
+```
+
+Create a RabbitMQ (AMQP) serverless edition Instance.
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
+resource "alicloud_amqp_instance" "default" {
+  instance_name          = var.name
+  payment_type           = "PayAsYouGo"
+  serverless_charge_type = "onDemand"
 }
 ```
 
@@ -58,16 +74,23 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 The following arguments are supported:
 * `auto_renew` - (Optional, Available since v1.129.0) Renewal method. Automatic renewal: true; Manual renewal: false. When RenewalStatus has a value, the value of RenewalStatus shall prevail.
 * `instance_name` - (Optional, Computed) The instance name.
-* `instance_type` - (Optional, Computed) Instance type. Valid values are as follows:  professional: professional Edition enterprise: enterprise Edition vip: Platinum Edition.
+* `instance_type` - (Optional, Computed) Instance type. Valid values: 
+  - professional: professional Edition 
+  - enterprise: enterprise Edition 
+  - vip: Platinum Edition.
+  - serverless: Serverless Edition.
+  -> **NOTE:** There should not set the `instance_type` parameter when creating a serverless instance. Only need to set `payment_type = "PayAsYouGo"` and `serverless_charge_type = "onDemand"`.
 * `max_connections` - (Optional, Computed, Available since v1.129.0) The maximum number of connections, according to the value given on the purchase page of the cloud message queue RabbitMQ version console.
 * `max_eip_tps` - (Optional, Computed) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
 * `max_tps` - (Optional, Computed) Configure the private network TPS traffic peak, please set the value according to the cloud message queue RabbitMQ version of the console purchase page given.
 * `modify_type` - (Optional) This parameter must be provided while you change the instance specification. Type of instance lifting and lowering:
   - Upgrade: Upgrade
   - Downgrade: Downgrading.
-* `payment_type` - (Required, ForceNew) The Payment type. Valid value: Subscription: prepaid. PayAsYouGo: Post-paid.
-* `period` - (Optional) Prepayment cycle, unit: periodCycle.  This parameter is valid when PaymentType is set to Subscription.
-* `period_cycle` - (Optional, Available since v1.129.0) Prepaid cycle units. Value: Month. Year: Year.
+* `payment_type` - (Required, ForceNew) The Payment type. Valid value: 
+  - Subscription: Pre-paid. 
+  - PayAsYouGo: Post-paid, and for serverless Edition.
+* `period` - (Optional) Prepayment cycle, unit: periodCycle. This parameter is valid when PaymentType is set to Subscription.
+* `period_cycle` - (Optional, Available since v1.129.0) Prepaid cycle units. Value: Month, Year.
 * `queue_capacity` - (Optional, Computed) Configure the maximum number of queues. The value range is as follows:  Professional version:[50,1000], minimum modification step size is 5  Enterprise Edition:[200,6000], minimum modification step size is 100  Platinum version:[10000,80000], minimum modification step size is 100.
 * `renewal_duration` - (Optional, Computed) The number of automatic renewal cycles.
 * `renewal_duration_unit` - (Optional, Computed) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.
