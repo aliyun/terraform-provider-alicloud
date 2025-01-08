@@ -97,13 +97,6 @@ resource "alicloud_nat_gateway" "default" {
 }
 ```
 
-### Deleting `alicloud_nat_gateway` or removing it from your configuration
-
-The `alicloud_nat_gateway` resource allows you to manage `payment_type = "Subscription"` or `instance_charge_type = "Prepaid"` nat gateway, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration
-will remove it from your statefile and management, but will not destroy the Nat Gateway.
-You can resume managing the subscription nat gateway via the AlibabaCloud Console.
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -114,7 +107,7 @@ The following arguments are supported:
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
 * `dry_run` - (Optional) Specifies whether to only precheck this request. Default value: `false`.
 * `force` - (Optional) Specifies whether to forcefully delete the NAT gateway.
-* `payment_type` - (Optional, ForceNew, Available since v1.121.0) The billing method of the NAT gateway. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
+* `payment_type` - (Optional, ForceNew, Available since v1.121.0) The billing method of the NAT gateway. Valid values are `PayAsYouGo`. Default to `PayAsYouGo`.
 * `period` - (Optional, Available since v1.45.0) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console. **NOTE:** International station only supports `Subscription`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `nat_type` - (Optional, Available since v1.102.0) The type of NAT gateway. Valid values: `Enhanced`. **NOTE:** From version 1.137.0, `nat_type` cannot be set to `Normal`.
