@@ -20,10 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudECSSessionManagerStatus_basic0(t *testing.T) {
+func TestAccAliCloudEcsSessionManagerStatus_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_session_manager_status.default"
-	ra := resourceAttrInit(resourceId, AlicloudECSSessionManagerStatusMap0)
+	ra := resourceAttrInit(resourceId, AliCloudEcsSessionManagerStatusMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsSessionManagerStatus")
@@ -31,12 +31,10 @@ func TestAccAlicloudECSSessionManagerStatus_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secssessionmanagerstatus%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSSessionManagerStatusBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsSessionManagerStatusBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "OPEN_WITH_MAIN_ACCOUNT")
-
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -65,12 +63,43 @@ func TestAccAlicloudECSSessionManagerStatus_basic0(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEcsSessionManagerStatus_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_session_manager_status.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsSessionManagerStatusMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsSessionManagerStatus")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secssessionmanagerstatus%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsSessionManagerStatusBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"status": "Enabled",
+					"session_manager_status_name": "sessionManagerStatus",
+					"status":                      "Disabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status": "Enabled",
+						"session_manager_status_name": "sessionManagerStatus",
+						"status":                      "Disabled",
 					}),
 				),
 			},
@@ -83,17 +112,17 @@ func TestAccAlicloudECSSessionManagerStatus_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudECSSessionManagerStatusMap0 = map[string]string{}
+var AliCloudEcsSessionManagerStatusMap0 = map[string]string{}
 
-func AlicloudECSSessionManagerStatusBasicDependence0(name string) string {
+func AliCloudEcsSessionManagerStatusBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
+func TestUnitAliCloudEcsSessionManagerStatus(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_session_manager_status"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_session_manager_status"].Schema).Data(nil, nil)
@@ -167,7 +196,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsSessionManagerStatusCreate(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -184,7 +213,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusCreate(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -201,7 +230,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -219,7 +248,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudEcsSessionManagerStatusUpdate(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -251,7 +280,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -284,7 +313,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -301,7 +330,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusDelete(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -318,7 +347,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusRead(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusRead(d, rawClient)
 		patchDoRequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -334,7 +363,7 @@ func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsSessionManagerStatusRead(d, rawClient)
+		err := resourceAliCloudEcsSessionManagerStatusRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
