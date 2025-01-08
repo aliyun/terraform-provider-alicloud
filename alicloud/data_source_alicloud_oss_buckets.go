@@ -189,11 +189,11 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 											Schema: map[string]*schema.Schema{
 												"date": {
 													Type:     schema.TypeString,
-													Optional: true,
+													Computed: true,
 												},
 												"days": {
 													Type:     schema.TypeInt,
-													Optional: true,
+													Computed: true,
 												},
 											},
 										},
@@ -205,7 +205,7 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 
 						"policy": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Computed: true,
 						},
 
 						"server_side_encryption_rule": {
@@ -225,9 +225,10 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
-
-						"tags": tagsSchemaComputed(),
-
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 						"versioning": {
 							Type:     schema.TypeList,
 							Computed: true,

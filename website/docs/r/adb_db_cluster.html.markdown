@@ -11,7 +11,7 @@ description: |-
 
 Provides a AnalyticDB for MySQL (ADB) DBCluster resource.
 
-For information about AnalyticDB for MySQL (ADB) DBCluster and how to use it, see [What is DBCluster](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/developer-reference/api-adb-2021-12-01-createdbcluster).
+For information about AnalyticDB for MySQL (ADB) DBCluster and how to use it, see [What is DBCluster](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-mysql/product-overview/what-is-analyticdb-for-mysql).
 
 -> **NOTE:** Available since v1.121.0.
 

@@ -7,19 +7,30 @@ description: |-
     Provides a list of OSS buckets to the user.
 ---
 
-# alicloud\_oss_buckets
+# alicloud_oss_buckets
 
 This data source provides the OSS buckets of the current Alibaba Cloud user.
 
+-> **NOTE:** Available since v1.17.0.
+
 ## Example Usage
 
-```
+```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_oss_bucket" "bucket" {
+  bucket = "oss-tf-example-${random_integer.default.result}"
+}
+
 data "alicloud_oss_buckets" "oss_buckets_ds" {
-  name_regex = "sample_oss_bucket"
+  name_regex = alicloud_oss_bucket.bucket.bucket
 }
 
 output "first_oss_bucket_name" {
-  value = "${data.alicloud_oss_buckets.oss_buckets_ds.buckets.0.name}"
+  value = data.alicloud_oss_buckets.oss_buckets_ds.buckets.0.name
 }
 ```
 
@@ -27,7 +38,7 @@ output "first_oss_bucket_name" {
 
 The following arguments are supported:
 
-* `name_regex` - (Optional) A regex string to filter results by bucket name.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by bucket name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -45,6 +56,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA`, `Archive` and `ColdArchive`.
   * `redundancy_type` - Redundancy type. Possible values: `LRS`, and `ZRS`.
   * `creation_date` - Bucket creation date.
+  * `policy` - The policies configured for a specified bucket.
   * `cors_rules` - A list of CORS rule configurations. Each element contains the following attributes:
     * `allowed_origins` - The origins allowed for cross-domain requests. Multiple elements can be used to specify multiple allowed origins. Each rule allows up to one wildcard "\*". If "\*" is specified, cross-domain requests of all origins are allowed.
     * `allowed_methods` - Specify the allowed methods for cross-domain requests. Possible values: `GET`, `PUT`, `DELETE`, `POST` and `HEAD`.
