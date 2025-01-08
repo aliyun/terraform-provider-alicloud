@@ -2,16 +2,17 @@
 subcategory: "Message Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_message_service_topic"
-sidebar_current: "docs-alicloud-resource-message-service-topic"
 description: |-
-  Provides a Alicloud Message Notification Service Topic resource.
+  Provides a Alicloud Message Service Topic resource.
 ---
 
 # alicloud_message_service_topic
 
-Provides a Message Notification Service Topic resource.
+Provides a Message Service Topic resource.
 
-For information about Message Notification Service Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/message-service/latest/createtopic).
+
+
+For information about Message Service Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/message-service/latest/createtopic).
 
 -> **NOTE:** Available since v1.188.0.
 
@@ -27,43 +28,46 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 resource "alicloud_message_service_topic" "default" {
   topic_name       = var.name
-  max_message_size = 12357
-  logging_enabled  = true
+  max_message_size = 16888
+  enable_logging   = true
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
+* `enable_logging` - (Optional, Bool, Available since v1.241.0) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `max_message_size` - (Optional, Int) The maximum length of the message that is sent to the topic. Default value: `65536`. Valid values: `1024` to `65536`. Unit: bytes.
+* `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
+* `topic_name` - (Required, ForceNew) The name of the topic.
 
-* `topic_name` - (Required, ForceNew) Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
-* `max_message_size` - (Optional) The maximum size of a message body that can be sent to the topic. Unit: bytes. Valid values: 1024-65536. Default value: 65536.
-* `logging_enabled` - (Optional) Specifies whether to enable the log management feature. Default value: false. Valid values:
-  - `true`: enables the log management feature.
-  - `false`: disables the log management feature.
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `logging_enabled` - (Deprecated since v1.241.0). Field `logging_enabled` has been deprecated from provider version 1.241.0. New field `enable_logging` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Topic. Its value is same as `topic_name`.
+* `id` - The resource ID in terraform of Topic.
+* `create_time` - (Available since v1.241.0) The time when the topic was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 3 mins) Used when create the Topic.
-* `update` - (Defaults to 3 mins) Used when update the Topic.
-* `delete` - (Defaults to 3 mins) Used when delete the Topic.
+* `create` - (Defaults to 5 mins) Used when create the Topic.
+* `delete` - (Defaults to 5 mins) Used when delete the Topic.
+* `update` - (Defaults to 5 mins) Used when update the Topic.
 
 ## Import
 
-Message Notification Service Topic can be imported using the id or topic_name, e.g.
+Message Service Topic can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_message_service_topic.example <topic_name>
+$ terraform import alicloud_message_service_topic.example <id>
 ```
