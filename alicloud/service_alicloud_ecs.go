@@ -2442,14 +2442,17 @@ func (s *EcsService) DescribeEcsDedicatedHostCluster(id string) (object map[stri
 
 func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeUserBusinessBehavior"
+
 	conn, err := s.client.NewEcsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeUserBusinessBehavior"
+
 	request := map[string]interface{}{
 		"statusKey": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -2465,15 +2468,40 @@ func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[stri
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
+}
+
+func (s *EcsService) EcsSessionManagerStatusStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsSessionManagerStatus(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["StatusValue"]) == failState {
+				return object, object["StatusValue"].(string), WrapError(Error(FailedToReachTargetStatus, object["StatusValue"].(string)))
+			}
+		}
+
+		return object, fmt.Sprint(object["StatusValue"]), nil
+	}
 }
 
 func (s *EcsService) DescribeEcsPrefixList(id string) (object map[string]interface{}, err error) {
