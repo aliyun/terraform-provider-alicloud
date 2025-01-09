@@ -274,7 +274,9 @@ func resourceAliCloudNlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
 			dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
 			dataLoopMap["AllocationId"] = dataLoopTmp["allocation_id"]
-			dataLoopMap["PrivateIPv4Address"] = dataLoopTmp["private_ipv4_address"]
+			if v, ok := dataLoopTmp["private_ipv4_address"]; ok && v != "" {
+				dataLoopMap["PrivateIPv4Address"] = v
+			}
 			zoneMappingsMaps = append(zoneMappingsMaps, dataLoopMap)
 		}
 		request["ZoneMappings"] = zoneMappingsMaps
@@ -594,7 +596,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
 				dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
 				dataLoopMap["AllocationId"] = dataLoopTmp["allocation_id"]
-				dataLoopMap["PrivateIPv4Address"] = dataLoopTmp["private_ipv4_address"]
+				if v, ok := dataLoopTmp["private_ipv4_address"]; ok && v != "" {
+					dataLoopMap["PrivateIPv4Address"] = v
+				}
 				zoneMappingsMaps = append(zoneMappingsMaps, dataLoopMap)
 			}
 			request["ZoneMappings"] = zoneMappingsMaps
