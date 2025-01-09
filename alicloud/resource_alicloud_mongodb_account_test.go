@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMongoDBAccount_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_account.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
@@ -202,7 +202,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAccountCreate(dInit, rawClient)
+	err = resourceAliCloudMongodbAccountCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -237,7 +237,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountCreate(dInit, rawClient)
+		err := resourceAliCloudMongodbAccountCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -264,7 +264,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+	err = resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyAccountDescription
@@ -304,7 +304,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -352,7 +352,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -391,7 +391,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountRead(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -402,7 +402,223 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudMongodbAccountDelete(dExisted, rawClient)
+	err = resourceAliCloudMongodbAccountDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }
+
+// Test Mongodb Account. >>> Resource test cases, automatically generated.
+// Case 账号测试用例初始化_分片集群_create账号覆盖度 9243
+func TestAccAliCloudMongodbAccount_basic9243(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudMongodbAccountMap9243)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MongodbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMongodbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongodbAccountBasicDependence9243)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_name":     name,
+					"account_password": "qwer1234!!!",
+					"instance_id":      "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
+					"character_type":   "db",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":     name,
+						"account_password": "qwer1234!!!",
+						"instance_id":      CHECKSET,
+						"character_type":   "db",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+var AlicloudMongodbAccountMap9243 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudMongodbAccountBasicDependence9243(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-shanghai-b"
+}
+
+variable "region_id" {
+  default = "cn-shanghai"
+}
+
+variable "other_zone_id" {
+  default = "cn-shanghai-g"
+}
+
+resource "alicloud_vpc" "defaultIzCngN" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "defaultLWEsPM" {
+  vpc_id     = alicloud_vpc.defaultIzCngN.id
+  zone_id    = var.zone_id
+  cidr_block = "10.0.0.0/24"
+}
+
+resource "alicloud_mongodb_sharding_instance" "default7eOftZ" {
+  engine_version = "4.4"
+  storage_type   = "cloud_essd1"
+  vswitch_id     = alicloud_vswitch.defaultLWEsPM.id
+  vpc_id         = alicloud_vpc.defaultIzCngN.id
+  storage_engine = "WiredTiger"
+  network_type   = "VPC"
+  zone_id        = var.zone_id
+  name           = var.name
+  mongo_list {
+    node_class = "mdb.shard.4x.large.d"
+  }
+  mongo_list {
+    node_class = "mdb.shard.4x.large.d"
+  }
+  shard_list {
+    node_class   = "mdb.shard.4x.large.d"
+    node_storage = "20"
+  }
+  shard_list {
+    node_class   = "mdb.shard.4x.large.d"
+    node_storage = "20"
+  }
+  config_server_list {
+    node_class        = "mdb.shard.2x.xlarge.d"
+    node_storage      = "80"
+  }
+}
+
+
+`, name)
+}
+
+// Case 账号测试用例初始化_副本集_2024年11月7日_写入 8763
+func TestAccAliCloudMongodbAccount_basic8763(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudMongodbAccountMap8763)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MongodbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMongodbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongodbAccountBasicDependence8763)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_name":        "root",
+					"account_password":    "qwer1234!!!",
+					"instance_id":         "${alicloud_mongodb_instance.default7eOftZ.id}",
+					"character_type":      "normal",
+					"account_description": "bgg-test-power",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":        "root",
+						"account_password":    "qwer1234!!!",
+						"instance_id":         CHECKSET,
+						"character_type":      "normal",
+						"account_description": "bgg-test-power",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+var AlicloudMongodbAccountMap8763 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudMongodbAccountBasicDependence8763(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-shanghai-b"
+}
+
+variable "region_id" {
+  default = "cn-shanghai"
+}
+
+variable "other_zone_id" {
+  default = "cn-shanghai-g"
+}
+
+resource "alicloud_vpc" "defaultIzCngN" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "defaultLWEsPM" {
+  vpc_id     = alicloud_vpc.defaultIzCngN.id
+  zone_id    = var.zone_id
+  cidr_block = "10.0.0.0/24"
+}
+
+resource "alicloud_mongodb_instance" "default7eOftZ" {
+  engine_version      = "4.4"
+  storage_type        = "cloud_essd1"
+  vswitch_id          = alicloud_vswitch.defaultLWEsPM.id
+  vpc_id              = alicloud_vpc.defaultIzCngN.id
+  storage_engine      = "WiredTiger"
+  network_type        = "VPC"
+  zone_id             = var.zone_id
+  db_instance_storage = "20"
+  db_instance_class   = "mdb.shard.4x.large.d"
+}
+
+
+`, name)
+}
+
+// Test Mongodb Account. <<< Resource test cases, automatically generated.

@@ -1608,7 +1608,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_click_house_backup_policy":                             resourceAlicloudClickHouseBackupPolicy(),
 			"alicloud_mongodb_audit_policy":                                  resourceAlicloudMongodbAuditPolicy(),
 			"alicloud_cloud_sso_access_configuration_provisioning":           resourceAlicloudCloudSsoAccessConfigurationProvisioning(),
-			"alicloud_mongodb_account":                                       resourceAlicloudMongodbAccount(),
+			"alicloud_mongodb_account":                                       resourceAliCloudMongodbAccount(),
 			"alicloud_mongodb_serverless_instance":                           resourceAlicloudMongodbServerlessInstance(),
 			"alicloud_ecs_session_manager_status":                            resourceAliCloudEcsSessionManagerStatus(),
 			"alicloud_cddc_dedicated_host_account":                           resourceAlicloudCddcDedicatedHostAccount(),

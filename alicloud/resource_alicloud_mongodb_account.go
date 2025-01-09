@@ -1,12 +1,11 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
-	"regexp"
+	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -14,35 +13,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongodbAccount() *schema.Resource {
+func resourceAliCloudMongodbAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongodbAccountCreate,
-		Read:   resourceAlicloudMongodbAccountRead,
-		Update: resourceAlicloudMongodbAccountUpdate,
-		Delete: resourceAlicloudMongodbAccountDelete,
+		Create: resourceAliCloudMongodbAccountCreate,
+		Read:   resourceAliCloudMongodbAccountRead,
+		Update: resourceAliCloudMongodbAccountUpdate,
+		Delete: resourceAliCloudMongodbAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"account_description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]{1,255}$`), "It must be `2` to `256` characters in length, The description must start with a letter, and can contain letters, digits, underscores (_), and hyphens (-).")),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"account_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"root"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"account_password": {
-				Type:         schema.TypeString,
-				Required:     true,
-				Sensitive:    true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`[a-zA-Z!#$%^&*()_+-=]{8,32}`), "account_password must consist of uppercase letters, lowercase letters, numbers, and special characters"),
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+			},
+			"character_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -57,117 +61,228 @@ func resourceAlicloudMongodbAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "ResetAccountPassword"
-	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	request["AccountName"] = d.Get("account_name")
-	request["AccountPassword"] = d.Get("account_password")
-	request["DBInstanceId"] = d.Get("instance_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if v, ok := d.GetOk("character_type"); ok && InArray(fmt.Sprint(v), []string{"db"}) {
+		action := "CreateAccount"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		conn, err := client.NewDdsClient()
 		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
+			return WrapError(err)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_account", action, AlibabaCloudSdkGoERROR)
-	}
-	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", request["AccountName"]))
-	MongoDBService := MongoDBService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, MongoDBService.MongodbAccountStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		request = make(map[string]interface{})
+		if v, ok := d.GetOk("account_name"); ok {
+			request["AccountName"] = v
+		}
+		if v, ok := d.GetOk("instance_id"); ok {
+			request["DBInstanceId"] = v
+		}
+		request["RegionId"] = client.RegionId
+
+		request["AccountPassword"] = d.Get("account_password")
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_account", action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], request["AccountName"]))
+
+		mongodbServiceV2 := MongodbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, mongodbServiceV2.MongodbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 	}
 
-	return resourceAlicloudMongodbAccountUpdate(d, meta)
+	invalidCreate := false
+	if v, ok := d.GetOk("character_type"); ok {
+		if InArray(fmt.Sprint(v), []string{"db"}) {
+			invalidCreate = true
+		}
+	}
+	if !invalidCreate {
+
+		action := "ResetAccountPassword"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		request = make(map[string]interface{})
+		if v, ok := d.GetOk("account_name"); ok {
+			request["AccountName"] = v
+		}
+		if v, ok := d.GetOk("instance_id"); ok {
+			request["DBInstanceId"] = v
+		}
+		request["RegionId"] = client.RegionId
+
+		request["AccountPassword"] = d.Get("account_password")
+		if v, ok := d.GetOk("character_type"); ok {
+			request["CharacterType"] = v
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_account", action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], request["AccountName"]))
+
+		mongodbServiceV2 := MongodbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, mongodbServiceV2.MongodbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+	}
+
+	return resourceAliCloudMongodbAccountUpdate(d, meta)
 }
-func resourceAlicloudMongodbAccountRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudMongodbAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	MongoDBService := MongoDBService{client}
-	object, err := MongoDBService.DescribeMongodbAccount(d.Id())
+	mongodbServiceV2 := MongodbServiceV2{client}
+
+	objectRaw, err := mongodbServiceV2.DescribeMongodbAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_mongodb_account MongoDBService.DescribeMongodbAccount Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_mongodb_account DescribeMongodbAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("account_name", object["AccountName"])
-	d.Set("instance_id", object["DBInstanceId"])
-	d.Set("account_description", object["AccountDescription"])
-	d.Set("status", object["AccountStatus"])
+
+	if objectRaw["AccountDescription"] != nil {
+		d.Set("account_description", objectRaw["AccountDescription"])
+	}
+	if objectRaw["CharacterType"] != nil {
+		d.Set("character_type", objectRaw["CharacterType"])
+	}
+	if objectRaw["AccountStatus"] != nil {
+		d.Set("status", objectRaw["AccountStatus"])
+	}
+	if objectRaw["AccountName"] != nil {
+		d.Set("account_name", objectRaw["AccountName"])
+	}
+	if objectRaw["DBInstanceId"] != nil {
+		d.Set("instance_id", objectRaw["DBInstanceId"])
+	}
+
 	return nil
 }
-func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	MongoDBService := MongoDBService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+
+	parts := strings.Split(d.Id(), ":")
+	action := "ResetAccountPassword"
 	conn, err := client.NewDdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountName"] = parts[1]
+	request["DBInstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("account_password") {
+		update = true
+	}
+	request["AccountPassword"] = d.Get("account_password")
+	if !d.IsNewResource() && d.HasChange("character_type") {
+		update = true
+		request["CharacterType"] = d.Get("character_type")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		mongodbServiceV2 := MongodbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, mongodbServiceV2.MongodbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	action = "ModifyAccountDescription"
+	conn, err = client.NewDdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Partial(true)
-
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountName"] = parts[1]
+	request["DBInstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
 	if d.HasChange("account_description") {
-		request := map[string]interface{}{
-			"AccountName":  parts[1],
-			"DBInstanceId": parts[0],
-		}
-		if v, ok := d.GetOk("account_description"); ok {
-			request["AccountDescription"] = v
-		}
-		action := "ModifyAccountDescription"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, MongoDBService.MongodbAccountStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("account_description")
+		update = true
 	}
-
-	if !d.IsNewResource() && d.HasChange("account_password") {
-		request := map[string]interface{}{
-			"AccountName":  parts[1],
-			"DBInstanceId": parts[0],
-		}
-		request["AccountPassword"] = d.Get("account_password")
-		action := "ResetAccountPassword"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["AccountDescription"] = d.Get("account_description")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -181,17 +296,13 @@ func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, MongoDBService.MongodbAccountStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("account_password")
 	}
 
 	d.Partial(false)
-	return resourceAlicloudMongodbAccountRead(d, meta)
+	return resourceAliCloudMongodbAccountRead(d, meta)
 }
-func resourceAlicloudMongodbAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource Alicloud Mongodb Account. Terraform will remove this resource from the state file, however resources may remain.")
+
+func resourceAliCloudMongodbAccountDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Account. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
