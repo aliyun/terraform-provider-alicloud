@@ -187,3 +187,95 @@ func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string,
 }
 
 // DescribeHbrPolicyBinding >>> Encapsulated.
+// DescribeHbrCrossAccount <<< Encapsulated get interface for Hbr CrossAccount.
+
+func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeCrossAccounts"
+	conn, err := client.NewHbrClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.CrossAccounts.CrossAccount[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CrossAccounts.CrossAccount[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CrossAccount", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["CrossAccountRoleName"]) != parts[1] {
+			continue
+		}
+		if fmt.Sprint(item["CrossAccountUserId"]) != parts[0] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("CrossAccount", id)), NotFoundMsg, response)
+}
+
+func (s *HbrServiceV2) HbrCrossAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeHbrCrossAccount(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeHbrCrossAccount >>> Encapsulated.
