@@ -22,6 +22,7 @@ type MessageServiceServiceV2 struct {
 
 func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object map[string]interface{}, err error) {
 	client := s.client
+	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetQueueAttributes"
@@ -29,14 +30,15 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	if err != nil {
 		return object, WrapError(err)
 	}
+	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["QueueName"] = id
+	request["QueueName"] = id
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, nil, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -45,14 +47,13 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, query)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"QueueNotExist"}) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound:QueueName", "RESOURCE_NOT_FOUND", "QueueNotExist"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Queue", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, query)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -62,28 +63,6 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	}
 
 	return v.(map[string]interface{}), nil
-}
-
-func (s *MessageServiceServiceV2) MessageServiceQueueStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeMessageServiceQueue(id)
-		if err != nil {
-			if NotFoundError(err) {
-				return object, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		v, err := jsonpath.Get(field, object)
-		currentStatus := fmt.Sprint(v)
-
-		for _, failState := range failStates {
-			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
-			}
-		}
-		return object, currentStatus, nil
-	}
 }
 
 // DescribeMessageServiceQueue >>> Encapsulated.

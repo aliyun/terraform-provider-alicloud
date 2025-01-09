@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_message_service_queue
 
-Provides a Message Service Queue resource. 
+Provides a Message Service Queue resource.
+
+
 
 For information about Message Service Queue and how to use it, see [What is Queue](https://www.alibabacloud.com/help/en/message-service/latest/createqueue).
 
@@ -29,37 +31,35 @@ variable "name" {
   default = "terraform-example"
 }
 
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
-
 resource "alicloud_message_service_queue" "default" {
+  queue_name               = var.name
   delay_seconds            = "2"
   polling_wait_seconds     = "2"
   message_retention_period = "566"
-  maximum_message_size     = "1123"
+  maximum_message_size     = "1126"
   visibility_timeout       = "30"
-  queue_name               = var.name
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `delay_seconds` - (Optional, Computed) This means that messages sent to the queue can only be consumed after the delay time set by this parameter, in seconds.
-* `logging_enabled` - (Optional) Represents whether the log management function is enabled.
-* `maximum_message_size` - (Optional, Computed) Represents the maximum length of the message body sent to the Queue, in Byte.
-* `message_retention_period` - (Optional, Computed) Represents the longest life time of the message in the Queue.
-* `polling_wait_seconds` - (Optional, Computed) The longest waiting time for a Queue request when the number of messages is empty, in seconds.
-* `queue_name` - (Required, ForceNew) Representative resources.
-* `visibility_timeout` - (Optional, Computed) Represents the duration after the message is removed from the Queue and changed from the Active state to the Inactive state.
+* `delay_seconds` - (Optional, Int) The period after which all messages sent to the queue are consumed. Default value: `0`. Valid values: `0` to `604800`. Unit: seconds.
+* `logging_enabled` - (Optional, Bool) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `maximum_message_size` - (Optional, Int) The maximum length of the message that is sent to the queue. Valid values: `1024` to `65536`. Unit: bytes. Default value: `65536`.
+* `message_retention_period` - (Optional, Int) The maximum duration for which a message is retained in the queue. After the specified retention period ends, the message is deleted regardless of whether the message is received. Valid values: `60` to `604800`. Unit: seconds. Default value: `345600`.
+* `polling_wait_seconds` - (Optional, Int) The maximum duration for which long polling requests are held after the ReceiveMessage operation is called. Valid values: `0` to `30`. Unit: seconds. Default value: `0`.
+* `queue_name` - (Required, ForceNew) The name of the queue.
+* `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
+* `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - Represents the time when the Queue was created.
+* `id` - The resource ID in terraform of Queue.
+* `create_time` - (Available since v1.223.2) The time when the queue was created.
 
 ## Timeouts
 
