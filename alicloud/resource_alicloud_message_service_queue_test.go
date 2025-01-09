@@ -34,7 +34,7 @@ func init() {
 func testSweepMessageServiceQueue(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -132,7 +132,7 @@ func testSweepMessageServiceQueue(region string) error {
 func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_message_service_queue.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudMessageServiceQueueMap)
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MnsOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMessageServiceQueue")
@@ -140,7 +140,7 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudMessageServiceQueueBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -161,51 +161,11 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"delay_seconds": "60478",
+					"delay_seconds": "66888",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"delay_seconds": "60478",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maximum_message_size": "12357",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maximum_message_size": "12357",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"message_retention_period": "256000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"message_retention_period": "256000",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"visibility_timeout": "40",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"visibility_timeout": "40",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"polling_wait_seconds": "3",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"polling_wait_seconds": "3",
+						"delay_seconds": "66888",
 					}),
 				),
 			},
@@ -221,21 +181,83 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"delay_seconds":            "0",
-					"maximum_message_size":     "65536",
-					"message_retention_period": "345600",
-					"visibility_timeout":       "30",
-					"polling_wait_seconds":     "0",
-					"logging_enabled":          "false",
+					"maximum_message_size": "1688",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"delay_seconds":            "0",
-						"maximum_message_size":     "65536",
-						"message_retention_period": "345600",
-						"visibility_timeout":       "30",
-						"polling_wait_seconds":     "0",
-						"logging_enabled":          "false",
+						"maximum_message_size": "1688",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "256000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "256000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -248,13 +270,82 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	})
 }
 
-var resourceAlicloudMessageServiceQueueMap = map[string]string{}
-
-func resourceAlicloudMessageServiceQueueBasicDependence(name string) string {
-	return ""
+func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MnsOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceQueue")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name":               name,
+					"delay_seconds":            "66888",
+					"logging_enabled":          "true",
+					"maximum_message_size":     "1688",
+					"message_retention_period": "256000",
+					"polling_wait_seconds":     "6",
+					"visibility_timeout":       "60",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":               name,
+						"delay_seconds":            "66888",
+						"logging_enabled":          "true",
+						"maximum_message_size":     "1688",
+						"message_retention_period": "256000",
+						"polling_wait_seconds":     "6",
+						"visibility_timeout":       "60",
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
-func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
+var AliCloudMessageServiceQueueMap0 = map[string]string{
+	"create_time":              CHECKSET,
+	"delay_seconds":            CHECKSET,
+	"maximum_message_size":     CHECKSET,
+	"message_retention_period": CHECKSET,
+	"polling_wait_seconds":     CHECKSET,
+	"visibility_timeout":       CHECKSET,
+}
+
+func AliCloudMessageServiceQueueBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+`, name)
+}
+
+func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(nil, nil)

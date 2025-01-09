@@ -64,6 +64,7 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 			"visibility_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -87,26 +88,31 @@ func resourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["QueueName"] = d.Get("queue_name")
+	request["QueueName"] = d.Get("queue_name")
 
-	if v, ok := d.GetOk("message_retention_period"); ok {
+	if v, ok := d.GetOkExists("message_retention_period"); ok {
 		request["MessageRetentionPeriod"] = v
 	}
-	if v, ok := d.GetOk("polling_wait_seconds"); ok {
+	if v, ok := d.GetOkExists("polling_wait_seconds"); ok {
 		request["PollingWaitSeconds"] = v
 	}
-	if v, ok := d.GetOk("visibility_timeout"); ok {
+	if v, ok := d.GetOkExists("visibility_timeout"); ok {
 		request["VisibilityTimeout"] = v
 	}
-	if v, ok := d.GetOk("delay_seconds"); ok {
+	if v, ok := d.GetOkExists("delay_seconds"); ok {
 		request["DelaySeconds"] = v
 	}
-	if v, ok := d.GetOk("maximum_message_size"); ok {
+	if v, ok := d.GetOkExists("maximum_message_size"); ok {
 		request["MaximumMessageSize"] = v
 	}
 	if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -119,17 +125,17 @@ func resourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_message_service_queue", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(query["QueueName"]))
+	d.SetId(fmt.Sprint(request["QueueName"]))
 
-	return resourceAliCloudMessageServiceQueueUpdate(d, meta)
+	return resourceAliCloudMessageServiceQueueRead(d, meta)
 }
 
 func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interface{}) error {
@@ -146,16 +152,33 @@ func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("delay_seconds", objectRaw["DelaySeconds"])
-	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
-	d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
-	d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
-	d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
-	d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
-	d.Set("queue_name", objectRaw["QueueName"])
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["DelaySeconds"] != nil {
+		d.Set("delay_seconds", objectRaw["DelaySeconds"])
+	}
+	if objectRaw["LoggingEnabled"] != nil {
+		d.Set("logging_enabled", objectRaw["LoggingEnabled"])
+	}
+	if objectRaw["MaximumMessageSize"] != nil {
+		d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
+	}
+	if objectRaw["MessageRetentionPeriod"] != nil {
+		d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
+	}
+	if objectRaw["PollingWaitSeconds"] != nil {
+		d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
+	}
+	if objectRaw["VisibilityTimeout"] != nil {
+		d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
+	}
+	if objectRaw["QueueName"] != nil {
+		d.Set("queue_name", objectRaw["QueueName"])
+	}
 
-	d.Set("queue_name", d.Id())
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
@@ -166,6 +189,8 @@ func resourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
+
 	action := "SetQueueAttributes"
 	conn, err := client.NewMnsClient()
 	if err != nil {
@@ -173,35 +198,52 @@ func resourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta inte
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["QueueName"] = d.Id()
+	request["QueueName"] = d.Id()
 	if !d.IsNewResource() && d.HasChange("message_retention_period") {
 		update = true
-		request["MessageRetentionPeriod"] = d.Get("message_retention_period")
+
+		if v, ok := d.GetOk("message_retention_period"); ok {
+			request["MessageRetentionPeriod"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("polling_wait_seconds") {
 		update = true
-		request["PollingWaitSeconds"] = d.Get("polling_wait_seconds")
+
+		if v, ok := d.GetOkExists("polling_wait_seconds"); ok {
+			request["PollingWaitSeconds"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("visibility_timeout") {
 		update = true
-		request["VisibilityTimeout"] = d.Get("visibility_timeout")
+
+		if v, ok := d.GetOk("visibility_timeout"); ok {
+			request["VisibilityTimeout"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("delay_seconds") {
 		update = true
-		request["DelaySeconds"] = d.Get("delay_seconds")
+
+		if v, ok := d.GetOkExists("delay_seconds"); ok {
+			request["DelaySeconds"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("maximum_message_size") {
 		update = true
-		request["MaximumMessageSize"] = d.Get("maximum_message_size")
+
+		if v, ok := d.GetOkExists("maximum_message_size"); ok {
+			request["MaximumMessageSize"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("logging_enabled") {
 		update = true
-		request["EnableLogging"] = d.Get("logging_enabled")
+	}
+	if v, ok := d.GetOkExists("logging_enabled"); ok {
+		request["EnableLogging"] = v
 	}
 
 	if update {
@@ -217,14 +259,21 @@ func resourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta inte
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("tags") {
+		messageServiceServiceV2 := MessageServiceServiceV2{client}
+		if err := messageServiceServiceV2.SetResourceTags(d, "queue"); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Partial(false)
 	return resourceAliCloudMessageServiceQueueRead(d, meta)
 }
 
@@ -240,7 +289,7 @@ func resourceAliCloudMessageServiceQueueDelete(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["QueueName"] = d.Id()
+	request["QueueName"] = d.Id()
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -255,11 +304,14 @@ func resourceAliCloudMessageServiceQueueDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
