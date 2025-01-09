@@ -35,7 +35,7 @@ Basic Usage
 
 ```terraform
 variable "instance_name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
@@ -116,9 +116,17 @@ The following arguments are supported:
 * `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format. **NOTE**: When the available zone is insufficient, another availability zone may be deployed.
-* `selected_zones` - (Optional, Available since v1.195.0) The zones among which you want to deploy the instance.
+* `enable_auto_group` - (Optional, Bool, Available since v1.241.0) Specify whether to enable the flexible group creation feature. Default value: `false`. Valid values:
+  - `true`: Enables the flexible group creation feature.
+  - `false`: Disabled the flexible group creation feature.
+* `enable_auto_topic` - (Optional, Available since v1.241.0) Specify whether to enable the automatic topic creation feature. Default value: `disable`. Valid values:
+  - `enable`: Enables the automatic topic creation feature.
+  - `disable`: Disabled the automatic topic creation feature.
+* `default_topic_partition_num` - (Optional, Int, Available since v1.241.0) The number of partitions in a topic that is automatically created.
+* `vswitch_ids` - (Optional, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
+* `selected_zones` - (Optional, List, Available since v1.195.0) The zones among which you want to deploy the instance.
 
--> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
+-> **NOTE:** Field `io_max`, `disk_size`, `topic_quota`, `eip_max` should follow the following constraints.
 
 | io_max | disk_size(min-max:lag) | topic_quota(min-max:lag) | eip_max(min-max:lag) | 
 |------|-------------|:----:|:-----:|

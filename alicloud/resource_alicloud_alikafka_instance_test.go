@@ -127,7 +127,7 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":           "${var.name}",
+					"name":           name,
 					"topic_quota":    "50",
 					"disk_type":      "1",
 					"disk_size":      "500",
@@ -139,7 +139,7 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":           fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"name":           name,
 						"security_group": CHECKSET,
 						"kms_key_id":     CHECKSET,
 						"partition_num":  "0",
@@ -228,6 +228,36 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"enable_auto_group": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_auto_group": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_auto_topic": "enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_auto_topic": "enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_topic_partition_num": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_topic_partition_num": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -244,51 +274,27 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-						"Updated": "TF",
+						"Created": "TF-update",
+						"For":     "Test-update",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       "3",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
-						"tags.Updated": "TF",
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
 					}),
 				),
 			},
-			// suspend PrePaid testing
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":            "${var.name}",
-					"partition_num":   "2",
-					"disk_size":       "1400",
-					"deploy_type":     "4",
-					"io_max":          "60",
-					"eip_max":         "12",
-					"spec_type":       "professional",
-					"service_version": "2.2.0",
-					//"config":          `{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"96\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}`,
 					"tags": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":            fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"partition_num":   "2",
-						"topic_quota":     "1002",
-						"disk_size":       "1400",
-						"deploy_type":     "4",
-						"io_max":          "60",
-						"eip_max":         "12",
-						"paid_type":       "PostPaid",
-						"spec_type":       "professional",
-						"service_version": "2.2.0",
-						//"config":          "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"96\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
 						"tags.%":       REMOVEKEY,
 						"tags.Created": REMOVEKEY,
 						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
 					}),
 				),
 			},
@@ -319,7 +325,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":              "${var.name}",
+					"name":              name,
 					"partition_num":     "50",
 					"disk_type":         "1",
 					"disk_size":         "500",
@@ -400,7 +406,7 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":            "${var.name}",
+					"name":            name,
 					"partition_num":   "50",
 					"disk_type":       "1",
 					"disk_size":       "500",
@@ -479,46 +485,54 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":            name,
-					"topic_quota":     "50",
-					"disk_type":       "1",
-					"disk_size":       "800",
-					"deploy_type":     "4",
-					"eip_max":         "3",
-					"io_max_spec":     "alikafka.hw.2xlarge",
-					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
-					"paid_type":       "PostPaid",
-					"spec_type":       "professional",
-					"service_version": "2.2.0",
-					"config":          `{\"enable.vpc_sasl_ssl\":\"true\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"true\",\"kafka.message.max.bytes\":\"1048576\"}`,
+					"name":                        name,
+					"topic_quota":                 "50",
+					"disk_type":                   "1",
+					"disk_size":                   "800",
+					"deploy_type":                 "4",
+					"eip_max":                     "3",
+					"io_max_spec":                 "alikafka.hw.2xlarge",
+					"vswitch_id":                  "${data.alicloud_vswitches.default.ids.0}",
+					"paid_type":                   "PostPaid",
+					"spec_type":                   "professional",
+					"service_version":             "2.2.0",
+					"enable_auto_group":           "true",
+					"enable_auto_topic":           "enable",
+					"default_topic_partition_num": "6",
+					"config":                      `{\"enable.vpc_sasl_ssl\":\"true\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"true\",\"kafka.message.max.bytes\":\"1048576\"}`,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
 					"security_group": "${alicloud_security_group.default.id}",
 					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
-					"selected_zones": []string{"zonea", "zoneb"},
+					"vswitch_ids":    []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"selected_zones": []string{"zoneb", "zonec"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 name,
-						"partition_num":        "0",
-						"topic_quota":          "1000",
-						"disk_type":            "1",
-						"disk_size":            "800",
-						"deploy_type":          "4",
-						"eip_max":              "3",
-						"io_max_spec":          "alikafka.hw.2xlarge",
-						"paid_type":            "PostPaid",
-						"spec_type":            "professional",
-						"service_version":      "2.2.0",
-						"config":               CHECKSET,
-						"tags.%":               "2",
-						"tags.Created":         "TF",
-						"tags.For":             "acceptance test",
-						"ssl_endpoint":         CHECKSET,
-						"ssl_domain_endpoint":  CHECKSET,
-						"sasl_domain_endpoint": CHECKSET,
+						"name":                        name,
+						"partition_num":               "0",
+						"topic_quota":                 "1000",
+						"disk_type":                   "1",
+						"disk_size":                   "800",
+						"deploy_type":                 "4",
+						"eip_max":                     "3",
+						"io_max_spec":                 "alikafka.hw.2xlarge",
+						"paid_type":                   "PostPaid",
+						"spec_type":                   "professional",
+						"service_version":             "2.2.0",
+						"enable_auto_group":           "true",
+						"enable_auto_topic":           "enable",
+						"default_topic_partition_num": "6",
+						"config":                      CHECKSET,
+						"vswitch_ids.#":               "2",
+						"tags.%":                      "2",
+						"tags.Created":                "TF",
+						"tags.For":                    "acceptance test",
+						"ssl_endpoint":                CHECKSET,
+						"ssl_domain_endpoint":         CHECKSET,
+						"sasl_domain_endpoint":        CHECKSET,
 					}),
 				),
 			},
