@@ -1057,15 +1057,18 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 
 func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetInstanceList"
+
 	conn, err := s.client.NewAlikafkaClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetInstanceList"
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": []string{id},
 	}
+
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -1082,27 +1085,33 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	v, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
+
+	resp, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceList.InstanceVO", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:Instance", id)), NotFoundWithResponse, response)
 	}
-	for _, v := range v.([]interface{}) {
+
+	for _, v := range resp.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == id && fmt.Sprint(v.(map[string]interface{})["ServiceStatus"]) != "10" {
 			idExist = true
 			return v.(map[string]interface{}), nil
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:Instance", id)), NotFoundWithResponse, response)
 	}
 
 	return object, nil
