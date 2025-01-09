@@ -46,16 +46,16 @@ resource "alicloud_cloud_control_resource" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `desire_attributes` - (Optional, JsonString) Resource attributes specified when users create and update resources
-* `product` - (Required, ForceNew) Products
-* `resource_code` - (Required, ForceNew) Resource Code, if there is a parent resource, split with::, such as VPC::VSwitch.
-* `resource_id` - (Optional, ForceNew) If there is a parent resource, you need to enter the id of the parent resource, for example, in the VPC::VSwtich resource, you need to enter the id of the VPC: vpc-dexadfe3r4ad. If there are more than one level of parent resources, you need to split them.
+* `desire_attributes` - (Optional, JsonString) Resource attributes specified when a user creates or updates a resource.
+* `product` - (Required, ForceNew) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `resource_code` - (Required, ForceNew) Resource Code, if there is a parent resource, split with `::`, such as VPC::VSwitch. The supported resource Code can be obtained from the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `resource_id` (Optional, ForceNew) - If there is a parent resource, you need to enter the id of the parent resource, for example, in the VPC::VSwtich resource, you need to enter the id of the VPC: vpc-dexadfe3r4ad. If there are more than one level of parent resources, you need to use `:` to split.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<product>:<resource_code>:<resource_id>`.
-* `resource_attributes` - Resource Attribute Collection
+* `resource_attributes` - The collection of properties for the resource.
 
 ## Timeouts
 
@@ -69,5 +69,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Cloud Control Resource can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cloud_control_resource.example <product>:<resource_code>:<resource_id>
+$ terraform import alicloud_cloud_control_resource.example <provider>:<product>:<resource_code>:<resource_id>
 ```
