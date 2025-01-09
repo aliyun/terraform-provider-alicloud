@@ -885,6 +885,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_cloud_control_resource":                               resourceAliCloudCloudControlResource(),
+			"alicloud_hbr_cross_account":                                    resourceAliCloudHbrCrossAccount(),
 			"alicloud_oss_access_point":                                     resourceAliCloudOssAccessPoint(),
 			"alicloud_oss_bucket_worm":                                      resourceAliCloudOssBucketWorm(),
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
