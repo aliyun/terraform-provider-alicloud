@@ -54,8 +54,6 @@ func resourceAliCloudCloudMonitorServiceEnterprisePublicCreate(d *schema.Resourc
 		request["ProductType"] = "cms_enterprise_public_intl"
 	}
 	request["SubscriptionType"] = "PayAsYouGo"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
