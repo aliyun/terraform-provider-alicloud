@@ -42,28 +42,34 @@ func resourceAliCloudCloudMonitorServiceBasicPublicCreate(d *schema.ResourceData
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
 
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_basic_public_cn"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "cms_basic_public_intl"
+	}
 	request["SubscriptionType"] = "PayAsYouGo"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "cms_basic_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -73,15 +79,15 @@ func resourceAliCloudCloudMonitorServiceBasicPublicCreate(d *schema.ResourceData
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_monitor_service_basic_public", action, AlibabaCloudSdkGoERROR)
-	}
-	if response["Code"] == "Has.effect.suit" {
-		parts := strings.Split(response["Message"].(string), ": ")
-		if len(parts) < 2 {
-			return WrapErrorf(err, ResponseCodeMsg, "alicloud_cloud_monitor_service_basic_public", action, response)
+		if IsExpectedErrors(err, []string{"Has.effect.suit"}) {
+			parts := strings.Split(response["Message"].(string), ": ")
+			if len(parts) < 2 {
+				return WrapErrorf(err, ResponseCodeMsg, "alicloud_cloud_monitor_service_basic_public", action, response)
+			}
+			d.SetId(parts[1])
+			return resourceAliCloudCloudMonitorServiceBasicPublicRead(d, meta)
 		}
-		d.SetId(parts[1])
-		return resourceAliCloudCloudMonitorServiceBasicPublicRead(d, meta)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_monitor_service_basic_public", action, AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
