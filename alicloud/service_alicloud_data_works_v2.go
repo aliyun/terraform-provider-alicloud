@@ -51,7 +51,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[str
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1101080008"}) {
+		if IsExpectedErrors(err, []string{"1101080008", "9990040003"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -454,6 +454,7 @@ func (s *DataWorksServiceV2) DataWorksDataSourceSharedRuleStateRefreshFunc(id st
 }
 
 // DescribeDataWorksDataSourceSharedRule >>> Encapsulated.
+
 // DescribeDataWorksDiAlarmRule <<< Encapsulated get interface for DataWorks DiAlarmRule.
 
 func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map[string]interface{}, err error) {
@@ -524,6 +525,13 @@ func (s *DataWorksServiceV2) DataWorksDiAlarmRuleStateRefreshFunc(id string, fie
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -534,6 +542,7 @@ func (s *DataWorksServiceV2) DataWorksDiAlarmRuleStateRefreshFunc(id string, fie
 }
 
 // DescribeDataWorksDiAlarmRule >>> Encapsulated.
+
 // DescribeDataWorksDiJob <<< Encapsulated get interface for DataWorks DiJob.
 
 func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[string]interface{}, err error) {
@@ -600,6 +609,13 @@ func (s *DataWorksServiceV2) DataWorksDiJobStateRefreshFunc(id string, field str
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -610,6 +626,7 @@ func (s *DataWorksServiceV2) DataWorksDiJobStateRefreshFunc(id string, field str
 }
 
 // DescribeDataWorksDiJob >>> Encapsulated.
+
 // DescribeDataWorksNetwork <<< Encapsulated get interface for DataWorks Network.
 
 func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[string]interface{}, err error) {
@@ -673,6 +690,13 @@ func (s *DataWorksServiceV2) DataWorksNetworkStateRefreshFunc(id string, field s
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -683,6 +707,7 @@ func (s *DataWorksServiceV2) DataWorksNetworkStateRefreshFunc(id string, field s
 }
 
 // DescribeDataWorksNetwork >>> Encapsulated.
+
 // DescribeDataWorksDwResourceGroup <<< Encapsulated get interface for DataWorks DwResourceGroup.
 
 func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object map[string]interface{}, err error) {
@@ -706,7 +731,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
 
-		if err != nil {
+		if err != nil || IsExpectedErrors(err, []string{"9990040003"}) {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
@@ -745,6 +770,13 @@ func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
