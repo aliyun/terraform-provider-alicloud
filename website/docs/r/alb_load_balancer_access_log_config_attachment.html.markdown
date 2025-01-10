@@ -29,7 +29,9 @@ provider "alicloud" {
   region = "cn-beijing"
 }
 
-resource "random_uuid" "default" {
+resource "random_integer" "default" {
+  min = 100000
+  max = 999999
 }
 
 resource "alicloud_vpc" "alb_example_tf_vpc" {
@@ -86,9 +88,9 @@ resource "alicloud_alb_load_balancer" "defaultDYswYo" {
 
 
 resource "alicloud_alb_load_balancer_access_log_config_attachment" "default" {
-  log_store        = "${var.name}-${random_uuid.default.result}"
+  log_store        = "${var.name}-${random_integer.default.result}"
   load_balancer_id = alicloud_alb_load_balancer.defaultDYswYo.id
-  log_project      = "${var.name}-${random_uuid.default.result}"
+  log_project      = "${var.name}-${random_integer.default.result}"
 }
 ```
 
