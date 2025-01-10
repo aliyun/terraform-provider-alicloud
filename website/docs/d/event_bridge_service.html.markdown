@@ -7,19 +7,17 @@ description: |-
     Provides a datasource to open the Event Bridge service automatically.
 ---
 
-# alicloud\_event\_bridge\_service
+# alicloud_event_bridge_service
 
 Using this data source can open Event Bridge service automatically. If the service has been opened, it will return opened.
 
 For information about Event Bridge and how to use it, see [What is Event Bridge](https://www.alibabacloud.com/help/en/doc-detail/163239.htm).
 
--> **NOTE:** Available in v1.126.0+
-
--> **NOTE:** This data source supports `cn-shanghai`, `cn-hangzhou` and `ap-southeast-1` regions.
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_event_bridge_service" "open" {
 	enable = "On"
 }
