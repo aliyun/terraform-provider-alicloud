@@ -172,6 +172,9 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cloud_control_resource_types":   dataSourceAliCloudCloudControlResourceTypes(),
+			"alicloud_cloud_control_products":         dataSourceAliCloudCloudControlProducts(),
+			"alicloud_cloud_control_prices":           dataSourceAliCloudCloudControlPrices(),
 			"alicloud_vpc_ipam_ipam_scopes":           dataSourceAliCloudVpcIpamIpamScopes(),
 			"alicloud_vpc_ipam_ipam_pool_cidrs":       dataSourceAliCloudVpcIpamIpamPoolCidrs(),
 			"alicloud_vpc_ipam_ipam_pool_allocations": dataSourceAliCloudVpcIpamIpamPoolAllocations(),
