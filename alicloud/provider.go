@@ -888,6 +888,10 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_alb_load_balancer_access_log_config_attachment":       resourceAliCloudAlbLoadBalancerAccessLogConfigAttachment(),
+			"alicloud_data_works_di_alarm_rule":                             resourceAliCloudDataWorksDiAlarmRule(),
+			"alicloud_data_works_di_job":                                    resourceAliCloudDataWorksDiJob(),
+			"alicloud_data_works_dw_resource_group":                         resourceAliCloudDataWorksDwResourceGroup(),
+			"alicloud_data_works_network":                                   resourceAliCloudDataWorksNetwork(),
 			"alicloud_cloud_control_resource":                               resourceAliCloudCloudControlResource(),
 			"alicloud_hbr_cross_account":                                    resourceAliCloudHbrCrossAccount(),
 			"alicloud_oss_access_point":                                     resourceAliCloudOssAccessPoint(),
