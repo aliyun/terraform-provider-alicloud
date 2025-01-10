@@ -20,6 +20,12 @@ For information about APIG Gateway and how to use it, see [What is Gateway](http
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_apig_gateway&exampleId=6a041ca8-aa0e-8c55-950d-af10c2df89b01a30ef4f&activeTab=example&spm=docs.r.apig_gateway.0.6a041ca8aa&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

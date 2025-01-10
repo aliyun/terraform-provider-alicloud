@@ -21,7 +21,7 @@ For information about NAT Gateway Snat Entry and how to use it, see [What is Sna
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_snat_entry&exampleId=03cb9142-7fb8-29c9-bf5d-497c893c5b759b577a6a&activeTab=example&spm=docs.r.snat_entry.0.03cb91427f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_snat_entry&exampleId=0ee2670a-299c-0151-3574-c354b106850f08ca1a7c&activeTab=example&spm=docs.r.snat_entry.0.0ee2670a29&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

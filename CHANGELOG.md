@@ -1,137 +1,139 @@
-## 1.241.0 (Unreleased)
+## 1.242.0 (Unreleased)
+## 1.241.0 (January 10, 2025)
 
-- **New Resource:** `alicloud_hbr_cross_account` [GH-8102]
-- **New Resource:** `alicloud_cloud_control_resource` [GH-8109]
-- **New Resource:** `alicloud_data_works_di_alarm_rule` [GH-8115]
-- **New Resource:** `alicloud_data_works_di_job` [GH-8115]
-- **New Resource:** `alicloud_data_works_dw_resource_group` [GH-8115]
-- **New Resource:** `alicloud_data_works_network` [GH-8115]
-- **New Resource:** `alicloud_alb_load_balancer_access_log_config_attachment` [GH-8116]
-- **New Data Source:** `alicloud_vpc_ipam_ipams` [GH-8064]
-- **New Data Source:** `alicloud_vpc_ipam_ipam_pools` [GH-8064]
-- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_allocations` [GH-8064]
-- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_cidrs` [GH-8068]
-- **New Data Source:** `alicloud_vpc_ipam_ipam_scopes` [GH-8068]
-- **New Data Source:** `alicloud_cloud_control_prices` [GH-8113]
-- **New Data Source:** `alicloud_cloud_control_products` [GH-8113]
-- **New Data Source:** `alicloud_cloud_control_resource_types` [GH-8113]
+- **New Resource:** `alicloud_hbr_cross_account` ([#8102](https://github.com/aliyun/terraform-provider-alicloud/issues/8102))
+- **New Resource:** `alicloud_cloud_control_resource` ([#8109](https://github.com/aliyun/terraform-provider-alicloud/issues/8109))
+- **New Resource:** `alicloud_data_works_di_alarm_rule` ([#8115](https://github.com/aliyun/terraform-provider-alicloud/issues/8115))
+- **New Resource:** `alicloud_data_works_di_job` ([#8115](https://github.com/aliyun/terraform-provider-alicloud/issues/8115))
+- **New Resource:** `alicloud_data_works_dw_resource_group` ([#8115](https://github.com/aliyun/terraform-provider-alicloud/issues/8115))
+- **New Resource:** `alicloud_data_works_network` ([#8115](https://github.com/aliyun/terraform-provider-alicloud/issues/8115))
+- **New Resource:** `alicloud_alb_load_balancer_access_log_config_attachment` ([#8116](https://github.com/aliyun/terraform-provider-alicloud/issues/8116))
+- **New Data Source:** `alicloud_vpc_ipam_ipams` ([#8064](https://github.com/aliyun/terraform-provider-alicloud/issues/8064))
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pools` ([#8064](https://github.com/aliyun/terraform-provider-alicloud/issues/8064))
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_allocations` ([#8064](https://github.com/aliyun/terraform-provider-alicloud/issues/8064))
+- **New Data Source:** `alicloud_vpc_ipam_ipam_pool_cidrs` ([#8068](https://github.com/aliyun/terraform-provider-alicloud/issues/8068))
+- **New Data Source:** `alicloud_vpc_ipam_ipam_scopes` ([#8068](https://github.com/aliyun/terraform-provider-alicloud/issues/8068))
+- **New Data Source:** `alicloud_cloud_control_prices` ([#8113](https://github.com/aliyun/terraform-provider-alicloud/issues/8113))
+- **New Data Source:** `alicloud_cloud_control_products` ([#8113](https://github.com/aliyun/terraform-provider-alicloud/issues/8113))
+- **New Data Source:** `alicloud_cloud_control_resource_types` ([#8113](https://github.com/aliyun/terraform-provider-alicloud/issues/8113))
 
 ENHANCEMENTS:
 
-- client: improves getting endpoints method for cas serivce. [GH-8061]
-- client: Adds new method IsInternationalAccount used to invoking bss openapi. [GH-8081]
-- client: Improves the cas endpoint setting method. [GH-8094]
-- resource/alicloud_snat_entry: Refactored the resource alicloud_snat_entry; Added the field eip_affinity; Removed the ForceNew for field snat_ip. [GH-8062]
-- resource/alicloud_alb_listener: Removed the idle_timeout, request_timeout enums limitation. [GH-8063]
-- resource/alicloud_ecs_launch_template: Supports to setting default version number and output latest version number; data-source/alicloud_ecs_launch_templates: Improves the fetching logics. [GH-8066]
-- resource/alicloud_oos_secret_parameter: add new attribute dkms_instance_id. [GH-8067]
-- resource/alicloud_cdn_domain_new: Removes the limitation of domain_name. [GH-8084]
-- resource/alicloud_amqp_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8085]
-- resource/alicloud_fc_function: Adds new attribute function_arn. [GH-8089]
-- resource/alicloud_bastionhost_instance: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_bastionhost_instances: Adds new attribute storage and bandwidth. [GH-8092]
-- resource/alicloud_cen_*: Added retry strategy for error code. [GH-8093]
-- resource/alicloud_alb_ascript: add new attribute dry_run. [GH-8095]
-- resource/alicloud_instance: Removed the ForceNew for field ipv6_addresses; Fixed the update errors caused by the number of tags exceeding 20. [GH-8096]
-- resource/alicloud_ims_oidc_provider: Adds new attribute arn. [GH-8099]
-- resource/alicloud_cs_managed_kubernetes: load_balancer_spec: remove default value; worker_vswitch_ids: mark as deprecated, use vswitch_ids instead; vswitch_ids: support create and update operation for control plane vswitches. [GH-8100]
-- resource/alicloud_fcv2_function: Adds new attribute function_arn. [GH-8103]
-- resource/alicloud_message_service_topic: Refactored the resource alicloud_message_service_topic; Added the field enable_logging, tags, create_time; Deprecated the field logging_enabled. [GH-8104]
-- resource/alicloud_alikafka_instance: Added the field enable_auto_group, enable_auto_topic, default_topic_partition_num, vswitch_ids. [GH-8108]
-- resource/alicloud_message_service_queue: Added the field tags. [GH-8112]
-- resource/alicloud_mongodb_account: Support create sharding instance account. [GH-8114]
-- resource/alicloud_cloud_monitor_service_basic_public: Supports international account. [GH-8118]
-- data-source/alicloud_vpcs: Adds new attribute dhcp_options_set_id, dhcp_options_set_status and dns_hostname_status. [GH-8079]
-- data-source/alicloud_event_bridge_service: Improves the invoking bss openapi method. [GH-8082]
-- data-source/alicloud_fnf_service: Supports international account. [GH-8086]
-- data-source/alicloud_edas_service: Supports international account. [GH-8088]
-- data-source/alicloud_pvtz_service: Supports international account. [GH-8090]
-- data-source/alicloud_oss_buckets: Improves the attribute schema tat; docs: Improves the arguments and attributes description and notes. [GH-8105]
-- docs: mark the resource alicloud_cen_instance_grant deprecated. [GH-8073]
-- docs: improves the description of the resource aliclodu_sae_application argument sls_configs. [GH-8075]
-- docs: Corrects the product introduce link of resource alicloud_sls_collection_policy. [GH-8076]
-- docs: Removes the useless example code. [GH-8080]
-- docs: Adds a new example for resource alicloud_sls_collection_policy. [GH-8083]
-- docs: Improves the argument targets description of resource alicloud_cms_alarm. [GH-8101]
-- docs: Improves description for ccapi. [GH-8111]
-- docs: Improves example for alb_load_balancer_access_log_config_attachment. [GH-8117]
-- testcase: Fixed alicloud_ga_accelerator_spare_ip_attachment testcase. [GH-8058]
-- testcase: Fixed alicloud_config_rule testcase. [GH-8059]
-- testcase: Fixed ecs testcase. [GH-8060]
+- client: improves getting endpoints method for cas serivce. ([#8061](https://github.com/aliyun/terraform-provider-alicloud/issues/8061))
+- client: Adds new method IsInternationalAccount used to invoking bss openapi. ([#8081](https://github.com/aliyun/terraform-provider-alicloud/issues/8081))
+- client: Improves the cas endpoint setting method. ([#8094](https://github.com/aliyun/terraform-provider-alicloud/issues/8094))
+- resource/alicloud_snat_entry: Refactored the resource alicloud_snat_entry; Added the field eip_affinity; Removed the ForceNew for field snat_ip. ([#8062](https://github.com/aliyun/terraform-provider-alicloud/issues/8062))
+- resource/alicloud_alb_listener: Removed the idle_timeout, request_timeout enums limitation. ([#8063](https://github.com/aliyun/terraform-provider-alicloud/issues/8063))
+- resource/alicloud_ecs_launch_template: Supports to setting default version number and output latest version number; data-source/alicloud_ecs_launch_templates: Improves the fetching logics. ([#8066](https://github.com/aliyun/terraform-provider-alicloud/issues/8066))
+- resource/alicloud_oos_secret_parameter: add new attribute dkms_instance_id. ([#8067](https://github.com/aliyun/terraform-provider-alicloud/issues/8067))
+- resource/alicloud_cdn_domain_new: Removes the limitation of domain_name. ([#8084](https://github.com/aliyun/terraform-provider-alicloud/issues/8084))
+- resource/alicloud_amqp_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8085](https://github.com/aliyun/terraform-provider-alicloud/issues/8085))
+- resource/alicloud_fc_function: Adds new attribute function_arn. ([#8089](https://github.com/aliyun/terraform-provider-alicloud/issues/8089))
+- resource/alicloud_bastionhost_instance: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_bastionhost_instances: Adds new attribute storage and bandwidth. ([#8092](https://github.com/aliyun/terraform-provider-alicloud/issues/8092))
+- resource/alicloud_cen_*: Added retry strategy for error code. ([#8093](https://github.com/aliyun/terraform-provider-alicloud/issues/8093))
+- resource/alicloud_alb_ascript: add new attribute dry_run. ([#8095](https://github.com/aliyun/terraform-provider-alicloud/issues/8095))
+- resource/alicloud_instance: Removed the ForceNew for field ipv6_addresses; Fixed the update errors caused by the number of tags exceeding 20. ([#8096](https://github.com/aliyun/terraform-provider-alicloud/issues/8096))
+- resource/alicloud_ims_oidc_provider: Adds new attribute arn. ([#8099](https://github.com/aliyun/terraform-provider-alicloud/issues/8099))
+- resource/alicloud_cs_managed_kubernetes: load_balancer_spec: remove default value; worker_vswitch_ids: mark as deprecated, use vswitch_ids instead; vswitch_ids: support create and update operation for control plane vswitches. ([#8100](https://github.com/aliyun/terraform-provider-alicloud/issues/8100))
+- resource/alicloud_fcv2_function: Adds new attribute function_arn. ([#8103](https://github.com/aliyun/terraform-provider-alicloud/issues/8103))
+- resource/alicloud_message_service_topic: Refactored the resource alicloud_message_service_topic; Added the field enable_logging, tags, create_time; Deprecated the field logging_enabled. ([#8104](https://github.com/aliyun/terraform-provider-alicloud/issues/8104))
+- resource/alicloud_alikafka_instance: Added the field enable_auto_group, enable_auto_topic, default_topic_partition_num, vswitch_ids. ([#8108](https://github.com/aliyun/terraform-provider-alicloud/issues/8108))
+- resource/alicloud_message_service_queue: Added the field tags. ([#8112](https://github.com/aliyun/terraform-provider-alicloud/issues/8112))
+- resource/alicloud_mongodb_account: Support create sharding instance account. ([#8114](https://github.com/aliyun/terraform-provider-alicloud/issues/8114))
+- resource/alicloud_cloud_monitor_service_basic_public: Supports international account. ([#8118](https://github.com/aliyun/terraform-provider-alicloud/issues/8118))
+- data-source/alicloud_vpcs: Adds new attribute dhcp_options_set_id, dhcp_options_set_status and dns_hostname_status. ([#8079](https://github.com/aliyun/terraform-provider-alicloud/issues/8079))
+- data-source/alicloud_event_bridge_service: Improves the invoking bss openapi method. ([#8082](https://github.com/aliyun/terraform-provider-alicloud/issues/8082))
+- data-source/alicloud_fnf_service: Supports international account. ([#8086](https://github.com/aliyun/terraform-provider-alicloud/issues/8086))
+- data-source/alicloud_edas_service: Supports international account. ([#8088](https://github.com/aliyun/terraform-provider-alicloud/issues/8088))
+- data-source/alicloud_pvtz_service: Supports international account. ([#8090](https://github.com/aliyun/terraform-provider-alicloud/issues/8090))
+- data-source/alicloud_oss_buckets: Improves the attribute schema tat; docs: Improves the arguments and attributes description and notes. ([#8105](https://github.com/aliyun/terraform-provider-alicloud/issues/8105))
+- docs: mark the resource alicloud_cen_instance_grant deprecated. ([#8073](https://github.com/aliyun/terraform-provider-alicloud/issues/8073))
+- docs: improves the description of the resource aliclodu_sae_application argument sls_configs. ([#8075](https://github.com/aliyun/terraform-provider-alicloud/issues/8075))
+- docs: Corrects the product introduce link of resource alicloud_sls_collection_policy. ([#8076](https://github.com/aliyun/terraform-provider-alicloud/issues/8076))
+- docs: Removes the useless example code. ([#8080](https://github.com/aliyun/terraform-provider-alicloud/issues/8080))
+- docs: Adds a new example for resource alicloud_sls_collection_policy. ([#8083](https://github.com/aliyun/terraform-provider-alicloud/issues/8083))
+- docs: Improves the argument targets description of resource alicloud_cms_alarm. ([#8101](https://github.com/aliyun/terraform-provider-alicloud/issues/8101))
+- docs: docs: fix typo of alicloud_cs_managed_kubernetes_clusters and alicloud_cs_edge_kubernetes_clusters. ([#8107](https://github.com/aliyun/terraform-provider-alicloud/issues/8107))
+- docs: Improves description for ccapi. ([#8111](https://github.com/aliyun/terraform-provider-alicloud/issues/8111))
+- docs: Improves example for alb_load_balancer_access_log_config_attachment. ([#8117](https://github.com/aliyun/terraform-provider-alicloud/issues/8117))
+- testcase: Fixed alicloud_ga_accelerator_spare_ip_attachment testcase. ([#8058](https://github.com/aliyun/terraform-provider-alicloud/issues/8058))
+- testcase: Fixed alicloud_config_rule testcase. ([#8059](https://github.com/aliyun/terraform-provider-alicloud/issues/8059))
+- testcase: Fixed ecs testcase. ([#8060](https://github.com/aliyun/terraform-provider-alicloud/issues/8060))
 
 BUG FIXES:
 
-- resource/alicloud_oss_*: Fixes the panic error while resposne is nil. [GH-8070]
-- resource/alicloud_dcdn_waf_rule: Fixes the panic error when rateLimit is nil. [GH-8069]
-- resource/alicloud_oss_*: Fixes the panic error while resposne is nil. [GH-8070]
-- resource/alicloud_cloud_monitor_service_enterprise_public: Fixes the InvalidParameter when creating it. [GH-8074]
-- resource/alicloud_dcdn_domain: Fixes the updating arguement scope does not working error. [GH-8077]
-- resource/alicloud_oss_bucket: Fixes the panic error when not setting bucket name explicitly. [GH-8078]
-- resource/alicloud_adb_db_cluster: Fixed the read error caused by RegionId parameter. [GH-8097]
-- resource/alicloud_ecs_session_manager_status: Fixed the create, update error caused by state refresh. [GH-8106]
-- resource/alicloud_nlb_load_balancer: Fix invalid value for private_ipv4_address. [GH-8110]
-- data-source/alicloud_vpc_ipam_ipams: fix bug where names were not set. [GH-8087]
+- resource/alicloud_oss_*: Fixes the panic error while resposne is nil. ([#8070](https://github.com/aliyun/terraform-provider-alicloud/issues/8070))
+- resource/alicloud_dcdn_waf_rule: Fixes the panic error when rateLimit is nil. ([#8069](https://github.com/aliyun/terraform-provider-alicloud/issues/8069))
+- resource/alicloud_oss_*: Fixes the panic error while resposne is nil. ([#8070](https://github.com/aliyun/terraform-provider-alicloud/issues/8070))
+- resource/alicloud_cloud_monitor_service_enterprise_public: Fixes the InvalidParameter when creating it. ([#8074](https://github.com/aliyun/terraform-provider-alicloud/issues/8074))
+- resource/alicloud_dcdn_domain: Fixes the updating arguement scope does not working error. ([#8077](https://github.com/aliyun/terraform-provider-alicloud/issues/8077))
+- resource/alicloud_oss_bucket: Fixes the panic error when not setting bucket name explicitly. ([#8078](https://github.com/aliyun/terraform-provider-alicloud/issues/8078))
+- resource/alicloud_adb_db_cluster: Fixed the read error caused by RegionId parameter. ([#8097](https://github.com/aliyun/terraform-provider-alicloud/issues/8097))
+- resource/alicloud_ecs_session_manager_status: Fixed the create, update error caused by state refresh. ([#8106](https://github.com/aliyun/terraform-provider-alicloud/issues/8106))
+- resource/alicloud_nlb_load_balancer: Fix invalid value for private_ipv4_address. ([#8110](https://github.com/aliyun/terraform-provider-alicloud/issues/8110))
+- data-source/alicloud_vpc_ipam_ipams: fix bug where names were not set. ([#8087](https://github.com/aliyun/terraform-provider-alicloud/issues/8087))
 
 ## 1.240.0 (December 30, 2024)
 
-- **New Resource:** `alicloud_schedulerx_app_group` [GH-8023]
-- **New Resource:** `alicloud_schedulerx_job` [GH-8023]
-- **New Resource:** `alicloud_mongodb_private_srv_network_address` [GH-8031]
-- **New Resource:** `alicloud_esa_record` [GH-8037]
-- **New Resource:** `alicloud_apig_http_api` [GH-8043]
-- **New Resource:** `alicloud_apig_gateway` [GH-8045]
-- **New Resource:** `alicloud_apig_environment` [GH-8047]
-- **New Resource:** `alicloud_oss_bucket_worm` [GH-8050]
-- **New Resource:** `alicloud_oss_access_point` [GH-8050]
+- **New Resource:** `alicloud_schedulerx_app_group` ([#8023](https://github.com/aliyun/terraform-provider-alicloud/issues/8023))
+- **New Resource:** `alicloud_schedulerx_job` ([#8023](https://github.com/aliyun/terraform-provider-alicloud/issues/8023))
+- **New Resource:** `alicloud_mongodb_private_srv_network_address` ([#8031](https://github.com/aliyun/terraform-provider-alicloud/issues/8031))
+- **New Resource:** `alicloud_esa_record` ([#8037](https://github.com/aliyun/terraform-provider-alicloud/issues/8037))
+- **New Resource:** `alicloud_apig_http_api` ([#8043](https://github.com/aliyun/terraform-provider-alicloud/issues/8043))
+- **New Resource:** `alicloud_apig_gateway` ([#8045](https://github.com/aliyun/terraform-provider-alicloud/issues/8045))
+- **New Resource:** `alicloud_apig_environment` ([#8047](https://github.com/aliyun/terraform-provider-alicloud/issues/8047))
+- **New Resource:** `alicloud_oss_bucket_worm` ([#8050](https://github.com/aliyun/terraform-provider-alicloud/issues/8050))
+- **New Resource:** `alicloud_oss_access_point` ([#8050](https://github.com/aliyun/terraform-provider-alicloud/issues/8050))
 
 ENHANCEMENTS:
 
-- client: Improves the method of setting endpoint; provider: add new parameter account_type to fix international account site issue. [GH-7736]
-- client: corrects the getting cas endpoint method. [GH-8055]
-- CloudFirewall: Improves the invoking cloud firewall api method and supports refreshing credential automatically. [GH-7931]
-- WAF: Improves the invoking waf api method and supports refreshing credential automatically. [GH-7959]
-- ESA: Improves the invoking esa api method and supports refreshing credential automatically. [GH-7969]
-- Goverance: Improves the invoking goverance api method and supports refreshing credential automatically. [GH-8005]
-- SDDP: Improves the invoking sddp api method and supports refreshing credential automatically. [GH-8006]
-- SMS: Improves the invoking sms api method and supports refreshing credential automatically. [GH-8007]
-- EcdUser: Improves the invoking ecd user api method and supports refreshing credential automatically. [GH-8008]
-- RAM: Improves the invoking ram api method and supports refreshing credential automatically. [GH-8009]
-- MscOpenSubscription: Improves the invoking MscOpenSubscription api method and supports refreshing credential automatically. [GH-8010]
-- ResourceCenter: Improves the invoking resource center api method and supports refreshing credential automatically. [GH-8011]
-- VpcPeer: Improves the invoking vpcpeer api method and supports refreshing credential automatically. [GH-8012]
-- SSLCertificatesService: Improves the invoking cas api method and supports refreshing credential automatically. [GH-8014]
-- Ga: Improves the invoking ga api method and supports refreshing credential automatically. [GH-8015]
-- DCDN: Improves the invoking dcdn api method and supports refreshing credential automatically. [GH-8017]
-- DdosCoo: Improves the invoking ddoscoo api method and supports refreshing credential automatically. [GH-8018]
-- PrivateLink: Improves the invoking private link api method and supports refreshing credential automatically. [GH-8019]
-- Redis: Improves the invoking redis api method and supports refreshing credential automatically. [GH-8020]
-- ADB: Improves the invoking adb api method and supports refreshing credential automatically. [GH-8022]
-- Live: Improves the invoking live api method and supports refreshing credential automatically. [GH-8025]
-- Market: Improves the invoking market api method and supports refreshing credential automatically. [GH-8026]
-- Config: Improves the invoking config api method and supports refreshing credential automatically. [GH-8046]
-- resource/alicloud_db_instance: Support ModifyDBInstanceConfig and add new attributes tde_encryption_key, pg_bouncer_enabled and recovery_model. [GH-7944]
-- resource/alicloud_resource_manager_shared_resource: Supported resource_type set to Snapshot. [GH-8021]
-- resource/alicloud_schedulerx_namespace: add new attribute namespace_name, namespace_uid. [GH-8023]
-- resource/alicloud_resource_manager_control_policy_attachment: : Added retry strategy for error code ConcurrentCallNotSupported. [GH-8024]
-- resource/alicloud_ess_notification: add attribute of time_zone. [GH-8027]
-- resource/alicloud_ess_scheduled_task: update launch_expiration_time range. [GH-8028]
-- resource/alicloud_kms_key: Refactored the resource alicloud_kms_key; Added the field deletion_protection, deletion_protection_description. [GH-8029]
-- resource/alicloud_mongodb_instance: add retry code while deleting instance. [GH-8032]
-- resource/alicloud_nlb_listener_additional_certificate_attachment: refactoring implement and fix testcase. [GH-8034]
-- resource/alicloud_cen_transit_router_multicast_domain_member: Added retry strategy for error code Operation.Blocking. [GH-8036]
-- resource/alicloud_vpc_peer_connection: add new attribute link_type, region_id; resource/alicloud_vpc_peer_connection_accepter: add new attribute link_type, region_id. [GH-8039]
-- resource/alicloud_cr_ee_instance: add new attribute instance_endpoints. [GH-8040]
-- resource/alicloud_vpc: add new attribute dns_hostname_status, ipv4_cidr_mask, secondary_cidr_mask. [GH-8042]
-- resource/alicloud_cr_ee_sync_rule: Refactored the resource alicloud_cr_ee_sync_rule; Added the field sync_rule_name, sync_trigger, target_user_id, repo_sync_rule_id, create_time, region_id; Deprecated the field name, rule_id. [GH-8044]
-- resource/alicloud_oss_bucket_access_monitor: add wait for status while create and update opertion. [GH-8051]
-- resource/alicloud_fcv3_trigger: mark source_arn as Computed. [GH-8052]
-- resource/alicloud_oss_bucket_logging: add wait for status while create and update opertion. [GH-8053]
-- data-source/alicloud_ess_scaling_configurations: support attribute of instance_pattern_info. [GH-8004]
-- data-source/alicloud_ecs_disks: Removed the default value of the field enable_auto_snapshot; Improved the document. [GH-8048]
-- docs: Describes new provider argument account_type. [GH-8056]
+- client: Improves the method of setting endpoint; provider: add new parameter account_type to fix international account site issue. ([#7736](https://github.com/aliyun/terraform-provider-alicloud/issues/7736))
+- client: corrects the getting cas endpoint method. ([#8055](https://github.com/aliyun/terraform-provider-alicloud/issues/8055))
+- CloudFirewall: Improves the invoking cloud firewall api method and supports refreshing credential automatically. ([#7931](https://github.com/aliyun/terraform-provider-alicloud/issues/7931))
+- WAF: Improves the invoking waf api method and supports refreshing credential automatically. ([#7959](https://github.com/aliyun/terraform-provider-alicloud/issues/7959))
+- ESA: Improves the invoking esa api method and supports refreshing credential automatically. ([#7969](https://github.com/aliyun/terraform-provider-alicloud/issues/7969))
+- Goverance: Improves the invoking goverance api method and supports refreshing credential automatically. ([#8005](https://github.com/aliyun/terraform-provider-alicloud/issues/8005))
+- SDDP: Improves the invoking sddp api method and supports refreshing credential automatically. ([#8006](https://github.com/aliyun/terraform-provider-alicloud/issues/8006))
+- SMS: Improves the invoking sms api method and supports refreshing credential automatically. ([#8007](https://github.com/aliyun/terraform-provider-alicloud/issues/8007))
+- EcdUser: Improves the invoking ecd user api method and supports refreshing credential automatically. ([#8008](https://github.com/aliyun/terraform-provider-alicloud/issues/8008))
+- RAM: Improves the invoking ram api method and supports refreshing credential automatically. ([#8009](https://github.com/aliyun/terraform-provider-alicloud/issues/8009))
+- MscOpenSubscription: Improves the invoking MscOpenSubscription api method and supports refreshing credential automatically. ([#8010](https://github.com/aliyun/terraform-provider-alicloud/issues/8010))
+- ResourceCenter: Improves the invoking resource center api method and supports refreshing credential automatically. ([#8011](https://github.com/aliyun/terraform-provider-alicloud/issues/8011))
+- VpcPeer: Improves the invoking vpcpeer api method and supports refreshing credential automatically. ([#8012](https://github.com/aliyun/terraform-provider-alicloud/issues/8012))
+- SSLCertificatesService: Improves the invoking cas api method and supports refreshing credential automatically. ([#8014](https://github.com/aliyun/terraform-provider-alicloud/issues/8014))
+- Ga: Improves the invoking ga api method and supports refreshing credential automatically. ([#8015](https://github.com/aliyun/terraform-provider-alicloud/issues/8015))
+- DCDN: Improves the invoking dcdn api method and supports refreshing credential automatically. ([#8017](https://github.com/aliyun/terraform-provider-alicloud/issues/8017))
+- DdosCoo: Improves the invoking ddoscoo api method and supports refreshing credential automatically. ([#8018](https://github.com/aliyun/terraform-provider-alicloud/issues/8018))
+- PrivateLink: Improves the invoking private link api method and supports refreshing credential automatically. ([#8019](https://github.com/aliyun/terraform-provider-alicloud/issues/8019))
+- Redis: Improves the invoking redis api method and supports refreshing credential automatically. ([#8020](https://github.com/aliyun/terraform-provider-alicloud/issues/8020))
+- ADB: Improves the invoking adb api method and supports refreshing credential automatically. ([#8022](https://github.com/aliyun/terraform-provider-alicloud/issues/8022))
+- Live: Improves the invoking live api method and supports refreshing credential automatically. ([#8025](https://github.com/aliyun/terraform-provider-alicloud/issues/8025))
+- Market: Improves the invoking market api method and supports refreshing credential automatically. ([#8026](https://github.com/aliyun/terraform-provider-alicloud/issues/8026))
+- Config: Improves the invoking config api method and supports refreshing credential automatically. ([#8046](https://github.com/aliyun/terraform-provider-alicloud/issues/8046))
+- resource/alicloud_db_instance: Support ModifyDBInstanceConfig and add new attributes tde_encryption_key, pg_bouncer_enabled and recovery_model. ([#7944](https://github.com/aliyun/terraform-provider-alicloud/issues/7944))
+- resource/alicloud_resource_manager_shared_resource: Supported resource_type set to Snapshot. ([#8021](https://github.com/aliyun/terraform-provider-alicloud/issues/8021))
+- resource/alicloud_schedulerx_namespace: add new attribute namespace_name, namespace_uid. ([#8023](https://github.com/aliyun/terraform-provider-alicloud/issues/8023))
+- resource/alicloud_resource_manager_control_policy_attachment: : Added retry strategy for error code ConcurrentCallNotSupported. ([#8024](https://github.com/aliyun/terraform-provider-alicloud/issues/8024))
+- resource/alicloud_ess_notification: add attribute of time_zone. ([#8027](https://github.com/aliyun/terraform-provider-alicloud/issues/8027))
+- resource/alicloud_ess_scheduled_task: update launch_expiration_time range. ([#8028](https://github.com/aliyun/terraform-provider-alicloud/issues/8028))
+- resource/alicloud_kms_key: Refactored the resource alicloud_kms_key; Added the field deletion_protection, deletion_protection_description. ([#8029](https://github.com/aliyun/terraform-provider-alicloud/issues/8029))
+- resource/alicloud_mongodb_instance: add retry code while deleting instance. ([#8032](https://github.com/aliyun/terraform-provider-alicloud/issues/8032))
+- resource/alicloud_nlb_listener_additional_certificate_attachment: refactoring implement and fix testcase. ([#8034](https://github.com/aliyun/terraform-provider-alicloud/issues/8034))
+- resource/alicloud_cen_transit_router_multicast_domain_member: Added retry strategy for error code Operation.Blocking. ([#8036](https://github.com/aliyun/terraform-provider-alicloud/issues/8036))
+- resource/alicloud_vpc_peer_connection: add new attribute link_type, region_id; resource/alicloud_vpc_peer_connection_accepter: add new attribute link_type, region_id. ([#8039](https://github.com/aliyun/terraform-provider-alicloud/issues/8039))
+- resource/alicloud_cr_ee_instance: add new attribute instance_endpoints. ([#8040](https://github.com/aliyun/terraform-provider-alicloud/issues/8040))
+- resource/alicloud_vpc: add new attribute dns_hostname_status, ipv4_cidr_mask, secondary_cidr_mask. ([#8042](https://github.com/aliyun/terraform-provider-alicloud/issues/8042))
+- resource/alicloud_cr_ee_sync_rule: Refactored the resource alicloud_cr_ee_sync_rule; Added the field sync_rule_name, sync_trigger, target_user_id, repo_sync_rule_id, create_time, region_id; Deprecated the field name, rule_id. ([#8044](https://github.com/aliyun/terraform-provider-alicloud/issues/8044))
+- resource/alicloud_oss_bucket_access_monitor: add wait for status while create and update opertion. ([#8051](https://github.com/aliyun/terraform-provider-alicloud/issues/8051))
+- resource/alicloud_fcv3_trigger: mark source_arn as Computed. ([#8052](https://github.com/aliyun/terraform-provider-alicloud/issues/8052))
+- resource/alicloud_oss_bucket_logging: add wait for status while create and update opertion. ([#8053](https://github.com/aliyun/terraform-provider-alicloud/issues/8053))
+- data-source/alicloud_ess_scaling_configurations: support attribute of instance_pattern_info. ([#8004](https://github.com/aliyun/terraform-provider-alicloud/issues/8004))
+- data-source/alicloud_ecs_disks: Removed the default value of the field enable_auto_snapshot; Improved the document. ([#8048](https://github.com/aliyun/terraform-provider-alicloud/issues/8048))
+- docs: Describes new provider argument account_type. ([#8056](https://github.com/aliyun/terraform-provider-alicloud/issues/8056))
 
 BUG FIXES:
 
-- resource/alicloud_cloud_sso_access_configuration: Fixed the diff error caused by field permission_policies.permission_policy_document. [GH-8041]
+- resource/alicloud_cloud_sso_access_configuration: Fixed the diff error caused by field permission_policies.permission_policy_document. ([#8041](https://github.com/aliyun/terraform-provider-alicloud/issues/8041))
 
 ## 1.239.0 (December 20, 2024)
 

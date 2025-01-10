@@ -19,7 +19,7 @@ For information about OSS Bucket Policy and how to use it, see [What is Bucket P
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_policy&exampleId=8b9446e6-9cc7-8b46-9c87-b16c607c0bcd0827edd3&activeTab=example&spm=docs.r.oss_bucket_policy.0.8b9446e69c&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_policy&exampleId=8e263812-ad5a-5264-4ae6-fc5aa5b9404bef4b55f8&activeTab=example&spm=docs.r.oss_bucket_policy.0.8e263812ad&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

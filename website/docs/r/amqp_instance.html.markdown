@@ -19,7 +19,7 @@ For information about RabbitMQ (AMQP) Instance and how to use it, see [What is I
 Create a RabbitMQ (AMQP) enterprise edition Instance.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=45cec220-2e60-4a5f-0eaa-39abcd8e5e46e0861292&activeTab=example&spm=docs.r.amqp_instance.0.45cec2202e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=245eb6fa-b3c6-fff4-f584-1ee4248fc423c0181288&activeTab=example&spm=docs.r.amqp_instance.0.245eb6fab3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -47,6 +47,12 @@ resource "alicloud_amqp_instance" "default" {
 ```
 
 Create a RabbitMQ (AMQP) serverless edition Instance.
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_instance&exampleId=468f570a-bb0e-8233-40bb-ff83384d2415e6beeb49&activeTab=example&spm=docs.r.amqp_instance.1.468f570abb&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

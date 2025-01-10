@@ -24,7 +24,7 @@ Basic Usage
 [IPsec-VPN connections support the dual-tunnel mode](https://www.alibabacloud.com/help/en/vpn/product-overview/ipsec-vpn-connections-support-the-dual-tunnel-mode)
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_connection&exampleId=ada16e1a-2276-5be4-83e2-555f40750a75eb8fca1b&activeTab=example&spm=docs.r.vpn_connection.0.ada16e1a22&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_connection&exampleId=4407566f-224c-1dfd-57f4-ed84faef1bbd5aebd2b9&activeTab=example&spm=docs.r.vpn_connection.0.4407566f22&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

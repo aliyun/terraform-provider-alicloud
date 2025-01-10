@@ -20,6 +20,12 @@ For information about Data Works Di Alarm Rule and how to use it, see [What is D
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_data_works_di_alarm_rule&exampleId=e6a2523c-b78e-3320-202a-63ad7d866290a0d51c73&activeTab=example&spm=docs.r.data_works_di_alarm_rule.0.e6a2523cb7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
