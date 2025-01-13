@@ -299,7 +299,7 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Computed: true,
 			},
 			"replica_sets": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

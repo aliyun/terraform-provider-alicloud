@@ -834,6 +834,7 @@ var AliCloudMongoDBInstanceMap0 = map[string]string{
 	"retention_period":    CHECKSET,
 	"replica_set_name":    CHECKSET,
 	"ssl_status":          CHECKSET,
+	"replica_sets.#":      CHECKSET,
 }
 
 var AliCloudMongoDBInstanceMap1 = map[string]string{
@@ -855,6 +856,7 @@ var AliCloudMongoDBInstanceMap1 = map[string]string{
 	"retention_period":        CHECKSET,
 	"replica_set_name":        CHECKSET,
 	"ssl_status":              CHECKSET,
+	"replica_sets.#":          CHECKSET,
 }
 
 func AliCloudMongoDBInstanceBasicDependence0(name string) string {
