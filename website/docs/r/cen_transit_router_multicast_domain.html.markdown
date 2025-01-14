@@ -2,7 +2,6 @@
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_multicast_domain"
-sidebar_current: "docs-alicloud-resource-cen-transit-router-multicast-domain"
 description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Multicast Domain resource.
 ---
@@ -11,62 +10,77 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Multicast Domain resource.
 
-For information about Cloud Enterprise Network (CEN) Transit Router Multicast Domain and how to use it, see [What is Transit Router Multicast Domain](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutermulticastdomain).
 
--> **NOTE:** Available since v1.195.0.
+
+For information about Cloud Enterprise Network (CEN) Transit Router Multicast Domain and how to use it, see [What is Transit Router Multicast Domain](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.242.0.
 
 ## Example Usage
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_multicast_domain&exampleId=8f7dfc4e-1030-97e2-1c03-b042623c82ae551ab1cf&activeTab=example&spm=docs.r.cen_transit_router_multicast_domain.0.8f7dfc4e10&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
-resource "alicloud_cen_instance" "example" {
-  cen_instance_name = "tf_example"
-  description       = "an example for cen"
+variable "name" {
+  default = "terraform-example"
 }
 
-resource "alicloud_cen_transit_router" "example" {
-  transit_router_name = "tf_example"
-  cen_id              = alicloud_cen_instance.example.id
+provider "alicloud" {
+  region = "cn-hongkong"
+}
+
+resource "alicloud_cen_instance" "defaultPNnbnI" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "defaultSwwLm7" {
   support_multicast   = true
+  cen_id              = alicloud_cen_instance.defaultPNnbnI.id
+  transit_router_name = format("%s1", var.name)
 }
 
-resource "alicloud_cen_transit_router_multicast_domain" "example" {
-  transit_router_id                           = alicloud_cen_transit_router.example.transit_router_id
-  transit_router_multicast_domain_name        = "tf_example"
-  transit_router_multicast_domain_description = "tf_example"
+
+resource "alicloud_cen_transit_router_multicast_domain" "default" {
+  transit_router_multicast_domain_name        = var.name
+  transit_router_multicast_domain_description = "description"
+  transit_router_id                           = alicloud_cen_transit_router.defaultSwwLm7.transit_router_id
+  options {
+    igmpv2_support = "disable"
+  }
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
+* `options` - (Optional, List) Options See [`options`](#options) below.
+* `tags` - (Optional, Map) The tag of the resource
+* `transit_router_id` - (Optional, ForceNew) The ID of the forwarding router instance.
+* `transit_router_multicast_domain_description` - (Optional) The description of the multicast domain.
+* `transit_router_multicast_domain_name` - (Optional) The name of the multicast domain.
 
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_multicast_domain_name` - (Optional) The name of the multicast domain. The name must be 0 to 128 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (_), and hyphens (-).
-* `transit_router_multicast_domain_description` - (Optional) The description of the multicast domain. The description must be 0 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (_), and hyphens (-).
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+### `options`
+
+The options supports the following:
+* `igmpv2_support` - (Optional) Igmpv2Support
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `region_id` - The ID of the region to which the forwarding router instance belongs.
 
-* `id` - The resource ID in terraform of Transit Router Multicast Domain.
-* `status` - The status of the Transit Router Multicast Domain.
+  You can call the [DescribeChildInstanceRegions](~~ 132080 ~~) operation to obtain the region ID.
+* `status` - The status of the multicast domain.
+
+  Only value: `Active`, which indicates that the multicast domain is currently available.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 3 mins) Used when create the Transit Router Multicast Domain.
-* `update` - (Defaults to 3 mins) Used when update the Transit Router Multicast Domain.
-* `delete` - (Defaults to 3 mins) Used when delete the Transit Router Multicast Domain.
+* `create` - (Defaults to 5 mins) Used when create the Transit Router Multicast Domain.
+* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Multicast Domain.
+* `update` - (Defaults to 5 mins) Used when update the Transit Router Multicast Domain.
 
 ## Import
 
