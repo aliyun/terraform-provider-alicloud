@@ -162,7 +162,7 @@ func resourceAliCloudSlsProjectRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	if policy != "" {
+	if policy != "" && policy != "{}" {
 		d.Set("policy", policy)
 	}
 	d.Set("name", d.Get("project_name"))
