@@ -327,7 +327,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_alarms":                                       dataSourceAlicloudEssAlarms(),
 			"alicloud_ess_notifications":                                dataSourceAlicloudEssNotifications(),
 			"alicloud_ess_scaling_groups":                               dataSourceAliCloudEssScalingGroups(),
-			"alicloud_ess_scaling_rules":                                dataSourceAlicloudEssScalingRules(),
+			"alicloud_ess_scaling_rules":                                dataSourceAliCloudEssScalingRules(),
 			"alicloud_ess_scaling_configurations":                       dataSourceAlicloudEssScalingConfigurations(),
 			"alicloud_ess_lifecycle_hooks":                              dataSourceAlicloudEssLifecycleHooks(),
 			"alicloud_ess_scheduled_tasks":                              dataSourceAlicloudEssScheduledTasks(),
