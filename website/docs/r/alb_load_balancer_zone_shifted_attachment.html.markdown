@@ -1,0 +1,113 @@
+---
+subcategory: "Application Load Balancer (ALB)"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_alb_load_balancer_zone_shifted_attachment"
+description: |-
+  Provides a Alicloud Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment resource.
+---
+
+# alicloud_alb_load_balancer_zone_shifted_attachment
+
+Provides a Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment resource.
+
+Application load balancer start-stop zone.
+
+For information about Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment and how to use it, see [What is Load Balancer Zone Shifted Attachment](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.242.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
+resource "alicloud_vpc" "alb_example_tf_vpc" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "alb_example_tf_j" {
+  vpc_id       = alicloud_vpc.alb_example_tf_vpc.id
+  zone_id      = "cn-beijing-j"
+  cidr_block   = "192.168.1.0/24"
+  vswitch_name = format("%s1", var.name)
+}
+
+resource "alicloud_vswitch" "alb_example_tf_k" {
+  vpc_id       = alicloud_vpc.alb_example_tf_vpc.id
+  zone_id      = "cn-beijing-k"
+  cidr_block   = "192.168.2.0/24"
+  vswitch_name = format("%s2", var.name)
+}
+
+resource "alicloud_vswitch" "defaultDSY0JJ" {
+  vpc_id       = alicloud_vpc.alb_example_tf_vpc.id
+  zone_id      = "cn-beijing-f"
+  cidr_block   = "192.168.3.0/24"
+  vswitch_name = format("%s3", var.name)
+}
+
+resource "alicloud_alb_load_balancer" "default78TIYG" {
+  load_balancer_edition = "Standard"
+  vpc_id                = alicloud_vpc.alb_example_tf_vpc.id
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+  address_type           = "Intranet"
+  address_allocated_mode = "Fixed"
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.alb_example_tf_j.id
+    zone_id    = alicloud_vswitch.alb_example_tf_j.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.alb_example_tf_k.id
+    zone_id    = alicloud_vswitch.alb_example_tf_k.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultDSY0JJ.id
+    zone_id    = alicloud_vswitch.defaultDSY0JJ.zone_id
+  }
+}
+
+
+resource "alicloud_alb_load_balancer_zone_shifted_attachment" "default" {
+  zone_id          = alicloud_vswitch.defaultDSY0JJ.zone_id
+  vswitch_id       = alicloud_vswitch.defaultDSY0JJ.id
+  load_balancer_id = alicloud_alb_load_balancer.default78TIYG.id
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `load_balancer_id` - (Required, ForceNew) The ID of the load balancing instance.
+* `vswitch_id` - (Required, ForceNew) The VSwitch corresponding to the zone. By default, each zone uses one VSwitch and one subnet.
+* `zone_id` - (Required, ForceNew) The ID of the zone.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<load_balancer_id>:<vswitch_id>:<zone_id>`.
+* `status` - Availability zone status. Value:
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Load Balancer Zone Shifted Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Load Balancer Zone Shifted Attachment.
+
+## Import
+
+Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_alb_load_balancer_zone_shifted_attachment.example <load_balancer_id>:<vswitch_id>:<zone_id>
+```
