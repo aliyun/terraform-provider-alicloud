@@ -155,6 +155,26 @@ func TestAccAliCloudAlbLoadBalancer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_edition": "Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -475,6 +495,11 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
 						},
 					},
+					"deletion_protection_config": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -485,6 +510,20 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 						"address_ip_version":             "DualStack",
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_config": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_config.#": "1",
 					}),
 				),
 			},
@@ -545,26 +584,6 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"deletion_protection_enabled": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deletion_protection_enabled": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"deletion_protection_enabled": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deletion_protection_enabled": "false",
 					}),
 				),
 			},

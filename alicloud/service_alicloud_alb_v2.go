@@ -18,6 +18,73 @@ type AlbServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
+func (s *AlbServiceV2) DescribeAlbListAsynJobs(id, resourceType, jobId string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListAsynJobs"
+	conn, err := client.NewAlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	query["JobIds.1"] = jobId
+	query["ResourceType"] = resourceType
+	query["ResourceIds.1"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Jobs[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Jobs[*]", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, nil
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *AlbServiceV2) AlbJobStateRefreshFunc(id string, resourceType string, jobId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbListAsynJobs(id, resourceType, jobId)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object["Status"])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
 // DescribeAlbListenerAclAttachment <<< Encapsulated get interface for Alb ListenerAclAttachment.
 
 func (s *AlbServiceV2) DescribeAlbListenerAclAttachment(id string) (object map[string]interface{}, err error) {
@@ -108,23 +175,25 @@ func (s *AlbServiceV2) AlbListenerAclAttachmentStateRefreshFunc(id string, field
 // DescribeAlbLoadBalancer <<< Encapsulated get interface for Alb LoadBalancer.
 
 func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	action := "GetLoadBalancerAttribute"
-
-	conn, err := s.client.NewAlbClient()
+	conn, err := client.NewAlbClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
-
-	request := map[string]interface{}{
-		"LoadBalancerId": id,
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = id
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -135,89 +204,14 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 		return nil
 	})
 	addDebug(action, response, request)
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alb:LoadBalancer", id)), NotFoundWithResponse, response)
+		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer", "-735"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
-	}
-
-	object = v.(map[string]interface{})
-
-	return object, nil
-}
-
-func (s *AlbServiceV2) DescribeAlbListAsynJobs(id, resourceType, jobId string) (object map[string]interface{}, err error) {
-
-	client := s.client
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "ListAsynJobs"
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-
-	query["JobIds.1"] = jobId
-	query["ResourceType"] = resourceType
-	query["ResourceIds.1"] = id
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(action, response, request)
-		return nil
-	})
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	v, err := jsonpath.Get("$.Jobs[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Jobs[*]", response)
-	}
-	if len(v.([]interface{})) == 0 {
-		return object, nil
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
-}
-
-func (s *AlbServiceV2) AlbJobStateRefreshFunc(id string, resourceType string, jobId string, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeAlbListAsynJobs(id, resourceType, jobId)
-		if err != nil {
-			if NotFoundError(err) {
-				return object, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		currentStatus := fmt.Sprint(object["Status"])
-		for _, failState := range failStates {
-			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
-			}
-		}
-		return object, currentStatus, nil
-	}
+	return response, nil
 }
 
 func (s *AlbServiceV2) AlbLoadBalancerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -232,12 +226,50 @@ func (s *AlbServiceV2) AlbLoadBalancerStateRefreshFunc(id string, field string, 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
+		return object, currentStatus, nil
+	}
+}
 
+func (s *AlbServiceV2) DescribeAsyncAlbLoadBalancerStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAsyncListAsynJobs(d, res)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
 		return object, currentStatus, nil
 	}
 }
@@ -253,6 +285,7 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -268,7 +301,9 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+
 			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
@@ -278,18 +313,17 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -303,7 +337,9 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -316,24 +352,22 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
