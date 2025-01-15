@@ -812,6 +812,7 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	var response map[string]interface{}
 	action := "DescribeDBClusterAttribute"
 	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
 	}
 
@@ -886,6 +887,7 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 	var response map[string]interface{}
 	action := "DescribeClusterAccessWhiteList"
 	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
 	}
 
@@ -935,6 +937,7 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 	}
 
 	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
 		"DBClusterId": parts[0],
 		"GroupName":   parts[1],
 	}
@@ -1026,6 +1029,7 @@ func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[st
 	var response map[string]interface{}
 	action := "DescribeKernelVersion"
 	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
 	}
 
