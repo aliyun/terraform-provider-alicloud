@@ -377,7 +377,6 @@ resource "alicloud_nas_file_system" "fs1" {
   protocol_type    = "NFS"
   file_system_type = "standard"
   description      = "Alibaba-Fc-V3-Component-Generated"
-  vpc_id           = alicloud_vpc.vpc-a.id
 }
 
 resource "alicloud_nas_access_group" "default" {
@@ -640,6 +639,48 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 						"cpu":             "0.5",
 						"disk_size":       "512",
 						"internet_access": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
