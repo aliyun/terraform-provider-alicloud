@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCenTransitRouterMulticastDomainPeerMember() *schema.Resource {
+func resourceAliCloudCenTransitRouterMulticastDomainPeerMember() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenTransitRouterMulticastDomainPeerMemberCreate,
-		Read:   resourceAlicloudCenTransitRouterMulticastDomainPeerMemberRead,
-		Update: resourceAlicloudCenTransitRouterMulticastDomainPeerMemberUpdate,
-		Delete: resourceAlicloudCenTransitRouterMulticastDomainPeerMemberDelete,
+		Create: resourceAliCloudCenTransitRouterMulticastDomainPeerMemberCreate,
+		Read:   resourceAliCloudCenTransitRouterMulticastDomainPeerMemberRead,
+		Update: resourceAliCloudCenTransitRouterMulticastDomainPeerMemberUpdate,
+		Delete: resourceAliCloudCenTransitRouterMulticastDomainPeerMemberDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -52,7 +52,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainPeerMember() *schema.Resourc
 	}
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	request := make(map[string]interface{})
@@ -83,7 +83,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.R
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -102,14 +102,14 @@ func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.R
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudCenTransitRouterMulticastDomainPeerMemberRead(d, meta)
+	return resourceAliCloudCenTransitRouterMulticastDomainPeerMemberRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberUpdate(d *schema.ResourceData, meta interface{}) error {
-	return resourceAlicloudCenTransitRouterMulticastDomainPeerMemberRead(d, meta)
+func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberUpdate(d *schema.ResourceData, meta interface{}) error {
+	return resourceAliCloudCenTransitRouterMulticastDomainPeerMemberRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 
@@ -134,7 +134,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberRead(d *schema.Res
 	return nil
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	conn, err := client.NewCbnClient()
@@ -162,7 +162,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainPeerMemberDelete(d *schema.R
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
