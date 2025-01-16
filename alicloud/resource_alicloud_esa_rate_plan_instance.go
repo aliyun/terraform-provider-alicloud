@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -225,7 +226,58 @@ func resourceAliCloudEsaRatePlanInstanceUpdate(d *schema.ResourceData, meta inte
 }
 
 func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Rate Plan Instance. Terraform will remove this resource from the state file, however resources may remain.")
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "RefundInstance"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
+
+	request["ProductCode"] = "dcdn"
+	request["ImmediatelyRelease"] = "0"
+	request["ProductType"] = "dcdn_dcdnserviceplan_public_cn"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "dcdn"
+				request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
 	return nil
 }
 
