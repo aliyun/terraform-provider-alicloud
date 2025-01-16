@@ -39,6 +39,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8374(t *testing.T) {
 					"ipam_pool_name":      name,
 					"source_ipam_pool_id": "${alicloud_vpc_ipam_ipam_pool.parentIpamPool.id}",
 					"ip_version":          "IPv4",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -47,6 +48,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8374(t *testing.T) {
 						"ipam_pool_name":      name,
 						"source_ipam_pool_id": CHECKSET,
 						"ip_version":          "IPv4",
+						"resource_group_id":   CHECKSET,
 					}),
 				),
 			},
@@ -114,14 +116,15 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
+
 resource "alicloud_vpc_ipam_ipam" "defaultIpam" {
   operating_region_list = ["cn-hangzhou"]
 }
 
 resource "alicloud_vpc_ipam_ipam_pool" "parentIpamPool" {
   ipam_scope_id  = alicloud_vpc_ipam_ipam.defaultIpam.private_default_scope_id
-  ipam_pool_name = format("%%s1", var.name)
-  pool_region_id = alicloud_vpc_ipam_ipam.defaultIpam.region_id
+  pool_region_id = "cn-hangzhou"
 }
 
 
@@ -138,8 +141,8 @@ func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
 	}, "DescribeVpcIpamIpamPool")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipamipampool%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolBasicDependence8026)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -161,6 +164,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
 					"allocation_max_cidr_mask":     "24",
 					"pool_region_id":               "cn-hangzhou",
 					"auto_import":                  "true",
+					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -173,6 +177,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
 						"allocation_max_cidr_mask":     "24",
 						"pool_region_id":               "cn-hangzhou",
 						"auto_import":                  "true",
+						"resource_group_id":            CHECKSET,
 					}),
 				),
 			},
@@ -184,6 +189,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
 					"allocation_min_cidr_mask":           "12",
 					"allocation_max_cidr_mask":           "26",
 					"auto_import":                        "false",
+					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"clear_allocation_default_cidr_mask": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -194,6 +200,7 @@ func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
 						"allocation_min_cidr_mask":           "12",
 						"allocation_max_cidr_mask":           "26",
 						"auto_import":                        "false",
+						"resource_group_id":                  CHECKSET,
 						"clear_allocation_default_cidr_mask": "false",
 					}),
 				),
@@ -267,6 +274,8 @@ func AlicloudVpcIpamIpamPoolBasicDependence8026(name string) string {
 variable "name" {
     default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc_ipam_ipam" "defaultIpam" {
   operating_region_list = ["cn-hangzhou"]

@@ -293,7 +293,6 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListIpamPools"
 	conn, err := client.NewVpcipamClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -302,6 +301,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 	query = make(map[string]interface{})
 	request["IpamPoolIds.1"] = id
 	request["RegionId"] = client.RegionId
+	action := "ListIpamPools"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
