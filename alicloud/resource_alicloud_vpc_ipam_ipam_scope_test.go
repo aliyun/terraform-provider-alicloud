@@ -38,6 +38,7 @@ func TestAccAliCloudVpcIpamIpamScope_basic8006(t *testing.T) {
 					"ipam_id":                "${alicloud_vpc_ipam_ipam.defaultIpam.id}",
 					"ipam_scope_description": "This is a ipam scope.",
 					"ipam_scope_type":        "private",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -45,6 +46,7 @@ func TestAccAliCloudVpcIpamIpamScope_basic8006(t *testing.T) {
 						"ipam_id":                CHECKSET,
 						"ipam_scope_description": "This is a ipam scope.",
 						"ipam_scope_type":        "private",
+						"resource_group_id":      CHECKSET,
 					}),
 				),
 			},
@@ -52,11 +54,13 @@ func TestAccAliCloudVpcIpamIpamScope_basic8006(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"ipam_scope_name":        name + "_update",
 					"ipam_scope_description": "This is my ipam scope.",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ipam_scope_name":        name + "_update",
 						"ipam_scope_description": "This is my ipam scope.",
+						"resource_group_id":      CHECKSET,
 					}),
 				),
 			},
@@ -129,6 +133,8 @@ func AlicloudVpcIpamIpamScopeBasicDependence8006(name string) string {
 variable "name" {
     default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc_ipam_ipam" "defaultIpam" {
   operating_region_list = ["cn-hangzhou"]
