@@ -188,7 +188,6 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "GetAppGroup"
 	conn, err := client.NewSchedulerxClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -198,6 +197,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	request["GroupId"] = parts[1]
 	request["Namespace"] = parts[0]
 	request["RegionId"] = client.RegionId
+	action := "GetAppGroup"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)

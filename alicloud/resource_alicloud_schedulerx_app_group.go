@@ -110,8 +110,12 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["Namespace"] = d.Get("namespace")
-	query["GroupId"] = d.Get("group_id")
+	if v, ok := d.GetOk("namespace"); ok {
+		query["Namespace"] = v
+	}
+	if v, ok := d.GetOk("group_id"); ok {
+		query["GroupId"] = v
+	}
 	query["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("description"); ok {
@@ -209,12 +213,18 @@ func resourceAliCloudSchedulerxAppGroupRead(d *schema.ResourceData, meta interfa
 	if objectRaw["MaxJobs"] != nil {
 		d.Set("max_jobs", objectRaw["MaxJobs"])
 	}
+	if objectRaw["MonitorConfigJson"] != nil {
+		d.Set("monitor_config_json", objectRaw["MonitorConfigJson"])
+	}
+	if objectRaw["MonitorContactsJson"] != nil {
+		d.Set("monitor_contacts_json", objectRaw["MonitorContactsJson"])
+	}
 	if objectRaw["GroupId"] != nil {
 		d.Set("group_id", objectRaw["GroupId"])
 	}
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("namespace", parts[0])
+	if objectRaw["Namespace"] != nil {
+		d.Set("namespace", objectRaw["Namespace"])
+	}
 
 	return nil
 }
@@ -242,9 +252,19 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 		request["Description"] = d.Get("description")
 	}
 
+	if d.HasChange("monitor_config_json") {
+		update = true
+		request["MonitorConfigJson"] = d.Get("monitor_config_json")
+	}
+
 	if d.HasChange("app_version") {
 		update = true
 		request["AppVersion"] = d.Get("app_version")
+	}
+
+	if d.HasChange("monitor_contacts_json") {
+		update = true
+		request["MonitorContactsJson"] = d.Get("monitor_contacts_json")
 	}
 
 	if v, ok := d.GetOkExists("max_concurrency"); ok {
