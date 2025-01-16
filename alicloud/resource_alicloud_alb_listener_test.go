@@ -165,6 +165,32 @@ func TestAccAliCloudALBListener_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"xforwarded_for_config": []map[string]interface{}{
+						{
+							"xforwardedforclientcertclientverifyalias":   "test_client-verify-alias_123451",
+							"xforwardedforclientcertclientverifyenabled": "true",
+							"xforwardedforclientcertfingerprintalias":    "test_client-verify-alias_123452",
+							"xforwardedforclientcertfingerprintenabled":  "true",
+							"xforwardedforclientcert_issuerdnalias":      "test_client-verify-alias_123453",
+							"xforwardedforclientcert_issuerdnenabled":    "true",
+							"xforwardedforclientcertsubjectdnalias":      "test_client-verify-alias_123454",
+							"xforwardedforclientcertsubjectdnenabled":    "true",
+							"xforwardedforclientsrcportenabled":          "true",
+							"xforwardedforenabled":                       "true",
+							"xforwardedforprotoenabled":                  "true",
+							"xforwardedforslbidenabled":                  "true",
+							"xforwardedforslbportenabled":                "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"xforwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"status": "Stopped",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -293,32 +319,6 @@ func TestAccAliCloudALBListener_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"idle_timeout": "20",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"xforwarded_for_config": []map[string]interface{}{
-						{
-							"xforwardedforclientcertclientverifyalias":   "test_client-verify-alias_123451",
-							"xforwardedforclientcertclientverifyenabled": "true",
-							"xforwardedforclientcertfingerprintalias":    "test_client-verify-alias_123452",
-							"xforwardedforclientcertfingerprintenabled":  "true",
-							"xforwardedforclientcert_issuerdnalias":      "test_client-verify-alias_123453",
-							"xforwardedforclientcert_issuerdnenabled":    "true",
-							"xforwardedforclientcertsubjectdnalias":      "test_client-verify-alias_123454",
-							"xforwardedforclientcertsubjectdnenabled":    "true",
-							"xforwardedforclientsrcportenabled":          "true",
-							"xforwardedforenabled":                       "true",
-							"xforwardedforprotoenabled":                  "true",
-							"xforwardedforslbidenabled":                  "true",
-							"xforwardedforslbportenabled":                "true",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"xforwarded_for_config.#": "1",
 					}),
 				),
 			},
@@ -730,6 +730,12 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							},
 						},
 					},
+					"ca_enabled": "true",
+					"ca_certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${var.ca_certificate_id}",
+						},
+					},
 					"gzip_enabled":       "true",
 					"http2_enabled":      "true",
 					"idle_timeout":       "20",
@@ -752,6 +758,8 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							"x_forwarded_for_slb_port_enabled":                  "true",
 							"x_forwarded_for_client_source_ips_enabled":         "true",
 							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
+							"x_forwarded_for_host_enabled":                      "true",
+							"x_forwarded_for_processing_mode":                   "append",
 						},
 					},
 				}),
@@ -775,6 +783,12 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled": "false",
+					"ca_certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${var.ca_certificate_id}",
+						},
+					},
 					"x_forwarded_for_config": []map[string]interface{}{
 						{
 							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
@@ -792,6 +806,8 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							"x_forwarded_for_slb_port_enabled":                  "true",
 							"x_forwarded_for_client_source_ips_enabled":         "false",
 							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
+							"x_forwarded_for_host_enabled":                      "true",
+							"x_forwarded_for_processing_mode":                   "remove",
 						},
 					},
 				}),
@@ -802,34 +818,42 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 				),
 			},
 			//x_forwarded_for_enabled cannot be set to false
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"x_forwarded_for_config": []map[string]interface{}{
-			//			{
-			//				"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
-			//				"x_forwarded_for_client_cert_client_verify_enabled": "false",
-			//				"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
-			//				"x_forwarded_for_client_cert_finger_print_enabled":  "false",
-			//				"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
-			//				"x_forwarded_for_client_cert_issuer_dn_enabled":     "false",
-			//				"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
-			//				"x_forwarded_for_client_cert_subject_dn_enabled":    "false",
-			//				"x_forwarded_for_client_src_port_enabled":           "false",
-			//				"x_forwarded_for_enabled":                           "false",
-			//				"x_forwarded_for_proto_enabled":                     "false",
-			//				"x_forwarded_for_slb_id_enabled":                    "false",
-			//				"x_forwarded_for_slb_port_enabled":                  "false",
-			//				"x_forwarded_for_client_source_ips_enabled":         "true",
-			//				"x_forwarded_for_client_source_ips_trusted":         "192.168.2.0/24",
-			//			},
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"x_forwarded_for_config.#": "1",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled": "true",
+					"ca_certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${var.ca_certificate_id_update}",
+						},
+					},
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "false",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "false",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "false",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "false",
+							"x_forwarded_for_client_src_port_enabled":           "false",
+							"x_forwarded_for_enabled":                           "false",
+							"x_forwarded_for_proto_enabled":                     "false",
+							"x_forwarded_for_slb_id_enabled":                    "false",
+							"x_forwarded_for_slb_port_enabled":                  "false",
+							"x_forwarded_for_client_source_ips_enabled":         "true",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.2.0/24",
+							"x_forwarded_for_host_enabled":                      "false",
+							"x_forwarded_for_processing_mode":                   "remove",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -1012,6 +1036,21 @@ func TestAccAliCloudALBListener_basic4(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"quic_config": []map[string]interface{}{
+						{
+							"quic_upgrade_enabled": "false",
+							"quic_listener_id":     "",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quic_config.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1034,6 +1073,14 @@ func AliCloudALBListenerBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
+	}
+
+	variable "ca_certificate_id" {
+  		default = "1efd3cac-e8c1-611d-b971-f96e5e432aba"
+	}
+
+	variable "ca_certificate_id_update" {
+  		default = "1efd3caf-3cc7-6f42-be33-29ca9cecdfd3"
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {

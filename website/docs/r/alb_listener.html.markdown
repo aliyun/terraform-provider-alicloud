@@ -2,7 +2,6 @@
 subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_listener"
-sidebar_current: "docs-alicloud-resource-alb-listener"
 description: |-
   Provides a Alicloud Application Load Balancer (ALB) Listener resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a Application Load Balancer (ALB) Listener resource.
 
+
+
 For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createlistener).
 
 -> **NOTE:** Available since v1.133.0.
@@ -18,12 +19,6 @@ For information about Application Load Balancer (ALB) Listener and how to use it
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_listener&exampleId=8706f674-b4b3-77a0-e21d-b58bd44d6bbcc06351e4&activeTab=example&spm=docs.r.alb_listener.0.8706f674b4&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -154,54 +149,133 @@ resource "alicloud_alb_listener" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `access_log_record_customized_headers_enabled` - (Optional) Access Log Whether to Enable Carry Custom Header Field.
 
-* `access_log_record_customized_headers_enabled` - (Optional)Indicates whether the access log has a custom header field. Valid values: true and false. Default value: false.
+  Value: True **** Or False * *.
 
--> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
-* `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See [`access_log_tracing_config`](#access_log_tracing_config) below for details.
-* `certificates` - (Optional) The default certificate of the Listener. See [`certificates`](#certificates) below for details. **NOTE:** When `listener_protocol` is `HTTPS`, The default certificate must be set one。
-* `default_actions` - (Optional) The Default Rule Action List. See [`default_actions`](#default_actions) below for details.
-* `dry_run` - (Optional) The dry run.
-* `gzip_enabled` - (Optional) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
-* `http2_enabled` - (Optional) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.
+  Default Value: False * *.
 
--> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `idle_timeout` - (Optional) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
-* `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: `/^([^\x00-\xff]|[\w.,;/@-]){2,256}$/`.
-* `listener_port` - (Required, ForceNew) The ALB Instance Front-End, and Those of the Ports Used. Value: `1` to `65535`.
-* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: `HTTP`, `HTTPS` Or `QUIC`.
-* `load_balancer_id` - (Required, ForceNew) The ALB Instance Id.
-* `quic_config` - (Optional) Configuration Associated with the QuIC Listening. See [`quic_config`](#quic_config) below for details.
-* `request_timeout` - (Optional) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
-* `security_policy_id` - (Optional) Security Policy.
+-> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the **True * *.
 
--> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-
-* `status` - (Optional, Available since v1.133.0) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
+* `access_log_tracing_config` - (Optional, List) Xtrace Configuration Information. See [`access_log_tracing_config`](#access_log_tracing_config) below.
+* `ca_certificates` - (Optional, List, Available since v1.242.0) The list of certificates. See [`ca_certificates`](#ca_certificates) below.
+* `ca_enabled` - (Optional, Available since v1.242.0) Whether to turn on two-way authentication. Value:
+  - `true`: on.
+  - `false` (default): not enabled.
+* `certificates` - (Optional, List) The list of certificates. See [`certificates`](#certificates) below.
+* `default_actions` - (Required, List) The Default Rule Action List See [`default_actions`](#default_actions) below.
+* `dry_run` - (Optional) Whether to PreCheck only this request. Value:
+  - `true`: The check request is sent and the listener configuration is not updated. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
+  - `false` (default): Sends a normal request, returns the 'HTTP 2xx' status code after passing the check, and performs the operation directly.
+* `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid Values: True Or False. Default Value: TRUE.
+* `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: True Or False. Default Value: TRUE.
+* `idle_timeout` - (Optional, Computed, Int) Specify the Connection Idle Timeout Value: 1 to 60 miao.
+* `listener_description` - (Optional) Set the IP Address of the Listened Description. Length Is from 2 to 256 Characters.
+* `listener_port` - (Required, ForceNew, Int) The SLB Instance Front-End, and Those of the Ports Used. Value: 1~65535.
+* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: HTTP, HTTPS Or QuIC.
+* `load_balancer_id` - (Required, ForceNew) The SLB Instance Id.
+* `quic_config` - (Optional, Computed, List) Configuration Associated with the QuIC Listening See [`quic_config`](#quic_config) below.
+* `request_timeout` - (Optional, Computed, Int) The Specified Request Timeout Time. Value: 1~180 Seconds. Default Value: 60 miao. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
+* `security_policy_id` - (Optional, Computed) Security Policy
+* `status` - (Optional, Computed) The Current IP Address of the Listened State
+* `tags` - (Optional, Map, Available since v1.215.0) The tag of the resource
+* `x_forwarded_for_config` - (Optional, Computed, List, Available since v1.161.0) xforwardfor Related Attribute Configuration See [`x_forwarded_for_config`](#x_forwarded_for_config) below.
 * `xforwarded_for_config` - (Optional, Deprecated since v1.161.0) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated since provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
-* `x_forwarded_for_config` - (Optional, Available since v1.161.0) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `tags` - (Optional, Available since v1.215.0) A mapping of tags to assign to the resource.
 * `acl_config` - (Optional, Deprecated since v1.163.0)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+
+### `access_log_tracing_config`
+
+The access_log_tracing_config supports the following:
+* `tracing_enabled` - (Required) Xtrace Function.
+
+  Value: True **** Or False * *.
+
+  Default Value: False * *.
+
+-> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the **True * *.
+
+* `tracing_sample` - (Optional, Int) Xtrace Sampling Rate. Value: 1~10000 **.> `tracingenabled` **True When Effective.
+* `tracing_type` - (Optional) Xtrace Type Value Is **Zipkin * *.
+
+-> **NOTE:**  `tracingenabled` **True When Effective.
+
+
+### `ca_certificates`
+
+The ca_certificates supports the following:
+* `certificate_id` - (Optional, Available since v1.242.0) The ID of the certificate. Currently, only server certificates are supported.
+
+### `certificates`
+
+The certificates supports the following:
+* `certificate_id` - (Optional) The ID of the certificate. Currently, only server certificates are supported.
+
+### `default_actions`
+
+The default_actions supports the following:
+* `forward_group_config` - (Optional, List) Forwarding Action Configurations See [`forward_group_config`](#default_actions-forward_group_config) below.
+* `type` - (Required, ForceNew) Action Type
+
+### `default_actions-forward_group_config`
+
+The default_actions-forward_group_config supports the following:
+* `server_group_tuples` - (Required, List) The Forwarding Destination Server Group See [`server_group_tuples`](#default_actions-forward_group_config-server_group_tuples) below.
+
+### `default_actions-forward_group_config-server_group_tuples`
+
+The default_actions-forward_group_config-server_group_tuples supports the following:
+* `server_group_id` - (Required) Forwarded to the Destination Server Group ID
+
+### `quic_config`
+
+The quic_config supports the following:
+* `quic_listener_id` - (Optional) There Is a Need to Correlate the QuIC Listener ID. The Https Listener, in Effect at the Time. quicupgradeenabled True When Required.
+* `quic_upgrade_enabled` - (Optional, Computed) Indicates Whether to Enable the QuIC Upgrade
 
 ### `x_forwarded_for_config`
 
 The x_forwarded_for_config supports the following:
+* `x_forwarded_for_client_cert_client_verify_alias` - (Optional) The Custom Header Field Names Only When xforwardedforclientcertclientverifyenabled Has a Value of True, this Value Will Not Take Effect until.
+* `x_forwarded_for_client_cert_client_verify_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-clientverify Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results.
+* `x_forwarded_for_client_cert_finger_print_alias` - (Optional) The Custom Header Field Names Only When xforwardedforclientcertfingerprintenabled, Which Evaluates to True When the Entry into Force of.
+* `x_forwarded_for_client_cert_finger_print_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-fingerprint Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Fingerprint Value.
+* `x_forwarded_for_client_cert_issuer_dn_alias` - (Optional) The Custom Header Field Names Only When xforwardedforclientcertsubjectdnenabled, Which Evaluates to True When the Entry into Force of.
+* `x_forwarded_for_client_cert_issuer_dn_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-issuerdn Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate after the Manifests Are Signed, the Publisher Information.
+* `x_forwarded_for_client_cert_subject_dn_alias` - (Optional) The Custom Header Field Name,
+* `x_forwarded_for_client_cert_subject_dn_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-subjectdn Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Owner Information.
+* `x_forwarded_for_client_source_ips_enabled` - (Optional) Whether to use the X-Forwarded-Client-Ip header to obtain the source IP address of the server load balancer instance. Value:
 
-* `x_forwarded_for_client_cert_issuer_dn_enabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-issuerdn` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate after the Manifests Are Signed, the Publisher Information.
-* `x_forwarded_for_client_cert_client_verify_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_cert_client_verify_enabled` Has a Value of True, this Value Will Not Take Effect until.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
-* `x_forwarded_for_client_cert_client_verify_enabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-clientverify` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results.
-* `x_forwarded_for_client_cert_finger_print_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_certfingerprint_enabled`, Which Evaluates to True When the Entry into Force of.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
-* `x_forwarded_for_client_cert_finger_print_enabled` - (Optional) Indicates Whether the `X-Forwarded-client_cert-fingerprint` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Fingerprint Value.
-* `x_forwarded_for_client_cert_subject_dn_alias` - (Optional) The name of the custom header. This parameter is valid only if `x_forwarded_for_client_certsubjectdn_enabled` is set to true. The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
-* `x_forwarded_for_client_cert_subject_dn_enabled` - (Optional) Specifies whether to use the `X-Forwarded-client_cert-subjectdn` header field to obtain information about the owner of the ALB client certificate. Valid values: true and false. Default value: false.
-* `x_forwarded_for_client_cert_issuer_dn_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_cert_issuer_dn_enabled`, Which Evaluates to True When the Entry into Force of.
-* `x_forwarded_for_client_src_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
-* `x_forwarded_for_enabled` - (Optional) Whether to Enable by X-Forwarded-For Header Field Is Used to Obtain the Client IP Addresses.
-* `x_forwarded_for_proto_enabled` - (Optional) Indicates Whether the X-Forwarded-Proto Header Field Is Used to Obtain the Server Load Balancer Instance Snooping Protocols.
-* `x_forwarded_for_slb_id_enabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
-* `x_forwarded_for_slb_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
-* `x_forwarded_for_client_source_ips_enabled` - (Optional) Whether to use the X-Forwarded-Client-Ip header to obtain the source IP address of the server load balancer instance. Value: true, false. Note HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
-* `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP. Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
+  true: Yes.
+
+  false (default): No.
+
+  Note HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
+* `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP.
+
+  Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
+* `x_forwarded_for_client_src_port_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
+* `x_forwarded_for_enabled` - (Optional, Computed) Whether to Enable by X-Forwarded-For Header Field Is Used to Obtain the Client IP Addresses.
+* `x_forwarded_for_host_enabled` - (Optional, Available since v1.242.0) Whether to enable the X-Forwarded-Host header field to obtain the domain name of the client accessing the Application Load Balancer. Value:
+
+  true: Yes.
+
+  false (default): No.
+
+  HTTP, HTTPS, and QUIC listeners support this parameter.
+* `x_forwarded_for_processing_mode` - (Optional, Computed, Available since v1.242.0) Schema for processing X-Forwarded-For header fields. This value takes effect only when XForwardedForEnabled is true. Value:
+
+  append (default): append.
+
+  remove: Delete.
+
+  Configure append to add the last hop IP address to the X-Forwarded-For header field before sending the request to the backend service.
+
+  Configure remove to delete the X-Forwarded-For header before the request is sent to the backend service, regardless of whether the request carries X-Forwarded-For header fields.
+
+  HTTP and HTTPS listeners support this parameter.
+* `x_forwarded_for_proto_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Proto Header Field Is Used to Obtain the Server Load Balancer Instance Snooping Protocols.
+* `x_forwarded_for_slb_id_enabled` - (Optional, Computed) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id
+* `x_forwarded_for_slb_port_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port
 
 ### `xforwarded_for_config`
 
@@ -221,34 +295,6 @@ The xforwarded_for_config supports the following:
 * `xforwardedforslbidenabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
 * `xforwardedforslbportenabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
 
-### `quic_config`
-
-The quic_config supports the following:
-
-* `quic_listener_id` - (Optional) There Is a Need to Correlate the QuIC Listener ID. The Https Listener, in Effect at the Time. quicupgradeenabled True When Required.
-* `quic_upgrade_enabled` - (Optional) Indicates Whether to Enable the QuIC Upgrade.
-
--> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
-
-### `default_actions`
-
-The default_actions supports the following:
-
-* `type` - (Required) Action Type.
-* `forward_group_config` - (Required) The configurations of the actions. This parameter is required if Type is set to FowardGroup. See [`forward_group_config`](#default_actions-forward_group_config) below for details.
-
-### `default_actions-forward_group_config`
-
-The forward_group_config supports the following:
-
-* `server_group_tuples` - (Required) The destination server group to which requests are forwarded. See [`server_group_tuples`](#default_actions-forward_group_config-server_group_tuples) below for details.
-
-### `default_actions-forward_group_config-server_group_tuples`
-
-The server_group_tuples supports the following:
-
-* `server_group_id` - (Required) The ID of the destination server group to which requests are forwarded.
-
 ### `acl_config`
 
 The acl_config supports the following:
@@ -263,40 +309,17 @@ The acl_relations supports the following:
 * `acl_id` - (Optional, Available since v1.136.0) Snooping Binding of the Access Policy Group ID List.
 * `status` - (Optional) The status of the ACL relation.
 
-### `access_log_tracing_config`
-
-The access_log_tracing_config supports the following:
-
-* `tracing_enabled` - (Optional) Xtrace Function. Value: `True` Or `False` . Default Value: `False`.
-
--> **NOTE:** Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `True`.
-* `tracing_sample` - (Optional) Xtrace Sampling Rate. Value: `1` to `10000`.
-
--> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
-* `tracing_type` - (Optional) Xtrace Type Value Is `Zipkin`.
-
--> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
-
-
-### `certificates`
-
-The certificates supports the following:
-
-* `certificate_id` - (Optional) The ID of the Certificate.
-
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Listener.
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 2 mins) Used when create the Listener.
-* `update` - (Defaults to 2 mins) Used when update the Listener.
-* `delete` - (Defaults to 2 mins) Used when delete the Listener.
+* `create` - (Defaults to 5 mins) Used when create the Listener.
+* `delete` - (Defaults to 5 mins) Used when delete the Listener.
+* `update` - (Defaults to 5 mins) Used when update the Listener.
 
 ## Import
 
