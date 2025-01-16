@@ -110,7 +110,6 @@ func testSweepAlbServerGroup(region string) error {
 
 func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -143,6 +142,13 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 							"health_check_enabled": "true",
 						},
 					},
+					"slow_start_config": []map[string]interface{}{
+						{
+							"slow_start_enabled":  "true",
+							"slow_start_duration": "30",
+						},
+					},
+					"cross_zone_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -150,7 +156,36 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 						"vpc_id":                  CHECKSET,
 						"sticky_session_config.#": "1",
 						"health_check_config.#":   "1",
+						"cross_zone_enabled":      "true",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cross_zone_enabled": "false",
+					"slow_start_config": []map[string]interface{}{
+						{
+							"slow_start_enabled":  "true",
+							"slow_start_duration": "40",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_zone_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"slow_start_config": []map[string]interface{}{
+						{
+							"slow_start_enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -165,11 +200,83 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"connection_drain_config": []map[string]interface{}{
+						{
+							"connection_drain_enabled": "true",
+							"connection_drain_timeout": "300",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_drain_config": []map[string]interface{}{
+						{
+							"connection_drain_enabled": "false",
+							"connection_drain_timeout": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upstream_keepalive_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upstream_keepalive_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upstream_keepalive_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upstream_keepalive_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"scheduler": "Wlc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler": "Wlc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scheduler": "Uch",
+					"uch_config": []map[string]interface{}{
+						{
+							"type":  "QueryString",
+							"value": "abc",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scheduler": "Uch",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_template_id": "${alicloud_alb_health_check_template.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_template_id": CHECKSET,
 					}),
 				),
 			},
@@ -288,9 +395,10 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"health_check_template_id"},
 			},
 		},
 	})
@@ -298,7 +406,6 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 
 func TestAccAliCloudALBServerGroup_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -392,7 +499,6 @@ func TestAccAliCloudALBServerGroup_basic0_twin(t *testing.T) {
 
 func TestAccAliCloudALBServerGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -582,7 +688,6 @@ func TestAccAliCloudALBServerGroup_basic1(t *testing.T) {
 
 func TestAccAliCloudALBServerGroup_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -676,7 +781,6 @@ func TestAccAliCloudALBServerGroup_basic1_twin(t *testing.T) {
 
 func TestAccAliCloudALBServerGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -796,7 +900,6 @@ func TestAccAliCloudALBServerGroup_basic2(t *testing.T) {
 
 func TestAccAliCloudALBServerGroup_basic2_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	resourceId := "alicloud_alb_server_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -920,6 +1023,10 @@ func AliCloudALBServerGroupBasicDependence0(name string) string {
   		instance_charge_type       = "PostPaid"
   		system_disk_category       = "cloud_efficiency"
   		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+	}
+
+	resource "alicloud_alb_health_check_template" "default" {
+	  health_check_template_name = var.name
 	}
 `, name)
 }
