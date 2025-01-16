@@ -81,6 +81,11 @@ func resourceAliCloudVpcIpamIpamPool() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"source_ipam_pool_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -140,6 +145,14 @@ func resourceAliCloudVpcIpamIpamPoolCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("auto_import"); ok {
 		request["AutoImport"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -162,7 +175,7 @@ func resourceAliCloudVpcIpamIpamPoolCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(response["IpamPoolId"]))
 
-	return resourceAliCloudVpcIpamIpamPoolUpdate(d, meta)
+	return resourceAliCloudVpcIpamIpamPoolRead(d, meta)
 }
 
 func resourceAliCloudVpcIpamIpamPoolRead(d *schema.ResourceData, meta interface{}) error {
@@ -209,6 +222,9 @@ func resourceAliCloudVpcIpamIpamPoolRead(d *schema.ResourceData, meta interface{
 	if objectRaw["PoolRegionId"] != nil {
 		d.Set("pool_region_id", objectRaw["PoolRegionId"])
 	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
 	if objectRaw["SourceIpamPoolId"] != nil {
 		d.Set("source_ipam_pool_id", objectRaw["SourceIpamPoolId"])
 	}
@@ -231,6 +247,8 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
+
 	action := "UpdateIpamPool"
 	conn, err := client.NewVpcipamClient()
 	if err != nil {
@@ -241,27 +259,27 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	request["IpamPoolId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("ipam_pool_name") {
+	if d.HasChange("ipam_pool_name") {
 		update = true
 		request["IpamPoolName"] = d.Get("ipam_pool_name")
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipam_pool_description") {
+	if d.HasChange("ipam_pool_description") {
 		update = true
 		request["IpamPoolDescription"] = d.Get("ipam_pool_description")
 	}
 
-	if !d.IsNewResource() && d.HasChange("allocation_default_cidr_mask") {
+	if d.HasChange("allocation_default_cidr_mask") {
 		update = true
 		request["AllocationDefaultCidrMask"] = d.Get("allocation_default_cidr_mask")
 	}
 
-	if !d.IsNewResource() && d.HasChange("allocation_max_cidr_mask") {
+	if d.HasChange("allocation_max_cidr_mask") {
 		update = true
 		request["AllocationMaxCidrMask"] = d.Get("allocation_max_cidr_mask")
 	}
 
-	if !d.IsNewResource() && d.HasChange("allocation_min_cidr_mask") {
+	if d.HasChange("allocation_min_cidr_mask") {
 		update = true
 		request["AllocationMinCidrMask"] = d.Get("allocation_min_cidr_mask")
 	}
@@ -269,7 +287,7 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("clear_allocation_default_cidr_mask"); ok {
 		request["ClearAllocationDefaultCidrMask"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("auto_import") {
+	if d.HasChange("auto_import") {
 		update = true
 		request["AutoImport"] = d.Get("auto_import")
 	}
@@ -294,13 +312,49 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	update = false
+	action = "ChangeResourceGroup"
+	conn, err = client.NewVpcipamClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "IPAMPOOL"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	if d.HasChange("tags") {
 		vpcIpamServiceV2 := VpcIpamServiceV2{client}
-		if err := vpcIpamServiceV2.SetResourceTags(d, "IpamPool"); err != nil {
+		if err := vpcIpamServiceV2.SetResourceTags(d, "IPAMPOOL"); err != nil {
 			return WrapError(err)
 		}
 	}
+	d.Partial(false)
 	return resourceAliCloudVpcIpamIpamPoolRead(d, meta)
 }
 
@@ -318,7 +372,6 @@ func resourceAliCloudVpcIpamIpamPoolDelete(d *schema.ResourceData, meta interfac
 	request = make(map[string]interface{})
 	request["IpamPoolId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}

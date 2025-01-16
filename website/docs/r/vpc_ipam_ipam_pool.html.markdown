@@ -20,12 +20,6 @@ For information about Vpc Ipam Ipam Pool and how to use it, see [What is Ipam Po
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_ipam_ipam_pool&exampleId=2a160962-cd7a-9d64-32d2-d2a0f8a3cf67cf4b594f&activeTab=example&spm=docs.r.vpc_ipam_ipam_pool.0.2a160962cd&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -78,6 +72,7 @@ The following arguments are supported:
 * `ipam_pool_name` - (Optional, Computed) The name of the resource.
 * `ipam_scope_id` - (Required, ForceNew) Ipam scope id.
 * `pool_region_id` - (Optional, ForceNew) The effective region of the IPAM address pool.
+* `resource_group_id` - (Optional, Computed, Available since v1.242.0) The ID of the resource group.
 * `source_ipam_pool_id` - (Optional, ForceNew, Computed) The instance ID of the source IPAM address pool.
 
 -> **NOTE:**  If this parameter is not entered, the created address pool is the parent address pool.
