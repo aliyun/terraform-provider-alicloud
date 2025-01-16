@@ -96,6 +96,11 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("ipam_description"); ok {
 		request["IpamDescription"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -118,7 +123,7 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(fmt.Sprint(response["IpamId"]))
 
-	return resourceAliCloudVpcIpamIpamUpdate(d, meta)
+	return resourceAliCloudVpcIpamIpamRead(d, meta)
 }
 
 func resourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{}) error {
@@ -176,6 +181,7 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
+
 	action := "UpdateIpam"
 	conn, err := client.NewVpcipamClient()
 	if err != nil {
@@ -186,12 +192,12 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	request["IpamId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("ipam_name") {
+	if d.HasChange("ipam_name") {
 		update = true
 		request["IpamName"] = d.Get("ipam_name")
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipam_description") {
+	if d.HasChange("ipam_description") {
 		update = true
 		request["IpamDescription"] = d.Get("ipam_description")
 	}
@@ -226,7 +232,7 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
@@ -252,7 +258,7 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("operating_region_list") {
+	if d.HasChange("operating_region_list") {
 		oldEntry, newEntry := d.GetChange("operating_region_list")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
@@ -356,7 +362,6 @@ func resourceAliCloudVpcIpamIpamDelete(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	request["IpamId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
