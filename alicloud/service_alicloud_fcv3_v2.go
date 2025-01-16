@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	roa "github.com/alibabacloud-go/tea-roa/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type Fcv3ServiceV2 struct {
@@ -23,7 +25,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]*string
 	functionName := id
-	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return object, WrapError(err)
@@ -31,6 +32,8 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
+
+	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -739,3 +742,108 @@ func (s *Fcv3ServiceV2) Fcv3VpcBindingStateRefreshFunc(id string, field string, 
 }
 
 // DescribeFcv3VpcBinding >>> Encapsulated.
+// SetResourceTags <<< Encapsulated tag function for Fcv3.
+func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var err error
+		var action string
+		var conn *roa.Client
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]*string)
+		body := make(map[string]interface{})
+
+		fcv3ServiceV2 := Fcv3ServiceV2{client}
+		objectRaw, err := fcv3ServiceV2.DescribeFcv3Function(d.Id())
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = fmt.Sprintf("/2023-03-30/tags-v2")
+			conn, err = client.NewFcv2Client()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+
+			query["TagKey"] = StringPointer(convertListToJsonString(convertListStringToListInterface(removedTagKeys)))
+			query["ResourceId"] = StringPointer(convertListToJsonString(expandSingletonToList(objectRaw["functionArn"])))
+			query["ResourceType"] = StringPointer(resourceType)
+			body = request
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = fmt.Sprintf("/2023-03-30/tags-v2")
+			conn, err = client.NewFcv2Client()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+
+			count := 1
+			tagsMaps := make([]map[string]interface{}, 0)
+			for key, value := range added {
+				tagsMap := make(map[string]interface{})
+				tagsMap["Key"] = key
+				tagsMap["Value"] = value
+				tagsMaps = append(tagsMaps, tagsMap)
+				count++
+			}
+			request["Tag"] = tagsMaps
+			request["ResourceId"] = expandSingletonToList(objectRaw["functionArn"])
+			request["ResourceType"] = resourceType
+			body = request
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.
