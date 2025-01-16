@@ -312,6 +312,11 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 		return object, WrapErrorf(Error(GetNotFoundMessage("RatePlanInstance", id)), NotFoundMsg, response)
 	}
 
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
+	if currentStatus == "offline" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RatePlanInstance", id)), NotFoundMsg, response)
+	}
+
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 func (s *EsaServiceV2) DescribeDescribeRatePlanInstanceStatus(id string) (object map[string]interface{}, err error) {
@@ -357,6 +362,13 @@ func (s *EsaServiceV2) EsaRatePlanInstanceStateRefreshFunc(id string, field stri
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
