@@ -53,6 +53,11 @@ func resourceAliCloudVpcIpamIpamScope() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -88,6 +93,14 @@ func resourceAliCloudVpcIpamIpamScopeCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("ipam_scope_type"); ok {
 		request["IpamScopeType"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -110,7 +123,7 @@ func resourceAliCloudVpcIpamIpamScopeCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprint(response["IpamScopeId"]))
 
-	return resourceAliCloudVpcIpamIpamScopeUpdate(d, meta)
+	return resourceAliCloudVpcIpamIpamScopeRead(d, meta)
 }
 
 func resourceAliCloudVpcIpamIpamScopeRead(d *schema.ResourceData, meta interface{}) error {
@@ -142,6 +155,9 @@ func resourceAliCloudVpcIpamIpamScopeRead(d *schema.ResourceData, meta interface
 	if objectRaw["IpamScopeType"] != nil {
 		d.Set("ipam_scope_type", objectRaw["IpamScopeType"])
 	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
 	if objectRaw["Status"] != nil {
 		d.Set("status", objectRaw["Status"])
 	}
@@ -161,6 +177,8 @@ func resourceAliCloudVpcIpamIpamScopeUpdate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
+
 	action := "UpdateIpamScope"
 	conn, err := client.NewVpcipamClient()
 	if err != nil {
@@ -171,12 +189,12 @@ func resourceAliCloudVpcIpamIpamScopeUpdate(d *schema.ResourceData, meta interfa
 	request["IpamScopeId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("ipam_scope_name") {
+	if d.HasChange("ipam_scope_name") {
 		update = true
 		request["IpamScopeName"] = d.Get("ipam_scope_name")
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipam_scope_description") {
+	if d.HasChange("ipam_scope_description") {
 		update = true
 		request["IpamScopeDescription"] = d.Get("ipam_scope_description")
 	}
@@ -201,13 +219,49 @@ func resourceAliCloudVpcIpamIpamScopeUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	update = false
+	action = "ChangeResourceGroup"
+	conn, err = client.NewVpcipamClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "IPAMSCOPE"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	if d.HasChange("tags") {
 		vpcIpamServiceV2 := VpcIpamServiceV2{client}
-		if err := vpcIpamServiceV2.SetResourceTags(d, "IpamScope"); err != nil {
+		if err := vpcIpamServiceV2.SetResourceTags(d, "IPAMSCOPE"); err != nil {
 			return WrapError(err)
 		}
 	}
+	d.Partial(false)
 	return resourceAliCloudVpcIpamIpamScopeRead(d, meta)
 }
 
@@ -225,7 +279,6 @@ func resourceAliCloudVpcIpamIpamScopeDelete(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	request["IpamScopeId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
