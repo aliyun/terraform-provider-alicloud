@@ -1,0 +1,80 @@
+---
+subcategory: "Max Compute"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_max_compute_role"
+description: |-
+  Provides a Alicloud Max Compute Role resource.
+---
+
+# alicloud_max_compute_role
+
+Provides a Max Compute Role resource.
+
+
+
+For information about Max Compute Role and how to use it, see [What is Role](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.242.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
+}
+
+resource "alicloud_max_compute_role" "default" {
+  type         = "admin"
+  project_name = alicloud_maxcompute_project.default.id
+  policy       = jsonencode({ "Statement" : [{ "Action" : ["odps:*"], "Effect" : "Allow", "Resource" : ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"] }], "Version" : "1" })
+  role_name    = "tf_example112"
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `policy` - (Optional, JsonString) Policy Authorization
+Refer to [Policy-based access control](https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1) and [Authorization practices](https://www.alibabacloud.com/help/en/maxcompute/use-cases/authorization-practices)
+* `project_name` - (Required, ForceNew) Project name
+* `role_name` - (Required, ForceNew) Role Name
+
+-> **NOTE:** At the beginning of a letter, it can contain letters and numbers and can be no more than 64 characters in length.
+
+* `type` - (Required) Role type Valid values: admin/resource
+
+-> **NOTE:** -- management type (admin) role: You can grant management type permissions through Policy. You cannot grant resource permissions to management type roles. You cannot grant management type permissions to management type roles through ACL. -- resource role: you can authorize resource type permissions through Policy or ACL, but cannot authorize management type permissions. For details, see [role-planning](https://www.alibabacloud.com/help/en/maxcompute/user-guide/role-planning)
+
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<role_name>`.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Role.
+* `delete` - (Defaults to 5 mins) Used when delete the Role.
+* `update` - (Defaults to 5 mins) Used when update the Role.
+
+## Import
+
+Max Compute Role can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_max_compute_role.example <project_name>:<role_name>
+```
