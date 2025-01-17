@@ -887,6 +887,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_max_compute_quota_schedule":                           resourceAliCloudMaxComputeQuotaSchedule(),
+			"alicloud_max_compute_role":                                     resourceAliCloudMaxComputeRole(),
+			"alicloud_max_compute_quota_plan":                               resourceAliCloudMaxComputeQuotaPlan(),
 			"alicloud_vpc_ipam_service":                                     resourceAliCloudVpcIpamService(),
 			"alicloud_alb_load_balancer_zone_shifted_attachment":            resourceAliCloudAlbLoadBalancerZoneShiftedAttachment(),
 			"alicloud_alb_load_balancer_access_log_config_attachment":       resourceAliCloudAlbLoadBalancerAccessLogConfigAttachment(),
