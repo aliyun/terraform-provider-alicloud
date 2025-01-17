@@ -199,10 +199,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"event_burst": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 						"cpu_manager_policy": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -212,8 +208,16 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"eviction_soft_grace_period": {
-							Type:     schema.TypeMap,
+						"topology_manager_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"pod_pids_limit": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cpu_cfs_quota": {
+							Type:     schema.TypeString,
 							Optional: true,
 						},
 						"serialize_image_pulls": {
@@ -224,11 +228,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"system_reserved": {
-							Type:     schema.TypeMap,
+						"cluster_dns": {
+							Type:     schema.TypeList,
 							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"eviction_soft": {
+						"system_reserved": {
 							Type:     schema.TypeMap,
 							Optional: true,
 						},
@@ -237,19 +242,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeBool},
 						},
-						"event_record_qps": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 						"registry_burst": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kube_reserved": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-						"max_pods": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -261,6 +254,70 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"reserved_memory": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"limits": {
+										Type:     schema.TypeMap,
+										Optional: true,
+									},
+									"numa_node": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"container_log_monitor_interval": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"container_log_max_workers": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"event_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"image_gc_high_threshold_percent": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eviction_soft_grace_period": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"image_gc_low_threshold_percent": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"memory_manager_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cpu_cfs_quota_period": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eviction_soft": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"event_record_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"max_pods": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"container_log_max_files": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -268,6 +325,23 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 						"eviction_hard": {
 							Type:     schema.TypeMap,
 							Optional: true,
+						},
+						"tracing": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"sampling_rate_per_million": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"endpoint": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 						"container_log_max_size": {
 							Type:     schema.TypeString,
@@ -473,6 +547,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 						},
 					},
 				},
+			},
+			"ram_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"rds_instances": {
 				Type:     schema.TypeList,
@@ -825,6 +905,7 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["nodepool_info"] = objectDataLocalMap
+
 	objectDataLocalMap1 := make(map[string]interface{})
 
 	if v, ok := d.GetOk("node_count"); ok {
@@ -1030,11 +1111,11 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 
 	if v := d.Get("private_pool_options"); !IsNil(v) {
 		private_pool_options := make(map[string]interface{})
-		privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", d.Get("private_pool_options"))
+		privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
 		if privatePoolOptionsMatchCriteria != nil && privatePoolOptionsMatchCriteria != "" {
 			private_pool_options["match_criteria"] = privatePoolOptionsMatchCriteria
 		}
-		privatePoolOptionsId, _ := jsonpath.Get("$[0].private_pool_options_id", d.Get("private_pool_options"))
+		privatePoolOptionsId, _ := jsonpath.Get("$[0].private_pool_options_id", v)
 		if privatePoolOptionsId != nil && privatePoolOptionsId != "" {
 			private_pool_options["id"] = privatePoolOptionsId
 		}
@@ -1106,7 +1187,12 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		objectDataLocalMap1["security_hardening_os"] = v
 	}
 
+	if v, ok := d.GetOk("ram_role_name"); ok {
+		objectDataLocalMap1["ram_role_name"] = v
+	}
+
 	request["scaling_group"] = objectDataLocalMap1
+
 	objectDataLocalMap2 := make(map[string]interface{})
 
 	if v, ok := d.GetOk("cpu_policy"); ok {
@@ -1195,34 +1281,35 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["kubernetes_config"] = objectDataLocalMap2
+
 	objectDataLocalMap3 := make(map[string]interface{})
 
 	if v := d.Get("scaling_config"); !IsNil(v) {
-		type1, _ := jsonpath.Get("$[0].type", d.Get("scaling_config"))
+		type1, _ := jsonpath.Get("$[0].type", v)
 		if type1 != nil && type1 != "" {
 			objectDataLocalMap3["type"] = type1
 		}
-		maxSize, _ := jsonpath.Get("$[0].max_size", d.Get("scaling_config"))
+		maxSize, _ := jsonpath.Get("$[0].max_size", v)
 		if maxSize != nil && maxSize != "" {
 			objectDataLocalMap3["max_instances"] = maxSize
 		}
-		minSize, _ := jsonpath.Get("$[0].min_size", d.Get("scaling_config"))
+		minSize, _ := jsonpath.Get("$[0].min_size", v)
 		if minSize != nil && minSize != "" {
 			objectDataLocalMap3["min_instances"] = minSize
 		}
-		isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", d.Get("scaling_config"))
+		isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", v)
 		if isBondEip != nil && isBondEip != "" {
 			objectDataLocalMap3["is_bond_eip"] = isBondEip
 		}
-		enable1, _ := jsonpath.Get("$[0].enable", d.Get("scaling_config"))
+		enable1, _ := jsonpath.Get("$[0].enable", v)
 		if enable1 != nil && enable1 != "" {
 			objectDataLocalMap3["enable"] = enable1
 		}
-		eipInternetChargeType, _ := jsonpath.Get("$[0].eip_internet_charge_type", d.Get("scaling_config"))
+		eipInternetChargeType, _ := jsonpath.Get("$[0].eip_internet_charge_type", v)
 		if eipInternetChargeType != nil && eipInternetChargeType != "" {
 			objectDataLocalMap3["eip_internet_charge_type"] = eipInternetChargeType
 		}
-		eipBandwidth, _ := jsonpath.Get("$[0].eip_bandwidth", d.Get("scaling_config"))
+		eipBandwidth, _ := jsonpath.Get("$[0].eip_bandwidth", v)
 		if eipBandwidth != nil && eipBandwidth != "" && eipBandwidth.(int) > 0 {
 			objectDataLocalMap3["eip_bandwidth"] = eipBandwidth
 		}
@@ -1233,57 +1320,57 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	objectDataLocalMap4 := make(map[string]interface{})
 
 	if v := d.Get("management"); !IsNil(v) {
-		enable3, _ := jsonpath.Get("$[0].enable", d.Get("management"))
+		enable3, _ := jsonpath.Get("$[0].enable", v)
 		if enable3 != nil && enable3 != "" {
 			objectDataLocalMap4["enable"] = enable3
 		}
-		autoRepair, _ := jsonpath.Get("$[0].auto_repair", d.Get("management"))
+		autoRepair, _ := jsonpath.Get("$[0].auto_repair", v)
 		if autoRepair != nil && autoRepair != "" {
 			objectDataLocalMap4["auto_repair"] = autoRepair
 		}
 		auto_repair_policy := make(map[string]interface{})
-		restartNode, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", d.Get("management"))
+		restartNode, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
 		if restartNode != nil && restartNode != "" {
 			auto_repair_policy["restart_node"] = restartNode
 		}
 
 		objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
-		autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", d.Get("management"))
+		autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", v)
 		if autoVulFix != nil && autoVulFix != "" {
 			objectDataLocalMap4["auto_vul_fix"] = autoVulFix
 		}
 		auto_vul_fix_policy := make(map[string]interface{})
-		restartNode1, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", d.Get("management"))
+		restartNode1, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
 		if restartNode1 != nil && restartNode1 != "" {
 			auto_vul_fix_policy["restart_node"] = restartNode1
 		}
-		vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", d.Get("management"))
+		vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
 		if vulLevel != nil && vulLevel != "" {
 			auto_vul_fix_policy["vul_level"] = vulLevel
 		}
 
 		objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
-		autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", d.Get("management"))
+		autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", v)
 		if autoUpgrade != nil && autoUpgrade != "" {
 			objectDataLocalMap4["auto_upgrade"] = autoUpgrade
 		}
 		auto_upgrade_policy := make(map[string]interface{})
-		autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", d.Get("management"))
+		autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
 		if autoUpgradeKubelet != nil && autoUpgradeKubelet != "" {
 			auto_upgrade_policy["auto_upgrade_kubelet"] = autoUpgradeKubelet
 		}
 
 		objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
 		upgrade_config := make(map[string]interface{})
-		surge1, _ := jsonpath.Get("$[0].surge", d.Get("management"))
+		surge1, _ := jsonpath.Get("$[0].surge", v)
 		if surge1 != nil && surge1 != "" {
 			upgrade_config["surge"] = surge1
 		}
-		surgePercentage, _ := jsonpath.Get("$[0].surge_percentage", d.Get("management"))
+		surgePercentage, _ := jsonpath.Get("$[0].surge_percentage", v)
 		if surgePercentage != nil && surgePercentage != "" {
 			upgrade_config["surge_percentage"] = surgePercentage
 		}
-		maxUnavailable, _ := jsonpath.Get("$[0].max_unavailable", d.Get("management"))
+		maxUnavailable, _ := jsonpath.Get("$[0].max_unavailable", v)
 		if maxUnavailable != nil && maxUnavailable != "" && maxUnavailable.(int) > 0 {
 			upgrade_config["max_unavailable"] = maxUnavailable
 		}
@@ -1296,7 +1383,7 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	objectDataLocalMap5 := make(map[string]interface{})
 
 	if v := d.Get("tee_config"); !IsNil(v) {
-		teeEnable, _ := jsonpath.Get("$[0].tee_enable", d.Get("tee_config"))
+		teeEnable, _ := jsonpath.Get("$[0].tee_enable", v)
 		if teeEnable != nil && teeEnable != "" {
 			objectDataLocalMap5["tee_enable"] = teeEnable
 		}
@@ -1308,37 +1395,37 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 
 	if v := d.Get("kubelet_configuration"); !IsNil(v) {
 		kubelet_configuration := make(map[string]interface{})
-		registryPullQpsRaw, _ := jsonpath.Get("$[0].registry_pull_qps", d.Get("kubelet_configuration"))
+		registryPullQpsRaw, _ := jsonpath.Get("$[0].registry_pull_qps", v)
 		if registryPullQpsRaw != nil && registryPullQpsRaw != "" {
 			registryPullQps, _ := strconv.ParseInt(registryPullQpsRaw.(string), 10, 64)
 			kubelet_configuration["registryPullQPS"] = registryPullQps
 		}
-		registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", d.Get("kubelet_configuration"))
+		registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
 		if registryBurst1Raw != nil && registryBurst1Raw != "" {
 			registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
 			kubelet_configuration["registryBurst"] = registryBurst1
 		}
-		eventRecordQpsRaw, _ := jsonpath.Get("$[0].event_record_qps", d.Get("kubelet_configuration"))
+		eventRecordQpsRaw, _ := jsonpath.Get("$[0].event_record_qps", v)
 		if eventRecordQpsRaw != nil && eventRecordQpsRaw != "" {
 			eventRecordQps, _ := strconv.ParseInt(eventRecordQpsRaw.(string), 10, 64)
 			kubelet_configuration["eventRecordQPS"] = eventRecordQps
 		}
-		eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", d.Get("kubelet_configuration"))
+		eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", v)
 		if eventBurst1Raw != nil && eventBurst1Raw != "" {
 			eventBurst1, _ := strconv.ParseInt(eventBurst1Raw.(string), 10, 64)
 			kubelet_configuration["eventBurst"] = eventBurst1
 		}
-		kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", d.Get("kubelet_configuration"))
+		kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", v)
 		if kubeApiQpsRaw != nil && kubeApiQpsRaw != "" {
 			kubeApiQps, _ := strconv.ParseInt(kubeApiQpsRaw.(string), 10, 64)
 			kubelet_configuration["kubeAPIQPS"] = kubeApiQps
 		}
-		serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", d.Get("kubelet_configuration"))
+		serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
 		if serializeImagePulls1Raw != nil && serializeImagePulls1Raw != "" {
 			serializeImagePulls1, _ := strconv.ParseBool(serializeImagePulls1Raw.(string))
 			kubelet_configuration["serializeImagePulls"] = serializeImagePulls1
 		}
-		cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", d.Get("kubelet_configuration"))
+		cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
 		if cpuManagerPolicy1 != nil && cpuManagerPolicy1 != "" {
 			kubelet_configuration["cpuManagerPolicy"] = cpuManagerPolicy1
 		}
@@ -1346,54 +1433,130 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		if allowedUnsafeSysctls1 != nil && allowedUnsafeSysctls1 != "" {
 			kubelet_configuration["allowedUnsafeSysctls"] = allowedUnsafeSysctls1
 		}
-		featureGates1, _ := jsonpath.Get("$[0].feature_gates", d.Get("kubelet_configuration"))
+		featureGates1, _ := jsonpath.Get("$[0].feature_gates", v)
 		if featureGates1 != nil && featureGates1 != "" {
 			kubelet_configuration["featureGates"] = featureGates1
 		}
-		containerLogMaxFiles1Raw, _ := jsonpath.Get("$[0].container_log_max_files", d.Get("kubelet_configuration"))
+		containerLogMaxFiles1Raw, _ := jsonpath.Get("$[0].container_log_max_files", v)
 		if containerLogMaxFiles1Raw != nil && containerLogMaxFiles1Raw != "" {
 			containerLogMaxFiles1, _ := strconv.ParseInt(containerLogMaxFiles1Raw.(string), 10, 64)
 			kubelet_configuration["containerLogMaxFiles"] = containerLogMaxFiles1
 		}
-		containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", d.Get("kubelet_configuration"))
+		containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", v)
 		if containerLogMaxSize1 != nil && containerLogMaxSize1 != "" {
 			kubelet_configuration["containerLogMaxSize"] = containerLogMaxSize1
 		}
-		maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", d.Get("kubelet_configuration"))
+		maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", v)
 		if maxPods1Raw != nil && maxPods1Raw != "" {
 			maxPods1, _ := strconv.ParseInt(maxPods1Raw.(string), 10, 64)
 			kubelet_configuration["maxPods"] = maxPods1
 		}
-		readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", d.Get("kubelet_configuration"))
+		readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", v)
 		if readOnlyPort1Raw != nil && readOnlyPort1Raw != "" {
 			readOnlyPort1, _ := strconv.ParseInt(readOnlyPort1Raw.(string), 10, 64)
 			kubelet_configuration["readOnlyPort"] = readOnlyPort1
 		}
-		kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", d.Get("kubelet_configuration"))
+		kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", v)
 		if kubeReserved1 != nil && kubeReserved1 != "" {
 			kubelet_configuration["kubeReserved"] = kubeReserved1
 		}
-		systemReserved1, _ := jsonpath.Get("$[0].system_reserved", d.Get("kubelet_configuration"))
+		systemReserved1, _ := jsonpath.Get("$[0].system_reserved", v)
 		if systemReserved1 != nil && systemReserved1 != "" {
 			kubelet_configuration["systemReserved"] = systemReserved1
 		}
-		evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", d.Get("kubelet_configuration"))
+		evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
 		if evictionSoftGracePeriod1 != nil && evictionSoftGracePeriod1 != "" {
 			kubelet_configuration["evictionSoftGracePeriod"] = evictionSoftGracePeriod1
 		}
-		evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", d.Get("kubelet_configuration"))
+		evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", v)
 		if evictionSoft1 != nil && evictionSoft1 != "" {
 			kubelet_configuration["evictionSoft"] = evictionSoft1
 		}
-		evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", d.Get("kubelet_configuration"))
+		evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", v)
 		if evictionHard1 != nil && evictionHard1 != "" {
 			kubelet_configuration["evictionHard"] = evictionHard1
 		}
-		kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", d.Get("kubelet_configuration"))
+		kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", v)
 		if kubeApiBurstRaw != nil && kubeApiBurstRaw != "" {
 			kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
 			kubelet_configuration["kubeAPIBurst"] = kubeApiBurst
 		}
+		cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
+		if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
+			cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
+			kubelet_configuration["cpuCFSQuota"] = cpuCfsQuota
+		}
+		cpuCfsQuotaPeriod, _ := jsonpath.Get("$[0].cpu_cfs_quota_period", v)
+		if cpuCfsQuotaPeriod != nil && cpuCfsQuotaPeriod != "" {
+			kubelet_configuration["cpuCFSQuotaPeriod"] = cpuCfsQuotaPeriod
+		}
+		imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
+		if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
+			imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
+			kubelet_configuration["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
+		}
+		imageGcLowThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_low_threshold_percent", v)
+		if imageGcLowThresholdPercentRaw != nil && imageGcLowThresholdPercentRaw != "" {
+			imageGcLowThresholdPercent, _ := strconv.ParseInt(imageGcLowThresholdPercentRaw.(string), 10, 64)
+			kubelet_configuration["imageGCLowThresholdPercent"] = imageGcLowThresholdPercent
+		}
+		podPidsLimit1Raw, _ := jsonpath.Get("$[0].pod_pids_limit", v)
+		if podPidsLimit1Raw != nil && podPidsLimit1Raw != "" {
+			podPidsLimit1, _ := strconv.ParseInt(podPidsLimit1Raw.(string), 10, 64)
+			kubelet_configuration["podPidsLimit"] = podPidsLimit1
+		}
+		topologyManagerPolicy1, _ := jsonpath.Get("$[0].topology_manager_policy", v)
+		if topologyManagerPolicy1 != nil && topologyManagerPolicy1 != "" {
+			kubelet_configuration["topologyManagerPolicy"] = topologyManagerPolicy1
+		}
+		clusterDns, _ := jsonpath.Get("$[0].cluster_dns", v)
+		if clusterDns != nil && clusterDns != "" {
+			kubelet_configuration["clusterDNS"] = clusterDns
+		}
+		memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
+		if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
+			kubelet_configuration["memoryManagerPolicy"] = memoryManagerPolicy1
+		}
+		if v, ok := d.GetOk("kubelet_configuration"); ok {
+			localData5, err := jsonpath.Get("$[0].reserved_memory", v)
+			if err != nil {
+				localData5 = make([]interface{}, 0)
+			}
+			localMaps5 := make([]interface{}, 0)
+			for _, dataLoop5 := range localData5.([]interface{}) {
+				dataLoop5Tmp := make(map[string]interface{})
+				if dataLoop5 != nil {
+					dataLoop5Tmp = dataLoop5.(map[string]interface{})
+				}
+				dataLoop5Map := make(map[string]interface{})
+				dataLoop5Map["limits"] = dataLoop5Tmp["limits"]
+				dataLoop5Map["numaNode"] = dataLoop5Tmp["numa_node"]
+				localMaps5 = append(localMaps5, dataLoop5Map)
+			}
+			kubelet_configuration["reservedMemory"] = localMaps5
+		}
+
+		containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
+		if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
+			containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
+			kubelet_configuration["containerLogMaxWorkers"] = containerLogMaxWorkers1
+		}
+		containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
+		if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
+			kubelet_configuration["containerLogMonitorInterval"] = containerLogMonitorInterval1
+		}
+		tracing := make(map[string]interface{})
+		endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
+		if endpoint1 != nil && endpoint1 != "" {
+			tracing["endpoint"] = endpoint1
+		}
+		samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
+		if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
+			samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
+			tracing["samplingRatePerMillion"] = samplingRatePerMillion1
+		}
+
+		kubelet_configuration["tracing"] = tracing
 
 		objectDataLocalMap6["kubelet_configuration"] = kubelet_configuration
 
@@ -1503,6 +1666,9 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("period", scaling_group1Raw["period"])
 	d.Set("period_unit", scaling_group1Raw["period_unit"])
 	d.Set("platform", scaling_group1Raw["platform"])
+	if scaling_group1Raw["ram_role_name"] != nil {
+		d.Set("ram_role_name", scaling_group1Raw["ram_role_name"])
+	}
 	d.Set("scaling_group_id", scaling_group1Raw["scaling_group_id"])
 	d.Set("scaling_policy", scaling_group1Raw["scaling_policy"])
 	d.Set("security_group_id", scaling_group1Raw["security_group_id"])
@@ -1520,6 +1686,7 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("system_disk_provisioned_iops", scaling_group1Raw["system_disk_provisioned_iops"])
 	d.Set("system_disk_size", scaling_group1Raw["system_disk_size"])
 	d.Set("system_disk_snapshot_policy_id", scaling_group1Raw["worker_system_disk_snapshot_policy_id"])
+
 	status1RawObj, _ := jsonpath.Get("$.status", objectRaw)
 	status1Raw := make(map[string]interface{})
 	if status1RawObj != nil {
@@ -1574,6 +1741,16 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		}
 
 		kubeletConfigurationMap["container_log_max_size"] = kubelet_configuration1Raw["containerLogMaxSize"]
+		if v, ok := kubelet_configuration1Raw["containerLogMaxWorkers"].(json.Number); ok {
+			kubeletConfigurationMap["container_log_max_workers"] = v.String()
+		}
+
+		kubeletConfigurationMap["container_log_monitor_interval"] = kubelet_configuration1Raw["containerLogMonitorInterval"]
+		if v, ok := kubelet_configuration1Raw["cpuCFSQuota"].(bool); ok {
+			kubeletConfigurationMap["cpu_cfs_quota"] = strconv.FormatBool(v)
+		}
+
+		kubeletConfigurationMap["cpu_cfs_quota_period"] = kubelet_configuration1Raw["cpuCFSQuotaPeriod"]
 		kubeletConfigurationMap["cpu_manager_policy"] = kubelet_configuration1Raw["cpuManagerPolicy"]
 		if v, ok := kubelet_configuration1Raw["eventBurst"].(json.Number); ok {
 			kubeletConfigurationMap["event_burst"] = v.String()
@@ -1587,6 +1764,14 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMap["eviction_soft"] = kubelet_configuration1Raw["evictionSoft"]
 		kubeletConfigurationMap["eviction_soft_grace_period"] = kubelet_configuration1Raw["evictionSoftGracePeriod"]
 		kubeletConfigurationMap["feature_gates"] = kubelet_configuration1Raw["featureGates"]
+		if v, ok := kubelet_configuration1Raw["imageGCHighThresholdPercent"].(json.Number); ok {
+			kubeletConfigurationMap["image_gc_high_threshold_percent"] = v.String()
+		}
+
+		if v, ok := kubelet_configuration1Raw["imageGCLowThresholdPercent"].(json.Number); ok {
+			kubeletConfigurationMap["image_gc_low_threshold_percent"] = v.String()
+		}
+
 		if v, ok := kubelet_configuration1Raw["kubeAPIBurst"].(json.Number); ok {
 			kubeletConfigurationMap["kube_api_burst"] = v.String()
 		}
@@ -1598,6 +1783,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMap["kube_reserved"] = kubelet_configuration1Raw["kubeReserved"]
 		if v, ok := kubelet_configuration1Raw["maxPods"].(json.Number); ok {
 			kubeletConfigurationMap["max_pods"] = v.String()
+		}
+
+		kubeletConfigurationMap["memory_manager_policy"] = kubelet_configuration1Raw["memoryManagerPolicy"]
+		if v, ok := kubelet_configuration1Raw["podPidsLimit"].(json.Number); ok {
+			kubeletConfigurationMap["pod_pids_limit"] = v.String()
 		}
 
 		if v, ok := kubelet_configuration1Raw["readOnlyPort"].(json.Number); ok {
@@ -1617,9 +1807,41 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		}
 
 		kubeletConfigurationMap["system_reserved"] = kubelet_configuration1Raw["systemReserved"]
+		kubeletConfigurationMap["topology_manager_policy"] = kubelet_configuration1Raw["topologyManagerPolicy"]
 
 		allowedUnsafeSysctls1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.allowedUnsafeSysctls", objectRaw)
 		kubeletConfigurationMap["allowed_unsafe_sysctls"] = allowedUnsafeSysctls1Raw
+		clusterDNS1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.clusterDNS", objectRaw)
+		kubeletConfigurationMap["cluster_dns"] = clusterDNS1Raw
+		reservedMemory1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.reservedMemory", objectRaw)
+		reservedMemoryMaps := make([]map[string]interface{}, 0)
+		if reservedMemory1Raw != nil {
+			for _, reservedMemoryChild1Raw := range reservedMemory1Raw.([]interface{}) {
+				reservedMemoryMap := make(map[string]interface{})
+				reservedMemoryChild1Raw := reservedMemoryChild1Raw.(map[string]interface{})
+				reservedMemoryMap["limits"] = reservedMemoryChild1Raw["limits"]
+				reservedMemoryMap["numa_node"] = reservedMemoryChild1Raw["numaNode"]
+
+				reservedMemoryMaps = append(reservedMemoryMaps, reservedMemoryMap)
+			}
+		}
+		kubeletConfigurationMap["reserved_memory"] = reservedMemoryMaps
+		tracingMaps := make([]map[string]interface{}, 0)
+		tracingMap := make(map[string]interface{})
+		tracing1RawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration.tracing", objectRaw)
+		tracing1Raw := make(map[string]interface{})
+		if tracing1RawObj != nil {
+			tracing1Raw = tracing1RawObj.(map[string]interface{})
+		}
+		if len(tracing1Raw) > 0 {
+			tracingMap["endpoint"] = tracing1Raw["endpoint"]
+			if v, ok := tracing1Raw["samplingRatePerMillion"].(json.Number); ok {
+				tracingMap["sampling_rate_per_million"] = v.String()
+			}
+
+			tracingMaps = append(tracingMaps, tracingMap)
+		}
+		kubeletConfigurationMap["tracing"] = tracingMaps
 		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
 	}
 	if kubelet_configuration1RawObj != nil {
@@ -1856,6 +2078,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["nodepool_info"] = objectDataLocalMap
+
 	objectDataLocalMap1 := make(map[string]interface{})
 
 	if d.HasChange("period") {
@@ -2150,6 +2373,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["scaling_group"] = objectDataLocalMap1
+
 	objectDataLocalMap2 := make(map[string]interface{})
 
 	if d.HasChange("cpu_policy") {
@@ -2247,11 +2471,12 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["kubernetes_config"] = objectDataLocalMap2
+
 	if d.HasChange("scaling_config") {
 		update = true
 		objectDataLocalMap3 := make(map[string]interface{})
 
-		if v := d.Get("scaling_config"); !IsNil(v) {
+		if v := d.Get("scaling_config"); v != nil {
 			type1, _ := jsonpath.Get("$[0].type", v)
 			if type1 != nil && type1 != "" {
 				objectDataLocalMap3["type"] = type1
@@ -2289,7 +2514,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		objectDataLocalMap4 := make(map[string]interface{})
 
-		if v := d.Get("management"); !IsNil(v) {
+		if v := d.Get("management"); v != nil {
 			enable3, _ := jsonpath.Get("$[0].enable", v)
 			if enable3 != nil && enable3 != "" {
 				objectDataLocalMap4["enable"] = enable3
@@ -2351,7 +2576,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if v, ok := d.GetOkExists("update_nodes"); ok {
+	if v, ok := d.GetOk("update_nodes"); ok {
 		request["update_nodes"] = v
 	}
 	if _, exist := d.GetOk("desired_size"); !exist && d.HasChange("node_count") {
@@ -2418,7 +2643,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
 
-		if v := d.Get("kubelet_configuration"); !IsNil(v) {
+		if v := d.Get("kubelet_configuration"); v != nil {
 			registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
 			if registryBurst1Raw != nil && registryBurst1Raw != "" {
 				registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
@@ -2505,6 +2730,82 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 				kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
 				objectDataLocalMap["kubeAPIBurst"] = kubeApiBurst
 			}
+			cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
+			if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
+				cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
+				objectDataLocalMap["cpuCFSQuota"] = cpuCfsQuota
+			}
+			if v, ok := d.GetOk("kubelet_configuration"); ok {
+				localData, err := jsonpath.Get("$[0].reserved_memory", v)
+				if err != nil {
+					localData = make([]interface{}, 0)
+				}
+				localMaps := make([]interface{}, 0)
+				for _, dataLoop := range localData.([]interface{}) {
+					dataLoopTmp := make(map[string]interface{})
+					if dataLoop != nil {
+						dataLoopTmp = dataLoop.(map[string]interface{})
+					}
+					dataLoopMap := make(map[string]interface{})
+					dataLoopMap["numaNode"] = dataLoopTmp["numa_node"]
+					dataLoopMap["limits"] = dataLoopTmp["limits"]
+					localMaps = append(localMaps, dataLoopMap)
+				}
+				objectDataLocalMap["reservedMemory"] = localMaps
+			}
+
+			cpuCfsQuotaPeriod, _ := jsonpath.Get("$[0].cpu_cfs_quota_period", v)
+			if cpuCfsQuotaPeriod != nil && cpuCfsQuotaPeriod != "" {
+				objectDataLocalMap["cpuCFSQuotaPeriod"] = cpuCfsQuotaPeriod
+			}
+			imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
+			if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
+				imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
+				objectDataLocalMap["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
+			}
+			imageGcLowThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_low_threshold_percent", v)
+			if imageGcLowThresholdPercentRaw != nil && imageGcLowThresholdPercentRaw != "" {
+				imageGcLowThresholdPercent, _ := strconv.ParseInt(imageGcLowThresholdPercentRaw.(string), 10, 64)
+				objectDataLocalMap["imageGCLowThresholdPercent"] = imageGcLowThresholdPercent
+			}
+			clusterDns, _ := jsonpath.Get("$[0].cluster_dns", d.Get("kubelet_configuration"))
+			if clusterDns != nil && clusterDns != "" {
+				objectDataLocalMap["clusterDNS"] = clusterDns
+			}
+			memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
+			if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
+				objectDataLocalMap["memoryManagerPolicy"] = memoryManagerPolicy1
+			}
+			tracing := make(map[string]interface{})
+			endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
+			if endpoint1 != nil && endpoint1 != "" {
+				tracing["endpoint"] = endpoint1
+			}
+			samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
+			if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
+				samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
+				tracing["samplingRatePerMillion"] = samplingRatePerMillion1
+			}
+
+			objectDataLocalMap["tracing"] = tracing
+			containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
+			if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
+				containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
+				objectDataLocalMap["containerLogMaxWorkers"] = containerLogMaxWorkers1
+			}
+			containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
+			if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
+				objectDataLocalMap["containerLogMonitorInterval"] = containerLogMonitorInterval1
+			}
+			topologyManagerPolicy1, _ := jsonpath.Get("$[0].topology_manager_policy", v)
+			if topologyManagerPolicy1 != nil && topologyManagerPolicy1 != "" {
+				objectDataLocalMap["topologyManagerPolicy"] = topologyManagerPolicy1
+			}
+			podPidsLimit1Raw, _ := jsonpath.Get("$[0].pod_pids_limit", v)
+			if podPidsLimit1Raw != nil && podPidsLimit1Raw != "" {
+				podPidsLimit1, _ := strconv.ParseInt(podPidsLimit1Raw.(string), 10, 64)
+				objectDataLocalMap["podPidsLimit"] = podPidsLimit1
+			}
 
 			request["kubelet_config"] = objectDataLocalMap
 		}
@@ -2512,7 +2813,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	objectDataLocalMap1 = make(map[string]interface{})
 
-	if v := d.Get("rolling_policy"); !IsNil(v) {
+	if v := d.Get("rolling_policy"); v != nil {
 		maxParallelism, _ := jsonpath.Get("$[0].max_parallelism", v)
 		if maxParallelism != nil && maxParallelism != "" {
 			objectDataLocalMap1["max_parallelism"] = maxParallelism

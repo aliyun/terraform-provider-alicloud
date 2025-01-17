@@ -29,13 +29,14 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	}
 	ClusterId := parts[0]
 	NodepoolId := parts[1]
-	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
 	conn, err := client.NewAckClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -77,6 +78,13 @@ func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, fail
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -86,24 +94,25 @@ func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, fail
 	}
 }
 
-func (s *AckServiceV2) DescribeAsyncNodepoolDescribeTaskInfo(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	task_id, err := jsonpath.Get("$.body.task_id", res)
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := fmt.Sprintf("/tasks/%s", task_id)
 	conn, err := client.NewAckClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+	task_id, err := jsonpath.Get("$.body.task_id", res)
+
+	action := fmt.Sprintf("/tasks/%s", task_id)
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -131,7 +140,7 @@ func (s *AckServiceV2) DescribeAsyncNodepoolDescribeTaskInfo(d *schema.ResourceD
 
 func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAsyncNodepoolDescribeTaskInfo(d, res)
+		object, err := s.DescribeAsyncDescribeTaskInfo(d, res)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -140,6 +149,13 @@ func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.Resour
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
