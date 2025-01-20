@@ -2243,7 +2243,6 @@ func (s *VpcServiceV2) VpcRouteTableAttachmentStateRefreshFunc(id string, field 
 // DescribeVpcIpv4CidrBlock <<< Encapsulated get interface for Vpc Ipv4CidrBlock.
 
 func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -2252,15 +2251,15 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeVpcs"
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["VpcId"] = parts[0]
+	request["VpcId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	action := "DescribeVpcs"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -2275,14 +2274,10 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Throttling.User", "OperationFailure.OperationFailed"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
-		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -2312,7 +2307,7 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 		if found {
 			return item, nil
 		}
-		if item["VpcId"] != parts[0] {
+		if fmt.Sprint(item["VpcId"]) != parts[0] {
 			continue
 		}
 	}
@@ -2329,7 +2324,16 @@ func (s *VpcServiceV2) VpcIpv4CidrBlockStateRefreshFunc(id string, field string,
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
