@@ -477,3 +477,168 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaScheduleStateRefreshFunc(id string,
 }
 
 // DescribeMaxComputeQuotaSchedule >>> Encapsulated.
+// DescribeMaxComputeRoleUserAttachment <<< Encapsulated get interface for MaxCompute RoleUserAttachment.
+
+func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, "&")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	}
+	projectName := parts[0]
+	roleName := parts[1]
+	conn, err := client.NewOdpsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/users", projectName, roleName)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	v, err := jsonpath.Get("$.data.users[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["name"]) != parts[2] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+}
+
+func (s *MaxComputeServiceV2) MaxComputeRoleUserAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMaxComputeRoleUserAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeMaxComputeRoleUserAttachment >>> Encapsulated.
+// DescribeMaxComputeTunnelQuotaTimer <<< Encapsulated get interface for MaxCompute TunnelQuotaTimer.
+
+func (s *MaxComputeServiceV2) DescribeMaxComputeTunnelQuotaTimer(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	nickname := id
+	conn, err := client.NewOdpsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	request["nickname"] = id
+
+	action := fmt.Sprintf("/api/v1/tunnel/%s/timers", nickname)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	return response, nil
+}
+
+func (s *MaxComputeServiceV2) MaxComputeTunnelQuotaTimerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMaxComputeTunnelQuotaTimer(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeMaxComputeTunnelQuotaTimer >>> Encapsulated.
