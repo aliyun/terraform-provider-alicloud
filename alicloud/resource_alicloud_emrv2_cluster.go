@@ -211,6 +211,17 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							ForceNew:     true,
 							ValidateFunc: validation.NoZeroValues,
 						},
+						"system_disk_encrypted": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+						"system_disk_kms_key_id": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.NoZeroValues,
+						},
 					},
 				},
 				ForceNew: true,
@@ -993,6 +1004,12 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 				"DataDiskEncrypted": nodeAttributesSource["data_disk_encrypted"],
 				"DataDiskKMSKeyId":  nodeAttributesSource["data_disk_kms_key_id"],
 			}
+			if value, exists := nodeAttributesSource["system_disk_encrypted"]; exists {
+				nodeAttributesSourceMap["SystemDiskEncrypted"] = value.(bool)
+			}
+			if value, exists := nodeAttributesSource["system_disk_kms_key_id"]; exists && value.(string) != "" {
+				nodeAttributesSourceMap["SystemDiskKMSKeyId"] = value.(string)
+			}
 			createClusterRequest["NodeAttributes"] = convertMapToJsonStringIgnoreError(nodeAttributesSourceMap)
 		}
 	}
@@ -1341,6 +1358,15 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 		if v, exists := nodeAttributesMap["DataDiskKMSKeyId"]; exists && v.(string) != "" {
 			nodeAttribute["data_disk_kms_key_id"] = v
 		}
+
+		oldNodeAttributesMap := d.Get("node_attributes").(*schema.Set).List()[0].(map[string]interface{})
+		if _, exists := oldNodeAttributesMap["system_disk_encrypted"]; exists {
+			nodeAttribute["system_disk_encrypted"] = nodeAttributesMap["SystemDiskEncrypted"]
+		}
+		if value, exists := oldNodeAttributesMap["system_disk_kms_key_id"]; exists && value != "" {
+			nodeAttribute["system_disk_kms_key_id"] = nodeAttributesMap["SystemDiskKMSKeyId"]
+		}
+
 		nodeAttributes = append(nodeAttributes, nodeAttribute)
 		d.Set("node_attributes", nodeAttributes)
 	}
@@ -2144,23 +2170,57 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		for nodeGroupName, newNodeGroup := range newNodeGroupMap {
 			if oldNodeGroup, ok := oldNodeGroupMap[nodeGroupName]; ok {
 				if !reflect.DeepEqual(originNodeGroupMap[nodeGroupName]["auto_scaling_policy"], newNodeGroup["auto_scaling_policy"]) {
+					removeScalingPolicy := false
 					if len(newNodeGroup["auto_scaling_policy"].([]interface{})) > 0 {
 						adaptedScalingPolicy := adaptAutoScalingPolicyRequest(newNodeGroup["auto_scaling_policy"].([]interface{})[0].(map[string]interface{}))
+						rulesExists := false
+						constraintsExists := false
 						if aspValue, aspExists := adaptedScalingPolicy["scalingRules"]; aspExists {
+							rulesExists = aspExists
 							adaptedScalingPolicy["ScalingRules"] = aspValue
 							delete(adaptedScalingPolicy, "scalingRules")
 						}
 						if aspValue, aspExists := adaptedScalingPolicy["constraints"]; aspExists {
+							constraintsExists = aspExists
 							adaptedScalingPolicy["Constraints"] = aspValue
 							delete(adaptedScalingPolicy, "constraints")
 						}
-						adaptedScalingPolicy["RegionId"] = client.RegionId
-						adaptedScalingPolicy["ClusterId"] = d.Id()
-						adaptedScalingPolicy["NodeGroupId"] = oldNodeGroup["NodeGroupId"]
+						if rulesExists || constraintsExists {
+							adaptedScalingPolicy["RegionId"] = client.RegionId
+							adaptedScalingPolicy["ClusterId"] = d.Id()
+							adaptedScalingPolicy["NodeGroupId"] = oldNodeGroup["NodeGroupId"]
 
-						action = "PutAutoScalingPolicy"
+							action = "PutAutoScalingPolicy"
+							err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+								response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, adaptedScalingPolicy, &runtime)
+								if err != nil {
+									if NeedRetry(err) {
+										wait()
+										return resource.RetryableError(err)
+									}
+									return resource.NonRetryableError(err)
+								}
+								return nil
+							})
+							addDebug(action, response, adaptedScalingPolicy)
+							if err != nil {
+								return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+							}
+						} else {
+							removeScalingPolicy = true
+						}
+					} else {
+						removeScalingPolicy = true
+					}
+					if removeScalingPolicy {
+						removeScalingPolicyRequest := map[string]interface{}{
+							"RegionId":    client.RegionId,
+							"ClusterId":   d.Id(),
+							"NodeGroupId": oldNodeGroup["NodeGroupId"],
+						}
+						action = "RemoveAutoScalingPolicy"
 						err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-							response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, adaptedScalingPolicy, &runtime)
+							response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, removeScalingPolicyRequest, &runtime)
 							if err != nil {
 								if NeedRetry(err) {
 									wait()
@@ -2170,7 +2230,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 							}
 							return nil
 						})
-						addDebug(action, response, adaptedScalingPolicy)
+						addDebug(action, response, removeScalingPolicyRequest)
 						if err != nil {
 							return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 						}
