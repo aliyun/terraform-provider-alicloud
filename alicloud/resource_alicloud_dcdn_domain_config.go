@@ -171,6 +171,13 @@ func resourceAliCloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 	d.Set("status", object["Status"])
 	d.Set("parent_id", object["ParentId"])
 
+	ignoreFunctionArg := []string{"dsl", "disable_l2_log", "dynamic_batch_route", "dynamic_enable_cpool_chash",
+		"dynamic_mux_ecn_enable", "dynamic_mux_keepalive_enable", "dynamic_mux_share_enable", "dynamic_pk",
+		"dynamic_retry_status", "dynamic_route_cdn_v2", "dynamic_route_cpool", "dynamic_route_magic",
+		"dynamic_route_round_robin", "dynamic_route_session", "dynamic_route_tunnel", "dynamie_route_alllink_log",
+		"keepalive_sni", "l7tol4", "partition_back_to_origin", "dynamic_route_adapt_cache",
+		"dynamic_route_http_methods", "dynamic_mux_tls_enable", "dynamic_route_cdn_v2"}
+
 	if functionArgs, ok := object["FunctionArgs"]; ok {
 		if functionArgList, ok := functionArgs.(map[string]interface{})["FunctionArg"]; ok {
 			functionArgMaps := make([]map[string]interface{}, 0)
@@ -179,7 +186,7 @@ func resourceAliCloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 				functionArgMap := map[string]interface{}{}
 
 				// This function args is extra, filter them to pass test check.
-				if fmt.Sprint(functionArgItem["ArgName"]) == "dsl" {
+				if InArray(fmt.Sprint(functionArgItem["ArgName"]), ignoreFunctionArg) {
 					continue
 				}
 
