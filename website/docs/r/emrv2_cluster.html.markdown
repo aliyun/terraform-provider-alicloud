@@ -235,6 +235,8 @@ The `node_attributes` block supports the following:
 * `key_pair_name` - (Required, ForceNew) The name of the key pair.
 * `data_disk_encrypted` - (Optional, ForceNew, Available since v1.204.0) Whether to enable data disk encryption.
 * `data_disk_kms_key_id` - (Optional, ForceNew, Available since v1.204.0) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
+* `system_disk_encrypted` - (Optional, ForceNew, Available since v1.242.0) Whether to enable system disk encryption.
+* `system_disk_kms_key_id` - (Optional, ForceNew, Available since v1.242.0) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
 
 ### `node_groups`
 
