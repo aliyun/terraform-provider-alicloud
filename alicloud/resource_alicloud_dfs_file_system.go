@@ -56,18 +56,22 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"HDFS"}, false),
+				ValidateFunc: StringInSlice([]string{"HDFS", "PANGU"}, false),
 			},
 			"provisioned_throughput_in_mi_bps": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 1024),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("throughput_mode"); ok && v.(string) == "Provisioned" {
 						return false
 					}
 					return true
 				},
-				ValidateFunc: IntBetween(0, 1024),
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"space_capacity": {
 				Type:     schema.TypeInt,
@@ -111,7 +115,7 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["InputRegionId"] = client.RegionId
+	request["InputRegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
@@ -131,7 +135,6 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("storage_set_name"); ok {
 		request["StorageSetName"] = v
-		request["PartitionNumber"] = d.Get("partition_number")
 	}
 	if v, ok := d.GetOk("partition_number"); ok {
 		request["PartitionNumber"] = v
@@ -154,9 +157,9 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_file_system", action, AlibabaCloudSdkGoERROR)
@@ -196,6 +199,9 @@ func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{})
 	if objectRaw["ProvisionedThroughputInMiBps"] != nil {
 		d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
 	}
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
+	}
 	if objectRaw["SpaceCapacity"] != nil {
 		d.Set("space_capacity", objectRaw["SpaceCapacity"])
 	}
@@ -218,6 +224,7 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
 	action := "ModifyFileSystem"
 	conn, err := client.NewDfsClient()
 	if err != nil {
@@ -225,8 +232,8 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = d.Id()
-	query["InputRegionId"] = client.RegionId
+	request["FileSystemId"] = d.Id()
+	request["InputRegionId"] = client.RegionId
 	if d.HasChange("file_system_name") {
 		update = true
 	}
@@ -267,9 +274,9 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -290,8 +297,8 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["FileSystemId"] = d.Id()
-	query["InputRegionId"] = client.RegionId
+	request["FileSystemId"] = d.Id()
+	request["InputRegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -306,12 +313,12 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

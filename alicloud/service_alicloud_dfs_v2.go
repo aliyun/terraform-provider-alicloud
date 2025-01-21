@@ -174,15 +174,15 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetFileSystem"
 	conn, err := client.NewDfsClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = id
-	query["InputRegionId"] = client.RegionId
+	request["FileSystemId"] = id
+	request["InputRegionId"] = client.RegionId
+	action := "GetFileSystem"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -197,14 +197,13 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -228,6 +227,13 @@ func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, fa
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
