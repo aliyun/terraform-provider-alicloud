@@ -62,16 +62,57 @@ func TestAccAliCloudCenTransitRouterMulticastDomain_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"options": []map[string]interface{}{
+						{
+							"igmpv2_support": "enable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"options.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
-						"For":     "TransitRouterMulticastDomain",
+						"For":     "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.For":     "TransitRouterMulticastDomain",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -110,9 +151,14 @@ func TestAccAliCloudCenTransitRouterMulticastDomain_basic0_twin(t *testing.T) {
 					"transit_router_id":                           "${alicloud_cen_transit_router.default.transit_router_id}",
 					"transit_router_multicast_domain_name":        name,
 					"transit_router_multicast_domain_description": name,
+					"options": []map[string]interface{}{
+						{
+							"igmpv2_support": "enable",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
-						"For":     "TransitRouterMulticastDomain",
+						"For":     "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -120,9 +166,10 @@ func TestAccAliCloudCenTransitRouterMulticastDomain_basic0_twin(t *testing.T) {
 						"transit_router_id":                           CHECKSET,
 						"transit_router_multicast_domain_name":        name,
 						"transit_router_multicast_domain_description": name,
+						"options.#":    "1",
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.For":     "TransitRouterMulticastDomain",
+						"tags.For":     "Test",
 					}),
 				),
 			},
@@ -136,7 +183,9 @@ func TestAccAliCloudCenTransitRouterMulticastDomain_basic0_twin(t *testing.T) {
 }
 
 var resourceAliCloudCenTransitRouterMulticastDomainMap = map[string]string{
-	"status": CHECKSET,
+	"options.#": CHECKSET,
+	"region_id": CHECKSET,
+	"status":    CHECKSET,
 }
 
 func resourceAliCloudCenTransitRouterMulticastDomainBasicDependence(name string) string {
