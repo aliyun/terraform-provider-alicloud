@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -226,3 +227,84 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeMessageServiceEndpoint <<< Encapsulated get interface for MessageService Endpoint.
+
+func (s *MessageServiceServiceV2) DescribeMessageServiceEndpoint(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	conn, err := client.NewMnsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["EndpointType"] = id
+	request["RegionId"] = client.RegionId
+	action := "GetEndpointAttribute"
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	currentStatus := v.(map[string]interface{})["EndpointEnabled"]
+	if fmt.Sprint(currentStatus) == "false" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Endpoint", id)), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *MessageServiceServiceV2) MessageServiceEndpointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMessageServiceEndpoint(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeMessageServiceEndpoint >>> Encapsulated.
