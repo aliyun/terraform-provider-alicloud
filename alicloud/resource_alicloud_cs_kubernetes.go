@@ -383,8 +383,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
-				Default:      "slb.s1.small",
-				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The load balancer has been changed to PayByCLCU so that the spec is no need anymore.",
+				Computed:     true,
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU",
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -1098,6 +1098,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		log.Printf(DefaultErrorMsg, d.Id(), "DescribeClusterResources", err.Error())
 	}
 	d.Set("slb_id", slbId)
+
+	// compat for default value
+	if spec := d.Get("load_balancer_spec").(string); spec != "" {
+		d.Set("load_balancer_spec", spec)
+	}
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
