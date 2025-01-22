@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/blues/jsonata-go"
 	"strings"
 	"time"
 
@@ -256,16 +257,16 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "GetMountPoint"
 	conn, err := client.NewDfsClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = parts[0]
-	query["MountPointId"] = parts[1]
-	query["InputRegionId"] = client.RegionId
+	request["FileSystemId"] = parts[0]
+	request["MountPointId"] = parts[1]
+	request["InputRegionId"] = client.RegionId
+	action := "GetMountPoint"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -280,15 +281,13 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound", "InvalidParameter.FileSystemNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("MountPoint", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -312,6 +311,18 @@ func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, fa
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+		if field == "$.MountPointAlias" {
+			e := jsonata.MustCompile("$.ResourceProperties.MountPointAlias.split('--')[0]")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

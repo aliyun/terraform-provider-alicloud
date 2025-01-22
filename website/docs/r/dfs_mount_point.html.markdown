@@ -3,14 +3,14 @@ subcategory: "Apsara File Storage for HDFS (DFS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dfs_mount_point"
 description: |-
-  Provides a Alicloud DFS Mount Point resource.
+  Provides a Alicloud Apsara File Storage for HDFS (DFS) Mount Point resource.
 ---
 
 # alicloud_dfs_mount_point
 
-Provides a DFS Mount Point resource. 
+Provides a Apsara File Storage for HDFS (DFS) Mount Point resource. 
 
-For information about DFS Mount Point and how to use it, see [What is Mount Point](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
+For information about Apsara File Storage for HDFS (DFS) Mount Point and how to use it, see [What is Mount Point](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
 -> **NOTE:** Available since v1.140.0.
 
@@ -33,8 +33,6 @@ variable "name" {
   default = "tf-example"
 }
 
-data "alicloud_dfs_zones" "default" {}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
@@ -44,13 +42,13 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_dfs_zones.default.zones.0.zone_id
+  zone_id      = "cn-hangzhou-e"
 }
 
 resource "alicloud_dfs_file_system" "default" {
-  storage_type                     = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
-  zone_id                          = data.alicloud_dfs_zones.default.zones.0.zone_id
-  protocol_type                    = "HDFS"
+  storage_type                     = "STANDARD"
+  zone_id                          = "cn-hangzhou-e"
+  protocol_type                    = "PANGU"
   description                      = var.name
   file_system_name                 = var.name
   throughput_mode                  = "Provisioned"
@@ -92,6 +90,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_point_id>`.
 * `create_time` - The creation time of the Mount point resource.
 * `mount_point_id` - The unique identifier of the Mount point, which is used to retrieve the specified mount point resources.
+* `region_id` - (Available since v1.242.0) The region ID of the Mount Point.
 
 ## Timeouts
 
@@ -102,7 +101,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-DFS Mount Point can be imported using the id, e.g.
+Apsara File Storage for HDFS (DFS) Mount Point can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_dfs_mount_point.example <file_system_id>:<mount_point_id>
