@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_kms_instances":                  dataSourceAliCloudKmsInstances(),
 			"alicloud_cloud_control_resource_types":   dataSourceAliCloudCloudControlResourceTypes(),
 			"alicloud_cloud_control_products":         dataSourceAliCloudCloudControlProducts(),
 			"alicloud_cloud_control_prices":           dataSourceAliCloudCloudControlPrices(),

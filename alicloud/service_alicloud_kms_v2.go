@@ -24,7 +24,6 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetKmsInstance"
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -32,6 +31,8 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KmsInstanceId"] = id
+
+	action := "GetKmsInstance"
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -59,7 +60,7 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	}
 
 	currentStatus := v.(map[string]interface{})["InstanceId"]
-	if currentStatus == "" {
+	if fmt.Sprint(currentStatus) == "" {
 		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
 	}
 
@@ -78,6 +79,13 @@ func (s *KmsServiceV2) KmsInstanceStateRefreshFunc(id string, field string, fail
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
