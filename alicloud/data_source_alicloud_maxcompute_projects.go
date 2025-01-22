@@ -315,7 +315,7 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		mapping["project_name"] = objectRaw["name"]
 
 		objectDetail, _ := maxComputeServiceV2.DescribeMaxComputeProject(objectRaw["name"].(string))
-		objectRaw, _ := jsonpath.Get("$.data", objectDetail)
+		objectRaw, _ := jsonpath.Get("$", objectDetail)
 
 		ipWhiteListMaps := make([]map[string]interface{}, 0)
 		ipWhiteListMap := make(map[string]interface{})

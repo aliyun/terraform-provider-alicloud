@@ -40,7 +40,6 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 			"default_quota": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ip_white_list": {
 				Type:     schema.TypeList,
@@ -153,6 +152,10 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 					},
 				},
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"security_properties": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -237,31 +240,33 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["name"] = d.Get("project_name")
+	if v, ok := d.GetOk("project_name"); ok {
+		request["name"] = v
+	}
 
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("properties"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].sql_metering_max", d.Get("properties"))
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["sqlMeteringMax"] = nodeNative
+		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
+		if sqlMeteringMax1 != nil && sqlMeteringMax1 != "" {
+			objectDataLocalMap["sqlMeteringMax"] = sqlMeteringMax1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].type_system", d.Get("properties"))
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["typeSystem"] = nodeNative1
+		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
+		if typeSystem1 != nil && typeSystem1 != "" {
+			objectDataLocalMap["typeSystem"] = typeSystem1
 		}
 		encryption := make(map[string]interface{})
-		nodeNative2, _ := jsonpath.Get("$[0].encryption[0].enable", d.Get("properties"))
-		if nodeNative2 != nil && nodeNative2 != "" {
-			encryption["enable"] = nodeNative2
+		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", v)
+		if enable1 != nil && enable1 != "" {
+			encryption["enable"] = enable1
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].encryption[0].algorithm", d.Get("properties"))
-		if nodeNative3 != nil && nodeNative3 != "" {
-			encryption["algorithm"] = nodeNative3
+		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", v)
+		if algorithm1 != nil && algorithm1 != "" {
+			encryption["algorithm"] = algorithm1
 		}
-		nodeNative4, _ := jsonpath.Get("$[0].encryption[0].key", d.Get("properties"))
-		if nodeNative4 != nil && nodeNative4 != "" {
-			encryption["key"] = nodeNative4
+		key1, _ := jsonpath.Get("$[0].encryption[0].key", v)
+		if key1 != nil && key1 != "" {
+			encryption["key"] = key1
 		}
 
 		objectDataLocalMap["encryption"] = encryption
@@ -274,9 +279,6 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("comment"); ok {
 		request["comment"] = v
-	}
-	if v, ok := d.GetOk("product_type"); ok {
-		request["productType"] = v
 	}
 	body = request
 	runtime := util.RuntimeOptions{}
@@ -291,9 +293,9 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_maxcompute_project", action, AlibabaCloudSdkGoERROR)
@@ -318,39 +320,36 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	data1RawObj, _ := jsonpath.Get("$.data", objectRaw)
-	data1Raw := make(map[string]interface{})
-	if data1RawObj != nil {
-		data1Raw = data1RawObj.(map[string]interface{})
+	if objectRaw["comment"] != nil {
+		d.Set("comment", objectRaw["comment"])
 	}
-	if data1Raw["comment"] != nil {
-		d.Set("comment", data1Raw["comment"])
+	if objectRaw["createdTime"] != nil {
+		d.Set("create_time", objectRaw["createdTime"])
 	}
-	if data1Raw["createdTime"] != nil {
-		d.Set("create_time", data1Raw["createdTime"])
+	if objectRaw["defaultQuota"] != nil {
+		d.Set("default_quota", objectRaw["defaultQuota"])
 	}
-	if data1Raw["defaultQuota"] != nil {
-		d.Set("default_quota", data1Raw["defaultQuota"])
+	if objectRaw["owner"] != nil {
+		d.Set("owner", objectRaw["owner"])
 	}
-	if data1Raw["owner"] != nil {
-		d.Set("owner", data1Raw["owner"])
+	if objectRaw["regionId"] != nil {
+		d.Set("region_id", objectRaw["regionId"])
 	}
-	if data1Raw["status"] != nil {
-		d.Set("status", data1Raw["status"])
+	if objectRaw["status"] != nil {
+		d.Set("status", objectRaw["status"])
 	}
-	if data1Raw["type"] != nil {
-		d.Set("type", data1Raw["type"])
+	if objectRaw["type"] != nil {
+		d.Set("type", objectRaw["type"])
 	}
-	if data1Raw["name"] != nil {
-		d.Set("project_name", data1Raw["name"])
+	if objectRaw["name"] != nil {
+		d.Set("project_name", objectRaw["name"])
 	}
 
 	ipWhiteListMaps := make([]map[string]interface{}, 0)
 	ipWhiteListMap := make(map[string]interface{})
-	ipWhiteList1RawObj, _ := jsonpath.Get("$.data.ipWhiteList", objectRaw)
 	ipWhiteList1Raw := make(map[string]interface{})
-	if ipWhiteList1RawObj != nil {
-		ipWhiteList1Raw = ipWhiteList1RawObj.(map[string]interface{})
+	if objectRaw["ipWhiteList"] != nil {
+		ipWhiteList1Raw = objectRaw["ipWhiteList"].(map[string]interface{})
 	}
 	if len(ipWhiteList1Raw) > 0 {
 		ipWhiteListMap["ip_list"] = ipWhiteList1Raw["ipList"]
@@ -358,15 +357,16 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 
 		ipWhiteListMaps = append(ipWhiteListMaps, ipWhiteListMap)
 	}
-	if ipWhiteList1RawObj != nil {
-		d.Set("ip_white_list", ipWhiteListMaps)
+	if objectRaw["ipWhiteList"] != nil {
+		if err := d.Set("ip_white_list", ipWhiteListMaps); err != nil {
+			return err
+		}
 	}
 	propertiesMaps := make([]map[string]interface{}, 0)
 	propertiesMap := make(map[string]interface{})
-	properties1RawObj, _ := jsonpath.Get("$.data.properties", objectRaw)
 	properties1Raw := make(map[string]interface{})
-	if properties1RawObj != nil {
-		properties1Raw = properties1RawObj.(map[string]interface{})
+	if objectRaw["properties"] != nil {
+		properties1Raw = objectRaw["properties"].(map[string]interface{})
 	}
 	if len(properties1Raw) > 0 {
 		propertiesMap["allow_full_scan"] = properties1Raw["allowFullScan"]
@@ -378,10 +378,9 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 
 		encryptionMaps := make([]map[string]interface{}, 0)
 		encryptionMap := make(map[string]interface{})
-		encryption1RawObj, _ := jsonpath.Get("$.data.properties.encryption", objectRaw)
 		encryption1Raw := make(map[string]interface{})
-		if encryption1RawObj != nil {
-			encryption1Raw = encryption1RawObj.(map[string]interface{})
+		if properties1Raw["encryption"] != nil {
+			encryption1Raw = properties1Raw["encryption"].(map[string]interface{})
 		}
 		if len(encryption1Raw) > 0 {
 			encryptionMap["algorithm"] = encryption1Raw["algorithm"]
@@ -393,10 +392,9 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		propertiesMap["encryption"] = encryptionMaps
 		tableLifecycleMaps := make([]map[string]interface{}, 0)
 		tableLifecycleMap := make(map[string]interface{})
-		tableLifecycle1RawObj, _ := jsonpath.Get("$.data.properties.tableLifecycle", objectRaw)
 		tableLifecycle1Raw := make(map[string]interface{})
-		if tableLifecycle1RawObj != nil {
-			tableLifecycle1Raw = tableLifecycle1RawObj.(map[string]interface{})
+		if properties1Raw["tableLifecycle"] != nil {
+			tableLifecycle1Raw = properties1Raw["tableLifecycle"].(map[string]interface{})
 		}
 		if len(tableLifecycle1Raw) > 0 {
 			tableLifecycleMap["type"] = tableLifecycle1Raw["type"]
@@ -407,15 +405,16 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		propertiesMap["table_lifecycle"] = tableLifecycleMaps
 		propertiesMaps = append(propertiesMaps, propertiesMap)
 	}
-	if properties1RawObj != nil {
-		d.Set("properties", propertiesMaps)
+	if objectRaw["properties"] != nil {
+		if err := d.Set("properties", propertiesMaps); err != nil {
+			return err
+		}
 	}
 	securityPropertiesMaps := make([]map[string]interface{}, 0)
 	securityPropertiesMap := make(map[string]interface{})
-	securityProperties1RawObj, _ := jsonpath.Get("$.data.securityProperties", objectRaw)
 	securityProperties1Raw := make(map[string]interface{})
-	if securityProperties1RawObj != nil {
-		securityProperties1Raw = securityProperties1RawObj.(map[string]interface{})
+	if objectRaw["securityProperties"] != nil {
+		securityProperties1Raw = objectRaw["securityProperties"].(map[string]interface{})
 	}
 	if len(securityProperties1Raw) > 0 {
 		securityPropertiesMap["enable_download_privilege"] = securityProperties1Raw["enableDownloadPrivilege"]
@@ -427,10 +426,9 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 
 		projectProtectionMaps := make([]map[string]interface{}, 0)
 		projectProtectionMap := make(map[string]interface{})
-		projectProtection1RawObj, _ := jsonpath.Get("$.data.securityProperties.projectProtection", objectRaw)
 		projectProtection1Raw := make(map[string]interface{})
-		if projectProtection1RawObj != nil {
-			projectProtection1Raw = projectProtection1RawObj.(map[string]interface{})
+		if securityProperties1Raw["projectProtection"] != nil {
+			projectProtection1Raw = securityProperties1Raw["projectProtection"].(map[string]interface{})
 		}
 		if len(projectProtection1Raw) > 0 {
 			projectProtectionMap["exception_policy"] = projectProtection1Raw["exceptionPolicy"]
@@ -441,12 +439,14 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		securityPropertiesMap["project_protection"] = projectProtectionMaps
 		securityPropertiesMaps = append(securityPropertiesMaps, securityPropertiesMap)
 	}
-	if securityProperties1RawObj != nil {
-		d.Set("security_properties", securityPropertiesMaps)
+	if objectRaw["securityProperties"] != nil {
+		if err := d.Set("security_properties", securityPropertiesMaps); err != nil {
+			return err
+		}
 	}
 
-	objectRaw, err = maxComputeServiceV2.DescribeListTagResources(d.Id())
-	if err != nil {
+	objectRaw, err = maxComputeServiceV2.DescribeProjectListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -466,6 +466,7 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	var body map[string]interface{}
 	update := false
 	d.Partial(true)
+
 	projectName := d.Id()
 	action := fmt.Sprintf("/api/v1/projects/%s/meta", projectName)
 	conn, err := client.NewOdpsClient()
@@ -488,54 +489,54 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("properties"); !IsNil(v) || d.HasChange("properties") {
-		nodeNative, _ := jsonpath.Get("$[0].timezone", v)
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["timezone"] = nodeNative
+	if v := d.Get("properties"); v != nil {
+		timezone1, _ := jsonpath.Get("$[0].timezone", v)
+		if timezone1 != nil && (d.HasChange("properties.0.timezone") || timezone1 != "") {
+			objectDataLocalMap["timezone"] = timezone1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].retention_days", v)
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["retentionDays"] = nodeNative1
+		retentionDays1, _ := jsonpath.Get("$[0].retention_days", v)
+		if retentionDays1 != nil && (d.HasChange("properties.0.retention_days") || retentionDays1 != "") {
+			objectDataLocalMap["retentionDays"] = retentionDays1
 		}
-		nodeNative2, _ := jsonpath.Get("$[0].allow_full_scan", v)
-		if nodeNative2 != nil && nodeNative2 != "" {
-			objectDataLocalMap["allowFullScan"] = nodeNative2
+		allowFullScan1, _ := jsonpath.Get("$[0].allow_full_scan", v)
+		if allowFullScan1 != nil && (d.HasChange("properties.0.allow_full_scan") || allowFullScan1 != "") {
+			objectDataLocalMap["allowFullScan"] = allowFullScan1
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].enable_decimal2", v)
-		if nodeNative3 != nil && nodeNative3 != "" {
-			objectDataLocalMap["enableDecimal2"] = nodeNative3
+		enableDecimal21, _ := jsonpath.Get("$[0].enable_decimal2", v)
+		if enableDecimal21 != nil && (d.HasChange("properties.0.enable_decimal2") || enableDecimal21 != "") {
+			objectDataLocalMap["enableDecimal2"] = enableDecimal21
 		}
 		tableLifecycle := make(map[string]interface{})
-		nodeNative4, _ := jsonpath.Get("$[0].table_lifecycle[0].value", v)
-		if nodeNative4 != nil && nodeNative4 != "" {
-			tableLifecycle["value"] = nodeNative4
+		value1, _ := jsonpath.Get("$[0].table_lifecycle[0].value", v)
+		if value1 != nil && (d.HasChange("properties.0.table_lifecycle.0.value") || value1 != "") {
+			tableLifecycle["value"] = value1
 		}
-		nodeNative5, _ := jsonpath.Get("$[0].table_lifecycle[0].type", v)
-		if nodeNative5 != nil && nodeNative5 != "" {
-			tableLifecycle["type"] = nodeNative5
+		type1, _ := jsonpath.Get("$[0].table_lifecycle[0].type", v)
+		if type1 != nil && (d.HasChange("properties.0.table_lifecycle.0.type") || type1 != "") {
+			tableLifecycle["type"] = type1
 		}
 
 		objectDataLocalMap["tableLifecycle"] = tableLifecycle
-		nodeNative6, _ := jsonpath.Get("$[0].sql_metering_max", v)
-		if nodeNative6 != nil && nodeNative6 != "" {
-			objectDataLocalMap["sqlMeteringMax"] = nodeNative6
+		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
+		if sqlMeteringMax1 != nil && (d.HasChange("properties.0.sql_metering_max") || sqlMeteringMax1 != "") {
+			objectDataLocalMap["sqlMeteringMax"] = sqlMeteringMax1
 		}
-		nodeNative7, _ := jsonpath.Get("$[0].type_system", v)
-		if nodeNative7 != nil && nodeNative7 != "" {
-			objectDataLocalMap["typeSystem"] = nodeNative7
+		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
+		if typeSystem1 != nil && (d.HasChange("properties.0.type_system") || typeSystem1 != "") {
+			objectDataLocalMap["typeSystem"] = typeSystem1
 		}
 		encryption := make(map[string]interface{})
-		nodeNative8, _ := jsonpath.Get("$[0].encryption[0].enable", v)
-		if nodeNative8 != nil && nodeNative8 != "" {
-			encryption["enable"] = nodeNative8
+		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", v)
+		if enable1 != nil && (d.HasChange("properties.0.encryption.0.enable") || enable1 != "") {
+			encryption["enable"] = enable1
 		}
-		nodeNative9, _ := jsonpath.Get("$[0].encryption[0].algorithm", v)
-		if nodeNative9 != nil {
-			encryption["algorithm"] = nodeNative9
+		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", v)
+		if algorithm1 != nil && (d.HasChange("properties.0.encryption.0.algorithm") || algorithm1 != "") {
+			encryption["algorithm"] = algorithm1
 		}
-		nodeNative10, _ := jsonpath.Get("$[0].encryption[0].key", v)
-		if nodeNative10 != nil {
-			encryption["key"] = nodeNative10
+		key1, _ := jsonpath.Get("$[0].encryption[0].key", v)
+		if key1 != nil && (d.HasChange("properties.0.encryption.0.key") || key1 != "") {
+			encryption["key"] = key1
 		}
 
 		if encryption["enable"] == "true" {
@@ -559,9 +560,48 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	projectName = d.Id()
+	action = fmt.Sprintf("/api/v1/projects/%s/quota", projectName)
+	conn, err = client.NewOdpsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["projectName"] = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("default_quota") {
+		update = true
+	}
+	if v, ok := d.GetOk("default_quota"); ok || d.HasChange("default_quota") {
+		request["quota"] = v
+	}
+	body = request
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -583,14 +623,14 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 	objectDataLocalMap = make(map[string]interface{})
 
-	if v := d.Get("ip_white_list"); !IsNil(v) || d.HasChange("ip_white_list") {
-		nodeNative, _ := jsonpath.Get("$[0].ip_list", v)
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["ipList"] = nodeNative
+	if v := d.Get("ip_white_list"); v != nil {
+		ipList1, _ := jsonpath.Get("$[0].ip_list", v)
+		if ipList1 != nil && (d.HasChange("ip_white_list.0.ip_list") || ipList1 != "") {
+			objectDataLocalMap["ipList"] = ipList1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].vpc_ip_list", v)
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["vpcIpList"] = nodeNative1
+		vpcIpList1, _ := jsonpath.Get("$[0].vpc_ip_list", v)
+		if vpcIpList1 != nil && (d.HasChange("ip_white_list.0.vpc_ip_list") || vpcIpList1 != "") {
+			objectDataLocalMap["vpcIpList"] = vpcIpList1
 		}
 
 		request["ipWhiteList"] = objectDataLocalMap
@@ -610,9 +650,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -688,14 +728,14 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 	objectDataLocalMap = make(map[string]interface{})
 
-	if v := d.Get("security_properties"); !IsNil(v) || d.HasChange("security_properties") {
-		nodeNative, _ := jsonpath.Get("$[0].project_protection[0].protected", v)
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["protected"] = nodeNative
+	if v := d.Get("security_properties"); v != nil {
+		protected1, _ := jsonpath.Get("$[0].project_protection[0].protected", v)
+		if protected1 != nil && (d.HasChange("security_properties.0.project_protection.0.protected") || protected1 != "") {
+			objectDataLocalMap["protected"] = protected1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].project_protection[0].exception_policy", v)
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["exceptionPolicy"] = nodeNative1
+		exceptionPolicy1, _ := jsonpath.Get("$[0].project_protection[0].exception_policy", v)
+		if exceptionPolicy1 != nil && (d.HasChange("security_properties.0.project_protection.0.exception_policy") || exceptionPolicy1 != "") {
+			objectDataLocalMap["exceptionPolicy"] = exceptionPolicy1
 		}
 
 		request["projectProtection"] = objectDataLocalMap
@@ -715,9 +755,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -754,9 +794,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -807,16 +847,19 @@ func resourceAliCloudMaxComputeProjectDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	maxComputeServiceV2 := MaxComputeServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, maxComputeServiceV2.MaxComputeProjectStateRefreshFunc(d.Id(), "$.data.status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, maxComputeServiceV2.MaxComputeProjectStateRefreshFunc(d.Id(), "status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

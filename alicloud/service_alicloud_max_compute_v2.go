@@ -27,7 +27,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	var response map[string]interface{}
 	var query map[string]*string
 	projectName := id
-	action := fmt.Sprintf("/api/v1/projects/%s", projectName)
 	conn, err := client.NewOdpsClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -35,6 +34,8 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["projectName"] = id
+
+	action := fmt.Sprintf("/api/v1/projects/%s", projectName)
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -49,25 +50,29 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR"}) {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR", "ODPS-0420095"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
 }
-func (s *MaxComputeServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
+func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	action := fmt.Sprintf("/tags")
 	conn, err := client.NewOdpsClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -75,8 +80,9 @@ func (s *MaxComputeServiceV2) DescribeListTagResources(id string) (object map[st
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["ResourceId"] = StringPointer(id)
-	query["ResourceType"] = StringPointer("project")
 	query["RegionId"] = StringPointer(client.RegionId)
+	query["ResourceType"] = StringPointer("project")
+	action := fmt.Sprintf("/tags")
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -91,15 +97,15 @@ func (s *MaxComputeServiceV2) DescribeListTagResources(id string) (object map[st
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -114,6 +120,13 @@ func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFunc(id string, field
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -173,9 +186,9 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -198,6 +211,7 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 				return WrapError(err)
 			}
 
+			request["RegionId"] = d.Get("region_id")
 			count := 1
 			tagsMaps := make([]map[string]interface{}, 0)
 			for key, value := range added {
@@ -224,9 +238,9 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
