@@ -280,7 +280,7 @@ func resourceAliCloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable", "UnknownError"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable", "UnknownError", "LastTokenProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -448,7 +448,7 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	enableAutoSnapshot, ok := d.GetOkExists("enable_auto_snapshot")
-	if ok && fmt.Sprint(objectRaw["EnableAutoSnapshot"]) != enableAutoSnapshot {
+	if ok && fmt.Sprint(objectRaw["EnableAutoSnapshot"]) != fmt.Sprint(enableAutoSnapshot) {
 		update = true
 		request["EnableAutoSnapshot"] = enableAutoSnapshot
 	}
