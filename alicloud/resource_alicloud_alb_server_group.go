@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -27,6 +26,7 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		CustomizeDiff: resourceAlbServerGroupCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"connection_drain_config": {
 				Type:     schema.TypeList,
@@ -194,10 +194,12 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 						"server_ip": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"remote_ip_enabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"server_group_id": {
 							Type:     schema.TypeString,
@@ -1023,7 +1025,9 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["Description"] = dataLoopTmp["description"]
+				if dataLoopTmp["description"] != "" {
+					dataLoopMap["Description"] = dataLoopTmp["description"]
+				}
 				if dataLoopTmp["port"].(int) > 0 {
 					dataLoopMap["Port"] = dataLoopTmp["port"]
 				}
@@ -1118,6 +1122,22 @@ func resourceAliCloudAlbServerGroupDelete(d *schema.ResourceData, meta interface
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albServiceV2.AlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
+}
+
+func resourceAlbServerGroupCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	groupType := diff.Get("server_group_type").(string)
+	if groupType == "Fc" {
+		// Fc load balancers do not support vpc_id, protocol
+		if diff.Get("vpc_id") != "" {
+			return fmt.Errorf("fc server group type do not support vpc_id")
+		}
+
+		if diff.Get("protocol") != "" {
+			return fmt.Errorf("fc server group type do not support protocol")
+		}
 	}
 
 	return nil
