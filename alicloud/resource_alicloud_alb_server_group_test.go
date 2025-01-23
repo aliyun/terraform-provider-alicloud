@@ -368,6 +368,25 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 							"server_ip":         "${alicloud_instance.default.private_ip}",
 							"port":              "80",
 							"remote_ip_enabled": "false",
+							"weight":            "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"servers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"servers": []map[string]interface{}{
+						{
+							"server_id":         "${alicloud_instance.default.id}",
+							"server_type":       "Ecs",
+							"server_ip":         "${alicloud_instance.default.private_ip}",
+							"port":              "80",
+							"remote_ip_enabled": "false",
 							"weight":            "10",
 							"description":       name,
 						},
