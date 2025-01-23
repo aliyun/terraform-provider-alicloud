@@ -879,6 +879,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 					"system_disk_encrypt_algorithm": "aes-256",
 					"cpu_policy":                    "none",
 					"spot_strategy":                 "NoSpot",
+					"ram_role_name":                 "${alicloud_ram_role.role.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -903,6 +904,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 						"system_disk_encrypt_algorithm": "aes-256",
 						"cpu_policy":                    "none",
 						"spot_strategy":                 "NoSpot",
+						"ram_role_name":                 CHECKSET,
 					}),
 				),
 			},
@@ -996,13 +998,6 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 						{
 							"size":         "100",
 							"category":     "cloud_ssd",
-							"auto_format":  "false",
-							"file_system":  "ext4",
-							"mount_target": "/mnt/path2",
-						},
-						{
-							"size":         "100",
-							"category":     "cloud_ssd",
 							"auto_format":  "true",
 							"file_system":  "xfs",
 							"mount_target": "/mnt/path3",
@@ -1058,13 +1053,6 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 							"auto_format":  "true",
 							"file_system":  "ext4",
 							"mount_target": "/var/lib/kubelet,/var/lib/containerd",
-						},
-						{
-							"size":         "100",
-							"category":     "cloud_ssd",
-							"auto_format":  "false",
-							"file_system":  "xfs",
-							"mount_target": "/mnt/path2",
 						},
 						{
 							"size":         "120",
@@ -1468,18 +1456,21 @@ resource "alicloud_ecs_deployment_set" "default" {
   deployment_set_name = var.name
 }
 
-data "alicloud_ecs_elasticity_assurances" "default" {
+data "alicloud_ecs_capacity_reservations" "default" {
+  instance_type = data.alicloud_instance_types.cloud_essd.instance_types.0.id
+  platform      = "linux"
 }
 
-resource "alicloud_ecs_elasticity_assurance" "default" {
-  count                               = length(data.alicloud_ecs_elasticity_assurances.default.ids) >= 2 ? 0 : 2 - length(data.alicloud_ecs_elasticity_assurances.default.ids)
-  instance_amount                     = "1"
-  zone_ids                            = ["${data.alicloud_zones.default.zones.0.id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["${data.alicloud_instance_types.cloud_essd.instance_types.8.id}"]
+resource "alicloud_ecs_capacity_reservation" "default" {
+  count = length(data.alicloud_ecs_capacity_reservations.default.ids) >= 2 ? 0 : 2
+  description               = "terraform-example"
+  platform                  = "linux"
+  capacity_reservation_name = "terraform-example"
+  end_time_type             = "Unlimited"
+  instance_amount           = 1
+  instance_type             = data.alicloud_instance_types.cloud_essd.instance_types.0.id
+  match_criteria            = "Open"
+  zone_ids = ["${data.alicloud_zones.default.zones.0.id}"]
 }
 
 data "alicloud_cs_kubernetes_version" "default" {
@@ -1492,7 +1483,7 @@ locals {
   vsw1                 = length(data.alicloud_vswitches.vsw1.ids) > 0 ? data.alicloud_vswitches.vsw1.ids[0] : concat(alicloud_vswitch.vsw1.*.id, [""])[0]
   vsw2                 = length(data.alicloud_vswitches.vsw2.ids) > 0 ? data.alicloud_vswitches.vsw2.ids[0] : concat(alicloud_vswitch.vsw2.*.id, [""])[0]
   vsw3                 = length(data.alicloud_vswitches.vsw3.ids) > 0 ? data.alicloud_vswitches.vsw3.ids[0] : concat(alicloud_vswitch.vsw3.*.id, [""])[0]
-  elasticity_assurance = length(data.alicloud_ecs_elasticity_assurances.default.ids) >= 2 ? data.alicloud_ecs_elasticity_assurances.default.ids : alicloud_ecs_elasticity_assurance.default.*.id
+  capacity_reservations = length(data.alicloud_ecs_capacity_reservations.default.ids) >= 2 ? data.alicloud_ecs_capacity_reservations.default.ids : alicloud_ecs_capacity_reservation.default.*.id
 }
 `, name)
 }
@@ -1640,6 +1631,26 @@ locals {
   cluster_id = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 
+resource "alicloud_ram_role" "role" {
+  name        = var.name
+  document    = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "ecs.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
+  description = "this is a role test."
+}
 
 resource "alicloud_ecs_disk" "default" {
   count     = 2
@@ -1912,7 +1923,7 @@ resource "alicloud_instance" "default" {
   security_groups   = [alicloud_security_group.group.id]
   vswitch_id        = local.vswitch_id
   lifecycle {
-    ignore_changes = [user_data, instance_name, image_id, security_groups]
+    ignore_changes = [user_data, instance_name, image_id, security_groups, tags]
   }
 }
 
@@ -2028,7 +2039,6 @@ locals {
 `, name)
 }
 
-// Test Ack Nodepool. >>> Resource test cases, automatically generated.
 // Case 节点池测试_spot_instance 5288
 func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 	var v map[string]interface{}
@@ -2569,7 +2579,7 @@ resource "alicloud_vswitch" "vsw3" {
 }
 
 // Case 节点池测试_kubelet 5291
-func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
+func TestAccAliCloudAckNodepool_basic5291_old(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cs_kubernetes_node_pool.default"
 	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap5291)
@@ -2596,7 +2606,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"vswitch_ids": []string{
 						"${local.vsw1}"},
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}"},
+						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}"},
 					"system_disk_category": "cloud_auto",
 					"system_disk_size":     "120",
 				}),
@@ -2769,7 +2779,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"private_pool_options": []map[string]interface{}{
 						{
 							"private_pool_options_match_criteria": "Target",
-							"private_pool_options_id":             "${local.elasticity_assurance[1]}",
+							"private_pool_options_id":             "${local.capacity_reservations[1]}",
 						},
 					},
 				}),
@@ -2865,7 +2875,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 			//		"private_pool_options": []map[string]interface{}{
 			//			{
 			//				"private_pool_options_match_criteria": "None",
-			//				"private_pool_options_id":             "${local.elasticity_assurance[0]}",
+			//				"private_pool_options_id":             "${local.capacity_reservations[0]}",
 			//			},
 			//		},
 			//	}),
@@ -2978,7 +2988,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"runtime_version":       "${data.alicloud_cs_kubernetes_version.default.metadata.0.runtime.0.version}",
 					"desired_size":          "1",
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}"},
+						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}"},
 					"kubelet_configuration": []map[string]interface{}{
 						{
 							"event_burst":           "50",
@@ -3027,7 +3037,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"private_pool_options": []map[string]interface{}{
 						{
 							"private_pool_options_match_criteria": "Target",
-							"private_pool_options_id":             "${local.elasticity_assurance[1]}",
+							"private_pool_options_id":             "${local.capacity_reservations[1]}",
 						},
 					},
 					"system_disk_provisioned_iops": "100",
@@ -3129,54 +3139,6 @@ var AlicloudAckNodepoolMap5291 = map[string]string{
 	"system_disk_category":     CHECKSET,
 }
 
-func AlicloudAckNodepoolBasicDependence5291(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c9ce5d0afd36e4eb6857522b1d0246bd7"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_ecs_elasticity_assurance" "default0yDzRS" {
-  instance_amount                     = "1"
-  zone_id                             = ["${alicloud_vswitch.vsw1.zone_id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["ecs.u1-c1m2.xlarge"]
-}
-
-resource "alicloud_ecs_elasticity_assurance" "default4NZTlr" {
-  instance_amount                     = "1"
-  zone_id                             = ["${alicloud_vswitch.vsw1.zone_id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["ecs.u1-c1m2.xlarge"]
-}
-
-
-`, name)
-}
-
 // Case 节点池测试-PrePaid 5266
 func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 	var v map[string]interface{}
@@ -3225,20 +3187,18 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_charge_type": "PrePaid",
+					"period":               "1",
+					"auto_renew_period":    "1",
+					"auto_renew":           "true",
+					"period_unit":          "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_charge_type": "PrePaid",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_renew_period": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_renew_period": "1",
+						"period":               "1",
+						"auto_renew_period":    "1",
+						"auto_renew":           "true",
+						"period_unit":          "Month",
 					}),
 				),
 			},
@@ -3325,16 +3285,6 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"period": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"period": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"system_disk_performance_level": "PL0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -3365,16 +3315,6 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"labels.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"period_unit": "Month",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"period_unit": "Month",
 					}),
 				),
 			},
@@ -4956,7 +4896,7 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 					"runtime_version":       "${data.alicloud_cs_kubernetes_version.default.metadata.0.runtime.0.version}",
 					"desired_size":          "1",
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}",
+						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}",
 					},
 					"kubelet_configuration": []map[string]interface{}{
 						{
@@ -5008,11 +4948,10 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 					"private_pool_options": []map[string]interface{}{
 						{
 							"private_pool_options_match_criteria": "Target",
-							"private_pool_options_id":             "${local.elasticity_assurance[0]}",
+							"private_pool_options_id":             "${local.capacity_reservations[0]}",
 						},
 					},
 					"system_disk_provisioned_iops": "200",
-					"system_disk_bursting_enabled": "false",
 					"unschedulable":                "false",
 					"tags": map[string]string{
 						"Created": "TF",
@@ -5036,7 +4975,6 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 						"desired_size":                 "1",
 						"instance_types.#":             "1",
 						"system_disk_provisioned_iops": "200",
-						"system_disk_bursting_enabled": "false",
 						"unschedulable":                "false",
 						"tags.%":                       "2",
 						"tags.Created":                 "TF",
@@ -5482,6 +5420,339 @@ func SkipTestAccAliCloudAckNodepool_basic5628_twin(t *testing.T) {
 						"tags.%":               "2",
 						"tags.Created":         "TF",
 						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+			},
+		},
+	})
+}
+
+// Test Ack Nodepool. >>> Resource test cases, automatically generated.
+// Case 节点池测试_kubelet 5291
+func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap5291)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AckServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAckNodepool")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sacknodepool%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence_Auto)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_pool_name":       name,
+					"cluster_id":           "${local.cluster_id}",
+					"instance_charge_type": "PostPaid",
+					"management": []map[string]interface{}{
+						{
+							"enable":          "true",
+							"auto_repair":     "true",
+							"auto_upgrade":    "true",
+							"max_unavailable": "1",
+							"auto_repair_policy": []map[string]interface{}{
+								{
+									"restart_node": "true",
+								},
+							},
+							"auto_vul_fix": "true",
+							"auto_vul_fix_policy": []map[string]interface{}{
+								{
+									"restart_node": "true",
+								},
+							},
+							"auto_upgrade_policy": []map[string]interface{}{
+								{
+									"auto_upgrade_kubelet": "true",
+								},
+							},
+						},
+					},
+					"system_disk_category": "cloud_auto",
+					"vswitch_ids": []string{
+						"${local.vsw1}"},
+					"install_cloud_monitor": "true",
+					"login_as_non_root":     "true",
+					"system_disk_size":      "120",
+					"multi_az_policy":       "PRIORITY",
+					"cpu_policy":            "none",
+					"runtime_version":       "${data.alicloud_cs_kubernetes_version.default.metadata.0.runtime.0.version}",
+					"desired_size":          "1",
+					"instance_types": []string{
+						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}",
+					},
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"event_burst":           "50",
+							"kube_api_qps":          "20",
+							"serialize_image_pulls": "true",
+							"eviction_hard": map[string]interface{}{
+								"\"memory.available\"":            "1024Mi",
+								"\"nodefs.available\"":            "10%",
+								"\"nodefs.inodesFree\"":           "1000",
+								"\"imagefs.available\"":           "10%",
+								"\"imagefs.inodesFree\"":          "1000",
+								"\"allocatableMemory.available\"": "2048",
+								"\"pid.available\"":               "1000",
+							},
+							"system_reserved": map[string]interface{}{
+								"\"cpu\"":               "1",
+								"\"memory\"":            "1Gi",
+								"\"ephemeral-storage\"": "10Gi",
+							},
+							"cpu_manager_policy": "none",
+							"eviction_soft": map[string]interface{}{
+								"\"memory.available\"": "1.5Gi",
+							},
+							"eviction_soft_grace_period": map[string]interface{}{
+								"\"memory.available\"": "1m30s",
+							},
+							"kube_reserved": map[string]interface{}{
+								"\"cpu\"":    "500m",
+								"\"memory\"": "1Gi",
+							},
+							"read_only_port":          "0",
+							"max_pods":                "200",
+							"container_log_max_size":  "10Mi",
+							"container_log_max_files": "15",
+							"feature_gates": map[string]interface{}{
+								"\"GracefulNodeShutdown\"":    "true",
+								"\"CustomCPUCFSQuotaPeriod\"": "true",
+							},
+							"allowed_unsafe_sysctls": []string{
+								"net.ipv4.route.min_pmtu"},
+							"registry_pull_qps":              "30",
+							"registry_burst":                 "10",
+							"event_record_qps":               "40",
+							"kube_api_burst":                 "20",
+							"container_log_monitor_interval": "30s",
+							"container_log_max_workers":      "5",
+							"tracing": []map[string]interface{}{
+								{
+									"sampling_rate_per_million": "1000",
+									"endpoint":                  "localhost:4318",
+								},
+							},
+							"topology_manager_policy":         "best-effort",
+							"pod_pids_limit":                  "1024",
+							"memory_manager_policy":           "None",
+							"image_gc_low_threshold_percent":  "10",
+							"image_gc_high_threshold_percent": "80",
+							"cpu_cfs_quota_period":            "100ms",
+							"cpu_cfs_quota":                   "true",
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"\"memory\"": "1Gi",
+									},
+								},
+							},
+							"cluster_dns": []string{
+								"8.8.8.8"},
+						},
+					},
+					"private_pool_options": []map[string]interface{}{
+						{
+							"private_pool_options_match_criteria": "Target",
+							"private_pool_options_id":             "${local.capacity_reservations[1]}",
+						},
+					},
+					"system_disk_provisioned_iops": "100",
+					"system_disk_bursting_enabled": "true",
+					"unschedulable":                "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"node_pool_name":               name,
+						"cluster_id":                   CHECKSET,
+						"instance_charge_type":         "PostPaid",
+						"system_disk_category":         "cloud_auto",
+						"vswitch_ids.#":                "1",
+						"install_cloud_monitor":        "true",
+						"login_as_non_root":            "true",
+						"system_disk_size":             "120",
+						"multi_az_policy":              "PRIORITY",
+						"cpu_policy":                   "none",
+						"desired_size":                 "1",
+						"instance_types.#":             "1",
+						"system_disk_provisioned_iops": "100",
+						"system_disk_bursting_enabled": "true",
+						"unschedulable":                "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"read_only_port":          "10000",
+							"max_pods":                "10",
+							"container_log_max_size":  "2Mi",
+							"container_log_max_files": "10",
+							"feature_gates": map[string]interface{}{
+								"\"APIListChunking\"":         "true",
+								"\"CustomCPUCFSQuotaPeriod\"": "true",
+								"\"MemoryManager\"":           "true",
+							},
+							"allowed_unsafe_sysctls": []string{
+								"kernel.msg*", "net.ipv4.route.min_pmtu", "kernel.shm"},
+							"registry_pull_qps": "10",
+							"registry_burst":    "20",
+							"event_record_qps":  "10",
+							"eviction_hard": map[string]interface{}{
+								"\"memory.available\"":            "1024Mi",
+								"\"nodefs.available\"":            "20%",
+								"\"nodefs.inodesFree\"":           "1000",
+								"\"imagefs.available\"":           "20%",
+								"\"imagefs.inodesFree\"":          "1000",
+								"\"allocatableMemory.available\"": "2048",
+								"\"pid.available\"":               "1000",
+							},
+							"eviction_soft": map[string]interface{}{
+								"\"memory.available\"": "2Gi",
+							},
+							"eviction_soft_grace_period": map[string]interface{}{
+								"\"memory.available\"": "2m30s",
+							},
+							"system_reserved": map[string]interface{}{
+								"\"cpu\"":               "1",
+								"\"memory\"":            "1Gi",
+								"\"ephemeral-storage\"": "20Gi",
+							},
+							"kube_reserved": map[string]interface{}{
+								"\"cpu\"":               "0.5",
+								"\"memory\"":            "1Gi",
+								"\"ephemeral-storage\"": "10Gi",
+							},
+							"event_burst":                    "40",
+							"kube_api_qps":                   "22",
+							"serialize_image_pulls":          "false",
+							"cpu_manager_policy":             "static",
+							"kube_api_burst":                 "25",
+							"container_log_monitor_interval": "10s",
+							"container_log_max_workers":      "3",
+							"tracing": []map[string]interface{}{
+								{
+									"endpoint":                  "localhost:4317",
+									"sampling_rate_per_million": "10000",
+								},
+							},
+							"topology_manager_policy": "restricted",
+							"pod_pids_limit":          "800",
+							"cluster_dns": []string{
+								"8.8.8.8", "4.4.4.4"},
+							"image_gc_low_threshold_percent":  "15",
+							"image_gc_high_threshold_percent": "75",
+							"cpu_cfs_quota_period":            "50ms",
+							"cpu_cfs_quota":                   "false",
+							"memory_manager_policy":           "Static",
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"\"memory\"": "3Gi",
+									},
+								},
+							},
+						},
+					},
+					"private_pool_options": []map[string]interface{}{
+						{
+							"private_pool_options_match_criteria": "Target",
+							"private_pool_options_id":             "${local.capacity_reservations[1]}",
+						},
+					},
+					"system_disk_provisioned_iops": "200",
+					"unschedulable":                "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_provisioned_iops": "200",
+						"unschedulable":                "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{
+								"kernel.msg*"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},

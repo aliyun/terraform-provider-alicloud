@@ -3,12 +3,12 @@ subcategory: "Container Service for Kubernetes (ACK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_kubernetes_node_pool"
 description: |-
-  Provides a Alicloud ACK Nodepool resource.
+  Provides a Alicloud Container Service for Kubernetes (ACK) Nodepool resource.
 ---
 
 # alicloud_cs_kubernetes_node_pool
 
-Provides a ACK Nodepool resource.
+Provides a Container Service for Kubernetes (ACK) Nodepool resource.
 
 This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). 
 
@@ -42,17 +42,11 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
 
-For information about ACK Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
+For information about Container Service for Kubernetes (ACK) Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=b9abdd6c-849b-5331-23d3-42c7d815404ab1bc1d14&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.b9abdd6c84&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "random_integer" "default" {
@@ -359,6 +353,12 @@ The following arguments are supported:
 * `platform` - (Optional, Computed, Deprecated since v1.145.0) Operating system release, using `image_type` instead.
 * `pre_user_data` - (Optional, Available since v1.232.0) Node pre custom data, base64-encoded, the script executed before the node is initialized. 
 * `private_pool_options` - (Optional, List) Private node pool configuration. See [`private_pool_options`](#private_pool_options) below.
+* `ram_role_name` - (Optional, ForceNew, Computed, Available since v1.242.0) The name of the Worker RAM role.
+* If it is empty, the default Worker RAM role created in the cluster will be used.
+* If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.
+
+-> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
+
 * `rds_instances` - (Optional, List) The list of RDS instances.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `rolling_policy` - (Optional, List) Rotary configuration. See [`rolling_policy`](#rolling_policy) below.
@@ -439,8 +439,13 @@ The data_disks supports the following:
 
 The kubelet_configuration supports the following:
 * `allowed_unsafe_sysctls` - (Optional, List) Allowed sysctl mode whitelist.
+* `cluster_dns` - (Optional, List, Available since v1.242.0) The list of IP addresses of the cluster DNS servers.
 * `container_log_max_files` - (Optional) The maximum number of log files that can exist in each container.
 * `container_log_max_size` - (Optional) The maximum size that can be reached before a log file is rotated.
+* `container_log_max_workers` - (Optional, Available since v1.242.0) Specifies the maximum number of concurrent workers required to perform log rotation operations.
+* `container_log_monitor_interval` - (Optional, Available since v1.242.0) Specifies the duration for which container logs are monitored for log rotation.
+* `cpu_cfs_quota` - (Optional, Available since v1.242.0) CPU CFS quota constraint switch.
+* `cpu_cfs_quota_period` - (Optional, Available since v1.242.0) CPU CFS quota period value.
 * `cpu_manager_policy` - (Optional) Same as cpuManagerPolicy. The name of the policy to use. Requires the CPUManager feature gate to be enabled. Valid value is `none` or `static`.
 * `event_burst` - (Optional) Same as eventBurst. The maximum size of a burst of event creations, temporarily allows event creations to burst to this number, while still not exceeding `event_record_qps`. It is only used when `event_record_qps` is greater than 0. Valid value is `[0-100]`.
 * `event_record_qps` - (Optional) Same as eventRecordQPS. The maximum event creations per second. If 0, there is no limit enforced. Valid value is `[0-50]`.
@@ -448,15 +453,34 @@ The kubelet_configuration supports the following:
 * `eviction_soft` - (Optional, Map) Same as evictionSoft. The map of signal names to quantities that defines soft eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
 * `eviction_soft_grace_period` - (Optional, Map) Same as evictionSoftGracePeriod. The map of signal names to quantities that defines grace periods for each soft eviction signal. For example: `{"memory.available" = "30s"}`.
 * `feature_gates` - (Optional, Map) Feature switch to enable configuration of experimental features.
+* `image_gc_high_threshold_percent` - (Optional, Available since v1.242.0) If the image usage exceeds this threshold, image garbage collection will continue.
+* `image_gc_low_threshold_percent` - (Optional, Available since v1.242.0) Image garbage collection is not performed when the image usage is below this threshold.
 * `kube_api_burst` - (Optional) Same as kubeAPIBurst. The burst to allow while talking with kubernetes api-server. Valid value is `[0-100]`.
 * `kube_api_qps` - (Optional) Same as kubeAPIQPS. The QPS to use while talking with kubernetes api-server. Valid value is `[0-50]`.
 * `kube_reserved` - (Optional, Map) Same as kubeReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for kubernetes system components. Currently, cpu, memory and local storage for root file system are supported. See [compute resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more details.
 * `max_pods` - (Optional) The maximum number of running pods.
+* `memory_manager_policy` - (Optional, Available since v1.242.0) The policy to be used by the memory manager.
+* `pod_pids_limit` - (Optional, Available since v1.242.0) The maximum number of PIDs that can be used in a Pod.
 * `read_only_port` - (Optional) Read-only port number.
 * `registry_burst` - (Optional) Same as registryBurst. The maximum size of burst pulls, temporarily allows pulls to burst to this number, while still not exceeding `registry_pull_qps`. Only used if `registry_pull_qps` is greater than 0. Valid value is `[0-100]`.
 * `registry_pull_qps` - (Optional) Same as registryPullQPS. The limit of registry pulls per second. Setting it to `0` means no limit. Valid value is `[0-50]`.
+* `reserved_memory` - (Optional, List, Available since v1.242.0) Reserve memory for NUMA nodes. See [`reserved_memory`](#kubelet_configuration-reserved_memory) below.
 * `serialize_image_pulls` - (Optional) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`.
 * `system_reserved` - (Optional, Map) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more details.
+* `topology_manager_policy` - (Optional, Available since v1.242.0) Name of the Topology Manager policy used.
+* `tracing` - (Optional, List, Available since v1.242.0) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
+
+### `kubelet_configuration-reserved_memory`
+
+The kubelet_configuration-reserved_memory supports the following:
+* `limits` - (Optional, Map, Available since v1.242.0) Memory resource limit.
+* `numa_node` - (Optional, Int, Available since v1.242.0) The NUMA node.
+
+### `kubelet_configuration-tracing`
+
+The kubelet_configuration-tracing supports the following:
+* `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
+* `sampling_rate_per_million` - (Optional, Available since v1.242.0) Number of samples to be collected per million span.
 
 ### `labels`
 
@@ -557,7 +581,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-ACK Nodepool can be imported using the id, e.g.
+Container Service for Kubernetes (ACK) Nodepool can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_cs_kubernetes_node_pool.example <cluster_id>:<node_pool_id>
