@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -231,11 +230,9 @@ func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta inte
 	action := "RefundInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
@@ -247,22 +244,18 @@ func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta inte
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "dcdn"
 				request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

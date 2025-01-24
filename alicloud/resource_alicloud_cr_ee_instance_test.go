@@ -101,6 +101,7 @@ func TestAccAliCloudCREEInstance_Standard(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -392,8 +393,8 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
             "Resource": [
                 "acs:oss:*:*:cri-*",
                 "acs:oss:*:*:cri-*/*",
-                "acs:oss:*:*:tf-testacc-*",
-                "acs:oss:*:*:tf-testacc-*/*"
+                "acs:oss:*:*:${var.name}",
+                "acs:oss:*:*:${var.name}/*"
             ],
             "Effect": "Allow",
             "Condition": {
@@ -423,8 +424,8 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
             "Resource": [
                 "acs:oss:*:*:cri-*",
                 "acs:oss:*:*:cri-*/*",
-                "acs:oss:*:*:tf-testacc-*",
-                "acs:oss:*:*:tf-testacc-*/*"
+                "acs:oss:*:*:${var.name}",
+                "acs:oss:*:*:${var.name}/*"
             ],
             "Effect": "Allow",
             "Condition": {
