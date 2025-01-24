@@ -48,7 +48,7 @@ Please use resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluste
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes&exampleId=a1c3aeda-4d80-696e-c653-37e4228aeda0cdf432a0&activeTab=example&spm=docs.r.cs_kubernetes.0.a1c3aeda4d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes&exampleId=8ecfabbf-301e-0a64-48fa-e099644a8db27cad3ce9&activeTab=example&spm=docs.r.cs_kubernetes.0.8ecfabbf30&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
