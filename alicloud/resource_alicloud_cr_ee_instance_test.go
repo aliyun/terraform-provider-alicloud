@@ -54,25 +54,26 @@ func TestAccAliCloudCREEInstance_Basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "YourPassword123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-					"kms_encryption_context": map[string]string{
-						"name": name,
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
+			// Currently, the API does not support sts
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"password": "YourPassword123",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+			//		"kms_encryption_context": map[string]string{
+			//			"name": name,
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -127,25 +128,26 @@ func TestAccAliCloudCREEInstance_Standard(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "YourPassword123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-					"kms_encryption_context": map[string]string{
-						"name": name,
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
+			// Currently, the API does not support sts
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"password": "YourPassword123",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+			//		"kms_encryption_context": map[string]string{
+			//			"name": name,
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -200,25 +202,26 @@ func TestAccAliCloudCREEInstance_Advanced(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "YourPassword123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-					"kms_encryption_context": map[string]string{
-						"name": name,
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
+			// Currently, the API does not support sts
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"password": "YourPassword123",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+			//		"kms_encryption_context": map[string]string{
+			//			"name": name,
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,

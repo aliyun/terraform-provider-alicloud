@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -162,11 +161,9 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -220,20 +217,21 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	request["SubscriptionType"] = d.Get("payment_type")
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "acr_ee_public_intl"
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "acr"
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "acr_ee_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -244,9 +242,6 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
@@ -363,15 +358,12 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 
 	action := "ChangeResourceGroup"
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -381,11 +373,9 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["ResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -407,10 +397,6 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "ResetLoginPassword"
-	conn, err = client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -431,11 +417,9 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -461,11 +445,9 @@ func resourceAliCloudCrInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	action := "RefundInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
@@ -474,11 +456,13 @@ func resourceAliCloudCrInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	request["ImmediatelyRelease"] = "1"
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "acr_ee_public_intl"
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -486,10 +470,9 @@ func resourceAliCloudCrInstanceDelete(d *schema.ResourceData, meta interface{}) 
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "acr"
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "acr_ee_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
