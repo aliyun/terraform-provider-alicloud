@@ -575,14 +575,18 @@ func renewInstance(d *schema.ResourceData, meta interface{}) error {
 
 func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewBssopenapiClient()
 	action := "SetRenewal"
 	var renewalResponse map[string]interface{}
+	var err error
+	var endpoint string
 	setRenewalReq := map[string]interface{}{
 		"InstanceIDs":      d.Id(),
 		"ProductCode":      "elasticsearch",
 		"ProductType":      "elasticsearchpre",
 		"SubscriptionType": "Subscription",
+	}
+	if client.IsInternationalAccount() {
+		setRenewalReq["ProductType"] = "elasticsearchpre_intl"
 	}
 
 	if _, ok := d.GetOk("auto_renew_duration"); !ok && d.Get("renew_status").(string) == "AutoRenewal" {
@@ -607,15 +611,15 @@ func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		renewalResponse, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, setRenewalReq, &util.RuntimeOptions{})
+		renewalResponse, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, setRenewalReq, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				setRenewalReq["ProductType"] = "elasticsearchpre_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -625,9 +629,6 @@ func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 	addDebug(action, renewalResponse, setRenewalReq)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(renewalResponse["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, renewalResponse))
 	}
 	return nil
 }
