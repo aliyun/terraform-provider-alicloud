@@ -79,18 +79,19 @@ func resourceAlicloudAlidnsInstance() *schema.Resource {
 func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var endpoint string
+	var err error
 	action := "CreateInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["SubscriptionType"] = d.Get("payment_type")
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
 	request["ProductCode"] = "dns"
 	request["ProductType"] = "alidns_pre"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "dns_dns_public_intl"
+	}
 	if v, ok := d.GetOk("renew_period"); ok {
 		request["RenewPeriod"] = v
 	}
@@ -116,15 +117,15 @@ func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "dns_dns_public_intl"
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -134,9 +135,6 @@ func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alidns_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_alidns_instance", action, AlibabaCloudSdkGoERROR)
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))

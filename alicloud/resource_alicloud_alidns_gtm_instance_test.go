@@ -35,7 +35,6 @@ func TestAccAlicloudAlidnsGtmInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
 		},
 		IDRefreshName: resourceId,
