@@ -19,7 +19,7 @@ For information about Event Bridge and how to use it, see [What is Event Bridge]
 
 ```terraform
 data "alicloud_event_bridge_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

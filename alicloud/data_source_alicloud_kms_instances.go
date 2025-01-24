@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,22 +70,17 @@ func dataSourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{})
 
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	action := "ListKmsInstances"
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["PageSize"] = 5
 	request["PageNumber"] = 1
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {

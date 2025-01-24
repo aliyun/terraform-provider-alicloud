@@ -36,13 +36,13 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"secret_num":      "0",
 					"spec":            "1000",
 					"product_version": "3",
-					"vpc_id":          "${local.vpc_id}",
+					"vpc_id":          "${alicloud_vpc.default.id}",
 					"log":             "0",
 					"log_storage":     "0",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${local.vsw_id}"},
+						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -53,7 +53,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 						"product_version": "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "1",
+						"vswitch_ids.#":   "2",
 					}),
 				),
 			},
@@ -74,19 +74,19 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 				}),
@@ -162,10 +162,10 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"bind_vpcs": []map[string]interface{}{
 						{
-							"vpc_id":       "vpc-bp14c07ucxg6h1xjmgcld",
+							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
 							"region_id":    "cn-hangzhou",
-							"vswitch_id":   "vsw-bp1wujtnspi1l3gvunvds",
-							"vpc_owner_id": "1192853035118460",
+							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 				}),
@@ -194,11 +194,11 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
 					"renew_period":    "3",
-					"vpc_id":          "${local.vpc_id}",
+					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${local.vsw_id}"},
+						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -211,7 +211,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 						"renew_period":    "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "1",
+						"vswitch_ids.#":   "2",
 					}),
 				),
 			},
@@ -239,47 +239,24 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_account" "current" {}
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "tf-testacc-kms-instance"
-  cidr_block = "172.16.0.0/12"
-}
-
 resource "alicloud_vpc" "default" {
-  count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
   cidr_block = "172.16.0.0/12"
-  vpc_name   = "tf-testacc-kms-instance"
-}
-
-data "alicloud_vswitches" "vswitch" {
-  vpc_id  = local.vpc_id
-  zone_id = "cn-hangzhou-k"
-}
-
-data "alicloud_vswitches" "vswitch-j" {
-  vpc_id  = local.vpc_id
-  zone_id = "cn-hangzhou-j"
-}
-
-locals {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : concat(alicloud_vpc.default[*].id, [""])[0]
-  vsw_id = length(data.alicloud_vswitches.vswitch.ids) > 0 ? data.alicloud_vswitches.vswitch.ids.0 : concat(alicloud_vswitch.vswitch[*].id, [""])[0]
-  vswj_id = length(data.alicloud_vswitches.vswitch-j.ids) > 0 ? data.alicloud_vswitches.vswitch-j.ids.0 : concat(alicloud_vswitch.vswitch-j[*].id, [""])[0]
+  vpc_name   = var.name
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count = length(data.alicloud_vswitches.vswitch.ids) > 0 ? 0 : 1
-  vpc_id     = local.vpc_id
+  vpc_id     = alicloud_vpc.default.id
   zone_id    = "cn-hangzhou-k"
   cidr_block = "172.16.1.0/24"
 }
 
 resource "alicloud_vswitch" "vswitch-j" {
-  count = length(data.alicloud_vswitches.vswitch-j.ids) > 0 ? 0 : 1
-  vpc_id     = local.vpc_id
+  vpc_id     = alicloud_vpc.default.id
   zone_id    = "cn-hangzhou-j"
   cidr_block = "172.16.2.0/24"
 }
@@ -327,47 +304,25 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_account" "current" {}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "tf-testacc-kms-instance"
-  cidr_block = "172.16.0.0/12"
-}
-
 resource "alicloud_vpc" "default" {
-  count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
   cidr_block = "172.16.0.0/12"
-  vpc_name   = "tf-testacc-kms-instance"
-}
-
-data "alicloud_vswitches" "vswitch" {
-  vpc_id  = local.vpc_id
-  zone_id = "ap-southeast-1a"
-}
-
-data "alicloud_vswitches" "vswitch-j" {
-  vpc_id  = local.vpc_id
-  zone_id = "ap-southeast-1b"
-}
-
-locals {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : concat(alicloud_vpc.default[*].id, [""])[0]
-  vsw_id = length(data.alicloud_vswitches.vswitch.ids) > 0 ? data.alicloud_vswitches.vswitch.ids.0 : concat(alicloud_vswitch.vswitch[*].id, [""])[0]
-  vswj_id = length(data.alicloud_vswitches.vswitch-j.ids) > 0 ? data.alicloud_vswitches.vswitch-j.ids.0 : concat(alicloud_vswitch.vswitch-j[*].id, [""])[0]
+  vpc_name   = var.name
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count = length(data.alicloud_vswitches.vswitch.ids) > 0 ? 0 : 1
-  vpc_id     = local.vpc_id
+  vpc_id     = alicloud_vpc.default.id
   zone_id    = "ap-southeast-1a"
   cidr_block = "172.16.1.0/24"
 }
 
 resource "alicloud_vswitch" "vswitch-j" {
-  count = length(data.alicloud_vswitches.vswitch-j.ids) > 0 ? 0 : 1
-  vpc_id     = local.vpc_id
+  vpc_id     = alicloud_vpc.default.id
   zone_id    = "ap-southeast-1b"
   cidr_block = "172.16.2.0/24"
 }
@@ -425,6 +380,7 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -442,23 +398,23 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 					"log":             "1",
 					"log_storage":     "1000",
 					"period":          "2",
-					"vpc_id":          "${local.vpc_id}",
+					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${local.vsw_id}"},
+						"${alicloud_vswitch.vswitch.id}"},
 					"bind_vpcs": []map[string]interface{}{
 						{
 							"vpc_id":       "${alicloud_vpc.shareVPC.id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 				}),
@@ -513,6 +469,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -522,23 +479,23 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":    "PayAsYouGo",
 					"product_version": "3",
-					"vpc_id":          "${local.vpc_id}",
+					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${local.vsw_id}"},
+						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
 					"bind_vpcs": []map[string]interface{}{
 						{
 							"vpc_id":       "${alicloud_vpc.shareVPC.id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 					"force_delete_without_backup": "true",
@@ -566,19 +523,19 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
 							"region_id":    "cn-hangzhou",
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
-							"vpc_owner_id": "1511928242963727",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 				}),
@@ -636,7 +593,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 					"zone_ids": []string{
 						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch-j.id}"},
+						"${alicloud_vswitch.vswitch-j.id}", "${alicloud_vswitch.vswitch.id}"},
 					"force_delete_without_backup": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -652,19 +609,19 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
 							"region_id":    defaultRegionToTest,
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
-							"vpc_owner_id": "5806750234758840",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
 							"region_id":    defaultRegionToTest,
 							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
-							"vpc_owner_id": "5806750234758840",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
 							"region_id":    defaultRegionToTest,
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
-							"vpc_owner_id": "5806750234758840",
+							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 					},
 				}),
@@ -714,11 +671,11 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
 					"renew_period":    "3",
-					"vpc_id":          "${local.vpc_id}",
+					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"ap-southeast-1a", "ap-southeast-1b"},
 					"vswitch_ids": []string{
-						"${local.vsw_id}"},
+						"${alicloud_vswitch.vswitch.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -931,6 +888,8 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_account" "current" {}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -943,13 +902,13 @@ resource "alicloud_vpc" "vpc-amp-instance-test" {
 
 resource "alicloud_vswitch" "vswitch" {
   vpc_id     = alicloud_vpc.vpc-amp-instance-test.id
-  zone_id    = data.alicloud_zones.default.zones.0.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
   cidr_block = "172.16.1.0/24"
 }
 
 resource "alicloud_vswitch" "vswitch-j" {
   vpc_id     = alicloud_vpc.vpc-amp-instance-test.id
-  zone_id    = data.alicloud_zones.default.zones.1.id
+  zone_id    = data.alicloud_zones.default.zones.2.id
   cidr_block = "172.16.2.0/24"
 }
 

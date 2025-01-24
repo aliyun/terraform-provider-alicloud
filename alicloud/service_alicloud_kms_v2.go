@@ -24,21 +24,15 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KmsInstanceId"] = id
 
 	action := "GetKmsInstance"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
