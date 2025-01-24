@@ -24,20 +24,14 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetInstance"
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -60,12 +54,9 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
 	var query map[string]interface{}
 	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceIDs"] = id
@@ -73,21 +64,21 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object
 
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "acr_ee_public_intl"
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "acr"
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "acr_ee_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -116,20 +107,14 @@ func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object ma
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListInstanceEndpoint"
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
