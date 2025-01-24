@@ -20,6 +20,12 @@ For information about Max Compute Tunnel Quota Timer and how to use it, see [Wha
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_max_compute_tunnel_quota_timer&exampleId=7184f4c9-2fad-08f1-e2c6-4b540adb251118b1222d&activeTab=example&spm=docs.r.max_compute_tunnel_quota_timer.0.7184f4c92f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

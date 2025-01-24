@@ -21,7 +21,7 @@ For information about Apsara File Storage for HDFS (DFS) File System and how to 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dfs_file_system&exampleId=3675545a-b4b6-f06e-5357-1622489358abcde8da49&activeTab=example&spm=docs.r.dfs_file_system.0.3675545ab4&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dfs_file_system&exampleId=b26fd6fb-f316-1cc8-a3c2-ff69b2700582a9599cfd&activeTab=example&spm=docs.r.dfs_file_system.0.b26fd6fbf3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
