@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -197,13 +196,13 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				},
 			},
 			"vswitch_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"zone_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -219,11 +218,9 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -287,30 +284,32 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 
 	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "kms_ddi_public_intl"
+	}
 	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-		request["ProductCode"] = "kms"
 		request["ProductType"] = "kms_ppi_public_cn"
 		request["SubscriptionType"] = v
+		if client.IsInternationalAccount() {
+			request["ProductType"] = "kms_ppi_public_intl"
+		}
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "kms"
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "kms_ddi_public_intl"
 				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -321,12 +320,6 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "nil" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-	if fmt.Sprint(response["Success"]) != "true" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
@@ -339,10 +332,6 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	action = "ConnectKmsInstance"
-	conn, err = client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["KmsInstanceId"] = d.Id()
 
@@ -350,19 +339,17 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	request["KMProvider"] = "Aliyun"
 	jsonPathResult1, err := jsonpath.Get("$", d.Get("zone_ids"))
 	if err == nil {
-		request["ZoneIds"] = convertListToCommaSeparate(jsonPathResult1.([]interface{}))
+		request["ZoneIds"] = convertListToCommaSeparate(jsonPathResult1.(*schema.Set).List())
 	}
 
 	jsonPathResult2, err := jsonpath.Get("$", d.Get("vswitch_ids"))
 	if err == nil {
-		request["VSwitchIds"] = convertListToCommaSeparate(jsonPathResult2.([]interface{}))
+		request["VSwitchIds"] = convertListToCommaSeparate(jsonPathResult2.(*schema.Set).List())
 	}
 
-	runtime = util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait = incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.RamRoleNotFound"}) || NeedRetry(err) {
 				wait()
@@ -460,9 +447,17 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	d.Set("vswitch_ids", objectRaw["VswitchIds"])
+	vswitchIds := make([]interface{}, 0)
+	if objectRaw["VswitchIds"] != nil {
+		vswitchIds = objectRaw["VswitchIds"].([]interface{})
+	}
 
-	d.Set("zone_ids", objectRaw["ZoneIds"])
+	d.Set("vswitch_ids", vswitchIds)
+	zoneIds := make([]interface{}, 0)
+	if objectRaw["ZoneIds"] != nil {
+		zoneIds = objectRaw["ZoneIds"].([]interface{})
+	}
+	d.Set("zone_ids", zoneIds)
 
 	return nil
 }
@@ -471,14 +466,11 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyInstance"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -526,31 +518,36 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request["Parameter"] = parameterMapList
 
+	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "kms_ddi_public_intl"
+	}
 	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
 		request["ProductType"] = "kms_ppi_public_cn"
-		request["SubscriptionType"] = "PayAsYouGo"
+		request["SubscriptionType"] = v
+		if client.IsInternationalAccount() {
+			request["ProductType"] = "kms_ppi_public_intl"
+		}
 	}
-	request["ProductCode"] = "kms"
 	request["ModifyType"] = "Upgrade"
 	if update && request["SubscriptionType"] == "Subscription" {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = "kms_ddi_public_intl"
 					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
 						request["ProductType"] = "kms_ppi_public_intl"
 					}
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -561,9 +558,7 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
+
 		kmsServiceV2 := KmsServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("key_num"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "KeyNum", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -572,10 +567,6 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "UpdateKmsInstanceBindVpc"
-	conn, err = client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["KmsInstanceId"] = d.Id()
@@ -611,11 +602,9 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -642,34 +631,30 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 		action := "RefundInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
+		var err error
 		query := make(map[string]interface{})
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		request["InstanceId"] = d.Id()
 
 		request["ClientToken"] = buildClientToken(action)
-
-		request["ProductType"] = "kms_ddi_public_cn"
 		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_cn"
+		if client.IsInternationalAccount() {
+			request["ProductType"] = "kms_ddi_public_intl"
+		}
 		request["ImmediatelyRelease"] = "1"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-			request["ClientToken"] = buildClientToken(action)
-
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = "kms_ddi_public_intl"
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -699,22 +684,18 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 		action := "ReleaseKmsInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
+		var err error
 		query := make(map[string]interface{})
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		request["KmsInstanceId"] = d.Id()
 
 		if v, ok := d.GetOk("force_delete_without_backup"); ok {
 			request["ForceDeleteWithoutBackup"] = v
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -737,11 +718,4 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	}
 	return nil
-}
-
-func convertKmsInstanceSubscriptionTypeRequest(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
-	}
-	return source
 }
