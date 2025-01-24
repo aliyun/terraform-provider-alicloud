@@ -27,20 +27,13 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 	var query map[string]*string
 	instanceId := id
 	action := fmt.Sprintf("/instances/%s", instanceId)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
-
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

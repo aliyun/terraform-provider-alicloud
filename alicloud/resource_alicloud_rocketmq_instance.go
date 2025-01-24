@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -272,12 +271,8 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	action := fmt.Sprintf("/instances")
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	objectDataLocalMap := make(map[string]interface{})
@@ -390,12 +385,9 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("commodity_code"); ok {
 		request["commodityCode"] = v
 	}
-	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -611,19 +603,14 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]*string
-	var body map[string]interface{}
 	update := false
 	d.Partial(true)
 	instanceId := d.Id()
 	action := fmt.Sprintf("/instances/%s", instanceId)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("instance_name") {
@@ -676,14 +663,10 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 		request["networkInfo"] = objectDataLocalMap1
 	}
-
-	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("PATCH"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -705,13 +688,8 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	update = false
 	action = fmt.Sprintf("/resourceGroup/change")
-	conn, err = client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	body = make(map[string]interface{})
 	query["resourceId"] = StringPointer(d.Id())
 	query["regionId"] = StringPointer(client.RegionId)
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
@@ -721,13 +699,10 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		query["resourceGroupId"] = StringPointer(v.(string))
 	}
 	query["resourceType"] = StringPointer("instance")
-	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -745,13 +720,8 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	update = false
 	instanceId = d.Id()
 	action = fmt.Sprintf("/instances/%s/software/config", instanceId)
-	conn, err = client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("software.0.maintain_time") {
@@ -763,13 +733,10 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 			request["maintainTime"] = jsonPathResult
 		}
 	}
-	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("PATCH"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -813,22 +780,18 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	request["ProductCode"] = "ons"
 	if update {
-		client := meta.(*connectivity.AliyunClient)
-		conn, err := client.NewBssopenapiClient()
 		action := "SetRenewal"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable", "SignatureDoesNotMatch"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-					request["ProductCode"] = "ons"
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -839,9 +802,6 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
@@ -865,21 +825,12 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	instanceId := d.Id()
 	action := fmt.Sprintf("/instances/%s", instanceId)
-	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]*string)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	request = make(map[string]interface{})
-	request["instanceId"] = d.Id()
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -888,7 +839,7 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		addDebug(action, response, nil)
 		return nil
 	})
 

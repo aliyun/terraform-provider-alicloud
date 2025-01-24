@@ -90,32 +90,32 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productC
 }
 
 func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instanceRegion, productCode, productCodeIntl string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewBssopenapiClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var endpoint string
 	action := "QueryAvailableInstances"
 	request := map[string]interface{}{
 		"InstanceIDs": id,
 		"ProductCode": productCode,
 	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = productCodeIntl
+	}
 	if instanceRegion != "" {
 		request["Region"] = instanceRegion
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable", "SignatureDoesNotMatch"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = productCodeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -124,10 +124,10 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
-		if len(resp.([]interface{})) < 1 {
+		if !client.IsInternationalAccount() && len(resp.([]interface{})) < 1 {
 			request["ProductCode"] = productCodeIntl
-			conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+			endpoint = connectivity.BssOpenAPIEndpointInternational
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -142,9 +142,7 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
+
 	v, err := jsonpath.Get("$.Data.InstanceList", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
