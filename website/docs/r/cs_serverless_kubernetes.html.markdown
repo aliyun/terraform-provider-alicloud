@@ -107,7 +107,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
 * `name_prefix` - (Optional, ForceNew) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.  Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#cluster_auto_upgrade) for more information. 
+* `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.  Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information.  
 * `vpc_id` - (Optional, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC will be built.
 * `vswitch_ids` - (Optional, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
