@@ -325,6 +325,7 @@ var irregularProductEndpoint = map[string]string{
 	"bssopenapi":       BssOpenAPIEndpointDomestic,
 	"esa":              "esa.cn-hangzhou.aliyuncs.com",
 	"cas":              "cas.aliyuncs.com",
+	"sas":              "tds.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -333,7 +334,9 @@ var irregularProductEndpoint = map[string]string{
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
-var irregularProductEndpointForIntlRegion = map[string]string{}
+var irregularProductEndpointForIntlRegion = map[string]string{
+	"sas": SaSOpenAPIEndpointInternational,
+}
 
 // irregularProductEndpointForIntlAccount specially records those product codes that
 // cannot be parsed out by the location service and sensitive to account type.
@@ -402,7 +405,6 @@ var regularProductEndpoint = map[string]string{
 	"ecd":                  "ecd.%s.aliyuncs.com",
 	"cloudphone":           "cloudphone.%s.aliyuncs.com",
 	"dataworks_public":     "dataworks.%s.aliyuncs.com",
-	"sas":                  "tds.aliyuncs.com",
 	"ehpc":                 "ehpc.%s.aliyuncs.com",
 	"ens":                  "ens.aliyuncs.com",
 	"iot":                  "iot.%s.aliyuncs.com",

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -23,35 +22,27 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	var endpoint string
 	action := "GetInstance"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
 
 	request["CommodityCode"] = "sas"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = client.RpcPostWithEndpoint("Sas", "2018-12-03", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NODATA"}) {
+				endpoint = connectivity.SaSOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
-
-		if fmt.Sprint(response["Code"]) == "NODATA" {
-			conn.Endpoint = String(connectivity.SaSOpenAPIEndpointInternational)
-			return resource.RetryableError(errors.New("NODATA"))
-		}
-
 		addDebug(action, response, request)
 		return nil
 	})
@@ -74,43 +65,37 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
 	var query map[string]interface{}
 	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
 
 	request["ProductCode"] = "sas"
 	request["ProductType"] = "sas"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = ""
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = ""
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
