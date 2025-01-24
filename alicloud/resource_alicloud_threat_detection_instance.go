@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -215,10 +214,8 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	var endpoint string
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -382,38 +379,30 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 
 	request["ProductType"] = "sas"
 	request["ProductCode"] = "sas"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = ""
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = ""
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
-
-		if fmt.Sprint(response["Code"]) != "Success" {
-			return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
-		}
-
 		return nil
 	})
-	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_instance", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
@@ -544,15 +533,10 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
-	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyInstance"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -716,41 +700,34 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 	request["ProductType"] = "sas"
 	request["ProductCode"] = "sas"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
+		if client.IsInternationalAccount() {
+			request["ProductType"] = ""
+		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = ""
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-
-			if fmt.Sprint(response["Code"]) != "Success" {
-				return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
-			}
-
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
 	action = "SetRenewal"
-	conn, err = client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = d.Id()
@@ -776,29 +753,26 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		request["SubscriptionType"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
+		if client.IsInternationalAccount() {
+			request["ProductType"] = ""
+		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = ""
+					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
-
-			if fmt.Sprint(response["Code"]) != "Success" {
-				return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
-			}
-
 			return nil
 		})
 		if err != nil {

@@ -209,28 +209,24 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 }
 
 func (s *BssOpenApiService) DescribeCloudFirewallInstanceOrderDetail(orderId string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewBssopenapiClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var endpoint string
 	action := "GetOrderDetail"
 	request := map[string]interface{}{
 		"OrderId": orderId,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -241,10 +237,6 @@ func (s *BssOpenApiService) DescribeCloudFirewallInstanceOrderDetail(orderId str
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, orderId, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	v, err := jsonpath.Get("$.Data.OrderList.Order", response)
@@ -287,15 +279,14 @@ func (s *BssOpenApiService) CloudFirewallInstanceOrderDetailStateRefreshFunc(ord
 }
 
 func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object []interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewBssopenapiClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var endpoint string
 	action := "QueryAvailableInstances"
 	request := map[string]interface{}{
-		"ProductCode": productCode,
-		"ProductType": productType,
+		"ProductCode":      productCode,
+		"ProductType":      productType,
+		"SubscriptionType": "Subscription",
 	}
 	if s.client.IsInternationalAccount() {
 		request = map[string]interface{}{
@@ -306,14 +297,19 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 	if instanceRegion != "" {
 		request["Region"] = instanceRegion
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = productTypeIntl
+				request["ProductCode"] = productCodeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -323,9 +319,6 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapError(err)
-	}
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.Data.InstanceList", response)
 	if err != nil {
