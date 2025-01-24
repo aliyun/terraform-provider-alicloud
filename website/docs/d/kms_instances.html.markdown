@@ -23,7 +23,7 @@ provider "alicloud" {
 variable "name" {
   default = "terraform-example"
 }
-
+data "alicloud_account" "current" {}
 resource "alicloud_vpc" "vpc-amp-instance-example" {
   cidr_block = "172.16.0.0/12"
   vpc_name   = var.name
@@ -89,19 +89,19 @@ resource "alicloud_kms_instance" "default" {
     vpc_id       = alicloud_vswitch.shareVswitch.vpc_id
     region_id    = "cn-hangzhou"
     vswitch_id   = alicloud_vswitch.shareVswitch.id
-    vpc_owner_id = "1511928242963727"
+    vpc_owner_id = data.alicloud_account.current.id
   }
   bind_vpcs {
     vpc_id       = alicloud_vswitch.share-vswitch2.vpc_id
     region_id    = "cn-hangzhou"
     vswitch_id   = alicloud_vswitch.share-vswitch2.id
-    vpc_owner_id = "1511928242963727"
+    vpc_owner_id = data.alicloud_account.current.id
   }
   bind_vpcs {
     vpc_id       = alicloud_vswitch.share-vsw3.vpc_id
     region_id    = "cn-hangzhou"
     vswitch_id   = alicloud_vswitch.share-vsw3.id
-    vpc_owner_id = "1511928242963727"
+    vpc_owner_id = data.alicloud_account.current.id
   }
   log          = "0"
   period       = "1"
