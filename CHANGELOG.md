@@ -1,4 +1,5 @@
-## 1.242.0 (Unreleased)
+## 1.243.0 (Unreleased)
+## 1.242.0 (January 24, 2025)
 
 - **New Resource:** `alicloud_alb_load_balancer_zone_shifted_attachment` ([#8134](https://github.com/aliyun/terraform-provider-alicloud/issues/8134))
 - **New Resource:** `alicloud_vpc_ipam_service` ([#8135](https://github.com/aliyun/terraform-provider-alicloud/issues/8135))
@@ -14,6 +15,9 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_cr_ee_instance: Improves the invoking api method and supports refreshing credential automatically ([#8169](https://github.com/aliyun/terraform-provider-alicloud/issues/8169))
+- resource/alicloud_alidns_instance: Improves the invoking api method and supports refreshing credential automatically; resource/alicloud_alidns_gtm_instance: Improves the invoking api method and supports refreshing credential automatically ([#8168](https://github.com/aliyun/terraform-provider-alicloud/issues/8168))
+- resource/alicloud_kms_instance: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_kms_instances: improves the invoking api method ([#8166](https://github.com/aliyun/terraform-provider-alicloud/issues/8166))
 - resource/alicloud_db_instance: add new attributes:bursting_enabled and modify sql_collector_config_value. ([#8071](https://github.com/aliyun/terraform-provider-alicloud/issues/8071))
 - resource/alicloud_resource_manager_control_policy_attachment: : Added retry strategy for error code. ([#8125](https://github.com/aliyun/terraform-provider-alicloud/issues/8125))
 - resource/alicloud_alb_listener: add new attribute ca_certificates, ca_enabled, x_forwarded_for_config.x_forwarded_for_processing_mode; resource/alicloud_alb_server_group: add new attribute uch_config, connection_drain_config. ([#8127](https://github.com/aliyun/terraform-provider-alicloud/issues/8127))
@@ -35,9 +39,11 @@ ENHANCEMENTS:
 - data-source/alicloud_ess_scaling_rules: add attributes of predictive_scaling_mode, initial_max_size, predictive_value_behavior, predictive_value_buffer, predictive_task_buffer_time, target_value and metric_name. ([#8133](https://github.com/aliyun/terraform-provider-alicloud/issues/8133))
 - docs: Improved the document alb_server_groups. ([#8128](https://github.com/aliyun/terraform-provider-alicloud/issues/8128))
 - docs: Add document for esa_list, esa_page and esa_http_request_header_modification_rule. ([#8157](https://github.com/aliyun/terraform-provider-alicloud/issues/8157))
+- docs: Updates the example explorer button link ([#8171](https://github.com/aliyun/terraform-provider-alicloud/issues/8171))
 
 BUG FIXES:
 
+- resource/alicloud_elasticsearch_instance: Fixes the renew issue on international account ([#8170](https://github.com/aliyun/terraform-provider-alicloud/issues/8170))
 - resource/alicloud_fc_custom_domain: Fixes the panic error when terraform plan. ([#8121](https://github.com/aliyun/terraform-provider-alicloud/issues/8121))
 - resource/alicloud_mongodb_instance: Fixed the read error in field replica_sets. ([#8123](https://github.com/aliyun/terraform-provider-alicloud/issues/8123))
 - resource/alicloud_log_project: Fix bug while api return policy with empty map. ([#8130](https://github.com/aliyun/terraform-provider-alicloud/issues/8130))
