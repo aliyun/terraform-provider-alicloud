@@ -573,7 +573,7 @@ func renewInstance(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
+func setRenewalInstance(d *schema.ResourceData, meta interface{}, content map[string]interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewBssopenapiClient()
 	action := "SetRenewal"
@@ -581,7 +581,7 @@ func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 	setRenewalReq := map[string]interface{}{
 		"InstanceIDs":      d.Id(),
 		"ProductCode":      "elasticsearch",
-		"ProductType":      "elasticsearchpre",
+		"ProductType":      content["ProductType"].(string),
 		"SubscriptionType": "Subscription",
 	}
 

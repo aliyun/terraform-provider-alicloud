@@ -747,7 +747,9 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if d.Get("instance_charge_type").(string) == string(PrePaid) && (d.HasChange("renew_status") || d.HasChange("auto_renew_duration") || d.HasChange("renewal_duration_unit")) {
-		if err := setRenewalInstance(d, meta); err != nil {
+		content := make(map[string]interface{})
+		content["ProductType"] = instance["commodityCode"].(string)
+		if err := setRenewalInstance(d, meta, content); err != nil {
 			return WrapError(err)
 		}
 
