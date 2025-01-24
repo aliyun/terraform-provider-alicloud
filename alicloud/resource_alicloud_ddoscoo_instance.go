@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -119,14 +118,11 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
-
 	var response map[string]interface{}
+	var err error
+	var endpoint string
 	action := "CreateInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	request["ProductCode"] = "ddos"
 	request["SubscriptionType"] = "Subscription"
@@ -228,6 +224,9 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		request["ProductType"] = v
 	} else {
 		request["ProductType"] = "ddoscoo"
+		if client.IsInternationalAccount() {
+			request["ProductType"] = "ddoscoo_intl"
+		}
 	}
 
 	if v, ok := d.GetOkExists("period"); ok {
@@ -236,22 +235,17 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		request["Period"] = 1
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if err != nil {
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
-					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -261,10 +255,6 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
-	}
-
-	if response["Code"].(string) != "Success" {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
 	response = response["Data"].(map[string]interface{})
