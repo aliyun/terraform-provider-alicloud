@@ -217,8 +217,8 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			// Kibana node configuration
 			"kibana_node_spec": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
+				Default:  "elasticsearch.n4.small",
 			},
 
 			// warm node configuration
