@@ -272,12 +272,9 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceBasicPublic(id
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
 	var query map[string]interface{}
 	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
@@ -288,11 +285,15 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceBasicPublic(id
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -458,12 +459,9 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceNaamPublic(id 
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var endpoint string
 	var query map[string]interface{}
 	action := "QueryAvailableInstances"
-	conn, err := client.NewBssopenapiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
@@ -471,20 +469,21 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceNaamPublic(id 
 	request["SubscriptionType"] = "PayAsYouGo"
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_naam_public_cn"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "cms_naam_public_intl"
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "cms_naam_public_intl"
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -522,28 +521,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceNaamPublic(id 
 		return item, nil
 	}
 	return object, WrapErrorf(Error(GetNotFoundMessage("NaamPublic", id)), NotFoundMsg, response)
-}
-
-func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceNaamPublicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudMonitorServiceNaamPublic(id)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		v, err := jsonpath.Get(field, object)
-		currentStatus := fmt.Sprint(v)
-
-		for _, failState := range failStates {
-			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
-			}
-		}
-		return object, currentStatus, nil
-	}
 }
 
 // DescribeCloudMonitorServiceNaamPublic >>> Encapsulated.

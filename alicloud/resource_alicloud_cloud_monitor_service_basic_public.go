@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -36,9 +35,7 @@ func resourceAliCloudCloudMonitorServiceBasicPublic() *schema.Resource {
 }
 
 func resourceAliCloudCloudMonitorServiceBasicPublicCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -48,20 +45,16 @@ func resourceAliCloudCloudMonitorServiceBasicPublicCreate(d *schema.ResourceData
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
-
 	request["ProductCode"] = "cms"
 	request["ProductType"] = "cms_basic_public_cn"
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "cms_basic_public_intl"
 	}
 	request["SubscriptionType"] = "PayAsYouGo"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -121,20 +114,14 @@ func resourceAliCloudCloudMonitorServiceBasicPublicDelete(d *schema.ResourceData
 	action := "StopPostPayQuota"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewCloudmonitorserviceClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
 	request["PostType"] = "postPayV2"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = client.RpcPost("Cms", "2019-01-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -156,12 +143,4 @@ func resourceAliCloudCloudMonitorServiceBasicPublicDelete(d *schema.ResourceData
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
-}
-
-func convertCloudMonitorServicePostTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "cms_basic_public_cn":
-		return "postPayV2"
-	}
-	return source
 }
