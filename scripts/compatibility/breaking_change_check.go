@@ -27,18 +27,7 @@ func init() {
 }
 
 var (
-	fileNames  = flag.String("fileNames", "", "the files to check diff")
-	filterList = map[string][]string{
-		"alicloud_amqp_instance":            {"logistics"},
-		"alicloud_cms_alarm":                {"notify_type"},
-		"alicloud_cs_serverless_kubernetes": {"private_zone", "create_v2_cluster"},
-		"alicloud_slb_listener":             {"lb_protocol", "instance_port", "lb_port"},
-		"alicloud_kvstore_instance":         {"connection_string"},
-		"alicloud_instance":                 {"subnet_id"},
-		"alicloud_hbr_ots_backup_plan":      {"vault_id"},
-		"alicloud_nat_gateway":              {"vswitch_id"},
-		"alicloud_ecs_disk":                 {"advanced_features", "encrypt_algorithm", "dedicated_block_storage_cluster_id"},
-	}
+	fileNames = flag.String("fileNames", "", "the files to check diff")
 )
 
 func main() {

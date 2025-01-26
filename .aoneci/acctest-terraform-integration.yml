@@ -1,32 +1,22 @@
-name: Terrafrom Integration Checks
-on:
-  pull_request_review:
-    types: [edited, submitted]
+name: Terraform Integration Checks
+triggers:
+  merge_request:
+    types: [accepted]
     paths:
-      - alicloud/*.go
+      - 'alicloud/*.go'
 
 jobs:
   IntegrationTest:
-    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20.x'
-      - uses: ReeganExE/github-action-job-id@v1.0
-        with:
-          expose-name: true
-      - uses: jwalton/gh-find-current-pr@v1
-        id: findPr
-        with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-          state: open
-      - uses: actions/checkout@v3
-        with:
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: 2
+          fetch-depth: '2'
       - name: Integration Test Check
         run: |
           # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
@@ -74,27 +64,17 @@ jobs:
           go run scripts/integration/receive/integration_check.go ${ossObjectPath}
 
   DocsExampleTest:
-    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
-    runs-on: ubuntu-latest
     needs: IntegrationTest
     steps:
-      - uses: actions/checkout@v3
+      - uses: checkout
       - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20.x'
-      - uses: ReeganExE/github-action-job-id@v1.0
-        with:
-          expose-name: true
-      - uses: jwalton/gh-find-current-pr@v1
-        id: findPr
-        with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-          state: open
-      - uses: actions/checkout@v3
-        with:
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
           # Checkout as many commits as needed for the diff
-          fetch-depth: 2
+          fetch-depth: '2'
       - name: Docs Example Test Check
         run: |
           diffFiles=$(git diff --name-only HEAD^ HEAD)

@@ -86,7 +86,7 @@ jobs:
           readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
           for changed_file in ${changed_files[@]}; do
             if [[ ${changed_file} == "website/docs/"* ]]; then
-                go run scripts/docs_check.go ${changed_file}
+                go run scripts/document/document_check.go ${changed_file}
             fi
           done
 
@@ -105,7 +105,7 @@ jobs:
       - name: Integration Test Check
         run: |
           git diff HEAD^ HEAD > diff.out
-          go run scripts/consistency_check.go -fileNames="diff.out"
+          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
 
 #  terraform-validate:
 #    runs-on: ubuntu-latest

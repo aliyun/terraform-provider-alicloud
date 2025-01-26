@@ -1,0 +1,127 @@
+name: Documentation Checks
+triggers:
+  push:
+    branches:
+      - master
+  merge_request:
+    types:
+      - opened
+      paths:
+        - '.github/workflows/document-check.yml'
+        - '.go-version'
+        - 'website/docs/**'
+
+jobs:
+  #  缺少组件库gaurav-nelson/github-action-markdown-link-check@v1
+  #  markdown-link:
+  #    steps:
+  #      - uses: checkout
+  #      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+  #        with:
+  #          use-quiet-mode: 'yes'
+  #          use-verbose-mode: 'yes'
+  #          folder-path: "website/docs"
+  #          file-extension: '.md'
+
+  #  缺少组件库avto-dev/markdown-lint@v1
+  #  markdown-lint:
+  #    steps:
+  #      - uses: checkout
+  #      - uses: avto-dev/markdown-lint@v1
+
+  #  缺少组件库reviewdog/action-misspell@v1.11.1
+  #  misspell:
+  #    steps:
+  #      - name: Check out code.
+  #        uses: checkout
+  #      - name: misspell
+  #        uses: reviewdog/action-misspell@v1.11.1
+  #        with:
+  #          github_token: ${{secrets.github_token}}
+  #          fail_on_error: true
+  #          filter_mode: file
+  #          locale: "US"
+  #          path: ./website/docs
+
+  terrafmt:
+    steps:
+      - uses: checkout
+      - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
+      - uses: setup-env
+        inputs:
+          go-version: ${{ env.GO_VERSION }}
+      - name: terrafmt
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install github.com/katbyte/terrafmt@latest
+          terrafmt diff ./website --check --pattern '*.markdown'
+
+  basic-check:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '3'
+      - uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - run: bash scripts/basic-check.sh
+
+  #  缺少组件库jitterbit/get-changed-files@v1
+  #  Content:
+  #    steps:
+  #      - uses: checkout
+  #      - name: Setup Go
+  #        uses: setup-env
+  #        inputs:
+  #          go-version: '1.22.0'
+  #      - uses: jitterbit/get-changed-files@v1
+  #        id: files
+  #        with:
+  #          format: 'json'
+  #      - name: Checking the docs content
+  #        run: |
+  #          readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
+  #          for changed_file in ${changed_files[@]}; do
+  #            if [[ ${changed_file} == "website/docs/"* ]]; then
+  #                go run scripts/document/document_check.go ${changed_file}
+  #            fi
+  #          done
+
+  Consistency:
+    #    needs: Content
+    steps:
+      - uses: checkout
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Integration Test Check
+        run: |
+          git diff HEAD^ HEAD > diff.out
+          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
+
+#  terraform-validate:
+#    steps:
+#      - uses: checkout
+#      - name: import
+#        run: |
+#          echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
+#      - uses: setup-env
+#        with:
+#          go-version: ${{ env.GO_VERSION }}
+#      - name: terraform-validate
+#        run: |
+#          export PATH=$PATH:$(go env GOPATH)/bin
+#          go get -t github.com/katbyte/terrafmt
+#          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+#          FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
+#          echo ${FILES}
+#          ./scripts/terraform-validate.sh "${FILES[@]}"
+#          if [[ "$?" == "1" ]]; then
+#            echo "Please Check the Terraform Grammer" && exit 1
+#          fi
+
+

@@ -27,4 +27,4 @@ jobs:
       - name: Checking testing coverage rate
         run: |
           git diff HEAD^ HEAD > diff.out
-          go run scripts/testing_coverage_rate_check.go -fileNames="diff.out"
+          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
