@@ -7,13 +7,17 @@ description: |-
     Provides a list of available KMS Keys.
 ---
 
-# alicloud\_kms\_keys
+# alicloud_kms_keys
 
 This data source provides a list of KMS keys in an Alibaba Cloud account according to the specified filters.
 
+For information about KMS Key and how to use it, see [What is Key](https://www.alibabacloud.com/help/en/kms/developer-reference/api-createkey).
+
+-> **NOTE:** Available since v1.85.0.
+
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_kms_keys" "kms_keys_ds" {
   description_regex = "Hello KMS"
@@ -29,11 +33,12 @@ output "first_key_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of KMS key IDs.
-* `description_regex` - (Optional) A regex string to filter the results by the KMS key description.
-* `status` - (Optional) Filter the results by status of the KMS keys. Valid values: `Enabled`, `Disabled`, `PendingDeletion`.
-* `filters` - (Optional) The CMK filter. The filter consists of one or more key-value pairs. 
+* `ids` - (Optional, ForceNew) A list of KMS key IDs.
+* `description_regex` - (Optional, ForceNew) A regex string to filter the results by the KMS key description.
+* `status` - (Optional, ForceNew) Filter the results by status of the KMS keys. Valid values: `Enabled`, `Disabled`, `PendingDeletion`.
+* `filters` - (Optional, ForceNew) The CMK filter. The filter consists of one or more key-value pairs. 
   You can specify a maximum of 10 key-value pairs. More details see API [ListKeys](https://www.alibabacloud.com/help/en/key-management-service/latest/listkeys).
+* `enable_details` - (Optional, ForceNew) Default to `true`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

@@ -111,6 +111,6 @@ else
       echo -e "\033[31m uploading the pr ${prNum} provider package to oss failed, please checking it.\033[0m"
       exit 1
     fi
-    go run scripts/integration.go ${ALICLOUD_ACCESS_KEY} ${ALICLOUD_SECRET_KEY} ${ALICLOUD_ACCOUNT_ID} ${FC_SERVICE} ${FC_REGION} ${OSS_BUCKET_REGION} ${OSS_BUCKET_NAME} ${ossObjectPath} ${DiffFuncNames}
+    go run scripts/integration/invoke/integration.go ${ALICLOUD_ACCESS_KEY} ${ALICLOUD_SECRET_KEY} ${ALICLOUD_ACCOUNT_ID} ${FC_SERVICE} ${FC_REGION} ${OSS_BUCKET_REGION} ${OSS_BUCKET_NAME} ${ossObjectPath} ${DiffFuncNames}
   fi
 fi

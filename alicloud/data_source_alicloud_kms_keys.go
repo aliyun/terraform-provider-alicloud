@@ -202,7 +202,6 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
-	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
@@ -246,7 +245,6 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 		mapping["rotation_interval"] = getResp["RotationInterval"]
 		mapping["status"] = getResp["KeyState"]
 		ids = append(ids, fmt.Sprint(object["KeyId"]))
-		names = append(names)
 		s = append(s, mapping)
 	}
 
