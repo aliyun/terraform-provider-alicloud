@@ -1,0 +1,77 @@
+name: Documentation Checks
+triggers:
+  push:
+    paths:
+      - 'website/docs/**'
+      - 'alicloud/*.go'
+  merge_request:
+    types:
+      - opened
+    paths:
+      - '.github/workflows/document-check.yml'
+      - 'website/docs/**'
+      - 'alicloud/*.go'
+
+jobs:
+  terrafmt:
+    steps:
+      - uses: checkout
+      - uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - name: terrafmt
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install github.com/katbyte/terrafmt@latest
+          terrafmt diff ./website --check --pattern '*.markdown'
+
+  basic-check:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '3'
+      - uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - run: bash scripts/basic-check.sh
+
+  Content:
+    steps:
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - name: Checking the docs content
+        run: |
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          noNeedRun=true
+          exampleCount=0
+          if [[ ${#diffFiles[@]} -eq 0 ]]; then
+            echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
+            exit 0
+          fi
+          
+          for fileName in ${diffFiles[@]};
+          do
+            if [[ ${fileName} == "website/docs/"* ]]; then
+                go run scripts/document/document_check.go ${fileName}
+            fi
+          done
+
+  Consistency:
+    steps:
+      - uses: checkout
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Integration Test Check
+        run: |
+          git diff HEAD^ HEAD > diff.out
+          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
