@@ -71,7 +71,7 @@ jobs:
           IN=$GH_JOB_IntegrationTest_HTML_URL
           arrIN=(${IN//actions/ })
           ossObjectPath="github-actions"${arrIN[1]}
-          go run scripts/integration_check.go ${ossObjectPath}
+          go run scripts/integration/receive/integration_check.go ${ossObjectPath}
 
   DocsExampleTest:
     if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
@@ -150,4 +150,4 @@ jobs:
           IN=$GH_JOB_DocsExampleTest_HTML_URL
           arrIN=(${IN//actions/ })
           ossObjectPath="github-actions"${arrIN[1]}
-          go run scripts/docs_example_check.go ${ossObjectPath}
+          go run scripts/example/example_check.go ${ossObjectPath}

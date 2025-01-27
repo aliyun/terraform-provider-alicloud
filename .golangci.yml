@@ -1,0 +1,12 @@
+issues:
+  exclude-dirs:
+    - examples
+    - scripts
+  exclude-rules:
+    - path: scripts/
+      linters:
+        - errcheck
+  new: true
+  new-from-rev: HEAD
+run:
+  timeout: 10m

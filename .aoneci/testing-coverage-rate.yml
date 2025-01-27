@@ -1,0 +1,28 @@
+name: Testing Coverage Rate Checks
+triggers:
+  push:
+    paths:
+      - '.aoneci/testing-coverage-rate.yml'
+      - 'alicloud/*.go'
+  merge_request:
+    types:
+      - opened
+    paths:
+      - '.aoneci/testing-coverage-rate.yml'
+      - '.go-version'
+      - 'alicloud/*.go'
+
+jobs:
+  TestingCoverageRate:
+    steps:
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Checking testing coverage rate
+        run: |
+          git diff HEAD^ HEAD > diff.out
+          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"

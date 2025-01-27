@@ -1,0 +1,368 @@
+name: Terraform Integration Checks
+triggers:
+  merge_request:
+    types: [accepted]
+    paths:
+      - 'alicloud/*.go'
+  push:
+    paths:
+      - 'alicloud/*.go'
+
+jobs:
+  IntegrationTest:
+    steps:
+      - uses: checkout
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
+          fetch-depth: '2'
+      - name: Integration Test Check
+        run: |
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          noNeedRun=true
+          for fileName in ${diffFiles[@]};
+          do
+              if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
+                  if [[ ${fileName} != *?_test.go ]]; then
+                      fileName=(${fileName//\.go/_test\.go })
+                      # echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
+                      # continue
+                  fi
+                  echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
+                  noNeedRun=false
+                  # fileName=(${fileName//\.go/_test\.go })
+                  if [[ $(grep -c "func TestAcc.*" ${fileName}) -lt 1 ]]; then
+                    echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $fileName, continue..."
+                    continue
+                  fi
+                  checkFuncs=$(grep "func TestAcc.*" ${fileName})
+                  echo -e "found the test funcs:\n${checkFuncs}\n"
+                  funcs=(${checkFuncs//"(t *testing.T) {"/ })
+                  for func in ${funcs[@]};
+                  do
+                    if [[ ${func} != "TestAcc"* ]]; then
+                      continue
+                    fi
+                    DiffFuncNames=$DiffFuncNames";"${func}
+                  done
+              fi
+          done
+
+          if [[ "${noNeedRun}" = "false" && ${DiffFuncNames} == "" ]]; then
+              echo -e "\n\033[33m[WARNING]\033[0m missing integration test cases, please add them. \033[0m"
+              exit 1
+          fi
+          if [[ "${noNeedRun}" = "true"  ]]; then
+              echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test. \033[0m"
+              exit 0
+          fi
+          failed_count=0
+          for func in ${funcs[@]};
+          do
+            if [[ ${func} != "TestAcc"* ]]; then
+              continue
+            fi
+            echo -e "\033[34m################################################################################\033[0m"
+            echo -e "\033[34mTF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m\033[0m"
+            TF_ACC=1 ALICLOUD_ACCESS_KEY=${{secrets.ak}} ALICLOUD_SECRET_KEY=${{secrets.sk}} go test ./alicloud -v -run=${func} -timeout=1200m | {
+            while read LINE
+            do
+              echo -e "$LINE"
+              if [[ $LINE == "--- FAIL: "* || ${LINE} == "FAIL"* ]]; then
+                let "failed_count=failed_count+1"
+              fi
+              if [[ $LINE == "panic: "* ]]; then
+                let "failed_count=failed_count+1"
+                break
+              fi
+            done
+            # send child var to an failed file
+            if [[ $failed_count -gt 0 ]]; then
+              echo -e "\033[31mintegration test failed\033[0m"
+              echo $failed_count > failed.txt
+            fi
+            }
+          done
+          read FAILED_COUNT < failed.txt
+          if [[ $FAILED_COUNT -gt 0 ]]; then
+            echo -e "\033[31mThere gets failed testcase.\033[0m"
+            exit 1
+          fi
+          rm -rf failed.txt
+          echo -e "\033[34mFinished\033[0m"
+
+  DocsExampleTest:
+    needs: IntegrationTest
+    steps:
+      - uses: checkout
+      - name: Setup Go
+        uses: setup-env
+        inputs:
+          go-version: '1.22.0'
+      - uses: checkout
+        inputs:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: '2'
+      - name: Docs Example Test Check
+        run: |
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          noNeedRun=true
+          exampleCount=0
+          if [[ ${#diffFiles[@]} -eq 0 ]]; then
+            echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
+            exit 0
+          fi
+          for fileName in ${diffFiles[@]}; do
+            if [[ ${fileName} == *?_test.go ]]; then
+                echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
+                continue
+            fi
+            if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"*  ]]; then
+              echo ${fileName}
+              docsPathKey="website/docs/r"
+              if [[ $fileName =~ "data_source_"  || $fileName =~ "website/docs/d/" ]]; then
+                docsPathKey="website/docs/d"
+              fi
+
+              if [[ ${fileName} == *".go" ]]; then
+                fileName=(${fileName/_test./.})
+                fileName=(${fileName/.go/.html.markdown})
+                fileName=(${fileName#*resource_alicloud_})
+                fileName=(${fileName#*data_source_alicloud_})
+              fi
+              if [[ ${fileName} == *?.html.markdown ]]; then
+                fileName=(${fileName#*r/})
+                fileName=(${fileName#*d/})
+              fi
+              resourceName=${fileName%%.html.markdown}
+              docsDir="${docsPathKey}/${resourceName}.html.markdown"
+              noNeedRun=false
+              if [[ $(grep -c '```terraform' "${docsDir}") -lt 1 ]]; then
+                  echo -e "\033[33m[WARNING]\033[0m missing docs examples in the ${docsDir},  please adding them. \033[0m"
+                  exit 1
+              fi
+              diffExampleCount=$(grep -c '```terraform' "${docsDir}")
+              echo -e "found the example count:${diffExampleCount}"
+              exampleCount=$(( $exampleCount + $diffExampleCount ))
+            fi
+          done
+
+          if [[ "${noNeedRun}" = "false" && ${exampleCount} == "0" ]]; then
+            echo -e "\033[31mthe pr ${prNum} missing docs example, please adding them. \033[0m"
+            exit 1
+          fi
+          if [[ "${noNeedRun}" = "true" ]]; then
+            echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run example.\033[0m"
+            exit 0
+          fi
+        
+          echo "exampleCheck counted"
+          echo "install terraform"
+          curl -OL https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
+          unzip -o terraform_1.5.4_linux_amd64.zip -d /usr/local/bin
+          echo -e "building a new alpha release..."
+          GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud
+          export TFNV=1.0.0-alpha
+          export ALICLOUD_ACCESS_KEY=${{secrets.ak}}
+          export ALICLOUD_SECRET_KEY=${{secrets.sk}}
+          export ALICLOUD_REGION="eu-central-1"
+          rm -rf ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/
+          mkdir -p ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/
+          mv bin/terraform-provider-alicloud ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/terraform-provider-alicloud_v${TFNV}
+          echo -e "finished!"
+          exampleTerraformErrorTmpLog=terraform-example.error.temp.log
+          exampleTerraformDoubleCheckTmpLog=terraform-example.double.check.log
+          exampleTerraformImportCheckTmpLog=terraform-example.import.check.log
+          exampleTerraformImportCheckErrorTmpLog=terraform-example.import.error.log
+          docsExampleTestRunLog=terraform-example.run.log
+          docsExampleTestRunResultLog=terraform-example.run.result.log
+          declare -A allExample
+          allExample["init"]=1
+          for fileName in ${diffFiles[@]}; do
+            if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
+              docsPathKey="website/docs/r"
+              if [[ $fileName =~ "data_source_" || $fileName =~ "website/docs/d/" ]]; then
+                docsPathKey="website/docs/d"
+              fi
+              
+              if [[ ${fileName} == *".go" ]]; then
+                fileName=(${fileName/_test.go/.html.markdown})
+                fileName=(${fileName/.go/.html.markdown})
+                fileName=(${fileName#*resource_alicloud_})
+                fileName=(${fileName#*data_source_alicloud_})
+              fi
+              if [[ ${fileName} == *?.html.markdown ]]; then
+                fileName=(${fileName#*r/})
+                fileName=(${fileName#*d/})
+              fi
+              resourceName=${fileName%%.html.markdown}
+              docsDir="${docsPathKey}/${resourceName}.html.markdown"
+              #run example
+              begin=false
+              count=0
+              #filtering repetition
+              if [ "${allExample[${docsDir}]}" ]; then
+                continue
+              fi
+              allExample["${docsDir}"]=1
+              
+              #get example
+              IFS=""
+              cat ${docsDir} | while read line; do
+                exampleFileName="resource_alicloud_${resourceName}_example_${count}"
+                if [[ $docsDir =~ "website/docs/d" ]]; then
+                  exampleFileName="date_source_alicloud_${resourceName}_example_${count}"
+                fi
+              
+                exampleTerraformContent=${exampleFileName}/main.tf
+                if [[ $line == '```terraform' ]]; then
+                  begin=true
+                  #create file
+                  if [ ! -d $exampleFileName ]; then
+                    mkdir $exampleFileName
+                    cp -rf ci/tasks/docs-example-provider.tf $exampleFileName/terraform.tf
+                    for dirName in $(ls ci/assets/open-service/); do
+                    if [[ ${resourceName} == "${dirName}_"* ]]; then
+                      echo -e "[WARNING] current resource or data-source '${resourceName}' requires open service '${dirName}', and copy it.\n"
+                      cp -rf ci/assets/open-service/${dirName}/* ${exampleFileName}/
+                      break
+                    fi
+                    done
+                  fi
+                  #clear file
+                  if [ ! -d $exampleTerraformContent ]; then
+                    echo "" >${exampleTerraformContent}
+                  fi
+                  continue
+                fi
+                #  end
+                if [[ $line == '```' && "${begin}" = "true" ]]; then
+                  begin=false
+                  failed=false
+                  echo "=== RUN   ${exampleFileName} APPLY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
+                  # terraform apply
+                  { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan && terraform -chdir=${exampleFileName} apply -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
+                  
+                  if [ $? -ne 0 ]; then
+                    FAILED_COUNT=$((${FAILED_COUNT}+1))
+                    failed=true
+                    cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
+                    sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
+                    if [[ ${sdkError} == "" ]]; then
+                      cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
+                    fi
+                    echo -e "\033[31m - apply check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                  else
+                    echo -e "\033[32m - apply check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                    # double check
+                    planResult=$({ terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog})
+                    haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
+                    haveDeprecated=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep -i "deprecated")
+                    if [[ $planResult -ne 0 || ${haveDiff} == "" || ${haveDeprecated} != "" ]]; then
+                      FAILED_COUNT=$((${FAILED_COUNT}+1))
+                      failed=true
+                      cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+                      if [[ ${haveDeprecated} != "" ]];then
+                        echo -e "\033[31m - deprecated attributes check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                      fi
+                      diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
+                      echo -e "\033[31m - apply diff check: fail.\033[0m ${diffs} " | tee -a ${docsExampleTestRunResultLog}
+                    else
+                    echo -e "\033[32m - apply diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                    # import check
+                    go run scripts/import/import_check.go ${exampleFileName}
+                    cp ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
+                    planResult=$({ terraform -chdir=${exampleFileName} plan -out tf.tfplan -generate-config-out=generate.tf; } >${exampleTerraformImportCheckTmpLog})
+                    haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
+                    if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
+                      # TODO: skip it before fixing most resource type import issue
+                      FAILED_COUNT=$((${FAILED_COUNT}+1))
+                      failed=true
+                      cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+                      importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
+                      echo -e "\033[31m - import diff check: fail.\033[0m ${importDiff}" | tee -a ${docsExampleTestRunResultLog}
+                    else
+                      echo -e "\033[32m - import diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                      { terraform -chdir=${exampleFileName} apply tf.tfplan; } 2>${exampleTerraformImportCheckErrorTmpLog} >>${docsExampleTestRunLog}
+                      if [ $? -ne 0 ]; then
+                        # TODO: skip it before fixing most resource type import issue
+                        FAILED_COUNT=$((${FAILED_COUNT}+1))
+                        failed=true
+                        cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunLog}
+                        sdkError=$(cat ${exampleTerraformImportCheckErrorTmpLog} | grep "ERROR]:")
+                        if [[ ${sdkError} == "" ]]; then
+                          cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
+                        fi
+                        echo -e "\033[31m - import apply check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                      else
+                        echo -e "\033[32m - import apply check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                      fi
+                    fi
+                  fi
+                fi
+                if [[ "${failed}" = "true" ]]; then
+                  FAILED_COUNT=$((${FAILED_COUNT}+1))
+                  echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                else
+                  echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                fi
+                mv ${exampleFileName}/terraform.tfstate.bak ${exampleFileName}/terraform.tfstate
+                rm -rf ${exampleFileName}/import.tf
+                rm -rf ${exampleFileName}/generate.tf
+                # run destory
+                failed=false
+                echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
+                # check diff
+                { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
+                
+                if [ $? -ne 0 ]; then
+                  FAILED_COUNT=$((${FAILED_COUNT}+1))
+                  failed=true
+                  cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
+                  sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
+                  if [[ ${sdkError} == "" ]]; then
+                    cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
+                  fi
+                  echo -e "\033[31m - destroy check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                  echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                else
+                  echo -e "\033[32m - destroy check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                  # check diff
+                  { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
+                  haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
+                  if [[ ${haveDiff} == "" ]]; then
+                    FAILED_COUNT=$((${FAILED_COUNT}+1))
+                    cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+                    echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                    diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
+                    echo -e "\033[31m - destroy diff check: fail.\033[0m ${diffs}" | tee -a ${docsExampleTestRunResultLog}
+                  else
+                    echo -e "\033[32m - destroy diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+                  fi
+                  if [[ "${failed}" = "true" ]]; then
+                    FAILED_COUNT=$((${FAILED_COUNT}+1))
+                    echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                  else
+                    echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+                  fi
+                fi
+                    
+                let "count=count+1"
+                continue
+              fi
+                    
+              if [[ "${begin}" = "true" ]]; then
+                echo -e "${line}" >>${exampleTerraformContent}
+              fi
+            done
+            fi
+          done
+          docsExampleTestRunResult=$(cat ${docsExampleTestRunResultLog} | grep "FAIL")
+          if [[ ${docsExampleTestRunResult} != "" ]]; then
+            echo -e "\033[33m the pr ${prNum} example test check job has failed!\033[0m"
+            exit 1
+          fi
