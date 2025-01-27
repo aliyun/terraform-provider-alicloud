@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAliCloudDdosbgpInstance_basic(t *testing.T) {
-	var v ddosbgp.Instance
+	var v map[string]interface{}
 
 	resourceId := "alicloud_ddosbgp_instance.default"
 	ra := resourceAttrInit(resourceId, ddosbgpInstanceBasicMap)
@@ -32,7 +30,6 @@ func TestAccAliCloudDdosbgpInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{15})
 			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},
 		// module name

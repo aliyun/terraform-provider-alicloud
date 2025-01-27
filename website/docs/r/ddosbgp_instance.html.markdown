@@ -11,8 +11,6 @@ description: |-
 
 Anti-DDoS Advanced instance resource. "Ddosbgp" is the short term of this product.
 
--> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
-
 -> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
@@ -62,6 +60,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the instance resource of Ddosbgp.
+
 ## Import
 
 Ddosbgp instance can be imported using the id, e.g.
