@@ -257,10 +257,7 @@ func resourceAliCloudAligreenOssStockTaskCreate(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("start_date"); ok {
@@ -369,7 +366,7 @@ func resourceAliCloudAligreenOssStockTaskCreate(d *schema.ResourceData, meta int
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

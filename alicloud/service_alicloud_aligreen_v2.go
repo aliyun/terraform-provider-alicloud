@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,18 +22,12 @@ func (s *AligreenServiceV2) DescribeAligreenAuditCallback(id string) (object map
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeAuditCallbackList"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -103,18 +96,12 @@ func (s *AligreenServiceV2) DescribeAligreenCallback(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeCallbackList"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -182,18 +169,12 @@ func (s *AligreenServiceV2) DescribeAligreenBizType(id string) (object map[strin
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeUserBizTypes"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -262,19 +243,13 @@ func (s *AligreenServiceV2) DescribeAligreenImageLib(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeImageLib"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
 	request["ServiceModule"] = "open_api"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -345,19 +320,13 @@ func (s *AligreenServiceV2) DescribeAligreenKeywordLib(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeKeywordLib"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
 	request["ServiceModule"] = "open_api"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -429,19 +398,13 @@ func (s *AligreenServiceV2) DescribeAligreenOssStockTask(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeOssStockTaskSetting"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
