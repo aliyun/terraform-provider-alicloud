@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -24,20 +23,14 @@ func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetAccessGroup"
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccessGroupId"] = id
 	request["InputRegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -101,21 +94,15 @@ func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]inter
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetAccessRule"
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccessGroupId"] = parts[0]
 	query["AccessRuleId"] = parts[1]
 	query["InputRegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -175,21 +162,15 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = id
 	request["InputRegionId"] = client.RegionId
 	action := "GetFileSystem"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -257,10 +238,6 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = parts[0]
@@ -268,11 +245,9 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	request["InputRegionId"] = client.RegionId
 	action := "GetMountPoint"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -347,21 +322,15 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeVscMountPoints"
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FileSystemId"] = parts[0]
 	query["MountPointId"] = parts[1]
 	query["InputRegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,10 +71,7 @@ func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AccessGroupId"] = d.Get("access_group_id")
 	request["InputRegionId"] = client.RegionId
@@ -86,11 +82,9 @@ func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{
 		request["Description"] = v
 	}
 	request["RWAccessType"] = d.Get("rw_access_type")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -149,10 +143,7 @@ func resourceAliCloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyAccessRule"
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccessGroupId"] = parts[0]
@@ -172,11 +163,9 @@ func resourceAliCloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{
 	}
 	request["RWAccessType"] = d.Get("rw_access_type")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -204,20 +193,15 @@ func resourceAliCloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AccessGroupId"] = parts[0]
 	query["AccessRuleId"] = parts[1]
 	request["InputRegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
