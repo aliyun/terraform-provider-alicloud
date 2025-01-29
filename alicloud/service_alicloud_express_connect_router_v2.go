@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,21 +23,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeExpressConnectRouter"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -79,21 +71,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeInstanceGrantedToExpress
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstanceGrantedToExpressConnectRouter"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -119,21 +105,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRout
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeExpressConnectRouterRouteEntries"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -159,21 +139,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeDisabledExpressConnectRo
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDisabledExpressConnectRouterRouteEntries"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -199,21 +173,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterInte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeExpressConnectRouterInterRegionTransitMode"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -239,21 +207,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRegi
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeExpressConnectRouterRegion"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = id
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -303,21 +265,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeInstanceGrantedToEx
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstanceGrantedToExpressConnectRouter"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
 	request["EcrId"] = id
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -372,21 +328,15 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncGetExpressConnectRouter(d *
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetExpressConnectRouter"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
 	request["EcrId"] = id
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -414,7 +364,6 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -429,10 +378,6 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewExpressconnectrouterClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -442,11 +387,9 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -465,10 +408,6 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewExpressconnectrouterClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -481,11 +420,9 @@ func (s *ExpressConnectRouterServiceV2) SetResourceTags(d *schema.ResourceData, 
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -520,10 +457,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectRouterChildInstance"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ChildInstanceId"] = parts[1]
@@ -532,11 +465,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -625,10 +556,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterVbrChil
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectRouterChildInstance"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = parts[0]
@@ -636,11 +563,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncExpressConnectRouterVbrChil
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -704,10 +629,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectRouterAssociation"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AssociationId"] = parts[1]
@@ -717,11 +638,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	request["ClientToken"] = buildClientToken(action)
 
 	request["AssociationNodeType"] = "TR"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -803,10 +722,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectRouterAssociation"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AssociationId"] = parts[1]
@@ -816,11 +731,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	request["ClientToken"] = buildClientToken(action)
 
 	request["AssociationNodeType"] = "VPC"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -876,10 +789,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllo
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectRouterAllowedPrefixHistory"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = parts[0]
@@ -888,11 +797,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllo
 	request["ClientToken"] = buildClientToken(action)
 
 	request["InstanceType"] = "VPC"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -957,10 +864,6 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 5, len(parts)))
 	}
 	action := "DescribeInstanceGrantedToExpressConnectRouter"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = parts[0]
@@ -971,11 +874,9 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 	request["ClientToken"] = buildClientToken(action)
 
 	request["CallerType"] = "OTHER"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
