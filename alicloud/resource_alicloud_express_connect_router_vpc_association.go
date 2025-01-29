@@ -78,10 +78,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationCreat
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["EcrId"] = d.Get("ecr_id")
 	request["VpcId"] = d.Get("vpc_id")
@@ -101,7 +98,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationCreat
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
 				wait()
@@ -173,10 +170,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationUpdat
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyExpressConnectRouterAssociationAllowedPrefix"
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["EcrId"] = parts[0]
@@ -195,7 +189,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationUpdat
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
 					wait()
@@ -227,10 +221,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationDelet
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewExpressconnectrouterClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["EcrId"] = parts[0]
 	request["AssociationId"] = parts[1]
@@ -241,7 +232,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociationDelet
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
