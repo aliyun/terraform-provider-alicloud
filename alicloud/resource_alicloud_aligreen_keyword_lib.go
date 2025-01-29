@@ -89,10 +89,7 @@ func resourceAliCloudAligreenKeywordLibCreate(d *schema.ResourceData, meta inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Name"] = d.Get("keyword_lib_name")
@@ -122,11 +119,9 @@ func resourceAliCloudAligreenKeywordLibCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -200,10 +195,7 @@ func resourceAliCloudAligreenKeywordLibUpdate(d *schema.ResourceData, meta inter
 	var query map[string]interface{}
 	update := false
 	action := "UpdateKeywordLib"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = d.Id()
@@ -238,7 +230,7 @@ func resourceAliCloudAligreenKeywordLibUpdate(d *schema.ResourceData, meta inter
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -264,21 +256,16 @@ func resourceAliCloudAligreenKeywordLibDelete(d *schema.ResourceData, meta inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Id"] = d.Id()
 
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

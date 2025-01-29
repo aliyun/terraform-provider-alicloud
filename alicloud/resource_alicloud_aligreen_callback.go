@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -67,10 +66,7 @@ func resourceAliCloudAligreenCallbackCreate(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Name"] = d.Get("callback_name")
@@ -88,11 +84,9 @@ func resourceAliCloudAligreenCallbackCreate(d *schema.ResourceData, meta interfa
 		request["CallbackSuggestions"] = convertListToJsonString(jsonPathResult4.([]interface{}))
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -163,10 +157,7 @@ func resourceAliCloudAligreenCallbackUpdate(d *schema.ResourceData, meta interfa
 	var query map[string]interface{}
 	update := false
 	action := "UpdateCallback"
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = d.Id()
@@ -201,11 +192,9 @@ func resourceAliCloudAligreenCallbackUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -231,18 +220,13 @@ func resourceAliCloudAligreenCallbackDelete(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAligreenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Id"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-23"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
