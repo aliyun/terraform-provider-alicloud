@@ -14,6 +14,8 @@ type BssOpenApiService struct {
 	client *connectivity.AliyunClient
 }
 
+const ModulesSizeLimit = 50
+
 func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
@@ -325,4 +327,69 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 		return object, WrapError(err)
 	}
 	return v.([]interface{}), nil
+}
+func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, paymentType string, modules []map[string]interface{}) (object []float64, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	var priceList []float64
+	action := "GetSubscriptionPrice"
+	request := map[string]interface{}{
+		"OrderType":        "NewOrder",
+		"SubscriptionType": "Subscription",
+		"Region":           client.RegionId,
+		"ProductCode":      productCode,
+		"ProductType":      productType,
+	}
+	if paymentType == "Subscription" {
+		request["ServicePeriodQuantity"] = 1
+		request["ServicePeriodUnit"] = "Month"
+		request["Quantity"] = 1
+	}
+	if paymentType == "PayAsYouGo" {
+		action = "GetPayAsYouGoPrice"
+		request["SubscriptionType"] = "PayAsYouGo"
+	}
+	moduleLength := len(modules)
+	for {
+		if len(modules) < ModulesSizeLimit {
+			request["ModuleList"] = modules
+		} else {
+			tmp := modules[:ModulesSizeLimit]
+			modules = modules[ModulesSizeLimit:]
+			moduleLength = len(tmp)
+			request["ModuleList"] = &tmp
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapError(err)
+		}
+		v, err := jsonpath.Get("$.Data.ModuleDetails.ModuleDetail", response)
+		if err != nil {
+			return object, WrapError(err)
+		}
+		for _, o := range v.([]interface{}) {
+			priceList = append(priceList, o.(map[string]interface{})["OriginalCost"].(float64))
+		}
+		if moduleLength < ModulesSizeLimit {
+			break
+		}
+	}
+	return priceList, nil
 }

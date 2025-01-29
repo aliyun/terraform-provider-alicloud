@@ -2,12 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -142,33 +140,28 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 
 func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := r_kvstore.CreateDescribeAvailableResourceRequest()
-	request.RegionId = client.RegionId
-	request.ZoneId = d.Get("zone_id").(string)
+	var response map[string]interface{}
+	var err error
+	action := "DescribeAvailableResource"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ZoneId"] = d.Get("zone_id").(string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
-	request.InstanceChargeType = instanceChargeType
-	request.Engine = d.Get("engine").(string)
-	request.ProductType = d.Get("product_type").(string)
-	var response = &r_kvstore.DescribeAvailableResourceResponse{}
-	err := resource.Retry(time.Minute*5, func() *resource.RetryError {
-		raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DescribeAvailableResource(request)
-		})
+	request["InstanceChargeType"] = instanceChargeType
+	request["Engine"] = d.Get("engine").(string)
+	request["ProductType"] = d.Get("product_type").(string)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
-				time.Sleep(time.Duration(5) * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*r_kvstore.DescribeAvailableResourceResponse)
 		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kvstore_instance_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
 
 	var instanceClasses []string
 	var ids []string
@@ -180,39 +173,53 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	shardNumber, shardNumberGot := d.GetOk("shard_number")
 	nodeType, nodeTypeGot := d.GetOk("node_type")
 
-	for _, AvailableZone := range response.AvailableZones.AvailableZone {
-		zondId := AvailableZone.ZoneId
+	resp, err := jsonpath.Get("$.AvailableZones.AvailableZone", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones.AvailableZone", response)
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		AvailableZone := v.(map[string]interface{})
+		zondId := AvailableZone["ZoneId"].(string)
 		ids = append(ids, zondId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEditionType := range SupportedEngine.SupportedEditionTypes.SupportedEditionType {
-				if editionTypeGot && editionType.(string) != SupportedEditionType.EditionType {
+		for _, v := range AvailableZone["SupportedEngines"].(map[string]interface{})["SupportedEngine"].([]interface{}) {
+			SupportedEngine := v.(map[string]interface{})
+			ids = append(ids, SupportedEngine["Engine"].(string))
+			for _, v := range SupportedEngine["SupportedEditionTypes"].(map[string]interface{})["SupportedEditionType"].([]interface{}) {
+				SupportedEditionType := v.(map[string]interface{})
+				if editionTypeGot && editionType.(string) != fmt.Sprint(SupportedEditionType["EditionType"]) {
 					continue
 				}
-				ids = append(ids, SupportedEditionType.EditionType)
-				for _, SupportedSeriesType := range SupportedEditionType.SupportedSeriesTypes.SupportedSeriesType {
-					if seriesTypeGot && seriesType.(string) != SupportedSeriesType.SeriesType {
+				ids = append(ids, SupportedEditionType["EditionType"].(string))
+				for _, v := range SupportedEditionType["SupportedSeriesTypes"].(map[string]interface{})["SupportedSeriesType"].([]interface{}) {
+					SupportedSeriesType := v.(map[string]interface{})
+					if seriesTypeGot && seriesType.(string) != fmt.Sprint(SupportedSeriesType["SeriesType"]) {
 						continue
 					}
-					for _, SupportedEngineVersion := range SupportedSeriesType.SupportedEngineVersions.SupportedEngineVersion {
-						if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
+					for _, v := range SupportedSeriesType["SupportedEngineVersions"].(map[string]interface{})["SupportedEngineVersion"].([]interface{}) {
+						SupportedEngineVersion := v.(map[string]interface{})
+						if engineVersionGot && engineVersion.(string) != fmt.Sprint(SupportedEngineVersion["Version"]) {
 							continue
 						}
-						for _, SupportedArchitectureType := range SupportedEngineVersion.SupportedArchitectureTypes.SupportedArchitectureType {
-							if architectureGot && architecture.(string) != SupportedArchitectureType.Architecture {
+						for _, v := range SupportedEngineVersion["SupportedArchitectureTypes"].(map[string]interface{})["SupportedArchitectureType"].([]interface{}) {
+							SupportedArchitectureType := v.(map[string]interface{})
+							if architectureGot && architecture.(string) != fmt.Sprint(SupportedArchitectureType["Architecture"]) {
 								continue
 							}
-							for _, SupportedShardNumber := range SupportedArchitectureType.SupportedShardNumbers.SupportedShardNumber {
-								number, _ := strconv.Atoi(SupportedShardNumber.ShardNumber)
+							for _, v := range SupportedArchitectureType["SupportedShardNumbers"].(map[string]interface{})["SupportedShardNumber"].([]interface{}) {
+								SupportedShardNumber := v.(map[string]interface{})
+								number, _ := strconv.Atoi(fmt.Sprint(SupportedShardNumber["ShardNumber"]))
 								if shardNumberGot && shardNumber.(int) != number {
 									continue
 								}
-								for _, SupportedNodeType := range SupportedShardNumber.SupportedNodeTypes.SupportedNodeType {
-									if nodeTypeGot && nodeType.(string) != SupportedNodeType.SupportedNodeType {
+								for _, v := range SupportedShardNumber["SupportedNodeTypes"].(map[string]interface{})["SupportedNodeType"].([]interface{}) {
+									SupportedNodeType := v.(map[string]interface{})
+									if nodeTypeGot && nodeType.(string) != fmt.Sprint(SupportedNodeType["SupportedNodeType"]) {
 										continue
 									}
-									for _, AvailableResource := range SupportedNodeType.AvailableResources.AvailableResource {
-										instanceClasses = append(instanceClasses, AvailableResource.InstanceClass)
+									for _, v := range SupportedNodeType["AvailableResources"].(map[string]interface{})["AvailableResource"].([]interface{}) {
+										AvailableResource := v.(map[string]interface{})
+										instanceClasses = append(instanceClasses, AvailableResource["InstanceClass"].(string))
 									}
 								}
 							}
@@ -228,8 +235,31 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	var instanceClassPrices []map[string]interface{}
 	sortedBy := d.Get("sorted_by").(string)
 	if sortedBy == "Price" && len(instanceClasses) > 0 {
-		bssopenapiService := BssopenapiService{client}
-		priceList, err := getKVStoreInstanceClassPrice(bssopenapiService, instanceChargeType, instanceClasses)
+		bssopenapiService := BssOpenApiService{client}
+		moduleCode := "InstanceClass"
+		modules := make([]map[string]interface{}, 0)
+		for _, instanceClass := range instanceClasses {
+			config := fmt.Sprintf("InstanceClass:%s,Region:%s", instanceClass, client.Region)
+			if instanceChargeType == string(PostPaid) {
+				modules = append(modules, map[string]interface{}{
+					"ModuleCode": moduleCode,
+					"Config":     config,
+					"PriceType":  "Hour",
+				})
+			} else {
+				modules = append(modules, map[string]interface{}{
+					"ModuleCode": moduleCode,
+					"Config":     config,
+				})
+
+			}
+		}
+		paymentType := "PayAsYouGo"
+		if instanceChargeType == string(PrePaid) {
+			paymentType = "Subscription"
+		}
+
+		priceList, err := bssopenapiService.GetInstanceTypePrice("redisa", "", paymentType, modules)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -269,36 +299,4 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 		}
 	}
 	return nil
-}
-
-func getKVStoreInstanceClassPrice(bssopenapiService BssopenapiService, instanceChargeType string, instanceClasses []string) ([]float64, error) {
-	client := bssopenapiService.client
-	var modules interface{}
-	moduleCode := "InstanceClass"
-	var payAsYouGo []bssopenapi.GetPayAsYouGoPriceModuleList
-	var subsciption []bssopenapi.GetSubscriptionPriceModuleList
-	for _, instanceClass := range instanceClasses {
-		config := fmt.Sprintf("InstanceClass:%s,Region:%s", instanceClass, client.Region)
-		if instanceChargeType == string(PostPaid) {
-			payAsYouGo = append(payAsYouGo, bssopenapi.GetPayAsYouGoPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-				PriceType:  "Hour",
-			})
-		} else {
-			subsciption = append(subsciption, bssopenapi.GetSubscriptionPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-			})
-
-		}
-	}
-
-	if len(payAsYouGo) != 0 {
-		modules = payAsYouGo
-	} else {
-		modules = subsciption
-	}
-
-	return bssopenapiService.GetInstanceTypePrice("redisa", "", modules)
 }

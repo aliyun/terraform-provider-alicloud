@@ -10,14 +10,9 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -329,20 +324,14 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		request["InstanceType"] = v
 	}
 
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var objects []interface{}
 	var response map[string]interface{}
 
 	for {
 		action := "DescribeInstanceTypes"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -350,7 +339,6 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			response = resp
 			addDebug(action, response, request)
 			return nil
 		})
@@ -376,19 +364,34 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	imageSupportInstanceTypesMap := make(map[string]struct{}, 0)
 	imageId := strings.TrimSpace(d.Get("image_id").(string))
 	if imageId != "" {
-		reqImageId := ecs.CreateDescribeImageSupportInstanceTypesRequest()
-		reqImageId.ImageId = imageId
-
-		raw1, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeImageSupportInstanceTypes(reqImageId)
+		request = map[string]interface{}{
+			"ImageId":  imageId,
+			"RegionId": client.RegionId,
+		}
+		action := "DescribeImageSupportInstanceTypes"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instance_types", action, AlibabaCloudSdkGoERROR)
 		}
-		imageSupportInstanceTypes, _ := raw1.(*ecs.DescribeImageSupportInstanceTypesResponse)
-
-		for _, types := range imageSupportInstanceTypes.InstanceTypes.InstanceType {
-			imageSupportInstanceTypesMap[types.InstanceTypeId] = struct{}{}
+		resp, err := jsonpath.Get("$.InstanceTypes.InstanceType", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceTypes.InstanceType", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			imageSupportInstanceTypesMap[fmt.Sprint(v.(map[string]interface{})["InstanceTypeId"])] = struct{}{}
 		}
 	}
 
@@ -445,9 +448,33 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	sortedBy := d.Get("sorted_by").(string)
 
 	if sortedBy == "Price" && len(instanceTypes) > 0 {
-		bssopenapiService := BssopenapiService{client}
+		bssopenapiService := BssOpenApiService{client}
+		instanceChargeType := d.Get("instance_charge_type").(string)
+		moduleCode := "InstanceType"
+		modules := make([]map[string]interface{}, 0)
+		for _, types := range instanceTypes {
+			config := fmt.Sprintf("InstanceType:%s,IoOptimized:IoOptimized,ImageOs:linux,Region:%s",
+				fmt.Sprint(types.InstanceType["InstanceTypeId"]), client.RegionId)
+			if instanceChargeType == string(PostPaid) {
+				modules = append(modules, map[string]interface{}{
+					"ModuleCode": moduleCode,
+					"Config":     config,
+					"PriceType":  "Hour",
+				})
+			} else {
+				modules = append(modules, map[string]interface{}{
+					"ModuleCode": moduleCode,
+					"Config":     config,
+				})
 
-		priceList, err := getEcsInstanceTypePrice(bssopenapiService, d.Get("instance_charge_type").(string), instanceTypes)
+			}
+		}
+		paymentType := "PayAsYouGo"
+		if instanceChargeType == string(PrePaid) {
+			paymentType = "Subscription"
+		}
+
+		priceList, err := bssopenapiService.GetInstanceTypePrice("ecs", "", paymentType, modules)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -537,37 +564,4 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 		writeToFile(output.(string), s)
 	}
 	return nil
-}
-
-func getEcsInstanceTypePrice(bssopenapiService BssopenapiService, instanceChargeType string, instanceTypes []instanceTypeWithOriginalPrice) ([]float64, error) {
-	client := bssopenapiService.client
-	var modules interface{}
-	moduleCode := "InstanceType"
-	var payAsYouGo []bssopenapi.GetPayAsYouGoPriceModuleList
-	var subsciption []bssopenapi.GetSubscriptionPriceModuleList
-	for _, types := range instanceTypes {
-		config := fmt.Sprintf("InstanceType:%s,IoOptimized:IoOptimized,ImageOs:linux,Region:%s",
-			fmt.Sprint(types.InstanceType["InstanceTypeId"]), client.RegionId)
-		if instanceChargeType == string(PostPaid) {
-			payAsYouGo = append(payAsYouGo, bssopenapi.GetPayAsYouGoPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-				PriceType:  "Hour",
-			})
-		} else {
-			subsciption = append(subsciption, bssopenapi.GetSubscriptionPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-			})
-
-		}
-	}
-
-	if len(payAsYouGo) != 0 {
-		modules = payAsYouGo
-	} else {
-		modules = subsciption
-	}
-
-	return bssopenapiService.GetInstanceTypePrice("ecs", "", modules)
 }
