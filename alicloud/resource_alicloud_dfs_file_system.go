@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -110,10 +109,7 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["InputRegionId"] = client.RegionId
 
@@ -145,11 +141,9 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("dedicated_cluster_id"); ok {
 		request["DedicatedClusterId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -226,10 +220,7 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	update := false
 
 	action := "ModifyFileSystem"
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
@@ -262,11 +253,9 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"FileSystem.ModifyThroughputModeTooFrequent"}) {
 					wait()
@@ -292,19 +281,14 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
 	request["InputRegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
