@@ -193,10 +193,7 @@ func dataSourceAliCloudCenFlowLogRead(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeFlowlogs"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
@@ -229,7 +226,7 @@ func dataSourceAliCloudCenFlowLogRead(d *schema.ResourceData, meta interface{}) 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

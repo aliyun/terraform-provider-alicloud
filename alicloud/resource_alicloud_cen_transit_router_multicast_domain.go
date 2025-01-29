@@ -77,10 +77,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceDat
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -107,7 +104,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceDat
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -188,10 +185,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceDat
 	update := false
 
 	action := "ModifyTransitRouterMulticastDomain"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TransitRouterMulticastDomainId"] = d.Id()
@@ -226,7 +220,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceDat
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 					wait()
@@ -258,10 +252,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainDelete(d *schema.ResourceDat
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["TransitRouterMulticastDomainId"] = d.Id()
 
@@ -271,7 +262,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainDelete(d *schema.ResourceDat
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
