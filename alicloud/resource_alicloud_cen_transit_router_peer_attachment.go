@@ -123,10 +123,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -177,7 +174,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
@@ -251,10 +248,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentUpdate(d *schema.ResourceData
 	var query map[string]interface{}
 	update := false
 	action := "UpdateTransitRouterPeerAttachmentAttribute"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	parts, _ := ParseResourceId(d.Id(), 2)
@@ -312,7 +306,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentUpdate(d *schema.ResourceData
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -344,10 +338,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentDelete(d *schema.ResourceData
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	parts, _ := ParseResourceId(d.Id(), 2)
 	query["TransitRouterAttachmentId"] = parts[1]
@@ -364,7 +355,7 @@ func resourceAliCloudCenTransitRouterPeerAttachmentDelete(d *schema.ResourceData
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

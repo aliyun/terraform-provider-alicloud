@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -25,10 +24,6 @@ func (s *CenServiceV2) DescribeCenTransitRouterPeerAttachment(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTransitRouterPeerAttachments"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	parts, _ := ParseResourceId(id, 2)
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -40,7 +35,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterPeerAttachment(id string) (object
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -101,7 +96,6 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -116,10 +110,6 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewCenClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -133,7 +123,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -152,10 +142,6 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewCenClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -172,7 +158,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -203,10 +189,6 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTransitRouterEcrAttachments"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TransitRouterAttachmentId"] = id
@@ -216,7 +198,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -298,10 +280,6 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListTrafficMarkingPolicies"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["TrafficMarkingPolicyId"] = parts[1]
@@ -310,7 +288,7 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -382,10 +360,6 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTransitRouterVpcAttachments"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	parts, err1 := ParseResourceId(id, 2)
@@ -399,7 +373,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -470,10 +444,6 @@ func (s *CenServiceV2) DescribeCenFlowLog(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeFlowlogs"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FlowLogId"] = id
@@ -484,7 +454,7 @@ func (s *CenServiceV2) DescribeCenFlowLog(id string) (object map[string]interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -552,10 +522,6 @@ func (s *CenServiceV2) DescribeCenTransitRouterMulticastDomain(id string) (objec
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TransitRouterMulticastDomainId"] = id
@@ -567,7 +533,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterMulticastDomain(id string) (objec
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

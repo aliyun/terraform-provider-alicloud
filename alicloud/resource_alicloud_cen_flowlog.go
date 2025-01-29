@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -97,10 +96,7 @@ func resourceAliCloudCenFlowLogCreate(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -131,11 +127,9 @@ func resourceAliCloudCenFlowLogCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("log_format_string"); ok {
 		request["LogFormatString"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -237,20 +231,14 @@ func resourceAliCloudCenFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if object["Status"].(string) != target {
 			if target == "Active" {
 				action := "ActiveFlowLog"
-				conn, err := client.NewCenClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"LOCK_ERROR", "Operation.Blocking", "IncorrectStatus.TrFlowlog"}) || NeedRetry(err) {
 							wait()
@@ -273,20 +261,14 @@ func resourceAliCloudCenFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			if target == "Inactive" {
 				action := "DeactiveFlowLog"
-				conn, err := client.NewCenClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"LOCK_ERROR", "Operation.Blocking", "IncorrectStatus.TrFlowlog"}) || NeedRetry(err) {
 							wait()
@@ -311,10 +293,7 @@ func resourceAliCloudCenFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	action := "ModifyFlowLogAttribute"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FlowLogId"] = d.Id()
@@ -336,11 +315,9 @@ func resourceAliCloudCenFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"LOCK_ERROR", "Operation.Blocking", "IncorrectStatus.flowlog"}) || NeedRetry(err) {
 					wait()
@@ -377,20 +354,15 @@ func resourceAliCloudCenFlowLogDelete(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["FlowLogId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

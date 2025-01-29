@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -131,10 +130,7 @@ func resourceAliCloudCenTrafficMarkingPolicyCreate(d *schema.ResourceData, meta 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["TransitRouterId"] = d.Get("transit_router_id")
 
@@ -170,11 +166,9 @@ func resourceAliCloudCenTrafficMarkingPolicyCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
 				wait()
@@ -287,10 +281,7 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateTrafficMarkingPolicyAttribute"
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["TrafficMarkingPolicyId"] = parts[1]
@@ -307,11 +298,9 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
 					wait()
@@ -342,10 +331,6 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 		if removed.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "UpdateTrafficMarkingPolicyAttribute"
-			conn, err := client.NewCenClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["TrafficMarkingPolicyId"] = parts[1]
@@ -369,11 +354,9 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 			}
 			request["DeleteTrafficMatchRules"] = deleteTrafficMatchRulesMaps
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.TrafficMarkingPolicy"}) || NeedRetry(err) {
 						wait()
@@ -398,10 +381,6 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 		if added.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "UpdateTrafficMarkingPolicyAttribute"
-			conn, err := client.NewCenClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["TrafficMarkingPolicyId"] = parts[1]
@@ -425,11 +404,9 @@ func resourceAliCloudCenTrafficMarkingPolicyUpdate(d *schema.ResourceData, meta 
 			}
 			request["AddTrafficMatchRules"] = addTrafficMatchRulesMaps
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.TrafficMarkingPolicy"}) || NeedRetry(err) {
 						wait()
@@ -463,20 +440,15 @@ func resourceAliCloudCenTrafficMarkingPolicyDelete(d *schema.ResourceData, meta 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCenClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["TrafficMarkingPolicyId"] = parts[1]
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
