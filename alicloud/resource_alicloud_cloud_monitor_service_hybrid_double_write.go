@@ -53,10 +53,7 @@ func resourceAliCloudCloudMonitorServiceHybridDoubleWriteCreate(d *schema.Resour
 	var response map[string]interface{}
 	action := "CreateHybridDoubleWrite"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["SourceNamespace"] = d.Get("source_namespace")
 	request["SourceUserId"] = d.Get("source_user_id")
@@ -67,7 +64,7 @@ func resourceAliCloudCloudMonitorServiceHybridDoubleWriteCreate(d *schema.Resour
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2018-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -82,11 +79,6 @@ func resourceAliCloudCloudMonitorServiceHybridDoubleWriteCreate(d *schema.Resour
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_monitor_service_hybrid_double_write", action, AlibabaCloudSdkGoERROR)
 	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
 	d.SetId(fmt.Sprintf("%v:%v", request["SourceNamespace"], request["SourceUserId"]))
 
 	return resourceAliCloudCloudMonitorServiceHybridDoubleWriteRead(d, meta)
@@ -119,10 +111,7 @@ func resourceAliCloudCloudMonitorServiceHybridDoubleWriteDelete(d *schema.Resour
 	action := "DeleteHybridDoubleWrite"
 	var response map[string]interface{}
 
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -138,7 +127,7 @@ func resourceAliCloudCloudMonitorServiceHybridDoubleWriteDelete(d *schema.Resour
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2018-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

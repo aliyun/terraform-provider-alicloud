@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,10 +72,7 @@ func resourceAlicloudCmsSlsGroupCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "CreateHybridMonitorSLSGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	slsGroupConfigMaps := make([]map[string]interface{}, 0)
 	for _, slsGroupConfig := range d.Get("sls_group_config").(*schema.Set).List() {
 		slsGroupConfigArg := slsGroupConfig.(map[string]interface{})
@@ -95,7 +91,7 @@ func resourceAlicloudCmsSlsGroupCreate(d *schema.ResourceData, meta interface{})
 	request["SLSGroupName"] = d.Get("sls_group_name")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,10 +147,7 @@ func resourceAlicloudCmsSlsGroupRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudCmsSlsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -187,7 +180,7 @@ func resourceAlicloudCmsSlsGroupUpdate(d *schema.ResourceData, meta interface{})
 		action := "ModifyHybridMonitorSLSGroup"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -211,17 +204,14 @@ func resourceAlicloudCmsSlsGroupDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHybridMonitorSLSGroup"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"SLSGroupName": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

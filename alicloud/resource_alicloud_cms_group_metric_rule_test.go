@@ -44,12 +44,8 @@ func testSweepCmsGroupMetricRule(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["Page"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_group_metric_rules", action, AlibabaCloudSdkGoERROR)
 		}
@@ -78,15 +74,11 @@ func testSweepCmsGroupMetricRule(region string) error {
 			log.Printf("[INFO] Delete Cms Metric Rule: %s ", name)
 
 			delAction := "DeleteMetricRules"
-			conn, err := client.NewCmsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			delRequest := map[string]interface{}{
 				"Id": []string{item["RuleId"].(string)},
 			}
 
-			_, err = conn.DoRequest(StringPointer(delAction), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Cms", "2019-01-01", delAction, nil, delRequest, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Cms Metric Rule (%s): %s", name, err)
 			}

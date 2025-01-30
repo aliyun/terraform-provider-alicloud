@@ -1016,6 +1016,11 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 		cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cmsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cmsconn = cmsconn
+	} else {
+		err := client.cmsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
+		}
 	}
 
 	return do(client.cmsconn)
@@ -2301,29 +2306,6 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 
 func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 	productCode := "ons"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
-	productCode := "cms"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {

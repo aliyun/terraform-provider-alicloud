@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -17,11 +16,7 @@ type CloudMonitorServiceServiceV2 struct {
 func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWrite(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeHybridDoubleWrite"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -34,11 +29,9 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2018-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -52,10 +45,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.Result", response)
@@ -84,21 +73,15 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEventRuleTargets(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeEventRuleTargetList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RuleName": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -127,11 +110,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEventRuleTarge
 func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgentProcess(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeMonitoringAgentProcesses"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -143,11 +122,9 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -161,10 +138,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.NodeProcesses.NodeProcess", response)
@@ -193,11 +166,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitoringAgentProcess(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeGroupMonitoringAgentProcess"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -212,11 +181,9 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitorin
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -230,10 +197,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitorin
 
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		resp, err := jsonpath.Get("$.Processes.Process", response)
@@ -281,8 +244,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceBasicPublic(id
 
 	request["SubscriptionType"] = "PayAsYouGo"
 	request["ProductCode"] = "cms"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -376,8 +337,6 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "cms_enterprise_public_intl"
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -216,10 +215,7 @@ func resourceAliCloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "PutGroupMetricRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RuleId"] = d.Get("rule_id")
 	request["GroupId"] = d.Get("group_id")
@@ -349,11 +345,9 @@ func resourceAliCloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 
 	request["Escalations"] = escalationsMap
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()
@@ -367,10 +361,6 @@ func resourceAliCloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_group_metric_rule", action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["RuleId"]))
@@ -535,6 +525,7 @@ func resourceAliCloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -703,16 +694,9 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "PutGroupMetricRule"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 					wait()
@@ -726,10 +710,6 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		d.SetPartial("group_id")
@@ -784,16 +764,9 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "PutMetricRuleTargets"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, putMetricRuleTargetsReq, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, putMetricRuleTargetsReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -809,10 +782,6 @@ func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
-
 		d.SetPartial("targets")
 	}
 
@@ -825,20 +794,15 @@ func resourceAliCloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMetricRules"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Id": []string{d.Id()},
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()

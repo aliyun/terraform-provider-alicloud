@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -39,22 +37,16 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeMetricRuleList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RuleIds": id,
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -71,10 +63,6 @@ func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, er
 			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.Alarms.Alarm", response)
@@ -144,7 +132,7 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 	listRequest.Keyword = keyword
 	listRequest.TaskId = id
 	var raw interface{}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DescribeSiteMonitorList(listRequest)
@@ -179,7 +167,7 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 	request.TaskId = id
 
 	var raw interface{}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DescribeSiteMonitorAttribute(request)
@@ -315,22 +303,16 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeMetricRuleList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RuleIds": id,
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()
@@ -347,10 +329,6 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.Alarms.Alarm", response)
@@ -377,14 +355,9 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 }
 
 func (s *CmsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
+	client := s.client
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -406,7 +379,7 @@ func (s *CmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -437,7 +410,7 @@ func (s *CmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -460,18 +433,13 @@ func (s *CmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeMonitorGroups"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"GroupId":  id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -502,10 +470,7 @@ func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]inter
 
 func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeMonitorGroupInstances"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -514,11 +479,9 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 	request["PageSize"] = PageSizeMedium
 	request["PageNumber"] = 1
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -535,9 +498,6 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 				return object, err
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		v, err := jsonpath.Get("$.Resources.Resource", response)
 		if err != nil {
@@ -566,21 +526,15 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeMetricRuleTemplateAttribute"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"TemplateId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -599,10 +553,6 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
 	v, err := jsonpath.Get("$.Resource", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resource", response)
@@ -616,11 +566,7 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDynamicTagRuleList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"TagRegionId":      s.client.RegionId,
@@ -631,11 +577,9 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -649,10 +593,6 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		resp, err := jsonpath.Get("$.TagGroupList.TagGroup", response)
@@ -688,11 +628,7 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeHybridMonitorNamespaceList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Namespace":  id,
@@ -702,11 +638,9 @@ func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interfac
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -720,10 +654,6 @@ func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interfac
 
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		resp, err := jsonpath.Get("$.DescribeHybridMonitorNamespace", response)
@@ -758,19 +688,14 @@ func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interfac
 
 func (s *CmsService) DescribeCmsSlsGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeHybridMonitorSLSGroup"
 	request := map[string]interface{}{
 		"SLSGroupName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -786,9 +711,6 @@ func (s *CmsService) DescribeCmsSlsGroup(id string) (object map[string]interface
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"400"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:SlsGroup", id)), NotFoundMsg, ProviderERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.List", response)
 	if err != nil {
@@ -807,19 +729,14 @@ func (s *CmsService) DescribeCmsSlsGroup(id string) (object map[string]interface
 
 func (s *CmsService) DescribeCmsHybridMonitorSlsTask(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeHybridMonitorTaskList"
 	request := map[string]interface{}{
 		"TaskId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -835,9 +752,6 @@ func (s *CmsService) DescribeCmsHybridMonitorSlsTask(id string) (object map[stri
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridMonitorSlsTask", id)), NotFoundMsg, ProviderERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.TaskList", response)
 	if err != nil {
@@ -856,10 +770,7 @@ func (s *CmsService) DescribeCmsHybridMonitorSlsTask(id string) (object map[stri
 
 func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeHybridMonitorTaskList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -871,11 +782,9 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 		"Namespace":    parts[1],
 		"TaskType":     "aliyun_fc",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -892,9 +801,6 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridMonitorFcTask", id)), NotFoundMsg, ProviderERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	v, err := jsonpath.Get("$.TaskList", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TaskList", response)
@@ -909,22 +815,16 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeEventRuleList"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"NamePrefix": id,
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -939,11 +839,6 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
 	resp, err := jsonpath.Get("$.EventRules.EventRule", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EventRules.EventRule", response)
@@ -970,21 +865,15 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 func (s *CmsService) DescribeMetricRuleTargets(id string) (objects []interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeMetricRuleTargets"
-
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RuleId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -998,10 +887,6 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (objects []interface{}
 
 	if err != nil {
 		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return objects, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.Targets.Target", response)
@@ -1019,10 +904,7 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (objects []interface{}
 }
 
 func (s *CmsService) DescribeCmsMetricRuleBlackList(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewCmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Ids.1": id,
@@ -1030,11 +912,9 @@ func (s *CmsService) DescribeCmsMetricRuleBlackList(id string) (object map[strin
 
 	var response map[string]interface{}
 	action := "DescribeMetricRuleBlackList"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

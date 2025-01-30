@@ -1,12 +1,10 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -107,15 +105,10 @@ func dataSourceAlicloudCmsHybridMonitorDatasRead(d *schema.ResourceData, meta in
 	request["PromSQL"] = d.Get("prom_sql")
 	request["Start"] = d.Get("start")
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "BadRequest"}) || NeedRetry(err) {
 				wait()
@@ -128,9 +121,6 @@ func dataSourceAlicloudCmsHybridMonitorDatasRead(d *schema.ResourceData, meta in
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_hybrid_monitor_datas", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	resp, err := jsonpath.Get("$.TimeSeries", response)
 	if err != nil {

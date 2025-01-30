@@ -606,10 +606,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 
 	action := "PutResourceMetricRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RuleId"] = d.Id()
 	request["RuleName"] = d.Get("name").(string)
@@ -836,7 +833,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -878,7 +875,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, enableMetricRequest, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, enableMetricRequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -898,7 +895,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, disableMetricRequest, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, disableMetricRequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -955,16 +952,12 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		action := "PutMetricRuleTargets"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, putMetricRuleTargetsReq, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, putMetricRuleTargetsReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -998,10 +991,7 @@ func resourceAliCloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 	action := "DeleteMetricRules"
 	var response map[string]interface{}
 
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Id": []string{d.Id()},
@@ -1011,7 +1001,7 @@ func resourceAliCloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

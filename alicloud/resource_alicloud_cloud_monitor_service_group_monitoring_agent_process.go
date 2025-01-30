@@ -155,10 +155,7 @@ func resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcessCreate(d *sch
 	var response map[string]interface{}
 	action := "CreateGroupMonitoringAgentProcess"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["GroupId"] = d.Get("group_id")
 	request["ProcessName"] = d.Get("process_name")
@@ -252,7 +249,7 @@ func resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcessCreate(d *sch
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -483,16 +480,12 @@ func resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcessUpdate(d *sch
 
 	if update {
 		action := "ModifyGroupMonitoringAgentProcess"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -520,10 +513,7 @@ func resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcessDelete(d *sch
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteGroupMonitoringAgentProcess"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -539,7 +529,7 @@ func resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcessDelete(d *sch
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

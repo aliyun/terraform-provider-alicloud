@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,10 +59,7 @@ func resourceAlicloudCmsMonitorGroupInstancesCreate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	action := "CreateMonitorGroupInstances"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["GroupId"] = d.Get("group_id")
 	Instances := make([]map[string]interface{}, len(d.Get("instances").(*schema.Set).List()))
 	for i, InstancesValue := range d.Get("instances").(*schema.Set).List() {
@@ -78,7 +74,7 @@ func resourceAlicloudCmsMonitorGroupInstancesCreate(d *schema.ResourceData, meta
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -131,10 +127,7 @@ func resourceAlicloudCmsMonitorGroupInstancesRead(d *schema.ResourceData, meta i
 }
 func resourceAlicloudCmsMonitorGroupInstancesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	if d.HasChange("instances") {
 		request := map[string]interface{}{
@@ -154,7 +147,7 @@ func resourceAlicloudCmsMonitorGroupInstancesUpdate(d *schema.ResourceData, meta
 		action := "ModifyMonitorGroupInstances"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -178,10 +171,7 @@ func resourceAlicloudCmsMonitorGroupInstancesDelete(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMonitorGroupInstances"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	info := make(map[string]string)
 	for _, InstancesValue := range d.Get("instances").(*schema.Set).List() {
 		InstancesMap := InstancesValue.(map[string]interface{})
@@ -199,7 +189,7 @@ func resourceAlicloudCmsMonitorGroupInstancesDelete(d *schema.ResourceData, meta
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -182,10 +181,7 @@ func resourceAlicloudCmsHybridMonitorSlsTaskCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "CreateHybridMonitorTask"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("attach_labels"); ok {
 		for attachLabelsPtr, attachLabels := range v.(*schema.Set).List() {
 			attachLabelsArg := attachLabels.(map[string]interface{})
@@ -269,7 +265,7 @@ func resourceAlicloudCmsHybridMonitorSlsTaskCreate(d *schema.ResourceData, meta 
 	request["TaskType"] = "aliyun_sls"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
@@ -282,9 +278,6 @@ func resourceAlicloudCmsHybridMonitorSlsTaskCreate(d *schema.ResourceData, meta 
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_hybrid_monitor_sls_task", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(response["TaskId"]))
@@ -393,10 +386,7 @@ func resourceAlicloudCmsHybridMonitorSlsTaskRead(d *schema.ResourceData, meta in
 }
 func resourceAlicloudCmsHybridMonitorSlsTaskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -498,7 +488,7 @@ func resourceAlicloudCmsHybridMonitorSlsTaskUpdate(d *schema.ResourceData, meta 
 		action := "ModifyHybridMonitorTask"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 					wait()
@@ -512,9 +502,6 @@ func resourceAlicloudCmsHybridMonitorSlsTaskUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 	return resourceAlicloudCmsHybridMonitorSlsTaskRead(d, meta)
 }
@@ -522,16 +509,13 @@ func resourceAlicloudCmsHybridMonitorSlsTaskDelete(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHybridMonitorTask"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"TaskId": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
@@ -543,13 +527,10 @@ func resourceAlicloudCmsHybridMonitorSlsTaskDelete(d *schema.ResourceData, meta 
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
-		return nil
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }
