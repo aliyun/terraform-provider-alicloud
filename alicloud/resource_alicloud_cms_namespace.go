@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -52,10 +51,7 @@ func resourceAliCloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateHybridMonitorNamespace"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Namespace"] = d.Get("namespace")
 
@@ -66,12 +62,9 @@ func resourceAliCloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,10 +78,6 @@ func resourceAliCloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_namespace", action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["Namespace"]))
@@ -125,6 +114,7 @@ func resourceAliCloudCmsNamespaceRead(d *schema.ResourceData, meta interface{}) 
 func resourceAliCloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -147,16 +137,9 @@ func resourceAliCloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}
 
 	if update {
 		action := "ModifyHybridMonitorNamespace"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -171,10 +154,6 @@ func resourceAliCloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 
 	return resourceAliCloudCmsNamespaceRead(d, meta)
@@ -184,20 +163,15 @@ func resourceAliCloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHybridMonitorNamespace"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Namespace": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -214,10 +188,6 @@ func resourceAliCloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	return nil

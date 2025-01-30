@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -76,10 +75,7 @@ func resourceAliCloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateDynamicTagGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["TagRegionId"] = client.RegionId
 	request["TagKey"] = d.Get("tag_key")
@@ -106,12 +102,9 @@ func resourceAliCloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta inter
 	}
 
 	request["MatchExpress"] = matchExpressMaps
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -204,20 +197,15 @@ func resourceAliCloudCmsDynamicTagGroupDelete(d *schema.ResourceData, meta inter
 	cmsService := CmsService{client}
 	action := "DeleteDynamicTagGroup"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"DynamicTagRuleId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

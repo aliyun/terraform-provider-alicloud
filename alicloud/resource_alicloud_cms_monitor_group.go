@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,8 +47,8 @@ func resourceAlicloudCmsMonitorGroup() *schema.Resource {
 
 func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
 	var response map[string]interface{}
+	var err error
 	request := make(map[string]interface{})
 	if v, exist := d.GetOk("resource_group_id"); exist {
 		action := "CreateMonitorGroupByResourceGroupId"
@@ -61,7 +60,7 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -89,7 +88,7 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 	request["GroupName"] = d.Get("monitor_group_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -137,10 +136,7 @@ func resourceAlicloudCmsMonitorGroupRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -160,7 +156,7 @@ func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interfac
 		action := "ModifyMonitorGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -173,9 +169,6 @@ func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interfac
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if !response["Success"].(bool) {
-			return WrapError(Error("ModifyMonitorGroup failed for " + response["Message"].(string)))
 		}
 		d.SetPartial("contact_groups")
 		d.SetPartial("monitor_group_name")
@@ -193,17 +186,14 @@ func resourceAlicloudCmsMonitorGroupDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMonitorGroup"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"GroupId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

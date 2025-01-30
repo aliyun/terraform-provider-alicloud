@@ -52,10 +52,7 @@ func resourceAliCloudCloudMonitorServiceMonitoringAgentProcessCreate(d *schema.R
 	var response map[string]interface{}
 	action := "CreateMonitorAgentProcess"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["InstanceId"] = d.Get("instance_id")
 	request["ProcessName"] = d.Get("process_name")
@@ -68,7 +65,7 @@ func resourceAliCloudCloudMonitorServiceMonitoringAgentProcessCreate(d *schema.R
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,10 +117,7 @@ func resourceAliCloudCloudMonitorServiceMonitoringAgentProcessDelete(d *schema.R
 	action := "DeleteMonitoringAgentProcess"
 	var response map[string]interface{}
 
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -139,7 +133,7 @@ func resourceAliCloudCloudMonitorServiceMonitoringAgentProcessDelete(d *schema.R
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

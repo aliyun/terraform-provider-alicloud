@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,10 +62,7 @@ func resourceAlicloudCmsHybridMonitorFcTaskCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "CreateHybridMonitorTask"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["CollectTargetType"] = "aliyun_fc"
 	request["Namespace"] = d.Get("namespace")
 	if v, ok := d.GetOk("target_user_id"); ok {
@@ -76,7 +72,7 @@ func resourceAlicloudCmsHybridMonitorFcTaskCreate(d *schema.ResourceData, meta i
 	request["YARMConfig"] = d.Get("yarm_config")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "undefined"}) || NeedRetry(err) {
 				wait()
@@ -122,10 +118,7 @@ func resourceAlicloudCmsHybridMonitorFcTaskRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudCmsHybridMonitorFcTaskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -143,7 +136,7 @@ func resourceAlicloudCmsHybridMonitorFcTaskUpdate(d *schema.ResourceData, meta i
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError", "undefined"}) || NeedRetry(err) {
 					wait()
@@ -172,17 +165,13 @@ func resourceAlicloudCmsHybridMonitorFcTaskDelete(d *schema.ResourceData, meta i
 	}
 	action := "DeleteHybridMonitorTask"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"TargetUserId": parts[0],
 		"Namespace":    parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()

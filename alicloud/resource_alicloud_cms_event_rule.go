@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -253,10 +252,7 @@ func resourceAliCloudCloudMonitorServiceEventRuleCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "PutEventRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RuleName"] = d.Get("rule_name")
 
@@ -303,12 +299,9 @@ func resourceAliCloudCloudMonitorServiceEventRuleCreate(d *schema.ResourceData, 
 	}
 
 	request["EventPattern"] = eventPatternMaps
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -594,6 +587,7 @@ func resourceAliCloudCloudMonitorServiceEventRuleRead(d *schema.ResourceData, me
 func resourceAliCloudCloudMonitorServiceEventRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -662,16 +656,9 @@ func resourceAliCloudCloudMonitorServiceEventRuleUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "PutEventRule"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -895,16 +882,9 @@ func resourceAliCloudCloudMonitorServiceEventRuleUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "PutEventRuleTargets"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, putEventRuleTargetsReq, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, putEventRuleTargetsReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -932,19 +912,14 @@ func resourceAliCloudCloudMonitorServiceEventRuleDelete(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteEventRules"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RuleNames": []string{d.Id()},
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -187,10 +186,7 @@ func resourceAliCloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateMetricRuleTemplate"
 	request := make(map[string]interface{})
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Name"] = d.Get("metric_rule_template_name")
 
@@ -300,11 +296,9 @@ func resourceAliCloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta in
 		request["AlertTemplates"] = alertTemplatesMaps
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -475,6 +469,7 @@ func resourceAliCloudCmsMetricRuleTemplateRead(d *schema.ResourceData, meta inte
 func resourceAliCloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -597,16 +592,9 @@ func resourceAliCloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 
 	if update {
 		action := "ModifyMetricRuleTemplate"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, modifyMetricRuleTemplateReq, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, modifyMetricRuleTemplateReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -687,16 +675,9 @@ func resourceAliCloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 
 	if update {
 		action := "ApplyMetricRuleTemplate"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, applyMetricRuleTemplateReq, &runtime)
+			response, err = client.RpcPost("Cms", "2019-01-01", action, nil, applyMetricRuleTemplateReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -734,20 +715,15 @@ func resourceAliCloudCmsMetricRuleTemplateDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMetricRuleTemplate"
 	var response map[string]interface{}
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"TemplateId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
