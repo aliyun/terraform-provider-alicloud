@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -185,10 +184,7 @@ func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["InstanceId"] = d.Get("allocation_id")
 	request["RegionId"] = client.RegionId
@@ -274,11 +270,9 @@ func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 		request["AutoPay"] = autoPay
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "FrequentPurchase.EIP"}) || NeedRetry(err) {
 				wait()
@@ -415,10 +409,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	update := false
 	d.Partial(true)
 	action := "ModifyEipAddressAttribute"
-	conn, err := client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AllocationId"] = d.Id()
@@ -444,11 +435,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "IncorrectStatus.ResourceStatus", "VPC_TASK_CONFLICT"}) || NeedRetry(err) {
 					wait()
@@ -470,10 +459,6 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "SetHighDefinitionMonitorLogStatus"
-	conn, err = client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -496,11 +481,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	request["InstanceType"] = "EIP"
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "IncorrectInstanceStatus", "InvalidBindingStatus", "IncorrectStatus.NatGateway", "InvalidStatus.EcsStatusNotSupport", "InvalidStatus.InstanceHasBandWidth", "InvalidStatus.EniStatusNotSupport", "TaskConflict"}) || NeedRetry(err) {
 					wait()
@@ -517,10 +500,6 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -533,11 +512,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	request["ResourceType"] = "EIP"
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -554,10 +531,6 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "DeletionProtection"
-	conn, err = client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -571,11 +544,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	request["Type"] = "EIP"
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -592,10 +563,6 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "ModifyEipForwardMode"
-	conn, err = client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -607,11 +574,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -650,19 +615,14 @@ func resourceAliCloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEipClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AllocationId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {

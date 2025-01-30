@@ -41,10 +41,6 @@ func testSweepEipAddress(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	action := "DescribeEipAddresses"
 	request := map[string]interface{}{
@@ -55,11 +51,9 @@ func testSweepEipAddress(region string) error {
 	addressIds := make([]string, 0)
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -101,17 +95,13 @@ func testSweepEipAddress(region string) error {
 	for _, addressId := range addressIds {
 		log.Printf("[INFO] Deleting Eip Address: (%s)", addressId)
 		action := "ReleaseEipAddress"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request := map[string]interface{}{
 			"AllocationId": addressId,
 		}
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*9, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
