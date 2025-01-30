@@ -49,10 +49,6 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 	request["RegionId"] = client.RegionId
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response interface{}
 	for {
 		action := "DescribeVirtualBorderRouters"
@@ -60,7 +56,7 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -107,7 +103,7 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-				_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+				_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.BgpGroup"}) {
 						wait()
@@ -129,7 +125,7 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 	return nil
 }
 
-func TestAccAlicloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
+func TestAccAliCloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_virtual_border_router.default"

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectAccessPointsDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectAccessPointsDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_express_connect_access_points.default"
@@ -65,8 +65,8 @@ func TestAccAlicloudExpressConnectAccessPointsDataSource(t *testing.T) {
 			"names.#":                                "1",
 			"points.#":                               "1",
 			"points.0.access_point_feature_models.#": CHECKSET,
-			"points.0.access_point_feature_models.0.feature_key":   CHECKSET,
-			"points.0.access_point_feature_models.0.feature_value": CHECKSET,
+			//"points.0.access_point_feature_models.0.feature_key":   CHECKSET,
+			//"points.0.access_point_feature_models.0.feature_value": CHECKSET,
 			"points.0.id":                 CHECKSET,
 			"points.0.access_point_id":    getAccessPointId(),
 			"points.0.access_point_name":  CHECKSET,

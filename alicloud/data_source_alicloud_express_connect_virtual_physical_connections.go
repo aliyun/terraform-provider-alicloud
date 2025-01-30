@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -258,20 +257,15 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnectionsRead(d *schema.Re
 		virtualPhysicalConnectionNameRegex = r
 	}
 
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var objects []interface{}
 	var response map[string]interface{}
 
 	for {
 		action := "ListVirtualPhysicalConnections"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

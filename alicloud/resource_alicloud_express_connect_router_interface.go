@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -216,10 +215,7 @@ func resourceAlicloudExpressConnectRouterInterfaceCreate(d *schema.ResourceData,
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("access_point_id"); ok {
 		request["AccessPointId"] = v
@@ -281,12 +277,10 @@ func resourceAlicloudExpressConnectRouterInterfaceCreate(d *schema.ResourceData,
 
 	var response map[string]interface{}
 	action := "CreateRouterInterface"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateRouterInterface")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -367,10 +361,7 @@ func resourceAlicloudExpressConnectRouterInterfaceRead(d *schema.ResourceData, m
 func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	vpcService := VpcService{client}
 	d.Partial(true)
 	update := false
@@ -447,7 +438,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 		action := "ModifyRouterInterfaceAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -487,12 +478,10 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 
 	if update {
 		action := "ModifyRouterInterfaceSpec"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("ModifyRouterInterfaceSpec")
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -524,7 +513,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 				action := "ActivateRouterInterface"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -549,7 +538,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 				action := "ConnectRouterInterface"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -574,7 +563,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 				action := "DeactivateRouterInterface"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -599,10 +588,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 
 func resourceAlicloudExpressConnectRouterInterfaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	vpcService := VpcService{client}
 
@@ -620,7 +606,7 @@ func resourceAlicloudExpressConnectRouterInterfaceDelete(d *schema.ResourceData,
 		action := "DeactivateRouterInterface"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -645,12 +631,10 @@ func resourceAlicloudExpressConnectRouterInterfaceDelete(d *schema.ResourceData,
 	}
 
 	action := "DeleteRouterInterface"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteRouterInterface")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

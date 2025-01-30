@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectRouterInterfaceDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectRouterInterfaceDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -24,21 +23,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectEcFailoverTestJob(id str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeFailoverTestJob"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["JobId"] = id
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -98,20 +91,14 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpPeer(id string) (obje
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeBgpPeers"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["BgpPeerId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -172,21 +159,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeExpressConnectTrafficQos"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["QosIdList.1"] = id
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -252,21 +233,15 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosAssociation(id
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQos"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["QosIdList.1"] = parts[0]
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -340,20 +315,14 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosAssociationDescribeExpr
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQos"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -413,10 +382,6 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosQueue(id strin
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQosQueue"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["QosId"] = parts[0]
@@ -424,11 +389,9 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosQueue(id strin
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -491,20 +454,14 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosQueueDescribeExpressCon
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQos"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -564,10 +521,6 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosRule(id string
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQosRule"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["QosId"] = parts[0]
@@ -576,11 +529,9 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosRule(id string
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -643,20 +594,14 @@ func (s *ExpressConnectServiceV2) DescribeAsyncTrafficQosRuleDescribeExpressConn
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeExpressConnectTrafficQos"
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

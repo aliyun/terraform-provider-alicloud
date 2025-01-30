@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,10 +62,7 @@ func resourceAliCloudExpressConnectTrafficQosAssociationCreate(d *schema.Resourc
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["QosId"] = d.Get("qos_id")
 	jsonString := "{}"
@@ -79,11 +75,9 @@ func resourceAliCloudExpressConnectTrafficQosAssociationCreate(d *schema.Resourc
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"EcQoSConflict", "IncorrectStatus.Qos"}) {
 				wait()
@@ -146,10 +140,7 @@ func resourceAliCloudExpressConnectTrafficQosAssociationDelete(d *schema.Resourc
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewExpressconnectClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["QosId"] = parts[0]
 	jsonString := "{}"
@@ -163,11 +154,9 @@ func resourceAliCloudExpressConnectTrafficQosAssociationDelete(d *schema.Resourc
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

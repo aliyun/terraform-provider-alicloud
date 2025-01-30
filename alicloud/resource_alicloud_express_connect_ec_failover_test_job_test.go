@@ -36,7 +36,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5403(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"job_type": "StartNow",
 					"resource_id": []string{
-						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}", "${data.alicloud_express_connect_physical_connections.default.ids.2}"},
+						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}"},
 					"job_duration":              "1",
 					"resource_type":             "PHYSICALCONNECTION",
 					"ec_failover_test_job_name": name,
@@ -44,7 +44,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5403(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"job_type":                  "StartNow",
-						"resource_id.#":             "3",
+						"resource_id.#":             "2",
 						"job_duration":              "1",
 						"resource_type":             "PHYSICALCONNECTION",
 						"ec_failover_test_job_name": name,
@@ -103,7 +103,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5369(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"job_type": "StartLater",
 					"resource_id": []string{
-						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}", "${data.alicloud_express_connect_physical_connections.default.ids.2}"},
+						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}"},
 					"job_duration":              "2",
 					"resource_type":             "PHYSICALCONNECTION",
 					"ec_failover_test_job_name": name,
@@ -111,7 +111,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5369(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"job_type":                  "StartLater",
-						"resource_id.#":             "3",
+						"resource_id.#":             "2",
 						"job_duration":              "2",
 						"resource_type":             "PHYSICALCONNECTION",
 						"ec_failover_test_job_name": name,
@@ -141,11 +141,11 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5369(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_id": []string{
-						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.2}"},
+						"${data.alicloud_express_connect_physical_connections.default.ids.1}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_id.#": "2",
+						"resource_id.#": "1",
 					}),
 				),
 			},
@@ -283,7 +283,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5403_twin(t *testing.T)
 					"description": "meijian-test",
 					"job_type":    "StartNow",
 					"resource_id": []string{
-						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}", "${data.alicloud_express_connect_physical_connections.default.ids.2}"},
+						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}"},
 					"job_duration":              "1",
 					"resource_type":             "PHYSICALCONNECTION",
 					"ec_failover_test_job_name": name,
@@ -292,7 +292,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5403_twin(t *testing.T)
 					testAccCheck(map[string]string{
 						"description":               "meijian-test",
 						"job_type":                  "StartNow",
-						"resource_id.#":             "3",
+						"resource_id.#":             "2",
 						"job_duration":              "1",
 						"resource_type":             "PHYSICALCONNECTION",
 						"ec_failover_test_job_name": name,
@@ -336,7 +336,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5369_twin(t *testing.T)
 					"description": "meijian-test-1",
 					"job_type":    "StartLater",
 					"resource_id": []string{
-						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}", "${data.alicloud_express_connect_physical_connections.default.ids.2}"},
+						"${data.alicloud_express_connect_physical_connections.default.ids.0}", "${data.alicloud_express_connect_physical_connections.default.ids.1}"},
 					"job_duration":              "1",
 					"resource_type":             "PHYSICALCONNECTION",
 					"ec_failover_test_job_name": name,
@@ -346,7 +346,7 @@ func TestAccAliCloudExpressConnectEcFailoverTestJob_basic5369_twin(t *testing.T)
 					testAccCheck(map[string]string{
 						"description":               "meijian-test-1",
 						"job_type":                  "StartLater",
-						"resource_id.#":             "3",
+						"resource_id.#":             "2",
 						"job_duration":              "1",
 						"resource_type":             "PHYSICALCONNECTION",
 						"ec_failover_test_job_name": name,

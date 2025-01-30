@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectVbrPconnAssociationDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectVbrPconnAssociationDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
