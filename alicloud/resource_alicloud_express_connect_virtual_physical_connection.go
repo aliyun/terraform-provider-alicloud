@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -156,10 +155,7 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionCreate(d *schema.Res
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -193,7 +189,7 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionCreate(d *schema.Res
 	action := "CreateVirtualPhysicalConnection"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -264,10 +260,7 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionRead(d *schema.Resou
 func resourceAlicloudExpressConnectVirtualPhysicalConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
@@ -292,7 +285,7 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionUpdate(d *schema.Res
 		action := "UpdateVirtualPhysicalConnection"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -313,10 +306,7 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionUpdate(d *schema.Res
 
 func resourceAlicloudExpressConnectVirtualPhysicalConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 
@@ -325,12 +315,10 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionDelete(d *schema.Res
 	}
 
 	action := "DeletePhysicalConnection"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeletePhysicalConnection")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -63,7 +63,7 @@ func TestAccAliCloudExpressConnectTrafficQosRule_basic6834(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -331,7 +331,7 @@ func TestAccAliCloudExpressConnectTrafficQosRule_basic6833_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -395,7 +395,7 @@ func TestAccAliCloudExpressConnectTrafficQosRule_basic6834_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -459,7 +459,7 @@ func TestAccAliCloudExpressConnectTrafficQosRule_basic6833_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -729,7 +729,7 @@ func TestAccAliCloudExpressConnectTrafficQosRule_basic6834_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

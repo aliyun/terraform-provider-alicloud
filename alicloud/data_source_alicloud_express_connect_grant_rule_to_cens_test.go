@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectGrantRuleToCensDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectGrantRuleToCensDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 2999)
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	idsConf := dataSourceTestAccConfig{

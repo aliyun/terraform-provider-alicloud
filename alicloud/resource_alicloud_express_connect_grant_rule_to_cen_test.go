@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudExpressConnectGrantRuleToCen_basic0(t *testing.T) {
+func TestAccAliCloudExpressConnectGrantRuleToCen_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_grant_rule_to_cen.default"

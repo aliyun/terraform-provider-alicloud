@@ -11,7 +11,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudExpressConnectVirtualPhysicalConnection_basic2033(t *testing.T) {
+func TestAccAliCloudExpressConnectVirtualPhysicalConnection_basic2033(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_virtual_physical_connection.default"

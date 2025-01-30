@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "data.alicloud_express_connect_virtual_border_routers.default"
 	rand := acctest.RandIntRange(1, 2999)

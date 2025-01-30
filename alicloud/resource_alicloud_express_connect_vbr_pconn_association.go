@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -96,10 +95,7 @@ func resourceAlicloudExpressConnectVbrPconnAssociationCreate(d *schema.ResourceD
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("enable_ipv6"); ok {
 		request["EnableIpv6"] = v
 	}
@@ -133,12 +129,10 @@ func resourceAlicloudExpressConnectVbrPconnAssociationCreate(d *schema.ResourceD
 
 	var response map[string]interface{}
 	action := "AssociatePhysicalConnectionToVirtualBorderRouter"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("AssociatePhysicalConnectionToVirtualBorderRouter")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -198,10 +192,7 @@ func resourceAlicloudExpressConnectVbrPconnAssociationRead(d *schema.ResourceDat
 func resourceAlicloudExpressConnectVbrPconnAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	expressConnectService := ExpressConnectService{client}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -214,12 +205,10 @@ func resourceAlicloudExpressConnectVbrPconnAssociationDelete(d *schema.ResourceD
 	}
 
 	action := "UnassociatePhysicalConnectionFromVirtualBorderRouter"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("UnassociatePhysicalConnectionFromVirtualBorderRouter")
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

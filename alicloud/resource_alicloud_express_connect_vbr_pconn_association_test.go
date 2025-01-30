@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudExpressConnectVbrPconnAssociation_basic2042(t *testing.T) {
+func TestAccAliCloudExpressConnectVbrPconnAssociation_basic2042(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_vbr_pconn_association.default"
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)

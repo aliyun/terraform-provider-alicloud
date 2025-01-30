@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -131,10 +130,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	var response map[string]interface{}
 	action := "CreateVirtualBorderRouter"
 	request := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOkExists("bandwidth"); ok {
 		request["Bandwidth"] = v
 	}
@@ -169,11 +165,9 @@ func resourceAlicloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	}
 	request["VlanId"] = d.Get("vlan_id")
 	request["ClientToken"] = buildClientToken("CreateVirtualBorderRouter")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskConflict"}) {
 				wait()
@@ -239,10 +233,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -365,11 +356,9 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		}
 		action := "ModifyVirtualBorderRouterAttribute"
 		request["ClientToken"] = buildClientToken("ModifyVirtualBorderRouterAttribute")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -413,11 +402,9 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				action := "RecoverVirtualBorderRouter"
 
 				request["ClientToken"] = buildClientToken("RecoverVirtualBorderRouter")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -443,11 +430,9 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				request["RegionId"] = client.RegionId
 				action := "TerminateVirtualBorderRouter"
 				request["ClientToken"] = buildClientToken("TerminateVirtualBorderRouter")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -476,21 +461,16 @@ func resourceAlicloudExpressConnectVirtualBorderRouterDelete(d *schema.ResourceD
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteVirtualBorderRouter"
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"VbrId": d.Id(),
 	}
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("DeleteVirtualBorderRouter")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.BgpGroup"}) {
 				wait()

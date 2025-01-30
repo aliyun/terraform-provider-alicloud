@@ -11,7 +11,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudExpressconnectRouterInterface_basic(t *testing.T) {
+func TestAccAliCloudExpressConnectRouterInterface_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressconnectRouterInterfaceMap)
@@ -105,7 +105,7 @@ func TestAccAlicloudExpressconnectRouterInterface_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudExpressconnectRouterInterface_basic1(t *testing.T) {
+func TestAccAliCloudExpressConnectRouterInterface_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressconnectRouterInterfaceMap)

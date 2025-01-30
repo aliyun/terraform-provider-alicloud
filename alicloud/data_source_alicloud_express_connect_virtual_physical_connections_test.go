@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudExpressConnectVirtualPhysicalConnectionDataSource(t *testing.T) {
+func TestAccAliCloudExpressConnectVirtualPhysicalConnectionDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	testAccPreCheckWithExpressConnectUidSetting(t)
