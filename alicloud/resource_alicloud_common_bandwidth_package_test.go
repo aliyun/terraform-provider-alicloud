@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -44,15 +42,9 @@ func testSweepCommonBandwidthPackage(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	packageIds := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			return fmt.Errorf("Error retrieving CommonBandwidthPackages: %s", err)
 		}
@@ -94,7 +86,7 @@ func testSweepCommonBandwidthPackage(region string) error {
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
