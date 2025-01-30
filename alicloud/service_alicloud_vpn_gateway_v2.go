@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -17,7 +15,7 @@ type VPNGatewayServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
-// DescribeVPNGatewayVPNGateway <<< Encapsulated get interface for VPNGateway VPNGateway.
+// DescribeVPNGatewayVPNGateway <<< Encapsulated get interface for VPNGateway.
 
 func (s *VPNGatewayServiceV2) DescribeVPNGatewayVPNGateway(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -25,20 +23,14 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVPNGateway(id string) (object ma
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVpnGateway"
-	conn, err := client.NewVpngatewayClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["VpnGatewayId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -95,7 +87,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -110,10 +101,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UnTagResources"
-			conn, err = client.NewVpngatewayClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -121,13 +108,10 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -147,10 +131,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewVpngatewayClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -163,11 +143,9 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -200,10 +178,6 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayCustomerGateway(id string) (obje
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeCustomerGateway"
-	conn, err := client.NewVpngatewayClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["CustomerGatewayId"] = id
@@ -211,7 +185,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayCustomerGateway(id string) (obje
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -264,20 +238,14 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVpnConnection(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVpnConnection"
-	conn, err := client.NewVpngatewayClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["VpnConnectionId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -341,19 +309,13 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayZone(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVpnGatewayAvailableZones"
-	conn, err := client.NewVpngatewayClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("Vpc", "2016-04-28", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {

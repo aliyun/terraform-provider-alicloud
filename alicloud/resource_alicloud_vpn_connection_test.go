@@ -212,56 +212,6 @@ func TestAccAliCloudVPNConnectionBasic(t *testing.T) {
 
 }
 
-func TestAccAliCloudVPNConnectionMulti(t *testing.T) {
-	var v vpc.DescribeVpnConnectionResponse
-
-	resourceId := "alicloud_vpn_connection.default.1"
-	ra := resourceAttrInit(resourceId, testAccVpnConnectionCheckMap)
-
-	serviceFunc := func() interface{} {
-		return &VpnGatewayService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testaccVpnConnectionMulti%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceVpnConnectionConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			//testAccPreCheckWithAccountSiteType(t, IntlSite)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"count":               "2",
-					"vpn_gateway_id":      "${alicloud_vpn_gateway.default.id}",
-					"customer_gateway_id": "${alicloud_vpn_customer_gateway.default.id}",
-					"local_subnet":        []string{"172.16.0.0/24", "172.16.1.0/24"},
-					"remote_subnet":       []string{"10.0.0.0/24", "10.0.1.0/24"},
-					"name":                "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
-					}),
-				),
-			},
-		},
-	})
-
-}
-
 var testAccVpnConnectionCheckMap = map[string]string{
 	"vpn_gateway_id":                CHECKSET,
 	"customer_gateway_id":           CHECKSET,

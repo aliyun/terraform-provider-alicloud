@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,21 +58,16 @@ func dataSourceAliCloudVPNGatewayZoneRead(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVpnGatewayAvailableZones"
-	conn, err := client.NewVpngatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("spec"); ok {
 		query["Spec"] = StringPointer(v.(string))
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2016-04-28"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("Vpc", "2016-04-28", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
