@@ -7,11 +7,11 @@ description: |-
     Provides a list of Forward Entries owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_forward\_entries
+# alicloud_forward_entries
 
 This data source provides a list of Forward Entries owned by an Alibaba Cloud account.
 
--> **NOTE:** Available in 1.37.0+.
+-> **NOTE:** Available since v1.37.0.
 
 ## Example Usage
 
@@ -71,16 +71,16 @@ data "alicloud_forward_entries" "default" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of Forward Entries IDs.
-* `name_regex` - (Optional, Available in 1.44.0+) A regex string to filter results by forward entry name.
-* `external_ip` - (Optional) The public IP address.
-* `internal_ip` - (Optional) The private IP address.
-* `forward_table_id` - (Required) The ID of the Forward table.
+* `ids` - (Optional, ForceNew) A list of Forward Entries IDs.
+* `name_regex` - (Optional, ForceNew, Available since 1.44.0+) A regex string to filter results by forward entry name.
+* `external_ip` - (Optional, ForceNew) The public IP address.
+* `internal_ip` - (Optional, ForceNew) The private IP address.
+* `forward_table_id` - (Required, ForceNew) The ID of the Forward table.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `forward_entry_name` - (Optional, ForceNew, Available in 1.119.1+) The name of forward entry.
-* `internal_port` - (Optional, ForceNew, Available in 1.119.1+) The internal port.
-* `ip_protocol` - (Optional, ForceNew, Available in 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
-* `status` - (Optional, ForceNew, Available in 1.119.1+) The status of farward entry. Valid value `Available`, `Deleting` and `Pending`.
+* `forward_entry_name` - (Optional, ForceNew, Available since 1.119.1+) The name of forward entry.
+* `internal_port` - (Optional, ForceNew, Available since 1.119.1+) The internal port.
+* `ip_protocol` - (Optional, ForceNew, Available since 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
+* `status` - (Optional, ForceNew, Available since 1.119.1+) The status of farward entry. Valid value `Available`, `Deleting` and `Pending`.
 
 ## Attributes Reference
 

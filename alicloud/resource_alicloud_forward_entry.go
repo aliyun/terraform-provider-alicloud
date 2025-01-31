@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -89,10 +88,7 @@ func resourceAlicloudForwardEntryCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateForwardEntry"
 	request := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+var err error
 	request["ExternalIp"] = d.Get("external_ip")
 	request["ExternalPort"] = d.Get("external_port")
 	if v, ok := d.GetOk("forward_entry_name"); ok {
@@ -112,7 +108,7 @@ func resourceAlicloudForwardEntryCreate(d *schema.ResourceData, meta interface{}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidIp.NotInNatgw", "OperationConflict", "TaskConflict"}) || NeedRetry(err) {
 				wait()
@@ -170,10 +166,7 @@ func resourceAlicloudForwardEntryUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+var err error
 	if !strings.Contains(d.Id(), COLON_SEPARATED) {
 		d.SetId(d.Get("forward_table_id").(string) + COLON_SEPARATED + d.Id())
 	}
@@ -222,7 +215,7 @@ func resourceAlicloudForwardEntryUpdate(d *schema.ResourceData, meta interface{}
 		action := "ModifyForwardEntry"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -255,10 +248,6 @@ func resourceAlicloudForwardEntryDelete(d *schema.ResourceData, meta interface{}
 	vpcService := VpcService{client}
 	action := "DeleteForwardEntry"
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ForwardEntryId": parts[1],
 		"ForwardTableId": parts[0],
@@ -267,7 +256,7 @@ func resourceAlicloudForwardEntryDelete(d *schema.ResourceData, meta interface{}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"UnknownError", "OperationConflict"}) || NeedRetry(err) {
 				wait()

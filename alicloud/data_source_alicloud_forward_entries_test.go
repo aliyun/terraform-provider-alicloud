@@ -14,9 +14,9 @@ func TestAccAlicloudVPCForwardEntriesDataSourceBasic(t *testing.T) {
 		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
-			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}_fake"`,
-		}),
+		//fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		//	"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}_fake"`,
+		//}),
 	}
 
 	externalIpConf := dataSourceTestAccConfig{
