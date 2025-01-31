@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -107,10 +106,7 @@ func resourceAlicloudVpcHaVipCreate(d *schema.ResourceData, meta interface{}) er
 	action := "CreateHaVip"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -140,7 +136,7 @@ func resourceAlicloudVpcHaVipCreate(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -213,10 +209,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 	update := false
 	d.Partial(true)
 	action := "ModifyHaVipAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["HaVipId"] = d.Id()
@@ -246,7 +239,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -267,10 +260,6 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ResourceId"] = d.Id()
@@ -287,7 +276,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -325,10 +314,7 @@ func resourceAlicloudVpcHaVipDelete(d *schema.ResourceData, meta interface{}) er
 	action := "DeleteHaVip"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["HaVipId"] = d.Id()
@@ -338,7 +324,7 @@ func resourceAlicloudVpcHaVipDelete(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
