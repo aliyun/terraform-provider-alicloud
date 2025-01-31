@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -27,20 +25,14 @@ func (s *VpcServiceV2) DescribeVpcPublicIpAddressPool(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListPublicIpAddressPools"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PublicIpAddressPoolIds.1"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -98,7 +90,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -113,10 +104,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UnTagResources"
-			conn, err = client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -126,11 +113,9 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -149,10 +134,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -165,11 +146,9 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -201,10 +180,6 @@ func (s *VpcServiceV2) DescribeVpcPrefixList(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListPrefixLists"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -213,7 +188,7 @@ func (s *VpcServiceV2) DescribeVpcPrefixList(id string) (object map[string]inter
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -249,10 +224,6 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListEntries(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcPrefixListEntries"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -261,7 +232,7 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListEntries(id string) (object map[st
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -294,10 +265,6 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListAssociations(id string) (object m
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcPrefixListAssociations"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -306,7 +273,7 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListAssociations(id string) (object m
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -363,10 +330,6 @@ func (s *VpcServiceV2) DescribeVpcHaVip(id string) (object map[string]interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeHaVips"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -381,7 +344,7 @@ func (s *VpcServiceV2) DescribeVpcHaVip(id string) (object map[string]interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -441,10 +404,6 @@ func (s *VpcServiceV2) DescribeVpcVswitchCidrReservation(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListVSwitchCidrReservations"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -459,7 +418,7 @@ func (s *VpcServiceV2) DescribeVpcVswitchCidrReservation(id string) (object map[
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -520,10 +479,6 @@ func (s *VpcServiceV2) DescribeVpcFlowLog(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeFlowLogs"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -532,7 +487,7 @@ func (s *VpcServiceV2) DescribeVpcFlowLog(id string) (object map[string]interfac
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -593,10 +548,6 @@ func (s *VpcServiceV2) DescribeVpcIpv4Gateway(id string) (object map[string]inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetIpv4GatewayAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -605,7 +556,7 @@ func (s *VpcServiceV2) DescribeVpcIpv4Gateway(id string) (object map[string]inte
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -657,10 +608,6 @@ func (s *VpcServiceV2) DescribeVpcIpv6Gateway(id string) (object map[string]inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeIpv6GatewayAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -669,7 +616,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6Gateway(id string) (object map[string]inte
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -730,21 +677,15 @@ func (s *VpcServiceV2) DescribeVpcPublicIpAddressPoolCidrBlock(id string) (objec
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListPublicIpAddressPoolCidrBlocks"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["CidrBlock"] = parts[1]
 	query["PublicIpAddressPoolId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -806,10 +747,6 @@ func (s *VpcServiceV2) DescribeVpcVswitch(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVSwitchAttributes"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -818,7 +755,7 @@ func (s *VpcServiceV2) DescribeVpcVswitch(id string) (object map[string]interfac
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -995,10 +932,6 @@ func (s *VpcServiceV2) DescribeVpcRouteTable(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRouteTableList"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -1007,7 +940,7 @@ func (s *VpcServiceV2) DescribeVpcRouteTable(id string) (object map[string]inter
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1069,10 +1002,6 @@ func (s *VpcServiceV2) DescribeVpcGatewayRouteTableAttachment(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetIpv4GatewayAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -1086,7 +1015,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayRouteTableAttachment(id string) (object
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1138,21 +1067,15 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeNetworkAclAttributes"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = id
 	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -1217,21 +1140,15 @@ func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]i
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeIpv6EgressOnlyRules"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Ipv6EgressOnlyRuleId"] = parts[1]
 	query["Ipv6GatewayId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1293,10 +1210,6 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilter(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTrafficMirrorFilters"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -1305,7 +1218,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilter(id string) (object map[str
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1367,10 +1280,6 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorSession(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTrafficMirrorSessions"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -1379,7 +1288,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorSession(id string) (object map[st
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1441,10 +1350,6 @@ func (s *VpcServiceV2) DescribeVpcIpv6InternetBandwidth(id string) (object map[s
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeIpv6Addresses"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -1453,7 +1358,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6InternetBandwidth(id string) (object map[s
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1514,20 +1419,14 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetDhcpOptionsSet"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DhcpOptionsSetId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1626,10 +1525,6 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpoint(id string) (object map[string]
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcGatewayEndpointAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = id
@@ -1637,7 +1532,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpoint(id string) (object map[string]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1694,10 +1589,6 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpointRouteTableAttachment(id string)
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetVpcGatewayEndpointAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = parts[0]
@@ -1705,7 +1596,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpointRouteTableAttachment(id string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1774,10 +1665,6 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeNetworkAcls"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = parts[0]
@@ -1785,11 +1672,9 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -1862,20 +1747,14 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterEgressRule(id string) (obje
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListTrafficMirrorFilters"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TrafficMirrorFilterIds.1"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1954,20 +1833,14 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterIngressRule(id string) (obj
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListTrafficMirrorFilters"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TrafficMirrorFilterIds.1"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -2046,10 +1919,6 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeHaVips"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	jsonString := "{}"
@@ -2060,11 +1929,9 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 	}
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -2152,20 +2019,14 @@ func (s *VpcServiceV2) DescribeVpcRouteTableAttachment(id string) (object map[st
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeRouteTableList"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RouteTableId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -2251,21 +2112,15 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["VpcId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	action := "DescribeVpcs"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -2352,20 +2207,14 @@ func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeIpv6Addresses"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Ipv6AddressId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

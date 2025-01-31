@@ -53,15 +53,9 @@ func testSweepHaVip(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	haVipIds := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve HaVips in service list: %s", err)
 			return nil
@@ -99,17 +93,13 @@ func testSweepHaVip(region string) error {
 	for _, id := range haVipIds {
 		log.Printf("[INFO] Deleting HaVip: (%s)", id)
 		action := "DeleteHaVip"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request := map[string]interface{}{
 			"HaVipId": id,
 		}
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
