@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -83,10 +82,7 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	action := "CreateIpv4Gateway"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -104,7 +100,7 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	request["DryRun"] = d.Get("dry_run")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -169,10 +165,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 	update := false
 	d.Partial(true)
 	action := "UpdateIpv4GatewayAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Ipv4GatewayId"] = d.Id()
@@ -192,7 +185,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -213,10 +206,6 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ResourceId"] = d.Id()
@@ -230,7 +219,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -260,10 +249,6 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 		if object["Enabled"].(bool) != target {
 			if target == true {
 				action = "EnableVpcIpv4Gateway"
-				conn, err = client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 
 				request["Ipv4GatewayId"] = d.Id()
@@ -272,7 +257,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 				request["DryRun"] = d.Get("dry_run")
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -318,10 +303,7 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 	action := "DeleteIpv4Gateway"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Ipv4GatewayId"] = d.Id()
@@ -332,7 +314,7 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 	request["DryRun"] = d.Get("dry_run")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

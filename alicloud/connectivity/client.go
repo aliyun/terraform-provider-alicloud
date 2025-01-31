@@ -436,6 +436,11 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		vpcconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.vpcconn = vpcconn
+	} else {
+		err := client.vpcconn.InitWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
+		}
 	}
 
 	return do(client.vpcconn)

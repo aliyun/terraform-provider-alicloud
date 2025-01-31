@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -75,10 +74,7 @@ func resourceAliCloudVpcIpv6AddressCreate(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -98,11 +94,9 @@ func resourceAliCloudVpcIpv6AddressCreate(d *schema.ResourceData, meta interface
 	}
 
 	request["VSwitchId"] = d.Get("vswitch_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -167,10 +161,7 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 	update := false
 	d.Partial(true)
 	action := "ModifyIpv6AddressAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Ipv6AddressId"] = d.Id()
@@ -186,11 +177,9 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -210,10 +199,6 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -225,11 +210,9 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 
 	request["ResourceType"] = "ipv6address"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -265,21 +248,16 @@ func resourceAliCloudVpcIpv6AddressDelete(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Ipv6AddressId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
