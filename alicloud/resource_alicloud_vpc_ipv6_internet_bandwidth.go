@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,10 +62,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthCreate(d *schema.ResourceData, meta
 	action := "AllocateIpv6InternetBandwidth"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -79,7 +75,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthCreate(d *schema.ResourceData, meta
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -136,10 +132,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthUpdate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	update := false
 	action := "ModifyIpv6InternetBandwidth"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Ipv6InternetBandwidthId"] = d.Id()
@@ -156,7 +149,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthUpdate(d *schema.ResourceData, meta
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -184,10 +177,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthDelete(d *schema.ResourceData, meta
 	action := "DeleteIpv6InternetBandwidth"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Ipv6InternetBandwidthId"] = d.Id()
@@ -196,7 +186,7 @@ func resourceAliCloudVpcIpv6InternetBandwidthDelete(d *schema.ResourceData, meta
 	request["Ipv6AddressId"] = d.Get("ipv6_address_id")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
