@@ -7,11 +7,11 @@ description: |-
     Provides a list of available zones by the enhanced Nat Gateway.
 ---
 
-# alicloud\_enhanced\_nat\_available\_zones
+# alicloud_enhanced_nat_available_zones
 
 This data source provides a list of available zones by the enhanced Nat Gateway.
 
--> **NOTE:** Available in 1.102.0+.
+-> **NOTE:** Available since 1.102.0+.
 
 ## Example Usage
 

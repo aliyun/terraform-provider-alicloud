@@ -7,7 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,15 +54,9 @@ func dataSourceAlicloudEnhancedNatAvailableZonesRead(d *schema.ResourceData, met
 		"RegionId": client.RegionId,
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	// If the API supports
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", Throttling}) {
 				time.Sleep(5 * time.Second)

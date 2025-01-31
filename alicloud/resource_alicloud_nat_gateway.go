@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -227,10 +226,7 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "CreateNatGateway"
 	request := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -308,12 +304,10 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["AccessMode"] = accessModeJson
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateNatGateway")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError", "IncorrectStatus.VSWITCH", "OperationConflict"}) || NeedRetry(err) {
 				wait()
@@ -423,6 +417,7 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -441,17 +436,11 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			"ProtectionEnable": d.Get("deletion_protection"),
 			"Type":             "NATGW",
 		}
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken(action)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -502,13 +491,9 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		action := "ModifyNatGatewayAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW"}) || NeedRetry(err) {
 					wait()
@@ -541,13 +526,9 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		request["RegionId"] = client.RegionId
 		request["Spec"] = d.Get("specification")
 		action := "ModifyNatGatewaySpec"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.NatGateway"}) || NeedRetry(err) {
 					wait()
@@ -588,16 +569,10 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			updateNatGatewayNatTypeReq["DryRun"] = d.Get("dry_run")
 		}
 		action := "UpdateNatGatewayNatType"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		updateNatGatewayNatTypeReq["ClientToken"] = buildClientToken("UpdateNatGatewayNatType")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, updateNatGatewayNatTypeReq, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, updateNatGatewayNatTypeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatus", "TaskConflict", "UnknownError"}) || NeedRetry(err) {
 					wait()
@@ -638,10 +613,7 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	vpcService := VpcService{client}
 	action := "DeleteNatGateway"
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"NatGatewayId": d.Id(),
 	}
@@ -652,7 +624,7 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages", "DependencyViolation.EIPS", "OperationConflict"}) || NeedRetry(err) {
 				wait()

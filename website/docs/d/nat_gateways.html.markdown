@@ -7,11 +7,11 @@ description: |-
     Provides a list of Nat Gateways owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_nat\_gateways
+# alicloud_nat_gateways
 
 This data source provides a list of Nat Gateways owned by an Alibaba Cloud account.
 
--> **NOTE:** Available in 1.37.0+.
+-> **NOTE:** Available since v1.37.0.
 
 ## Example Usage
 
@@ -46,9 +46,9 @@ data "alicloud_nat_gateways" "foo" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of NAT gateways IDs.
-* `name_regex` - (Optional) A regex string to filter nat gateways by name.
-* `vpc_id` - (Optional) The ID of the VPC.
+* `ids` - (Optional, ForceNew) A list of NAT gateways IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter nat gateways by name.
+* `vpc_id` - (Optional, ForceNew) The ID of the VPC.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `dry_run` - (Optional, ForceNew, Available in 1.121.0+) Specifies whether to only precheck the request.
 * `nat_gateway_name` - (Optional, ForceNew, Available in 1.121.0+) The name of NAT gateway.
@@ -70,12 +70,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the NAT gateway.
   * `name` - Name of the NAT gateway.
   * `description` - The description of the NAT gateway.
-  * `creation_time` - (Deprecated form v1.121.0) Time of creation.
   * `spec` - The specification of the NAT gateway.
   * `status` - The status of the NAT gateway.
-  * `snat_table_id` - Deprecated from v1.121.0, replace by snat_table_ids.
   * `snat_table_ids` - The ID of the SNAT table that is associated with the NAT gateway.
-  * `forward_table_id` - Deprecated from v1.121.0, replace by forward_table_ids.
   * `forward_table_ids` - The ID of the DNAT table.
   * `vpc_id` - The ID of the VPC.
   * `ip_lists` - The ip address of the bind eip.
