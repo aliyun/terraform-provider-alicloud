@@ -49,17 +49,12 @@ func testSweepVpnIpsecServer(region string) error {
 	request["MaxResults"] = PageSizeLarge
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewVpcClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = aliyunClient.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -99,7 +94,7 @@ func testSweepVpnIpsecServer(region string) error {
 				"IpsecServerId": item["IpsecServerId"],
 				"RegionId":      aliyunClient.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = aliyunClient.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Vpn Ipsec Server (%s): %s", item["IpsecServerName"].(string), err)
 			}
@@ -349,7 +344,7 @@ locals {
 
 data "alicloud_vpn_gateways" "default" {
   vpc_id       = data.alicloud_vpcs.default.ids.0
-  enable_ipsec = true
+  ssl_vpn      = "enable"
 }
 
 locals {

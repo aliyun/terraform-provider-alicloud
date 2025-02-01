@@ -131,7 +131,7 @@ locals {
 
 data "alicloud_vpn_gateways" "default" {
   vpc_id       = data.alicloud_vpcs.default.ids.0
-  enable_ipsec = true
+  ssl_vpn = "enable"
 }
 
 locals {

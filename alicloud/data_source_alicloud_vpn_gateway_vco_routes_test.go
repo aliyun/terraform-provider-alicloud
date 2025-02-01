@@ -96,20 +96,32 @@ variable "name" {
 }
 
 resource "alicloud_cen_instance" "default" {
-	cen_instance_name = var.name
+  cen_instance_name = var.name
 }
+
 resource "alicloud_cen_transit_router" "default" {
-	cen_id = alicloud_cen_instance.default.id
-	transit_router_description = "desd"
-	transit_router_name = var.name
+  cen_id                     = alicloud_cen_instance.default.id
+  transit_router_description = var.name
+  transit_router_name        = var.name
 }
+
+resource "alicloud_cen_transit_router_cidr" "default" {
+  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  cidr                     = "192.168.0.0/16"
+  transit_router_cidr_name = var.name
+  description              = var.name
+  publish_cidr_route       = true
+}
+
 data "alicloud_cen_transit_router_available_resources" "default" {}
+
 resource "alicloud_vpn_customer_gateway" "default" {
-  name        = "${var.name}"
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = "testAccVpnConnectionDesc"
+  customer_gateway_name = var.name
+  ip_address            = "42.104.22.210"
+  asn                   = "45014"
+  description           = var.name
 }
+
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
   network_type        = "public"
@@ -122,7 +134,7 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
     ike_version  = "ikev2"
     ike_mode     = "main"
     ike_lifetime = 86400
-    psk          = "tf-testvpn2"
+    psk          = "tf-examplevpn2"
     ike_pfs      = "group1"
     remote_id    = "testbob2"
     local_id     = "testalice2"
@@ -152,22 +164,23 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   vpn_attachment_name  = var.name
 }
 resource "alicloud_cen_transit_router_vpn_attachment" "default" {
-	auto_publish_route_enabled = false
-	transit_router_attachment_description = var.name
-	transit_router_attachment_name = var.name
-	cen_id = alicloud_cen_transit_router.default.cen_id
-	transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-	vpn_id = alicloud_vpn_gateway_vpn_attachment.default.id
-	zone {
-		zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
-	}
+  auto_publish_route_enabled            = false
+  transit_router_attachment_description = var.name
+  transit_router_attachment_name        = var.name
+  cen_id                                = alicloud_cen_transit_router.default.cen_id
+  transit_router_id                     = alicloud_cen_transit_router_cidr.default.transit_router_id
+  vpn_id                                = alicloud_vpn_gateway_vpn_attachment.default.id
+  zone {
+    zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
+  }
 }
 
+
 resource "alicloud_vpn_gateway_vco_route" "default" {
-	route_dest =      "192.168.12.0/24"
-	next_hop =          alicloud_cen_transit_router_vpn_attachment.default.vpn_id
-	vpn_connection_id =  alicloud_cen_transit_router_vpn_attachment.default.vpn_id
-	weight =         100
+  next_hop          = alicloud_cen_transit_router_vpn_attachment.default.vpn_id
+  vpn_connection_id = alicloud_cen_transit_router_vpn_attachment.default.vpn_id
+  weight            = "100"
+  route_dest        = "192.168.10.0/24"
 }
 
 data "alicloud_vpn_gateway_vco_routes" "default" {	
