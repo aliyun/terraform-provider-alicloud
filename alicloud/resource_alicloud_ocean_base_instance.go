@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -170,10 +169,7 @@ func resourceAliCloudOceanBaseInstanceCreate(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewOceanbaseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["DiskSize"] = d.Get("disk_size")
@@ -218,11 +214,9 @@ func resourceAliCloudOceanBaseInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("cpu_arch"); ok {
 		request["CpuArch"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -340,10 +334,7 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	update := false
 	d.Partial(true)
 	action := "ModifyInstanceName"
-	conn, err := client.NewOceanbaseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -353,11 +344,9 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	request["InstanceName"] = d.Get("instance_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -374,10 +363,6 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	update = false
 	action = "ModifyInstanceNodeNum"
-	conn, err = client.NewOceanbaseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -389,11 +374,9 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	request["NodeNum"] = d.Get("node_num")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || NeedRetry(err) {
 					wait()
@@ -415,10 +398,6 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	update = false
 	action = "ModifyInstanceSpec"
-	conn, err = client.NewOceanbaseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -435,11 +414,9 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 		request["UpgradeSpecNative"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || NeedRetry(err) {
 					wait()
@@ -476,21 +453,16 @@ func resourceAliCloudOceanBaseInstanceDelete(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewOceanbaseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["InstanceIds"] = fmt.Sprintf("[\"%s\"]", d.Id())
 
 	if v, ok := d.GetOk("backup_retain_mode"); ok {
 		request["BackupRetainMode"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

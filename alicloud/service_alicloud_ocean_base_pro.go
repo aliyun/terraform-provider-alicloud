@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,11 +14,7 @@ type OceanBaseProService struct {
 }
 
 func (s *OceanBaseProService) DescribeOceanBaseInstance(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewOceanbaseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"RegionId":   s.client.RegionId,
@@ -27,11 +22,9 @@ func (s *OceanBaseProService) DescribeOceanBaseInstance(id string) (object map[s
 
 	var response map[string]interface{}
 	action := "DescribeInstance"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -76,22 +69,16 @@ func (s *OceanBaseProService) OceanBaseInstanceStateRefreshFunc(id string, failS
 }
 
 func (s *OceanBaseProService) DescribeInstances(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewOceanbaseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
 
 	var response map[string]interface{}
 	action := "DescribeInstances"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
