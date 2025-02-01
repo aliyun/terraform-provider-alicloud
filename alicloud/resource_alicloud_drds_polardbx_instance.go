@@ -104,10 +104,7 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	action := "CreateDBInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -133,11 +130,9 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -204,10 +199,7 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 	update := false
 	d.Partial(true)
 	action := "UpdatePolarDBXInstanceNode"
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["DBInstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -225,7 +217,7 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -253,10 +245,6 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewDrdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -267,11 +255,9 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 
 	request["ResourceType"] = "PolarDBXInstance"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -299,19 +285,14 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 	action := "DeleteDBInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["DBInstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DBInstance.InOrder"}) {
