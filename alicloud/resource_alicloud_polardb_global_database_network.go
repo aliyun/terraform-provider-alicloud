@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -49,10 +48,7 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "CreateGlobalDatabaseNetwork"
 	request := make(map[string]interface{})
-	conn, err := client.NewPolarDBClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DBClusterId"] = d.Get("db_cluster_id")
 
@@ -62,7 +58,7 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkCreate(d *schema.ResourceData, 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -108,7 +104,7 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkRead(d *schema.ResourceData, me
 func resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"GDNId": d.Id(),
@@ -123,13 +119,9 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "ModifyGlobalDatabaseNetwork"
-		conn, err := client.NewPolarDBClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -153,17 +145,14 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkDelete(d *schema.ResourceData, 
 	polarDBService := PolarDBService{client}
 	action := "DeleteGlobalDatabaseNetwork"
 	var response map[string]interface{}
-	conn, err := client.NewPolarDBClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"GDNId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"MemberNumber.NotSupport"}) {
 				wait()
