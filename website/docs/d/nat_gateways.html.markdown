@@ -25,19 +25,19 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-  vpc_name   = "${var.name}"
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_nat_gateway" "foo" {
-  vpc_id        = "${alicloud_vpc.foo.id}"
-  specification = "Small"
-  nat_gate_name = "${var.name}"
+  vpc_id           = alicloud_vpc.foo.id
+  specification    = "Small"
+  nat_gateway_name = var.name
 }
 
 data "alicloud_nat_gateways" "foo" {
-  vpc_id     = "${alicloud_vpc.foo.id}"
-  name_regex = "${alicloud_nat_gateway.foo.name}"
+  vpc_id     = alicloud_vpc.foo.id
+  name_regex = alicloud_nat_gateway.foo.name
   ids        = ["${alicloud_nat_gateway.foo.id}"]
 }
 ```

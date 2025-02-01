@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpn Gateway Vco Routes to the user.
 ---
 
-# alicloud\_vpn\_gateway\_vco\_routes
+# alicloud_vpn_gateway_vco_routes
 
 This data source provides the Vpn Gateway Vco Routes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
@@ -111,7 +111,7 @@ The following arguments are supported:
 * `route_entry_type` - (Optional, ForceNew) The Routing input type. Valid values: `custom`, `bgp`.
 * `status` - (Optional, ForceNew) The status of the vpn route entry. Valid values: `normal`, `published`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

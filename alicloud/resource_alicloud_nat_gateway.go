@@ -415,13 +415,14 @@ func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcServiceV2 := VpcServiceV2{client}
 	vpcService := VpcService{client}
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := vpcService.SetResourceTags(d, "NATGATEWAY"); err != nil {
+		if err := vpcServiceV2.SetResourceTags(d, "NATGATEWAY"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")

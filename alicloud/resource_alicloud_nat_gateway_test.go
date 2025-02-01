@@ -466,6 +466,7 @@ func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 }
 
 func TestAccAliCloudNatGateway_basic1(t *testing.T) {
+	t.Skipf("The PrePaid Nat Gateway has not supported any more.")
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
 	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap2)
@@ -533,6 +534,7 @@ func TestAccAliCloudNatGateway_basic1(t *testing.T) {
 }
 
 func TestAccAliCloudNatGateway_basic2(t *testing.T) {
+	t.Skipf("The PrePaid Nat Gateway has not supported any more.")
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
 	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap2)

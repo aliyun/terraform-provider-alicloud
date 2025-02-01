@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -20,7 +19,7 @@ import (
 
 func dataSourceAlicloudVpnGateways() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudVpnsRead,
+		Read: dataSourceAlicloudVpnGatewaysRead,
 
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -69,6 +68,12 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 				Optional:   true,
 				ForceNew:   true,
 				Deprecated: "Field 'enable_ipsec' has been deprecated from provider version 1.193.0 and it will be removed in the future version.",
+			},
+			"ssl_vpn": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"enable", "disable"}, false),
 			},
 			"include_reservation_data": {
 				Type:     schema.TypeBool,
@@ -138,6 +143,10 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"ssl_vpn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"ssl_connections": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -185,7 +194,7 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudVpnGatewaysRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeVpnGateways"
@@ -228,20 +237,14 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	request["PageNumber"] = 1
 	request["PageSize"] = PageSizeLarge
 
 	for {
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -281,10 +284,14 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
+	sslVpn := d.Get("ssl_vpn").(string)
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+		if sslVpn != "" && sslVpn != fmt.Sprint(object["SslVpn"]) {
+			continue
+		}
 		mapping := map[string]interface{}{
 			"id":                            object["VpnGatewayId"],
 			"vpc_id":                        object["VpcId"],
@@ -297,6 +304,7 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 			"instance_charge_type":          convertChargeType(object["ChargeType"].(string)),
 			"enable_ipsec":                  object["IpsecVpn"],
 			"enable_ssl":                    object["SslVpn"],
+			"ssl_vpn":                       object["SslVpn"],
 			"ssl_connections":               object["SslMaxConnections"],
 			"network_type":                  object["NetworkType"],
 			"disaster_recovery_vswitch_id":  object["DisasterRecoveryVSwitchId"],

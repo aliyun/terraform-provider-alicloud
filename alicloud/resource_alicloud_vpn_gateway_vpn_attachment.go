@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -240,10 +239,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "CreateVpnAttachment"
 	request := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["CustomerGatewayId"] = d.Get("customer_gateway_id")
 	if v, ok := d.GetOkExists("effect_immediately"); ok {
 		request["EffectImmediately"] = v
@@ -316,11 +312,9 @@ func resourceAlicloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 		request["BgpConfig"] = bgpMapsString
 	}
 	request["ClientToken"] = buildClientToken("CreateVpnAttachment")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -429,10 +423,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -547,11 +538,9 @@ func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 	if update {
 		action := "ModifyVpnAttachmentAttribute"
 		request["ClientToken"] = buildClientToken("ModifyVpnAttachmentAttribute")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -576,20 +565,15 @@ func resourceAlicloudVpnGatewayVpnAttachmentDelete(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteVpnAttachment"
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{}
 
 	request["RegionId"] = client.RegionId
 	request["VpnConnectionId"] = d.Id()
 	request["ClientToken"] = buildClientToken("DeleteVpnAttachment")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
