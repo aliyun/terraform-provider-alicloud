@@ -7,8 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -201,7 +199,7 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"DBClusterId": d.Id(),
@@ -273,13 +271,9 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 	}
 	if update {
 		action := "ModifyBackupPolicy"
-		conn, err := client.NewPolarDBClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -308,13 +302,9 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		}
 
 		action := "ModifyLogBackupPolicy"
-		conn, err := client.NewPolarDBClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

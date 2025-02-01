@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -74,10 +73,7 @@ func resourceAlicloudPolarDBParameterGroupCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateParameterGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewPolarDBClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ParameterGroupName"] = d.Get("name")
@@ -100,7 +96,7 @@ func resourceAlicloudPolarDBParameterGroupCreate(d *schema.ResourceData, meta in
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -155,10 +151,7 @@ func resourceAlicloudPolarDBParameterGroupDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteParameterGroup"
 	var response map[string]interface{}
-	conn, err := client.NewPolarDBClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RegionId":         client.RegionId,
 		"ParameterGroupId": d.Id(),
@@ -166,7 +159,7 @@ func resourceAlicloudPolarDBParameterGroupDelete(d *schema.ResourceData, meta in
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

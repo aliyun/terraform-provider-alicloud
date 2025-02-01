@@ -12,8 +12,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -99,13 +97,10 @@ func (s *PolarDBService) DescribeDBClusterAttribute(id string) (object map[strin
 		"DBClusterId": id,
 	}
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1244,20 +1239,15 @@ func (s *PolarDBService) ModifyDBSecurityIps(clusterId, ips string) error {
 func (s *PolarDBService) DescribeBackupPolicy(id string) (object map[string]interface{}, err error) {
 
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackupPolicy"
 	request := map[string]interface{}{
 		"DBClusterId": id,
 		"RegionId":    s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1287,20 +1277,15 @@ func (s *PolarDBService) DescribeBackupPolicy(id string) (object map[string]inte
 func (s *PolarDBService) DescribeLogBackupPolicy(id string) (object map[string]interface{}, err error) {
 
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeLogBackupPolicy"
 	request := map[string]interface{}{
 		"DBClusterId": id,
 		"RegionId":    s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1469,13 +1454,8 @@ func (s *PolarDBService) DescribeDBClusterTDE(id string) (map[string]interface{}
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1493,13 +1473,11 @@ func (s *PolarDBService) CheckKMSAuthorized(id string, tdeRegion string) (map[st
 		request["tdeRegion"] = tdeRegion
 	}
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var err error
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1783,19 +1761,14 @@ func (s *PolarDBService) PolarDBClusterCategoryRefreshFunc(id string, failStates
 
 func (s *PolarDBService) DescribePolarDBGlobalDatabaseNetwork(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeGlobalDatabaseNetwork"
 	request := map[string]interface{}{
 		"GDNId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1843,20 +1816,15 @@ func (s *PolarDBService) PolarDBGlobalDatabaseNetworkRefreshFunc(id string, fail
 
 func (s *PolarDBService) DescribePolarDBParameterGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeParameterGroup"
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
 		"ParameterGroupId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1895,13 +1863,10 @@ func (s *PolarDBService) DescribeDBClusterServerlessConfig(id string) (object ma
 		"DBClusterId": id,
 	}
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1933,13 +1898,10 @@ func (s *PolarDBService) DescribeDBClusterVersion(id string) (object map[string]
 		"DBClusterId": id,
 	}
 	var response map[string]interface{}
-	conn, err := s.client.NewPolarDBClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -378,6 +378,11 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 		polarDBconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		polarDBconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.polarDBconn = polarDBconn
+	} else {
+		err := client.polarDBconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
+		}
 	}
 
 	return do(client.polarDBconn)
@@ -508,32 +513,6 @@ func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 		if err := client.loadEndpoint(productCode); err != nil {
 			log.Printf("[WARN] %s", err.Error())
 			log.Printf("[WARN] loading rds endpoint failed and using %s instead.", endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
-}
-
-func (client *AliyunClient) NewPolarDBClient() (*rpc.Client, error) {
-	productCode := "polardb"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
