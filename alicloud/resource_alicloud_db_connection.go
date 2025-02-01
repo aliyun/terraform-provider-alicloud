@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"regexp"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -85,14 +83,9 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 		request["BabelfishPort"] = v
 	}
 
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -183,14 +176,8 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		if v, ok := d.GetOk("babelfish_port"); ok {
 			request["BabelfishPort"] = v
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 					return resource.RetryableError(err)
@@ -227,19 +214,14 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		"DBInstanceId": split[0],
 		"SourceIp":     client.SourceIp,
 	}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
 			return resource.NonRetryableError(WrapError(err))
 		}
 		request["CurrentConnectionString"] = object["ConnectionString"]
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				return resource.RetryableError(err)

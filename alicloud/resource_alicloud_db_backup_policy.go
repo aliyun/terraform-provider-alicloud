@@ -4,8 +4,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -320,10 +318,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return err
-	}
+	var err error
 	action := "ModifyBackupPolicy"
 	request := map[string]interface{}{
 		"RegionId":              client.RegionId,
@@ -349,9 +344,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 		request["ArchiveBackupKeepCount"] = "1"
 		request["ArchiveBackupKeepPolicy"] = "ByMonth"
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}

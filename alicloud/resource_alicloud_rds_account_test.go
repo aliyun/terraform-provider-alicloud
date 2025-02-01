@@ -367,7 +367,7 @@ data "alicloud_db_zones" "default"{
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -375,7 +375,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -415,6 +415,10 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	instance_charge_type = "Postpaid"
+	monitoring_period =     60
+	db_instance_storage_type =  "local_ssd"
+	db_is_ignore_case =  false
 }
 `, name)
 
@@ -430,7 +434,7 @@ data "alicloud_db_zones" "default"{
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -438,7 +442,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -474,11 +478,14 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	instance_charge_type = "Postpaid"
+	monitoring_period =     60
+	db_is_ignore_case =  false
 }
 
 data "alicloud_kms_keys" "default" {
@@ -512,7 +519,7 @@ data "alicloud_db_zones" "default"{
 	engine_version           = "8.0"
 	instance_charge_type     = "PostPaid"
 	category                 = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -520,7 +527,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine                   = "MySQL"
 	engine_version           = "8.0"
     category                 = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_charge_type     = "PostPaid"
 }
 
@@ -556,7 +563,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine                   = "MySQL"
 	engine_version           = "8.0"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id               = local.vswitch_id

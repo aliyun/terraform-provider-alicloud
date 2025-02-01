@@ -292,16 +292,12 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 
 	var response map[string]interface{}
 	action := "CreateReadOnlyDBInstance"
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 
 	wait := incrementalWait(2*time.Second, 0*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.PrimaryDBInstanceStatus"}) {
 				wait()
@@ -342,10 +338,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	sslUpdate := false
 	sslAction := "ModifyDBInstanceSSL"
 	sslRequest := map[string]interface{}{
@@ -407,7 +400,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(sslAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, sslRequest, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", sslAction, nil, sslRequest, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -483,7 +476,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -523,7 +516,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 			"SourceIp":              client.SourceIp,
 		}
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
@@ -548,7 +541,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 			"ClientToken":     buildClientToken(action),
 			"SourceIp":        client.SourceIp,
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -590,7 +583,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
@@ -636,7 +629,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -680,7 +673,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				request["Period"] = Year
 			}
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -709,7 +702,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 			request["AutoRenew"] = "False"
 		}
 		request["Duration"] = strconv.Itoa(d.Get("auto_renew_period").(int))
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -793,16 +786,10 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 			"DBInstanceId": d.Id(),
 			"SourceIp":     client.SourceIp,
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -859,14 +846,8 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 		"DBInstanceId": d.Id(),
 		"SourceIp":     client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RwSplitNetType.Exist", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 				return resource.RetryableError(err)

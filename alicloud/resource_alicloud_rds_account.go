@@ -138,10 +138,7 @@ func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateAccount"
 	request := make(map[string]interface{})
 	request["SourceIp"] = client.SourceIp
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
 	} else if v, ok := d.GetOk("description"); ok {
@@ -192,7 +189,7 @@ func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus", "OperationDenied.OutofUsage"}) || NeedRetry(err) {
 				wait()
@@ -248,10 +245,7 @@ func resourceAlicloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -277,7 +271,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "ModifyAccountDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -324,7 +318,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "ResetAccountPassword"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, resetAccountPasswordReq, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, resetAccountPasswordReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -377,7 +371,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "ResetAccount"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, resetAccountReq, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, resetAccountReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -408,20 +402,14 @@ func resourceAlicloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 	rdsService := RdsService{client}
 	action := "DeleteAccount"
 	var response map[string]interface{}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"AccountName":  parts[1],
 		"DBInstanceId": parts[0],
 		"SourceIp":     client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
 				wait()
@@ -441,7 +429,7 @@ func resourceAlicloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 			action = "UnlockAccount"
 			wait = incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

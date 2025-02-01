@@ -38,11 +38,8 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
-func (s *RdsService) DescribeDBInstance(id string) (map[string]interface{}, error) {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -50,11 +47,9 @@ func (s *RdsService) DescribeDBInstance(id string) (map[string]interface{}, erro
 		"SourceIp":     s.client.SourceIp,
 	}
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
 				wait()
@@ -81,20 +76,15 @@ func (s *RdsService) DescribeDBInstance(id string) (map[string]interface{}, erro
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *RdsService) DescribeTasks(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeTasks(id string) (object map[string]interface{}, err error) {
 	action := "DescribeTasks"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
@@ -105,20 +95,15 @@ func (s *RdsService) DescribeTasks(id string) (map[string]interface{}, error) {
 	return response, nil
 }
 
-func (s *RdsService) DescribeDBReadonlyInstance(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBReadonlyInstance(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -134,7 +119,7 @@ func (s *RdsService) DescribeDBReadonlyInstance(id string) (map[string]interface
 	return dBInstanceAttributes[0].(map[string]interface{}), nil
 }
 
-func (s *RdsService) DescribeDBAccountPrivilege(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]interface{}, err error) {
 	var ds map[string]interface{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -147,17 +132,12 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (map[string]interface
 		"AccountName":  parts[1],
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	invoker := NewInvoker()
 	invoker.AddCatcher(DBInstanceStatusCatcher)
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	if err := invoker.Run(func() error {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -176,7 +156,7 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (map[string]interface
 	return dBInstanceAccounts[0].(map[string]interface{}), nil
 }
 
-func (s *RdsService) DescribeDBDatabase(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{}, err error) {
 	var ds map[string]interface{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -191,14 +171,9 @@ func (s *RdsService) DescribeDBDatabase(id string) (map[string]interface{}, erro
 		"DBName":       dbName,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
@@ -222,11 +197,8 @@ func (s *RdsService) DescribeDBDatabase(id string) (map[string]interface{}, erro
 	return ds, err
 }
 
-func (s *RdsService) DescribeParameters(id string) (map[string]interface{}, error) {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+func (s *RdsService) DescribeParameters(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	action := "DescribeParameters"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -235,7 +207,7 @@ func (s *RdsService) DescribeParameters(id string) (map[string]interface{}, erro
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -377,10 +349,8 @@ func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) 
 }
 
 func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
+	var err error
 	action := "ModifyPGHbaConfig"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -406,11 +376,9 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 		}
 		count = count + 1
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(err)
@@ -439,10 +407,8 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 }
 
 func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, attribute string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
+	var err error
 	action := "ModifyDBInstanceDeletionProtection"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -450,11 +416,9 @@ func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, 
 		"SourceIp":     s.client.SourceIp,
 	}
 	request["DeletionProtection"] = d.Get("deletion_protection")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -475,10 +439,7 @@ func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, 
 }
 
 func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ModifyHADiagnoseConfig"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -486,11 +447,10 @@ func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute st
 		"SourceIp":     s.client.SourceIp,
 	}
 	request["TcpConnectionType"] = d.Get("tcp_connection_type")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
+	var err error
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -511,10 +471,7 @@ func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute st
 }
 
 func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ModifyParameter"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -551,9 +508,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 				"SourceIp":      s.client.SourceIp,
 			}
 			forceRestartMap := make(map[string]string)
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -577,9 +532,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 				}
 			}
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -610,15 +563,11 @@ func (s *RdsService) DescribeDBInstanceRwNetInfoByMssql(id string) ([]interface{
 		"SourceIp":                 s.client.SourceIp,
 		"DBInstanceNetRWSplitType": "ReadWriteSplitting",
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	client := s.client
 	var response map[string]interface{}
+	var err error
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(err)
@@ -646,15 +595,11 @@ func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error)
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	client := s.client
 	var response map[string]interface{}
+	var err error
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(err)
@@ -741,15 +686,10 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 		"AccountPrivilege": parts[2],
 		"SourceIp":         s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -783,14 +723,9 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 		"DBName":       dbName,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -823,11 +758,8 @@ func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) er
 		"CurrentConnectionString": connection,
 		"SourceIp":                s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
@@ -946,10 +878,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		return WrapError(err)
 	}
 	if updateForData {
-		conn, err := s.client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 		action := "ModifyBackupPolicy"
 		request := map[string]interface{}{
 			"RegionId":              s.client.RegionId,
@@ -985,7 +914,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["BackupInterval"] = backupInterval
 		}
 
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -997,10 +926,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 
 	// At present, the sql server database does not support setting logBackupRetentionPeriod
 	if updateForLog && instance["Engine"] != "SQLServer" {
-		conn, err := s.client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 		action := "ModifyBackupPolicy"
 		request := map[string]interface{}{
 			"RegionId":                      s.client.RegionId,
@@ -1014,7 +940,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"LogBackupLocalRetentionNumber": logBackupLocalRetentionNumber,
 			"SourceIp":                      s.client.SourceIp,
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1027,10 +953,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 }
 
 func (s *RdsService) ModifyDBSecurityIps(instanceId, ips string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ModifySecurityIps"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1038,7 +961,7 @@ func (s *RdsService) ModifyDBSecurityIps(instanceId, ips string) error {
 		"SecurityIps":  ips,
 		"SourceIp":     s.client.SourceIp,
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1057,16 +980,12 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 		"DBInstanceId": instanceId,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1092,13 +1011,8 @@ func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersio
 		"EngineVersion": engineVersion,
 		"SourceIp":      s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1143,16 +1057,12 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1175,23 +1085,18 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 	return groupIds, nil
 }
 
-func (s *RdsService) DescribeDBInstanceSSL(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBInstanceSSL(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBInstanceSSL"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1208,20 +1113,15 @@ func (s *RdsService) DescribeDBInstanceSSL(id string) (map[string]interface{}, e
 	return response, nil
 }
 
-func (s *RdsService) DescribeDBInstanceEncryptionKey(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBInstanceEncryptionKey(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBInstanceEncryptionKey"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1229,23 +1129,18 @@ func (s *RdsService) DescribeDBInstanceEncryptionKey(id string) (map[string]inte
 	return response, nil
 }
 
-func (s *RdsService) DescribeHASwitchConfig(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeHASwitchConfig(id string) (object map[string]interface{}, err error) {
 	action := "DescribeHASwitchConfig"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1262,7 +1157,7 @@ func (s *RdsService) DescribeHASwitchConfig(id string) (map[string]interface{}, 
 	return response, nil
 }
 
-func (s *RdsService) DescribeRdsTDEInfo(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeRdsTDEInfo(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBInstanceTDE"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1273,16 +1168,11 @@ func (s *RdsService) DescribeRdsTDEInfo(id string) (map[string]interface{}, erro
 	if statErr != nil {
 		return nil, WrapError(statErr)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1300,10 +1190,7 @@ func (s *RdsService) DescribeRdsTDEInfo(id string) (map[string]interface{}, erro
 }
 
 func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string) error {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ModifySecurityGroupConfiguration"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1315,12 +1202,11 @@ func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string)
 		groupid = "Empty"
 	}
 	request["SecurityGroupId"] = groupid
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
 				wait()
@@ -1345,13 +1231,8 @@ func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 		"RegionId": s.client.RegionId,
 		"SourceIp": s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, "MultiIZByRegion", action, AlibabaCloudSdkGoERROR)
 	}
@@ -1368,20 +1249,15 @@ func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 	return zoneIds, nil
 }
 
-func (s *RdsService) DescribeBackupPolicy(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeBackupPolicy(id string) (object map[string]interface{}, err error) {
 	action := "DescribeBackupPolicy"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -1399,16 +1275,11 @@ func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int,
 		"RegionId":     s.client.RegionId,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return 0, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1426,23 +1297,18 @@ func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int,
 	return monPeriod, nil
 }
 
-func (s *RdsService) DescribeSQLCollectorPolicy(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeSQLCollectorPolicy(id string) (object map[string]interface{}, err error) {
 	action := "DescribeSQLCollectorPolicy"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 		"RegionId":     s.client.RegionId,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1462,23 +1328,18 @@ func (s *RdsService) DescribeSQLCollectorPolicy(id string) (map[string]interface
 	return response, nil
 }
 
-func (s *RdsService) DescribeSQLCollectorRetention(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeSQLCollectorRetention(id string) (object map[string]interface{}, err error) {
 	action := "DescribeSQLCollectorRetention"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 		"RegionId":     s.client.RegionId,
 		"SourceIp":     s.client.SourceIp,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1849,10 +1710,8 @@ func (s *RdsService) flattenDBSecurityIPs(list []interface{}) []map[string]inter
 func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
+		var err error
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -1871,10 +1730,8 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(1*time.Second, 2*time.Second)
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1905,10 +1762,8 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			}
 
 			wait := incrementalWait(1*time.Second, 2*time.Second)
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1939,16 +1794,11 @@ func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error
 		"RegionId":     s.client.RegionId,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2016,13 +1866,8 @@ func (s *RdsService) DescribeDBProxy(id string) (object map[string]interface{}, 
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -2065,7 +1910,7 @@ func (s *RdsService) DescribeDBProxy(id string) (object map[string]interface{}, 
 	return object, nil
 }
 
-func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (object map[string]interface{}, err error) {
 	action := "DescribeDBProxyEndpoint"
 	request := map[string]interface{}{
 		"RegionId":          s.client.RegionId,
@@ -2073,13 +1918,8 @@ func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (ma
 		"DBProxyEndpointId": endpointName,
 		"SourceIp":          s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "Endpoint.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -2090,20 +1930,15 @@ func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (ma
 	return response, nil
 }
 
-func (s *RdsService) DescribeRdsProxyEndpoint(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeRdsProxyEndpoint(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBProxyEndpoint"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "Endpoint.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -2116,18 +1951,13 @@ func (s *RdsService) DescribeRdsProxyEndpoint(id string) (map[string]interface{}
 
 func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeParameterGroup"
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
 		"ParameterGroupId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParamGroupsNotExistError"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RdsParameterGroup", id)), NotFoundMsg, ProviderERROR)
@@ -2154,10 +1984,7 @@ func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]int
 
 func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAccounts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -2170,9 +1997,7 @@ func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{
 		"AccountName":  parts[1],
 		"DBInstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RdsAccount", id)), NotFoundMsg, ProviderERROR)
@@ -2214,10 +2039,7 @@ func (s *RdsService) RdsAccountStateRefreshFunc(id string, failStates []string) 
 
 func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackups"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -2229,11 +2051,9 @@ func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}
 		"BackupId":     parts[1],
 		"DBInstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2260,21 +2080,16 @@ func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}
 
 func (s *RdsService) DescribeBackupTasks(id string, backupJobId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackupTasks"
 	request := map[string]interface{}{
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 		"BackupJobId":  backupJobId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2325,20 +2140,15 @@ func (s *RdsService) RdsBackupStateRefreshFunc(id string, backupJobId string, fa
 
 func (s *RdsService) DescribeDBInstanceHAConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceHAConfig"
 	request := map[string]interface{}{
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2362,20 +2172,15 @@ func (s *RdsService) DescribeDBInstanceHAConfig(id string) (object map[string]in
 
 func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2405,20 +2210,15 @@ func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]in
 }
 func (s *RdsService) DescribePGHbaConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribePGHbaConfig"
 	request := map[string]interface{}{
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2442,21 +2242,16 @@ func (s *RdsService) DescribePGHbaConfig(id string) (object map[string]interface
 
 func (s *RdsService) DescribeHADiagnoseConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeHADiagnoseConfig"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2480,21 +2275,16 @@ func (s *RdsService) DescribeHADiagnoseConfig(id string) (object map[string]inte
 
 func (s *RdsService) DescribeUpgradeMajorVersionPrecheckTask(id string, taskId int) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeUpgradeMajorVersionPrecheckTask"
 	request := map[string]interface{}{
 		"SourceIp":     s.client.SourceIp,
 		"DBInstanceId": id,
 		"TaskId":       taskId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2598,13 +2388,8 @@ func (s *RdsService) GetDbProxyInstanceSsl(id string) (object map[string]interfa
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
@@ -2622,20 +2407,15 @@ func (s *RdsService) GetDbProxyInstanceSsl(id string) (object map[string]interfa
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *RdsService) DescribeInstanceCrossBackupPolicy(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeInstanceCrossBackupPolicy(id string) (object map[string]interface{}, err error) {
 	action := "DescribeInstanceCrossBackupPolicy"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 		"SourceIp":     s.client.SourceIp,
 	}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -2686,10 +2466,7 @@ func (s *RdsService) FindKmsRoleArnDdr(k string) (string, error) {
 }
 
 func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -2701,11 +2478,9 @@ func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, 
 		"SourceIp":     s.client.SourceIp,
 	}
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2751,10 +2526,7 @@ func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, 
 
 func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -2770,11 +2542,9 @@ func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]i
 		"DBInstanceEndpointId": parts[1],
 		"RegionId":             s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -2840,10 +2610,7 @@ func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]i
 
 func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -2855,11 +2622,9 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 		"DBInstanceEndpointId": parts[1],
 		"RegionId":             s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

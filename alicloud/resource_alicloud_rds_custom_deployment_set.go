@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,10 +69,7 @@ func resourceAliCloudRdsCustomDeploymentSetCreate(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -93,11 +89,9 @@ func resourceAliCloudRdsCustomDeploymentSetCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("group_count"); ok {
 		request["GroupCount"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -160,19 +154,14 @@ func resourceAliCloudRdsCustomDeploymentSetDelete(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["DeploymentSetId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

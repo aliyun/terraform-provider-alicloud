@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -97,13 +95,8 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 			request["Weight"] = string(serial)
 		}
 	}
-	runtime := util.RuntimeOptions{}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	if err := resource.Retry(60*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -233,13 +226,8 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 		if err := rdsService.WaitForDBInstance(request["DBInstanceId"].(string), Running, 60*60); err != nil {
 			return WrapError(err)
 		}
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		runtime := util.RuntimeOptions{}
 		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
 					return resource.RetryableError(err)
@@ -270,13 +258,8 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 		"DBInstanceId": d.Id(),
 		"SourceIp":     client.SourceIp,
 	}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
 	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -293,59 +276,4 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 	}
 
 	return WrapError(rdsService.WaitForDBReadWriteSplitting(d.Id(), Deleted, DefaultLongTimeout))
-}
-
-func resourceAlicloudDBProxyEndpointRead(d *schema.ResourceData, rdsService RdsService, endPointName string) error {
-	endpointInfo, endpointError := rdsService.DescribeDBProxyEndpoint(d.Id(), endPointName)
-	if endpointError != nil {
-		if NotFoundError(endpointError) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(endpointError)
-	}
-	d.Set("instance_id", d.Id())
-	d.Set("connection_string", endpointInfo["DBProxyConnectString"])
-	d.Set("distribution_type", endpointInfo["ReadOnlyInstanceDistributionType"])
-	if port, err := strconv.Atoi(endpointInfo["DBProxyConnectStringPort"].(string)); err == nil {
-		d.Set("port", port)
-	}
-
-	if mdt, err := strconv.Atoi(endpointInfo["ReadOnlyInstanceMaxDelayTime"].(string)); err == nil {
-		d.Set("max_delay_time", mdt)
-	}
-	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(endpointInfo["DBProxyConnectString"].(string))
-	if len(submatch) > 1 {
-		d.Set("connection_prefix", submatch[1])
-	}
-
-	var documented map[string]interface{}
-	if w, ok := d.GetOk("weight"); ok {
-		documented = w.(map[string]interface{})
-	} else {
-		documented = make(map[string]interface{})
-	}
-	var weight []map[string]interface{}
-	rawData := []byte(endpointInfo["ReadOnlyInstanceWeight"].(string))
-	parseErr := json.Unmarshal(rawData, &weight)
-	if parseErr != nil {
-		return WrapError(parseErr)
-	}
-	for _, configNode := range weight {
-		var dbInstanceId string
-		if instanceId, ok := configNode["DBInstanceId"]; ok {
-			dbInstanceId = instanceId.(string)
-		}
-		if _, ok := configNode["Availability"]; ok && configNode["Availability"] != "Available" {
-			delete(documented, dbInstanceId)
-			continue
-		}
-		if _, ok := configNode["Weight"]; ok && configNode["Weight"] != "0" {
-			if _, ok := documented[dbInstanceId]; ok {
-				documented[dbInstanceId] = configNode["Weight"]
-			}
-		}
-	}
-	d.Set("weight", documented)
-	return nil
 }

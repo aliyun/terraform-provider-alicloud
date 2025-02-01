@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -67,10 +65,7 @@ func resourceAlicloudRdsDBNodeCreate(d *schema.ResourceData, meta interface{}) e
 		"DBInstanceId": Trim(d.Get("db_instance_id").(string)),
 		"SourceIp":     client.SourceIp,
 	}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	objects := make([]interface{}, 0)
 	dbNodesMap := make(map[string]interface{})
 	dbNodesMap["classCode"] = d.Get("class_code").(string)
@@ -81,11 +76,9 @@ func resourceAlicloudRdsDBNodeCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request["DBNode"] = string(dbNode)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SYSTEM.CONCURRENT_OPERATE", "OperationDenied.DBInstanceStatus", "MissingParameter"}) || NeedRetry(err) {
 				wait()
@@ -159,15 +152,9 @@ func resourceAlicloudRdsDBNodeDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	request["DBNodeId"] = string(dbNodeIds)
 	var response map[string]interface{}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SYSTEM.CONCURRENT_OPERATE", "OperationDenied.DBInstanceStatus", "MissingParameter"}) || NeedRetry(err) {
 				wait()

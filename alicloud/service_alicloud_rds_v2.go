@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *RdsServiceV2) DescribeRdsCustom(id string) (object map[string]interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRCInstanceAttribute"
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -65,21 +57,15 @@ func (s *RdsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "Custom"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -132,12 +118,11 @@ func (s *RdsServiceV2) RdsCustomStateRefreshFunc(id string, field string, failSt
 // SetResourceTags <<< Encapsulated tag function for Rds.
 func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		var err error
 		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
@@ -149,10 +134,6 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -162,11 +143,9 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -185,10 +164,6 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -201,11 +176,9 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -236,20 +209,14 @@ func (s *RdsServiceV2) DescribeRdsCustomDeploymentSet(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRCDeploymentSets"
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DeploymentSetIds"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2014-08-15"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("Rds", "2014-08-15", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {

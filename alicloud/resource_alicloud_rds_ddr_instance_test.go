@@ -48,16 +48,12 @@ func testSweepDBDdrInstances(region string) error {
 	}
 	objects := make([]interface{}, 0)
 	var response map[string]interface{}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -117,9 +113,8 @@ func testSweepDBDdrInstances(region string) error {
 				"SourceIp":     client.SourceIp,
 			}
 
-			runtime := util.RuntimeOptions{}
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 						return resource.RetryableError(err)
@@ -147,7 +142,7 @@ func testSweepDBDdrInstances(region string) error {
 		runtime.SetAutoretry(true)
 		var response map[string]interface{}
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
@@ -164,7 +159,7 @@ func testSweepDBDdrInstances(region string) error {
 			"SourceIp":     client.SourceIp,
 		}
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil && !NotFoundError(err) {
 				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
