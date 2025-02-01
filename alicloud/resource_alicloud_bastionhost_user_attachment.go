@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,17 +43,14 @@ func resourceAlicloudBastionhostUserAttachmentCreate(d *schema.ResourceData, met
 	var response map[string]interface{}
 	action := "AddUsersToGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceId"] = d.Get("instance_id")
 	request["RegionId"] = client.RegionId
 	request["UserGroupId"] = d.Get("user_group_id")
 	request["UserIds"] = convertListToJsonString([]interface{}{d.Get("user_id")})
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -102,10 +98,6 @@ func resourceAlicloudBastionhostUserAttachmentDelete(d *schema.ResourceData, met
 	}
 	action := "RemoveUsersFromGroup"
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"InstanceId":  parts[0],
 		"UserGroupId": parts[1],
@@ -115,7 +107,7 @@ func resourceAlicloudBastionhostUserAttachmentDelete(d *schema.ResourceData, met
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

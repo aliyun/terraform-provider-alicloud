@@ -59,7 +59,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -135,7 +134,6 @@ type AliyunClient struct {
 	emrconn                      *emr.Client
 	sagconn                      *smartag.Client
 	dbauditconn                  *yundun_dbaudit.Client
-	bastionhostconn              *yundun_bastionhost.Client
 	marketconn                   *market.Client
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
@@ -1915,27 +1913,6 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 
 	return do(client.dbauditconn)
 }
-
-func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Client) (interface{}, error)) (interface{}, error) {
-	if client.bastionhostconn == nil {
-		bastionhostconn, err := yundun_bastionhost.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %#v", err)
-		}
-		bastionhostconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		bastionhostconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		bastionhostconn.SourceIp = client.config.SourceIp
-		bastionhostconn.SecureTransport = client.config.SecureTransport
-		bastionhostconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		bastionhostconn.AppendUserAgent(Provider, providerVersion)
-		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		bastionhostconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
-		client.bastionhostconn = bastionhostconn
-	}
-
-	return do(client.bastionhostconn)
-}
-
 func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the Market API client if necessary
 	if client.marketconn == nil {
@@ -3344,31 +3321,6 @@ func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 	//	endpoint = v.(string)
 	//}
 
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewBastionhostClient() (*rpc.Client, error) {
-	productCode := "bastionhost"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("bastionhost.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)

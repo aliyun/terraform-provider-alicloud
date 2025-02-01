@@ -2,101 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
-func init() {
-	resource.AddTestSweepers("alicloud_bastionhost_instance", &resource.Sweeper{
-		Name: "alicloud_bastionhost_instance",
-		F:    testSweepBastionhostInstances,
-	})
-}
-
-func testSweepBastionhostInstances(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-	request := yundun_bastionhost.CreateDescribeInstanceBastionhostRequest()
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.CurrentPage = requests.NewInteger(1)
-	var instances []yundun_bastionhost.Instance
-
-	for {
-		raw, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-			return bastionhostClient.DescribeInstanceBastionhost(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*yundun_bastionhost.DescribeInstanceBastionhostResponse)
-		if len(response.Instances) < 1 {
-			break
-		}
-
-		instances = append(instances, response.Instances...)
-
-		if len(response.Instances) < PageSizeSmall {
-			break
-		}
-
-		currentPageNo := request.CurrentPage
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		if page, err := getNextpageNumber(currentPageNo); err != nil {
-			return WrapError(err)
-		} else {
-			request.CurrentPage = page
-		}
-	}
-
-	for _, v := range instances {
-		name := v.Description
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Bastionhost Instance: %s", name)
-				continue
-			}
-		}
-		log.Printf("[INFO] Deleting Bastionhost Instance %s .", v.InstanceId)
-
-		releaseReq := yundun_bastionhost.CreateRefundInstanceRequest()
-		releaseReq.InstanceId = v.InstanceId
-		_, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-			return bastionhostClient.RefundInstance(releaseReq)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
-		}
-	}
-
-	return nil
-}
 
 func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	var v yundun_bastionhost.Instance

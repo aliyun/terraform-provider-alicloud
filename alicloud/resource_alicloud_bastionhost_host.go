@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -81,10 +80,7 @@ func resourceAlicloudBastionhostHostCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateHost"
 	request := make(map[string]interface{})
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["ActiveAddressType"] = d.Get("active_address_type")
 	if v, ok := d.GetOk("comment"); ok {
 		request["Comment"] = v
@@ -108,7 +104,7 @@ func resourceAlicloudBastionhostHostCreate(d *schema.ResourceData, meta interfac
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -158,10 +154,7 @@ func resourceAlicloudBastionhostHostRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudBastionhostHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -182,7 +175,7 @@ func resourceAlicloudBastionhostHostUpdate(d *schema.ResourceData, meta interfac
 		action := "ModifyHostsActiveAddressType"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -234,7 +227,7 @@ func resourceAlicloudBastionhostHostUpdate(d *schema.ResourceData, meta interfac
 		action := "ModifyHost"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, modifyHostReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, modifyHostReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -265,10 +258,6 @@ func resourceAlicloudBastionhostHostDelete(d *schema.ResourceData, meta interfac
 	}
 	action := "DeleteHost"
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"HostId":     parts[1],
 		"InstanceId": parts[0],
@@ -277,7 +266,7 @@ func resourceAlicloudBastionhostHostDelete(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

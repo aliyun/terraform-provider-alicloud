@@ -19,7 +19,7 @@ func TestAccAliCloudBastionhostHostAttachment_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sbastionhosthostattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sbastionattachment%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostHostAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
