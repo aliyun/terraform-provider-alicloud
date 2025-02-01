@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,20 +14,15 @@ type ClickhouseService struct {
 }
 
 func (s *ClickhouseService) DescribeClickHouseDbCluster(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDBClusterAttribute"
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -74,11 +68,9 @@ func (s *ClickhouseService) ClickHouseDbClusterStateRefreshFunc(id string, failS
 }
 
 func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+
 	action := "DescribeAccounts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -88,11 +80,9 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 		"AccountName": parts[1],
 		"DBClusterId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
@@ -125,11 +115,9 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 }
 
 func (s *ClickhouseService) DescribeClickHouseAccountAuthority(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+
 	action := "DescribeAccountAuthority"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -140,11 +128,9 @@ func (s *ClickhouseService) DescribeClickHouseAccountAuthority(id string) (objec
 		"DBClusterId": parts[0],
 		"RegionId":    s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
@@ -193,20 +179,16 @@ func (s *ClickhouseService) ClickhouseStateRefreshFunc(id string, failStates []s
 }
 
 func (s *ClickhouseService) DescribeDBClusterAccessWhiteList(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+
 	action := "DescribeDBClusterAccessWhiteList"
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -229,20 +211,16 @@ func (s *ClickhouseService) DescribeDBClusterAccessWhiteList(id string) (object 
 }
 
 func (s *ClickhouseService) DescribeClickHouseBackupPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+
 	action := "DescribeBackupPolicy"
 	request := map[string]interface{}{
 		"DBClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -289,17 +267,15 @@ func (s *ClickhouseService) ClickHouseBackupPolicyStateRefreshFunc(id string, fa
 
 func (s *ClickhouseService) DescribeClickHouseAutoRenewStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewClickhouseClient()
+	client := s.client
 	action := "DescribeAutoRenewAttribute"
 	request := map[string]interface{}{
 		"DBClusterIds": id,
-		"RegionId":     conn.RegionId,
+		"RegionId":     client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

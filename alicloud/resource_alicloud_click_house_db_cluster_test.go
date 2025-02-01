@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -38,15 +36,9 @@ func testSweepClickhouseDbCLuster(region string) error {
 	request["PageNumber"] = 1
 	request["RegionId"] = region
 	var response map[string]interface{}
-	conn, err := client.NewClickhouseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	ids := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			log.Println("[ERROR] List ClickHouse DbCluster access groups failed. err:", err)
 		}
@@ -84,7 +76,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 		request := map[string]interface{}{
 			"DBClusterId": id,
 		}
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Click House DBCluster (%s): %s", id, err)
 		}
@@ -897,4 +889,3 @@ func AliCloudClickHouseDBClusterBasicDependence3(name string) string {
 	}
 `, name)
 }
-

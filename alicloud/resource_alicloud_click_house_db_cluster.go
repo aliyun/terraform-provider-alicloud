@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -196,10 +195,7 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewClickhouseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DBClusterCategory"] = d.Get("category")
 	request["DBClusterClass"] = d.Get("db_cluster_class")
 	if v, ok := d.GetOk("db_cluster_description"); ok {
@@ -295,11 +291,9 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	}
 
 	request["ClientToken"] = buildClientToken("CreateDBInstance")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -414,6 +408,7 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -428,13 +423,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 	}
 	if update {
 		action := "ModifyDBClusterDescription"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 					wait()
@@ -462,13 +453,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 	}
 	if update {
 		action := "ModifyDBClusterMaintainTime"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, modifyDBClusterMaintainTimeReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, modifyDBClusterMaintainTimeReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 					wait()
@@ -502,15 +489,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				removeWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifyDBClusterAccessWhiteList"
-				conn, err := client.NewClickhouseClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, removeWhiteListReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, removeWhiteListReq, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 							wait()
@@ -539,15 +520,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				createWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifyDBClusterAccessWhiteList"
-				conn, err := client.NewClickhouseClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, createWhiteListReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, createWhiteListReq, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 							wait()
@@ -579,13 +554,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				}
 				request["RegionId"] = client.RegionId
 				action := "RestartInstance"
-				conn, err := client.NewClickhouseClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 							wait()
@@ -642,13 +613,9 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		action := "ModifyDBCluster"
 		var response map[string]interface{}
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
@@ -672,10 +639,6 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.HasChange("renewal_status") && !d.IsNewResource() {
 		action := "ModifyAutoRenewAttribute"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		if s, ok := d.GetOk("renewal_status"); ok {
 			request := map[string]interface{}{
 				"DBClusterIds":  d.Id(),
@@ -684,7 +647,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 						wait()
@@ -714,10 +677,7 @@ func resourceAlicloudClickHouseDbClusterDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBCluster"
 	var response map[string]interface{}
-	conn, err := client.NewClickhouseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DBClusterId": d.Id(),
 	}
@@ -727,7 +687,7 @@ func resourceAlicloudClickHouseDbClusterDelete(d *schema.ResourceData, meta inte
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
