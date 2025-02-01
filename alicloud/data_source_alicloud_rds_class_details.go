@@ -98,13 +98,10 @@ func dataSourceAlicloudRdsRdsClassDetailsRead(d *schema.ResourceData, meta inter
 		id = v.(string)
 	}
 	var response map[string]interface{}
-	conn, err := client.NewRdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_rds_class_details", action, AlibabaCloudSdkGoERROR)

@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -130,20 +128,14 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 	}
 
 	if len(names) < 1 && strings.HasPrefix(object["DBInstanceId"].(string), "pgm-") {
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		action := "DescribeDatabases"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
 			"DBInstanceId": object["DBInstanceId"],
 			"SourceIp":     client.SourceIp,
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
 					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))

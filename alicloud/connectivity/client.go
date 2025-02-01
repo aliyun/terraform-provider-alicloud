@@ -506,33 +506,6 @@ func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
-func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
-	productCode := "rds"
-	endpoint := "rds.aliyuncs.com"
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			log.Printf("[WARN] %s", err.Error())
-			log.Printf("[WARN] loading rds endpoint failed and using %s instead.", endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
-}
-
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the CEN client if necessary
 	if client.cenconn == nil {
