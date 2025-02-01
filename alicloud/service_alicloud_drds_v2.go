@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -25,10 +24,6 @@ func (s *DrdsServiceV2) DescribeDrdsPolardbxInstance(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDBInstanceAttribute"
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DBInstanceName"] = id
@@ -36,7 +31,7 @@ func (s *DrdsServiceV2) DescribeDrdsPolardbxInstance(id string) (object map[stri
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -92,10 +87,6 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynJobs(d *schema.ResourceData, res
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDBInstanceAttribute"
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -104,7 +95,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynJobs(d *schema.ResourceData, res
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -159,10 +150,6 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynDeleteJobs(d *schema.ResourceDat
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeTasks"
-	conn, err := client.NewDrdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -173,7 +160,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynDeleteJobs(d *schema.ResourceDat
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-02-02"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
