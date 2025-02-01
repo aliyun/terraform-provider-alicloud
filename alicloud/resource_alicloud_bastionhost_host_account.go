@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -82,10 +81,7 @@ func resourceAlicloudBastionhostHostAccountCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "CreateHostAccount"
 	request := make(map[string]interface{})
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["HostAccountName"] = d.Get("host_account_name")
 	request["HostId"] = d.Get("host_id")
 	request["InstanceId"] = d.Get("instance_id")
@@ -102,7 +98,7 @@ func resourceAlicloudBastionhostHostAccountCreate(d *schema.ResourceData, meta i
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -147,10 +143,7 @@ func resourceAlicloudBastionhostHostAccountRead(d *schema.ResourceData, meta int
 func resourceAlicloudBastionhostHostAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -187,7 +180,7 @@ func resourceAlicloudBastionhostHostAccountUpdate(d *schema.ResourceData, meta i
 		action := "ModifyHostAccount"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -212,10 +205,6 @@ func resourceAlicloudBastionhostHostAccountDelete(d *schema.ResourceData, meta i
 	}
 	action := "DeleteHostAccount"
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"HostAccountId": parts[1],
 		"InstanceId":    parts[0],
@@ -224,7 +213,7 @@ func resourceAlicloudBastionhostHostAccountDelete(d *schema.ResourceData, meta i
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

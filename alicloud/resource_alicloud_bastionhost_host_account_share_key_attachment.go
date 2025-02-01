@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,10 +47,7 @@ func resourceAlicloudBastionhostHostAccountShareKeyAttachmentCreate(d *schema.Re
 	var response map[string]interface{}
 	action := "AttachHostAccountsToHostShareKey"
 	request := make(map[string]interface{})
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["HostAccountIds"] = convertListToJsonString([]interface{}{d.Get("host_account_id")})
 	request["HostShareKeyId"] = d.Get("host_share_key_id")
@@ -59,7 +55,7 @@ func resourceAlicloudBastionhostHostAccountShareKeyAttachmentCreate(d *schema.Re
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -107,10 +103,6 @@ func resourceAlicloudBastionhostHostAccountShareKeyAttachmentDelete(d *schema.Re
 	}
 	action := "DetachHostAccountsFromHostShareKey"
 	var response map[string]interface{}
-	conn, err := client.NewBastionhostClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"HostAccountIds": convertListToJsonString([]interface{}{parts[2]}),
 		"HostShareKeyId": parts[1],
@@ -120,7 +112,7 @@ func resourceAlicloudBastionhostHostAccountShareKeyAttachmentDelete(d *schema.Re
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

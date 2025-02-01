@@ -19,7 +19,7 @@ func TestAccAliCloudBastionhostHostAccountUserGroupAttachment_basic0(t *testing.
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sbastionhosthostaccountforUserGroup%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sbastionhosthostUserGroup%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostHostAccountUserGroupAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
