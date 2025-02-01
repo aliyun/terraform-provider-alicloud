@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -22,19 +21,13 @@ func (s *OceanBaseServiceV2) DescribeOceanBaseInstance(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstance"
-	conn, err := client.NewOceanbaseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -67,19 +60,13 @@ func (s *OceanBaseServiceV2) DescribeDescribeInstances(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstances"
-	conn, err := client.NewOceanbaseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
