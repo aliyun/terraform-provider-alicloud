@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -235,10 +234,7 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("project_name"); ok {
 		request["name"] = v
@@ -281,11 +277,9 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 		request["comment"] = v
 	}
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("MaxCompute", "2022-01-04", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -469,10 +463,7 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 
 	projectName := d.Id()
 	action := fmt.Sprintf("/api/v1/projects/%s/meta", projectName)
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -548,11 +539,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -570,10 +559,6 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	update = false
 	projectName = d.Id()
 	action = fmt.Sprintf("/api/v1/projects/%s/quota", projectName)
-	conn, err = client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -587,11 +572,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -609,10 +592,6 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	update = false
 	projectName = d.Id()
 	action = fmt.Sprintf("/api/v1/projects/%s/ipWhiteList", projectName)
-	conn, err = client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -638,11 +617,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -660,10 +637,6 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	update = false
 	projectName = d.Id()
 	action = fmt.Sprintf("/api/v1/projects/%s/security", projectName)
-	conn, err = client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -743,11 +716,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -765,10 +736,6 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	update = false
 	projectName = d.Id()
 	action = fmt.Sprintf("/api/v1/projects/%s/status", projectName)
-	conn, err = client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -782,11 +749,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -821,10 +786,7 @@ func resourceAliCloudMaxComputeProjectDelete(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["projectName"] = d.Id()
 
@@ -834,11 +796,9 @@ func resourceAliCloudMaxComputeProjectDelete(d *schema.ResourceData, meta interf
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {

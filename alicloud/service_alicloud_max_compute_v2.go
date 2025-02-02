@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	roa "github.com/alibabacloud-go/tea-roa/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,21 +26,15 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	var response map[string]interface{}
 	var query map[string]*string
 	projectName := id
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["projectName"] = id
 
 	action := fmt.Sprintf("/api/v1/projects/%s", projectName)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
@@ -73,10 +66,6 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["ResourceId"] = StringPointer(id)
@@ -84,11 +73,9 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 	query["ResourceType"] = StringPointer("project")
 	action := fmt.Sprintf("/tags")
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -144,7 +131,6 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *roa.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -160,10 +146,6 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 		}
 		if len(removedTagKeys) > 0 {
 			action = fmt.Sprintf("/tags")
-			conn, err = client.NewOdpsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -178,7 +160,7 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -197,10 +179,6 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 		if len(added) > 0 {
 			action = fmt.Sprintf("/tags")
-			conn, err = client.NewOdpsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -226,11 +204,9 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			request["ResourceType"] = resourceType
 			request["RegionId"] = client.RegionId
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPost("MaxCompute", "2022-01-04", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -265,20 +241,14 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 	}
 	nickname := parts[0]
 	planName := parts[1]
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	action := fmt.Sprintf("/api/v1/quotas/%s/computeQuotaPlan/%s", nickname, planName)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -349,20 +319,14 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 	}
 	projectName := parts[0]
 	roleName := parts[1]
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/policy", projectName, roleName)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -427,21 +391,15 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaSchedule(id string) (object
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	nickname := parts[0]
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["displayTimezone"] = StringPointer(parts[1])
 
 	action := fmt.Sprintf("/api/v1/quotas/%s/computeQuotaSchedule", nickname)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -504,20 +462,14 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 	}
 	projectName := parts[0]
 	roleName := parts[1]
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/users", projectName, roleName)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -592,21 +544,15 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTunnelQuotaTimer(id string) (obj
 	var response map[string]interface{}
 	var query map[string]*string
 	nickname := id
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["nickname"] = id
 
 	action := fmt.Sprintf("/api/v1/tunnel/%s/timers", nickname)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
