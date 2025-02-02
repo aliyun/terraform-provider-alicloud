@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -38,15 +37,9 @@ func testSweepTsdbInstance(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var instances []string
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve tsdb instance service list: %s", err)
 		}
@@ -86,17 +79,13 @@ func testSweepTsdbInstance(region string) error {
 
 		action := "DeleteHiTSDBInstance"
 		var response map[string]interface{}
-		conn, err := client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request := map[string]interface{}{
 			"InstanceId": instanceId,
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

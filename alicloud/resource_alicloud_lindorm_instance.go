@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -320,10 +319,7 @@ func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateLindormInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("cold_storage"); ok {
 		request["ColdStorage"] = v
 	}
@@ -463,11 +459,9 @@ func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -600,6 +594,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	hitsdbService := HitsdbService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -620,16 +615,9 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if update {
 		action := "UpdateInstanceIpWhiteList"
-		conn, err := client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
@@ -663,16 +651,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if update {
 		action := "UpdateLindormInstanceAttribute"
-		conn, err := client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, updateLindormInstanceAttributeReq, &runtime)
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, updateLindormInstanceAttributeReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
@@ -1054,12 +1036,7 @@ func resourceAliCloudLindormInstanceDelete(d *schema.ResourceData, meta interfac
 	hitsdbService := HitsdbService{client}
 	action := "ReleaseLindormInstance"
 	var response map[string]interface{}
-
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	object, err := hitsdbService.DescribeLindormInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -1078,11 +1055,9 @@ func resourceAliCloudLindormInstanceDelete(d *schema.ResourceData, meta interfac
 		"InstanceId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1127,21 +1102,15 @@ func convertLindormInstancePaymentTypeResponse(source interface{}) interface{} {
 func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request map[string]interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	request["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ZoneId"] = d.Get("zone_id")
 
 	action := "UpgradeLindormInstance"
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 30*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Instance.NotActive", "OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 				wait()

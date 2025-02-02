@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -94,10 +93,7 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateHiTSDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("app_key"); ok {
 		request["AppKey"] = v
 	}
@@ -142,10 +138,8 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateHiTSDBInstance")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tsdb_instance", action, AlibabaCloudSdkGoERROR)
 	}
@@ -186,6 +180,7 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	hitsdbService := HitsdbService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -201,13 +196,9 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 			request["AppKey"] = d.Get("app_key")
 		}
 		action := "RenameHiTSDBInstanceAlias"
-		conn, err := client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -240,13 +231,9 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 			modifyHiTSDBInstanceClassReq["AppKey"] = d.Get("app_key")
 		}
 		action := "ModifyHiTSDBInstanceClass"
-		conn, err := client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 30*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, modifyHiTSDBInstanceClassReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, modifyHiTSDBInstanceClassReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessingError"}) || NeedRetry(err) {
 					wait()
@@ -274,10 +261,7 @@ func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHiTSDBInstance"
 	var response map[string]interface{}
-	conn, err := client.NewHitsdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
@@ -287,7 +271,7 @@ func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
