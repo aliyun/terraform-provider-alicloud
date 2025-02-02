@@ -15,14 +15,9 @@ type EaisService struct {
 }
 
 func (s *EaisService) DescribeEaisInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeEais"
-
-	conn, err := s.client.NewEaisClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"RegionId":                      s.client.RegionId,
 		"ElasticAcceleratedInstanceIds": "[\"" + id + "\"]",
@@ -36,7 +31,7 @@ func (s *EaisService) DescribeEaisInstance(id string) (object map[string]interfa
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-24"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eais", "2019-06-24", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

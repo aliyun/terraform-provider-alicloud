@@ -51,17 +51,10 @@ func testSweepEaisInstance(region string) error {
 	request["RegionId"] = client.RegionId
 
 	var response map[string]interface{}
-	conn, err := client.NewEaisClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-24"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eais", "2019-06-24", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -104,7 +97,7 @@ func testSweepEaisInstance(region string) error {
 				"Force":                        true,
 			}
 			request["ClientToken"] = buildClientToken("DeleteEai")
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-24"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("eais", "2019-06-24", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Eais Instance (%s): %s", item["ElasticAcceleratedInstanceId"].(string), err)
 			}
