@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -42,16 +41,13 @@ func resourceAlicloudCloudauthFaceConfigCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateFaceConfig"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudauthClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["BizName"] = d.Get("biz_name")
 	request["BizType"] = d.Get("biz_type")
 	request["SourceIp"] = buildClientToken(action)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cloudauth", "2019-03-07", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -91,6 +87,7 @@ func resourceAlicloudCloudauthFaceConfigRead(d *schema.ResourceData, meta interf
 func resourceAlicloudCloudauthFaceConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"BizType": d.Id(),
@@ -102,13 +99,9 @@ func resourceAlicloudCloudauthFaceConfigUpdate(d *schema.ResourceData, meta inte
 	if update {
 		action := "UpdateFaceConfig"
 		request["SourceIp"] = buildClientToken(action)
-		conn, err := client.NewCloudauthClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cloudauth", "2019-03-07", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
