@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -61,10 +60,7 @@ func (s *EciService) EciImageCacheStateRefreshFunc(id string, failStates []strin
 
 func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEciClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeContainerGroups"
 	jsonId, err := json.Marshal([]string{id})
 	if err != nil {
@@ -74,9 +70,7 @@ func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]int
 		"RegionId":          s.client.RegionId,
 		"ContainerGroupIds": string(jsonId),
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("EciContainerGroup", id)), NotFoundMsg, ProviderERROR)
@@ -123,21 +117,16 @@ func (s *EciService) EciContainerGroupStateRefreshFunc(id string, failStates []s
 
 func (s *EciService) DescribeEciVirtualNode(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEciClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeVirtualNodes"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -82,17 +81,11 @@ func testSweepEciContainerGroup(region string) error {
 		"tf_testAcc`",
 	}
 	var response map[string]interface{}
-	conn, err := client.NewEciClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	action := "DescribeContainerGroups"
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
 	}
@@ -124,7 +117,7 @@ func testSweepEciContainerGroup(region string) error {
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
