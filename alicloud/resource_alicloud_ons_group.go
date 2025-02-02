@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -75,10 +74,7 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "OnsGroupCreate"
 	request := make(map[string]interface{})
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("group_name"); ok {
 		request["GroupId"] = v
 	} else if v, ok := d.GetOk("group_id"); ok {
@@ -98,7 +94,7 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
@@ -144,10 +140,7 @@ func resourceAlicloudOnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -170,7 +163,7 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		action := "OnsGroupConsumerUpdate"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -197,10 +190,6 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	}
 	action := "OnsGroupDelete"
 	var response map[string]interface{}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"GroupId":    parts[1],
 		"InstanceId": parts[0],
@@ -208,7 +197,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()

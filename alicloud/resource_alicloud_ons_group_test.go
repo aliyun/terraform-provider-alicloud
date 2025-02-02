@@ -47,11 +47,7 @@ func testSweepOnsGroup(region string) error {
 	action := "OnsInstanceInServiceList"
 	request := make(map[string]interface{})
 	var response map[string]interface{}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
 	}
@@ -72,11 +68,7 @@ func testSweepOnsGroup(region string) error {
 		action := "OnsGroupList"
 		request := make(map[string]interface{})
 		var response map[string]interface{}
-		conn, err := client.NewOnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", action, AlibabaCloudSdkGoERROR)
 		}
@@ -107,7 +99,7 @@ func testSweepOnsGroup(region string) error {
 				"GroupId":    name,
 				"InstanceId": instanceId,
 			}
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete ons group (%s): %s", name, err)
 

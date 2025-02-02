@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,10 +71,7 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "OnsInstanceCreate"
 	request := make(map[string]interface{})
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceName"] = v
 	} else if v, ok := d.GetOk("name"); ok {
@@ -90,7 +86,7 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
@@ -139,10 +135,7 @@ func resourceAlicloudOnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -172,7 +165,7 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		action := "OnsInstanceUpdate"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -197,19 +190,14 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	action := "OnsInstanceDelete"
 	var response map[string]interface{}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"INSTANCE_NOT_EMPTY", "Throttling.User"}) {
 				wait()
