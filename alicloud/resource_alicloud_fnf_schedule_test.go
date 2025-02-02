@@ -56,13 +56,7 @@ func testSweepFnfSchedule(region string) error {
 		"Limit": 100,
 	}
 	var response map[string]interface{}
-	conn, err := client.NewFnfClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_flows", action, AlibabaCloudSdkGoERROR)
 	}
@@ -82,13 +76,7 @@ func testSweepFnfSchedule(region string) error {
 			"Limit":    100,
 		}
 		var response map[string]interface{}
-		conn, err := client.NewFnfClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
 		}
@@ -117,15 +105,11 @@ func testSweepFnfSchedule(region string) error {
 			log.Printf("[Info] Delete Fnf Schedule: %s", name)
 
 			action := "DeleteSchedule"
-			conn, err := client.NewFnfClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request := map[string]interface{}{
 				"FlowName":     item["FlowName"],
 				"ScheduleName": name,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+			_, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Fnf Schedule (%s): %s", name, err)
 			}
