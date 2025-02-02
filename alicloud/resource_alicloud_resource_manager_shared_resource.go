@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -54,17 +53,14 @@ func resourceAliCloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 	var response map[string]interface{}
 	action := "AssociateResourceShare"
 	request := make(map[string]interface{})
-	conn, err := client.NewRessharingClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Resources.1.ResourceId"] = d.Get("resource_id")
 	request["ResourceShareId"] = d.Get("resource_share_id")
 	request["Resources.1.ResourceType"] = d.Get("resource_type")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -126,10 +122,6 @@ func resourceAliCloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 	resourcesharingService := ResourcesharingService{client}
 	action := "DisassociateResourceShare"
 	var response map[string]interface{}
-	conn, err := client.NewRessharingClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"Resources.1.ResourceId":   parts[1],
 		"ResourceShareId":          parts[0],
@@ -138,7 +130,7 @@ func resourceAliCloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
