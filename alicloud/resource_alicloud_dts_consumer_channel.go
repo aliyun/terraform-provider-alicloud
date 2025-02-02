@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,10 +59,7 @@ func resourceAlicloudDtsConsumerChannelCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateConsumerChannel"
 	request := make(map[string]interface{})
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["ConsumerGroupName"] = d.Get("consumer_group_name")
 	request["ConsumerGroupPassword"] = d.Get("consumer_group_password")
 	request["ConsumerGroupUserName"] = d.Get("consumer_group_user_name")
@@ -72,7 +68,7 @@ func resourceAlicloudDtsConsumerChannelCreate(d *schema.ResourceData, meta inter
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.JobStatus"}) || NeedRetry(err) {
 				wait()
@@ -115,10 +111,7 @@ func resourceAlicloudDtsConsumerChannelRead(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudDtsConsumerChannelUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -138,7 +131,7 @@ func resourceAlicloudDtsConsumerChannelUpdate(d *schema.ResourceData, meta inter
 		action := "ModifyConsumerChannel"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.JobStatus"}) || NeedRetry(err) {
 					wait()
@@ -163,10 +156,6 @@ func resourceAlicloudDtsConsumerChannelDelete(d *schema.ResourceData, meta inter
 	}
 	action := "DeleteConsumerChannel"
 	var response map[string]interface{}
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ConsumerGroupId": parts[1],
 		"DtsInstanceId":   parts[0],
@@ -175,7 +164,7 @@ func resourceAlicloudDtsConsumerChannelDelete(d *schema.ResourceData, meta inter
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.JobStatus"}) || NeedRetry(err) {
 				wait()

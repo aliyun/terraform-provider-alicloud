@@ -460,6 +460,7 @@ var regularProductEndpoint = map[string]string{
 	"vpcipam":              "vpcipam.%s.aliyuncs.com",
 	"gwlb":                 "gwlb.%s.aliyuncs.com",
 	"live":                 "live.aliyuncs.com",
+	"dts":                  "dts.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be

@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -45,17 +43,10 @@ func testSweepDtsSubscriptionJob(region string) error {
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -96,7 +87,7 @@ func testSweepDtsSubscriptionJob(region string) error {
 			}
 			request["DtsInstanceId"] = item["DtsInstanceID"]
 			request["RegionId"] = client.RegionId
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Dts SubscriptionJob (%s): %s", item["DtsJobName"].(string), err)
 			}
