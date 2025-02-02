@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -141,10 +140,7 @@ func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -189,11 +185,9 @@ func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("advanced_features"); ok {
 		request["AdvancedFeatures"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -271,14 +265,11 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "RenameDbfs"
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FsId"] = d.Id()
@@ -294,11 +285,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -317,10 +306,6 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	update = false
 	action = "ResizeDbfs"
-	conn, err = client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FsId"] = d.Id()
@@ -330,11 +315,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	request["NewSizeG"] = d.Get("size")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -358,10 +341,6 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	update = false
 	action = "UpdateDbfs"
-	conn, err = client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FsId"] = d.Id()
@@ -382,11 +361,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -407,10 +384,6 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	update = false
 	action = "ModifyPerformanceLevel"
-	conn, err = client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FsId"] = d.Id()
@@ -421,11 +394,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -465,13 +436,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			deleteTagsBatchReq["Tags"], _ = convertListMapToJsonString(tagsMaps)
 
 			action := "DeleteTagsBatch"
-			conn, err := client.NewDbfsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, deleteTagsBatchReq, &util.RuntimeOptions{})
+				response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, deleteTagsBatchReq, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -504,16 +471,10 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			addTagsBatchReq["Tags"], _ = convertListMapToJsonString(tagsMaps)
 
 			action := "AddTagsBatch"
-			conn, err := client.NewDbfsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request["ClientToken"] = buildClientToken("AddTagsBatch")
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, addTagsBatchReq, &runtime)
+				response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, addTagsBatchReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -550,13 +511,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				detachdbfsrequest["ECSInstanceId"] = ecsMap["ecs_id"]
 
 				action := "DetachDbfs"
-				conn, err := client.NewDbfsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, detachdbfsrequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, detachdbfsrequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -589,14 +546,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			for _, ecsArg := range added.List() {
 				ecsMap := ecsArg.(map[string]interface{})
 				attachdbfsrequest["ECSInstanceId"] = ecsMap["ecs_id"]
-
-				conn, err := client.NewDbfsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, attachdbfsrequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, attachdbfsrequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -631,19 +583,14 @@ func resourceAliCloudDbfsDbfsInstanceDelete(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["FsId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

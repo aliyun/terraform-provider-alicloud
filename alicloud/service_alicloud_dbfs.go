@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -18,11 +17,7 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 	var response map[string]interface{}
 	action := "ListDbfs"
 
-	conn, err := s.client.NewDbfsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"PageSize":   PageSizeLarge,
@@ -31,11 +26,9 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -136,11 +129,7 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 	var response map[string]interface{}
 	action := "ListSnapshot"
 
-	conn, err := s.client.NewDbfsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"PageSize":   PageSizeLarge,
@@ -149,11 +138,9 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -222,17 +209,12 @@ func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []strin
 
 func (s *DbfsService) DescribeDbfsServiceLinkedRole(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDbfsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetServiceLinkedRole"
 	request := map[string]interface{}{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-04-18"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -275,11 +257,7 @@ func (s *DbfsService) DbfsServiceLinkedRoleStateRefreshFunc(id string, failState
 }
 
 func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDbfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"PolicyId": id,
 		"RegionId": s.client.RegionId,
@@ -287,11 +265,9 @@ func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[stri
 
 	var response map[string]interface{}
 	action := "GetAutoSnapshotPolicy"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

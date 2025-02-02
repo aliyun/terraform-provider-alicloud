@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -42,17 +40,10 @@ func testSweepDBFSInstance(region string) error {
 	request["RegionId"] = client.RegionId
 
 	var response map[string]interface{}
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -97,7 +88,7 @@ func testSweepDBFSInstance(region string) error {
 				"FsId": item["FsId"],
 			}
 			request["ClientToken"] = buildClientToken("DeleteDbfs")
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DBFSDbfs Instance (%s): %s", item["FsId"].(string), err)
 			}
@@ -259,21 +250,24 @@ data "alicloud_instance_types" "example" {
 }
 data "alicloud_images" "example" {
   instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
-  name_regex    = "^aliyun_2_1903_x64_20G_alibase_20231221.vhd"
+  name_regex    = "^aliyun_2"
   owners        = "system"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+    vpc_name = var.name
+	cidr_block = "172.16.0.0/16"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
+resource "alicloud_vswitch" "default" {
+  vpc_id  = alicloud_vpc.default.id
   zone_id = local.zone_id
+  vswitch_name = var.name
+  cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "example" {
   name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids[0]
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
@@ -282,7 +276,7 @@ resource "alicloud_instance" "default" {
   image_id             = data.alicloud_images.example.images.0.id
   instance_type        = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
   security_groups      = [alicloud_security_group.example.id]
-  vswitch_id           = data.alicloud_vswitches.default.ids.0
+  vswitch_id           = alicloud_vswitch.default.id
   system_disk_category = "cloud_essd"
 }
 `, name)
