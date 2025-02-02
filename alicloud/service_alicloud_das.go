@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,23 +14,16 @@ type DasService struct {
 }
 
 func (s *DasService) DescribeInstanceDasPro(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceDasPro"
-
-	conn, err := s.client.NewDasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("DAS", "2020-01-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -82,23 +74,16 @@ func (s *DasService) InstanceDasProStateRefreshFunc(id string, failStates []stri
 }
 
 func (s *DasService) DescribeDasSwitchDasPro(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetDasProServiceUsage"
-
-	conn, err := s.client.NewDasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("DAS", "2020-01-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

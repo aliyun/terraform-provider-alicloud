@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,10 +55,7 @@ func resourceAlicloudDasSwitchDasProCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "EnableDasPro"
 	request := make(map[string]interface{})
-	conn, err := client.NewDasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["InstanceId"] = d.Get("instance_id")
 
@@ -72,7 +68,7 @@ func resourceAlicloudDasSwitchDasProCreate(d *schema.ResourceData, meta interfac
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("DAS", "2020-01-16", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,10 +129,7 @@ func resourceAlicloudDasSwitchDasProDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	action := "DisableDasPro"
 	var response map[string]interface{}
-	conn, err := client.NewDasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
@@ -148,7 +141,7 @@ func resourceAlicloudDasSwitchDasProDelete(d *schema.ResourceData, meta interfac
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("DAS", "2020-01-16", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"-1020004"}) {
 				wait()
