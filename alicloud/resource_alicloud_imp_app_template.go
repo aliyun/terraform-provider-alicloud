@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,10 +76,7 @@ func resourceAlicloudImpAppTemplate() *schema.Resource {
 func resourceAlicloudImpAppTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewImpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AppTemplateName"] = d.Get("app_template_name")
 	request["ComponentList"] = convertListToJsonString(d.Get("component_list").([]interface{}))
 	if v, ok := d.GetOk("integration_mode"); ok {
@@ -94,7 +90,7 @@ func resourceAlicloudImpAppTemplateCreate(d *schema.ResourceData, meta interface
 	action := "CreateAppTemplate"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("imp", "2021-06-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -150,10 +146,7 @@ func resourceAlicloudImpAppTemplateRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
-	conn, err := client.NewImpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	update := false
 	request := map[string]interface{}{
@@ -167,7 +160,7 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 		action := "UpdateAppTemplate"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("imp", "2021-06-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -210,7 +203,7 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 		action := "UpdateAppTemplateConfig"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, updateAppTemplateConfigReq, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("imp", "2021-06-30", action, nil, updateAppTemplateConfigReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -232,10 +225,7 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudImpAppTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewImpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"AppTemplateId": d.Id(),
 	}
@@ -243,7 +233,7 @@ func resourceAlicloudImpAppTemplateDelete(d *schema.ResourceData, meta interface
 	action := "DeleteAppTemplate"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("imp", "2021-06-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
