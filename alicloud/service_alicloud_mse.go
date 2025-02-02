@@ -2,12 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -18,19 +16,14 @@ type MseService struct {
 
 func (s *MseService) DescribeMseCluster(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryClusterDetail"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("QueryClusterDetail")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"mse-200-021"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("MseCluster", id)), NotFoundMsg, ProviderERROR)
@@ -53,19 +46,14 @@ func (s *MseService) DescribeMseCluster(id string) (object map[string]interface{
 
 func (s *MseService) GetInstanceIdBYClusterId(clusterId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryClusterDetail"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ClusterId": clusterId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("QueryClusterDetail")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"mse-200-021"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("MseCluster", clusterId)), NotFoundMsg, ProviderERROR)
@@ -90,7 +78,6 @@ func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -105,10 +92,6 @@ func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UnTagResources"
-			conn, err = client.NewMseClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -118,11 +101,9 @@ func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("mse", "2019-05-31", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -142,10 +123,6 @@ func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewMseClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -158,11 +135,9 @@ func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("mse", "2019-05-31", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -207,19 +182,14 @@ func (s *MseService) MseClusterStateRefreshFunc(id string, failStates []string) 
 
 func (s *MseService) DescribeMseGateway(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetGateway"
 	request := map[string]interface{}{
 		"GatewayUniqueId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -269,19 +239,14 @@ func (s *MseService) MseGatewayStateRefreshFunc(id string, failStates []string) 
 
 func (s *MseService) ListGatewaySlb(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListGatewaySlb"
 	request := map[string]interface{}{
 		"GatewayUniqueId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -312,10 +277,7 @@ func (s *MseService) ListGatewaySlb(id string) (object map[string]interface{}, e
 
 func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryZnodeDetail"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -326,11 +288,9 @@ func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{},
 		"ClusterId": parts[0],
 		"Path":      parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -356,10 +316,7 @@ func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{},
 }
 func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -371,9 +328,7 @@ func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interf
 		"DataId":      parts[2],
 		"Group":       parts[3],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	// For delete check
 	if IsExpectedErrors(err, []string{"InternalError"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:MseNacosConfig", id)), NotFoundMsg, ProviderERROR)
@@ -404,10 +359,7 @@ func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interf
 
 func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
@@ -418,11 +370,9 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 		"InstanceId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

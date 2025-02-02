@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -149,10 +148,7 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "CreateCluster"
 	request := make(map[string]interface{})
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["ClusterSpecification"] = d.Get("cluster_specification")
 	request["ClusterType"] = d.Get("cluster_type")
 	request["ClusterVersion"] = d.Get("cluster_version")
@@ -206,7 +202,7 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -270,18 +266,11 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	mseService := MseService{client}
 	var response map[string]interface{}
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	d.Partial(true)
 
 	update := false
 	action := "ChangeResourceGroup"
-	conn, err = client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := make(map[string]interface{})
 
 	request["ResourceId"] = d.Id()
@@ -295,7 +284,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -321,7 +310,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateAcl"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -352,7 +341,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateCluster"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -397,7 +386,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateClusterSpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, updateClusterSpecReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateClusterSpecReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -444,7 +433,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateClusterNetwork"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -482,7 +471,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateClusterSpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, updateNetworkFlowRequest, &util.RuntimeOptions{})
+			response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateNetworkFlowRequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -525,17 +514,14 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 	mseService := MseService{client}
 	action := "DeleteCluster"
 	var response map[string]interface{}
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
