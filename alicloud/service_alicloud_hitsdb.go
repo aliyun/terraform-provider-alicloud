@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -18,18 +17,13 @@ type HitsdbService struct {
 
 func (s *HitsdbService) DescribeTsdbInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHitsdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeHiTSDBInstance"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.IsNotValidError", "TSDB.Errorcode.InstanceDeleted", "TSDB.Errorcode.InstanceNotFound", "TSDB.Errorcode.ParameterInvaild"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("TsdbInstance", id)), NotFoundMsg, ProviderERROR)
@@ -69,19 +63,14 @@ func (s *HitsdbService) TsdbInstanceStateRefreshFunc(id string, failStates []str
 
 func (s *HitsdbService) GetInstanceIpWhiteList(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHitsdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceIpWhiteList"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,19 +100,14 @@ func (s *HitsdbService) GetInstanceIpWhiteList(id string) (object []interface{},
 
 func (s *HitsdbService) GetLindormInstanceEngineInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHitsdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetLindormInstanceEngineInfo"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -147,19 +131,14 @@ func (s *HitsdbService) GetLindormInstanceEngineInfo(id string) (object map[stri
 
 func (s *HitsdbService) DescribeLindormInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHitsdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetLindormInstance"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -205,10 +184,7 @@ func (s *HitsdbService) LindormInstanceStateRefreshFunc(id string, failStates []
 }
 
 func (s *HitsdbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewHitsdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -221,7 +197,7 @@ func (s *HitsdbService) ListTagResources(id string, resourceType string) (object
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -256,10 +232,7 @@ func (s *HitsdbService) SetResourceTags(d *schema.ResourceData, resourceType str
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewHitsdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -279,7 +252,7 @@ func (s *HitsdbService) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -311,7 +284,7 @@ func (s *HitsdbService) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

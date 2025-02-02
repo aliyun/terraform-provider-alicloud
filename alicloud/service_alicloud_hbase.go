@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -136,21 +134,16 @@ func (s *HBaseService) ignoreTag(t hbase.Tag) bool {
 
 func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHbaseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeInstance"
 
-	request := map[string]interface{}{
+	query := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ClusterId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("HBase", "2019-01-01", action, query, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -160,7 +153,7 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	addDebug(action, response, query)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Hbase:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
