@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,10 +67,7 @@ func resourceAlicloudPvtzRuleCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "AddResolverRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["EndpointId"] = d.Get("endpoint_id")
 	request["Lang"] = "en"
 	request["Name"] = d.Get("rule_name")
@@ -87,7 +83,7 @@ func resourceAlicloudPvtzRuleCreate(d *schema.ResourceData, meta interface{}) er
 	request["ZoneName"] = d.Get("zone_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -137,10 +133,7 @@ func resourceAlicloudPvtzRuleRead(d *schema.ResourceData, meta interface{}) erro
 }
 func resourceAlicloudPvtzRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -166,7 +159,7 @@ func resourceAlicloudPvtzRuleUpdate(d *schema.ResourceData, meta interface{}) er
 		action := "UpdateResolverRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -187,10 +180,7 @@ func resourceAlicloudPvtzRuleDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteResolverRule"
 	var response map[string]interface{}
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RuleId": d.Id(),
 	}
@@ -198,7 +188,7 @@ func resourceAlicloudPvtzRuleDelete(d *schema.ResourceData, meta interface{}) er
 	request["Lang"] = "en"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

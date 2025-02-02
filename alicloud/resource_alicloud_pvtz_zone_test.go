@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -39,15 +37,9 @@ func testSweepPvtzZones(region string) error {
 	request := make(map[string]interface{})
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var zones []interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] retrieving Private Zones: %s", err)
 		}
@@ -85,7 +77,7 @@ func testSweepPvtzZones(region string) error {
 		request["ZoneId"] = id
 		vpcs := make([]map[string]interface{}, 0)
 		request["Vpcs"] = vpcs
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to unbind VPC from Private Zone (%s (%s)): %s ", name, id, err)
 		}
@@ -95,7 +87,7 @@ func testSweepPvtzZones(region string) error {
 		request = map[string]interface{}{
 			"ZoneId": id,
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Private Zone (%s (%s)): %s", name, id, err)
 		}
