@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -160,10 +159,7 @@ func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{})
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("auto_start"); ok {
 		request["AutoStart"] = v
@@ -224,7 +220,7 @@ func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{})
 	action := "CreateDtsInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -296,10 +292,7 @@ func resourceAlicloudDtsInstanceRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	dtsService := DtsService{client}
 	d.Partial(true)
 	update := false
@@ -318,7 +311,7 @@ func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		action := "ConvertInstanceResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -351,10 +344,7 @@ func resourceAlicloudDtsInstanceDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	}
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDtsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"DtsInstanceId": d.Id(),
@@ -368,7 +358,7 @@ func resourceAlicloudDtsInstanceDelete(d *schema.ResourceData, meta interface{})
 	action := "DeleteDtsJob"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
