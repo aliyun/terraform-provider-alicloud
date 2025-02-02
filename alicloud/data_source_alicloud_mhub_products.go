@@ -95,16 +95,13 @@ func dataSourceAlicloudMhubProductsRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewMhubClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
