@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -19,18 +17,13 @@ type OnsService struct {
 
 func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "OnsInstanceBaseInfo"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_FOUNDError", "InvalidDomainName.NoExist"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
@@ -50,10 +43,7 @@ func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface
 
 func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "OnsTopicList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -65,9 +55,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{},
 		"InstanceId": parts[0],
 		"Topic":      parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR)
@@ -121,10 +109,7 @@ func (s *OnsService) OceanOnsTopicStateRefreshFunc(id string, field string, fail
 
 func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "OnsGroupList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -137,9 +122,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{},
 		"InstanceId": parts[0],
 		"GroupType":  "all",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsGroup", id)), NotFoundMsg, ProviderERROR)
@@ -184,13 +167,9 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			return WrapError(err)
 		}
 	}
+	client := s.client
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewOnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -215,7 +194,7 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -253,7 +232,7 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -276,10 +255,7 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "OnsTopicStatus"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -291,11 +267,9 @@ func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, e
 		"InstanceId": parts[0],
 		"Topic":      parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -320,10 +294,7 @@ func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, e
 }
 
 func (s *OnsService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewOnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -336,7 +307,7 @@ func (s *OnsService) ListTagResources(id string, resourceType string) (object in
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()

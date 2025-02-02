@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,10 +76,7 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "OnsTopicCreate"
 	request := make(map[string]interface{})
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceId"] = d.Get("instance_id")
 	request["MessageType"] = d.Get("message_type")
 	if v, ok := d.GetOk("remark"); ok {
@@ -97,7 +93,7 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
@@ -170,10 +166,6 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 	}
 	action := "OnsTopicDelete"
 	var response map[string]interface{}
-	conn, err := client.NewOnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"InstanceId": parts[0],
 		"Topic":      parts[1],
@@ -181,7 +173,7 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
