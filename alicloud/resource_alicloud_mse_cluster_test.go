@@ -43,16 +43,10 @@ func testSweepMSECluster(region string) error {
 	request := make(map[string]interface{})
 	var response map[string]interface{}
 	action := "ListClusters"
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["PageSize"] = PageSizeLarge
 	request["PageNum"] = 1
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
 		}
@@ -79,7 +73,7 @@ func testSweepMSECluster(region string) error {
 			request := map[string]interface{}{
 				"InstanceId": item["InstanceId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Mse Clusters (%s (%s)): %s", item["ClusterAliasName"].(string), item["InstanceId"].(string), err)
 			}

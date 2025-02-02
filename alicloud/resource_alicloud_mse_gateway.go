@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -126,10 +125,7 @@ func resourceAlicloudMseGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "AddGateway"
 	request := make(map[string]interface{})
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("backup_vswitch_id"); ok {
 		request["VSwitchId2"] = v
 	}
@@ -154,7 +150,7 @@ func resourceAlicloudMseGatewayCreate(d *schema.ResourceData, meta interface{}) 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -244,13 +240,10 @@ func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	action := "UpdateGatewayName"
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -273,10 +266,7 @@ func resourceAlicloudMseGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteGateway"
 	var response map[string]interface{}
-	conn, err := client.NewMseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"GatewayUniqueId": d.Id(),
 	}
@@ -286,7 +276,7 @@ func resourceAlicloudMseGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
