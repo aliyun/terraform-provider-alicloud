@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -133,10 +132,7 @@ func resourceAlicloudRosTemplateScratchCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateTemplateScratch"
 	request := make(map[string]interface{})
-	conn, err := client.NewRosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -214,11 +210,9 @@ func resourceAlicloudRosTemplateScratchCreate(d *schema.ResourceData, meta inter
 	}
 	request["TemplateScratchType"] = d.Get("template_scratch_type")
 	request["ClientToken"] = buildClientToken("CreateTemplateScratch")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -328,6 +322,7 @@ func resourceAlicloudRosTemplateScratchUpdate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	rosService := RosService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"TemplateScratchId": d.Id(),
@@ -430,16 +425,10 @@ func resourceAlicloudRosTemplateScratchUpdate(d *schema.ResourceData, meta inter
 			request["ExecutionMode"] = v
 		}
 		action := "UpdateTemplateScratch"
-		conn, err := client.NewRosClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateTemplateScratch")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -465,17 +454,14 @@ func resourceAlicloudRosTemplateScratchDelete(d *schema.ResourceData, meta inter
 	rosService := RosService{client}
 	action := "DeleteTemplateScratch"
 	var response map[string]interface{}
-	conn, err := client.NewRosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"TemplateScratchId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

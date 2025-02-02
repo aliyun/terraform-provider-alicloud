@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -46,17 +45,10 @@ func testSweepRosTemplateScratch(region string) error {
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewRosClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -96,7 +88,7 @@ func testSweepRosTemplateScratch(region string) error {
 				"TemplateScratchId": item["TemplateScratchId"],
 			}
 			request["RegionId"] = client.RegionId
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ros Template Scratch (%s): %s", item["Description"].(string), err)
 			}

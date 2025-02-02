@@ -51,14 +51,10 @@ func testSweepRosStackGroup(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListStackGroups"
-	conn, err := client.NewRosClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ros_stack_group", action, AlibabaCloudSdkGoERROR)
 		}
@@ -86,7 +82,7 @@ func testSweepRosStackGroup(region string) error {
 				"StackGroupName": item["StackGroupName"],
 				"RegionId":       region,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ros StackGroup (%s): %s", item["StackGroupName"].(string), err)
 			}

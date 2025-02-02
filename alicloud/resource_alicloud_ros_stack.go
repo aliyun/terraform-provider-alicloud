@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -155,10 +154,7 @@ func resourceAlicloudRosStackCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "CreateStack"
 	request := make(map[string]interface{})
-	conn, err := client.NewRosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("create_option"); ok {
 		request["CreateOption"] = v
 	}
@@ -215,12 +211,10 @@ func resourceAlicloudRosStackCreate(d *schema.ResourceData, meta interface{}) er
 		request["TimeoutInMinutes"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateStack")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -298,6 +292,7 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	rosService := RosService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -363,16 +358,10 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 			request["UsePreviousParameters"] = d.Get("use_previous_parameters")
 		}
 		action := "UpdateStack"
-		conn, err := client.NewRosClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		request["ClientToken"] = buildClientToken("UpdateStack")
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -404,10 +393,7 @@ func resourceAlicloudRosStackDelete(d *schema.ResourceData, meta interface{}) er
 	rosService := RosService{client}
 	action := "DeleteStack"
 	var response map[string]interface{}
-	conn, err := client.NewRosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"StackId": d.Id(),
 	}
@@ -424,7 +410,7 @@ func resourceAlicloudRosStackDelete(d *schema.ResourceData, meta interface{}) er
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

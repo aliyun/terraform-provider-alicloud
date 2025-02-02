@@ -326,6 +326,7 @@ var irregularProductEndpoint = map[string]string{
 	"esa":              "esa.cn-hangzhou.aliyuncs.com",
 	"cas":              "cas.aliyuncs.com",
 	"sas":              "tds.aliyuncs.com",
+	"ros":              "ros.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -349,6 +350,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
 	"bssopenapi":     BssOpenAPIEndpointInternational,
 	"esa":            "esa.ap-southeast-1.aliyuncs.com",
+	"ros":            "ros-intl.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccountIntlRegion specially records those product codes that
@@ -386,7 +388,6 @@ var regularProductEndpoint = map[string]string{
 	"alidns":               "alidns.%s.aliyuncs.com",
 	"eci":                  "eci.%s.aliyuncs.com",
 	"ons":                  "ons.%s.aliyuncs.com",
-	"ros":                  "ros.aliyuncs.com",
 	"pvtz":                 "pvtz.aliyuncs.com",
 	"privatelink":          "privatelink.%s.aliyuncs.com",
 	"maxcompute":           "maxcompute.%s.aliyuncs.com",

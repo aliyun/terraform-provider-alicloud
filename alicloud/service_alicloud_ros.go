@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,19 +16,14 @@ type RosService struct {
 
 func (s *RosService) DescribeRosChangeSet(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetChangeSet"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"ChangeSetId":  id,
 		"ShowTemplate": true,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ChangeSetNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosChangeSet", id)), NotFoundMsg, ProviderERROR)
@@ -69,19 +63,14 @@ func (s *RosService) RosChangeSetStateRefreshFunc(id string, failStates []string
 
 func (s *RosService) DescribeRosStack(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetStack"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"StackId":  id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("GetStack")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosStack", id)), NotFoundMsg, ProviderERROR)
@@ -121,18 +110,13 @@ func (s *RosService) RosStackStateRefreshFunc(id string, failStates []string) re
 
 func (s *RosService) GetStackPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetStackPolicy"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"StackId":  id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosStack", id)), NotFoundMsg, ProviderERROR)
@@ -151,10 +135,7 @@ func (s *RosService) GetStackPolicy(id string) (object map[string]interface{}, e
 }
 
 func (s *RosService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -167,7 +148,7 @@ func (s *RosService) ListTagResources(id string, resourceType string) (object in
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
@@ -199,14 +180,9 @@ func (s *RosService) ListTagResources(id string, resourceType string) (object in
 }
 
 func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
 	if d.HasChange("tags") {
+		client := s.client
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewRosClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -225,7 +201,7 @@ func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -257,7 +233,7 @@ func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -280,18 +256,13 @@ func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 func (s *RosService) DescribeRosStackGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetStackGroup"
 	request := map[string]interface{}{
 		"RegionId":       s.client.RegionId,
 		"StackGroupName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackGroupNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosStackGroup", id)), NotFoundMsg, ProviderERROR)
@@ -331,18 +302,13 @@ func (s *RosService) RosStackGroupStateRefreshFunc(id string, failStates []strin
 
 func (s *RosService) DescribeRosTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetTemplate"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"TemplateId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ChangeSetNotFound", "StackNotFound", "TemplateNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosTemplate", id)), NotFoundMsg, ProviderERROR)
@@ -362,10 +328,7 @@ func (s *RosService) DescribeRosTemplate(id string) (object map[string]interface
 
 func (s *RosService) DescribeRosStackInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetStackInstance"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -378,11 +341,9 @@ func (s *RosService) DescribeRosStackInstance(id string) (object map[string]inte
 		"StackInstanceAccountId": parts[1],
 		"StackInstanceRegionId":  parts[2],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -429,20 +390,15 @@ func (s *RosService) RosStackInstanceStateRefreshFunc(id string, failStates []st
 
 func (s *RosService) DescribeRosTemplateScratch(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewRosClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetTemplateScratch"
 	request := map[string]interface{}{
 		"RegionId":          s.client.RegionId,
 		"TemplateScratchId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
