@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -22,20 +21,13 @@ func (s *DbfsServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetDbfs"
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FsId"] = id
 	request["RegionId"] = client.RegionId
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,19 +47,14 @@ func resourceAliCloudDbfsInstanceAttachmentCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "AttachDbfs"
 	request := make(map[string]interface{})
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["FsId"] = d.Get("instance_id")
 	request["ECSInstanceId"] = d.Get("ecs_id")
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,10 +112,7 @@ func resourceAliCloudDbfsInstanceAttachmentDelete(d *schema.ResourceData, meta i
 	action := "DetachDbfs"
 	var response map[string]interface{}
 
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -133,11 +124,9 @@ func resourceAliCloudDbfsInstanceAttachmentDelete(d *schema.ResourceData, meta i
 		"ECSInstanceId": parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

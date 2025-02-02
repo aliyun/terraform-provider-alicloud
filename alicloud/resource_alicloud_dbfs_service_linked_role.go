@@ -41,14 +41,11 @@ func resourceAlicloudDbfsServiceLinkedRoleCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateServiceLinkedRole"
 	request := map[string]interface{}{}
-	conn, err := client.NewDbfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	request["ClientToken"] = buildClientToken("CreateServiceLinkedRole")
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

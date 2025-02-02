@@ -42,29 +42,23 @@ func testSweepDbfsSnapshot(region string) error {
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
-	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 	action := "ListSnapshot"
 	request := map[string]interface{}{}
-	request["RegionId"] = aliyunClient.RegionId
+	request["RegionId"] = client.RegionId
 
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewDbfsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -102,9 +96,9 @@ func testSweepDbfsSnapshot(region string) error {
 			action := "DeleteSnapshot"
 			request := map[string]interface{}{
 				"SnapshotId": item["SnapshotId"],
-				"RegionId":   aliyunClient.RegionId,
+				"RegionId":   client.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Dbfs Snapshot (%s): %s", item["SnapshotName"].(string), err)
 			}
