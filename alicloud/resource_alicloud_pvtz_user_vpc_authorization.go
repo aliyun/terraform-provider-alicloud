@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,10 +50,7 @@ func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	action := "AddUserVpcAuthorization"
 	request := make(map[string]interface{})
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("auth_channel"); ok {
 		request["AuthChannel"] = v
 	}
@@ -64,7 +60,7 @@ func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta
 	request["AuthorizedUserId"] = d.Get("authorized_user_id")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"System.Busy"}) || NeedRetry(err) {
 				wait()
@@ -115,10 +111,6 @@ func resourceAlicloudPvtzUserVpcAuthorizationDelete(d *schema.ResourceData, meta
 	}
 	action := "DeleteUserVpcAuthorization"
 	var response map[string]interface{}
-	conn, err := client.NewPvtzClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"AuthType":         parts[1],
 		"AuthorizedUserId": parts[0],
@@ -126,7 +118,7 @@ func resourceAlicloudPvtzUserVpcAuthorizationDelete(d *schema.ResourceData, meta
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"System.Busy"}) || NeedRetry(err) {
 				wait()
