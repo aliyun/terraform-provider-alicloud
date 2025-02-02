@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -17,11 +16,7 @@ type ResourcesharingService struct {
 func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListResourceShares"
-
-	conn, err := s.client.NewRessharingClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"ResourceOwner":    "Self",
@@ -31,11 +26,9 @@ func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string)
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -105,11 +98,7 @@ func (s *ResourcesharingService) ResourceManagerResourceShareStateRefreshFunc(id
 func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListResourceShareAssociations"
-
-	conn, err := s.client.NewRessharingClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -125,11 +114,9 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -198,11 +185,7 @@ func (s *ResourcesharingService) ResourceManagerSharedResourceStateRefreshFunc(i
 func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListResourceShareAssociations"
-
-	conn, err := s.client.NewRessharingClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -218,11 +201,9 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) 
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
