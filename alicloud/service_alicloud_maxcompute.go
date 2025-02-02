@@ -16,17 +16,14 @@ type MaxComputeService struct {
 }
 
 func (s *MaxComputeService) DescribeMaxcomputeProject(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewOdpsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	var response map[string]interface{}
 	action := "/api/v1/projects/" + id
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), nil, nil, nil, &util.RuntimeOptions{})
+		resp, err := client.RoaGet("MaxCompute", "2022-01-04", action, nil, nil, nil)
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}

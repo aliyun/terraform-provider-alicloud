@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -84,10 +83,7 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerCreate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("nickname"); ok {
 		request["nickname"] = v
@@ -120,11 +116,9 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerCreate(d *schema.ResourceData, me
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body["body"], &runtime)
+		response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body["body"], true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -206,10 +200,7 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerUpdate(d *schema.ResourceData, me
 
 	nickname := d.Id()
 	action := fmt.Sprintf("/api/v1/tunnel/%s/timers", nickname)
-	conn, err := client.NewOdpsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -248,11 +239,9 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerUpdate(d *schema.ResourceData, me
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body["body"], &runtime)
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body["body"], true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
