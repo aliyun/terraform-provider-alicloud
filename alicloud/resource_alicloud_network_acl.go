@@ -192,10 +192,7 @@ func resourceAliCloudVpcNetworkAclCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -220,7 +217,7 @@ func resourceAliCloudVpcNetworkAclCreate(d *schema.ResourceData, meta interface{
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -343,10 +340,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	d.Partial(true)
 	action := "ModifyNetworkAclAttributes"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = d.Id()
@@ -372,7 +366,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -398,10 +392,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	}
 	update = false
 	action = "UpdateNetworkAclEntries"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = d.Id()
@@ -456,7 +446,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -480,10 +470,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	}
 	update = false
 	action = "CopyNetworkAclEntries"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = d.Id()
@@ -498,7 +484,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -531,10 +517,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 
 		if removed.Len() > 0 {
 			action := "UnassociateNetworkAcl"
-			conn, err := client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["NetworkAclId"] = d.Id()
@@ -555,7 +537,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -581,10 +563,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 
 		if added.Len() > 0 {
 			action := "AssociateNetworkAcl"
-			conn, err := client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["NetworkAclId"] = d.Id()
@@ -605,7 +583,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -653,10 +631,6 @@ func resourceAliCloudVpcNetworkAclDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["NetworkAclId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -667,7 +641,7 @@ func resourceAliCloudVpcNetworkAclDelete(d *schema.ResourceData, meta interface{
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

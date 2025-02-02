@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -57,10 +56,7 @@ func resourceAliCloudVpcNetworkAclAttachmentCreate(d *schema.ResourceData, meta 
 	action := "AssociateNetworkAcl"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["NetworkAclId"] = d.Get("network_acl_id")
 
@@ -74,11 +70,9 @@ func resourceAliCloudVpcNetworkAclAttachmentCreate(d *schema.ResourceData, meta 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -142,10 +136,7 @@ func resourceAliCloudVpcNetworkAclAttachmentDelete(d *schema.ResourceData, meta 
 	action := "UnassociateNetworkAcl"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["NetworkAclId"] = parts[0]
 
@@ -159,12 +150,9 @@ func resourceAliCloudVpcNetworkAclAttachmentDelete(d *schema.ResourceData, meta 
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

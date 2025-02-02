@@ -709,22 +709,20 @@ func (s *VpcService) sweepVpc(id string) error {
 }
 
 func (s *VpcService) sweepVSwitch(id string) error {
+	client := s.client
+	var err error
 	if id == "" {
 		return nil
 	}
 	log.Printf("[DEBUG] Deleting Vswitch %s ...", id)
 	action := "DeleteVSwitch"
-	conn, err := s.client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"VSwitchId": id,
 	}
 	request["RegionId"] = s.client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Second, func() *resource.RetryError {
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

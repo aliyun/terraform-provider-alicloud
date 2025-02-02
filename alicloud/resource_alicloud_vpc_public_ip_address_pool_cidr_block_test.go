@@ -26,7 +26,7 @@ func TestAccAliCloudVpcPublicIpAddressPoolCidrBlock_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VPCPublicIpAddressPoolCidrBlockSupportRegions)
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolCidrBlockMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcPublicIpAddressPoolCidrBlock")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -69,7 +69,7 @@ func TestAccAliCloudVpcPublicIpAddressPoolCidrBlock_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VPCPublicIpAddressPoolCidrBlockSupportRegions)
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolCidrBlockMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcPublicIpAddressPoolCidrBlock")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

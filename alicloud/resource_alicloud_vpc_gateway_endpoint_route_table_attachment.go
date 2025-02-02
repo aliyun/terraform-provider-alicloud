@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -50,10 +49,7 @@ func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentCreate(d *schema.Reso
 	action := "AssociateRouteTablesWithVpcGatewayEndpoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RouteTableIds.1"] = d.Get("route_table_id")
 	request["EndpointId"] = d.Get("gateway_endpoint_id")
@@ -62,7 +58,7 @@ func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentCreate(d *schema.Reso
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -125,10 +121,7 @@ func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentDelete(d *schema.Reso
 	action := "DissociateRouteTablesFromVpcGatewayEndpoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["EndpointId"] = parts[0]
 	request["RouteTableIds.1"] = parts[1]
@@ -138,7 +131,7 @@ func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentDelete(d *schema.Reso
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

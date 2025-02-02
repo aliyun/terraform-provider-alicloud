@@ -102,7 +102,7 @@ func TestAccAliCloudVPCHavipAttachment_basic(t *testing.T) {
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcHaVipAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -145,7 +145,7 @@ func TestAccAliCloudVPCHavipAttachment_basic1(t *testing.T) {
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcHaVipAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -189,7 +189,7 @@ func TestAccAliCloudVPCHavipAttachment_basic2(t *testing.T) {
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcHaVipAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -243,7 +243,7 @@ func TestAccAliCloudVPCHavipAttachment_basic_multiple_instance_bug_fix(t *testin
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcHaVipAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

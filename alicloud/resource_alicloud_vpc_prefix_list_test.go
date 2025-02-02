@@ -37,29 +37,21 @@ func testSweepVpcPrefixList(region string) error {
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 	action := "ListPrefixLists"
 	request := map[string]interface{}{}
-	request["RegionId"] = aliyunClient.RegionId
-
+	request["RegionId"] = client.RegionId
 	request["MaxResults"] = PageSizeLarge
-
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewVpcClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
+
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -97,9 +89,9 @@ func testSweepVpcPrefixList(region string) error {
 				action := "DeleteVpcPrefixList"
 				request := map[string]interface{}{
 					"PrefixListId": item["PrefixListId"],
-					"RegionId":     aliyunClient.RegionId,
+					"RegionId":     client.RegionId,
 				}
-				_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 				if err != nil {
 					log.Printf("[ERROR] Failed to delete Vpc Prefix List (%s): %s", item["PrefixListName"].(string), err)
 				}
@@ -121,7 +113,7 @@ func TestAccAlicloudVPCPrefixList_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcPrefixList")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -188,7 +180,7 @@ func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcPrefixList")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -281,7 +273,7 @@ func TestAccAlicloudVPCPrefixList_basic2(t *testing.T) {
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcPrefixList")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

@@ -75,10 +75,7 @@ func resourceAlicloudVpcBgpGroupCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "CreateBgpGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("auth_key"); ok {
 		request["AuthKey"] = v
 	}
@@ -102,7 +99,7 @@ func resourceAlicloudVpcBgpGroupCreate(d *schema.ResourceData, meta interface{})
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateBgpGroup")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 				wait()
@@ -151,10 +148,7 @@ func resourceAlicloudVpcBgpGroupRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -199,7 +193,7 @@ func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("ModifyBgpGroupAttribute")
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -225,10 +219,7 @@ func resourceAlicloudVpcBgpGroupDelete(d *schema.ResourceData, meta interface{})
 	vpcService := VpcService{client}
 	action := "DeleteBgpGroup"
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"BgpGroupId": d.Id(),
 	}
@@ -239,7 +230,7 @@ func resourceAlicloudVpcBgpGroupDelete(d *schema.ResourceData, meta interface{})
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteBgpGroup")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.BgpPeer"}) {
 				wait()

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Prefix Lists to the user.
 ---
 
-# alicloud\_vpc\_prefix\_lists
+# alicloud_vpc_prefix_lists
 
 This data source provides the Vpc Prefix Lists of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.182.0+.
+-> **NOTE:** Available since v1.182.0.
 
 ## Example Usage
 
@@ -41,20 +41,20 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `prefix_list_name` - (Optional, ForceNew) The name of the prefix list.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prefix List names.
 * `lists` - A list of Vpc Prefix Lists. Each element contains the following attributes:
- * `create_time` - The time when the prefix list was created.
- * `entrys` - The CIDR address block list of the prefix list.
-		* `cidr` - The CIDR address block of the prefix list.
-		* `description` - The description of the cidr entry.
- * `id` - The ID of the Prefix List.
- * `ip_version` - The IP version of the prefix list.
- * `max_entries` - The maximum number of entries for CIDR address blocks in the prefix list.
- * `prefix_list_id` - The ID of the query Prefix List.
- * `prefix_list_name` - The name of the prefix list.
- * `share_type` - The share type of the prefix list.
- * `prefix_list_description` - The description of the prefix list.
+  * `create_time` - The time when the prefix list was created.
+  * `entrys` - The CIDR address block list of the prefix list.
+    * `cidr` - The CIDR address block of the prefix list.
+    * `description` - The description of the cidr entry.
+  * `id` - The ID of the Prefix List.
+  * `ip_version` - The IP version of the prefix list.
+  * `max_entries` - The maximum number of entries for CIDR address blocks in the prefix list.
+  * `prefix_list_id` - The ID of the query Prefix List.
+  * `prefix_list_name` - The name of the prefix list.
+  * `share_type` - The share type of the prefix list.
+  * `prefix_list_description` - The description of the prefix list.

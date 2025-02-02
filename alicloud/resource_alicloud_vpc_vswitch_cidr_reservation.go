@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -93,10 +92,7 @@ func resourceAlicloudVpcVswitchCidrReservationCreate(d *schema.ResourceData, met
 	action := "CreateVSwitchCidrReservation"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["VSwitchId"] = d.Get("vswitch_id")
 	request["RegionId"] = client.RegionId
@@ -128,7 +124,7 @@ func resourceAlicloudVpcVswitchCidrReservationCreate(d *schema.ResourceData, met
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -191,10 +187,7 @@ func resourceAlicloudVpcVswitchCidrReservationUpdate(d *schema.ResourceData, met
 	var response map[string]interface{}
 	update := false
 	action := "ModifyVSwitchCidrReservationAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	parts := strings.Split(d.Id(), ":")
@@ -219,7 +212,7 @@ func resourceAlicloudVpcVswitchCidrReservationUpdate(d *schema.ResourceData, met
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -248,10 +241,7 @@ func resourceAlicloudVpcVswitchCidrReservationDelete(d *schema.ResourceData, met
 	action := "DeleteVSwitchCidrReservation"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	parts := strings.Split(d.Id(), ":")
@@ -261,7 +251,7 @@ func resourceAlicloudVpcVswitchCidrReservationDelete(d *schema.ResourceData, met
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing"}) || NeedRetry(err) {

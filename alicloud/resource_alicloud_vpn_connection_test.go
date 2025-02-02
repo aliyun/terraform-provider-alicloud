@@ -291,7 +291,7 @@ func TestAccAliCloudVPNConnection_basic2(t *testing.T) {
 	resourceId := "alicloud_vpn_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnConnectionMap3)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpnConnection")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

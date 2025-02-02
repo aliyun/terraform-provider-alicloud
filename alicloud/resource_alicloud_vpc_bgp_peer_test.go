@@ -16,8 +16,8 @@ func TestAccAliCloudVPCBgpPeer_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPCBgpPeerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcBgpPeer")
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectBgpPeer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -80,8 +80,8 @@ func TestAccAliCloudVPCBgpPeer_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPCBgpPeerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcBgpPeer")
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectBgpPeer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -109,10 +108,7 @@ func resourceAlicloudVpcFlowLogCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateFlowLog"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -140,7 +136,7 @@ func resourceAlicloudVpcFlowLogCreate(d *schema.ResourceData, meta interface{}) 
 	request["ResourceType"] = d.Get("resource_type")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "OperationFailed.LastTokenProcessing", "LastTokenProcessing", "IncorrectStatus", "InvalidHdMonitorStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
@@ -211,10 +207,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	update := false
 	d.Partial(true)
 	action := "ModifyFlowLogAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["FlowLogId"] = d.Id()
@@ -237,7 +230,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -263,10 +256,6 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ResourceId"] = d.Id()
@@ -280,7 +269,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -310,17 +299,12 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if object["Status"].(string) != target {
 			if target == "Active" {
 				action = "ActiveFlowLog"
-				conn, err = client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
-
 				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 					if err != nil {
 						if IsExpectedErrors(err, []string{"TaskConflict", "LastTokenProcessing", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
@@ -344,17 +328,13 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			if target == "Inactive" {
 				action = "DeactiveFlowLog"
-				conn, err = client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 
 				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 					if err != nil {
 						if IsExpectedErrors(err, []string{"TaskConflict", "LastTokenProcessing", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
@@ -399,10 +379,7 @@ func resourceAlicloudVpcFlowLogDelete(d *schema.ResourceData, meta interface{}) 
 	action := "DeleteFlowLog"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["FlowLogId"] = d.Id()
@@ -410,7 +387,7 @@ func resourceAlicloudVpcFlowLogDelete(d *schema.ResourceData, meta interface{}) 
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "InvalidHdMonitorStatus", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {

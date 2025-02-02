@@ -25,7 +25,7 @@ func TestAccAlicloudVPCFlowLog_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcFlowLog")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -127,7 +127,7 @@ func TestAccAlicloudVPCFlowLog_basic1(t *testing.T) {
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcFlowLog")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

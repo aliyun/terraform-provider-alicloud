@@ -104,14 +104,14 @@ func testSweepVPNCustomerGateways(region string) error {
 
 func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
+	vpnGatewayService := VPNGatewayServiceV2{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpn_customer_gateway" {
 			continue
 		}
 
-		_, err := vpnGatewayService.DescribeVpnCustomerGateway(rs.Primary.ID)
+		_, err := vpnGatewayService.DescribeVPNGatewayCustomerGateway(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -281,8 +281,8 @@ func TestAccAliCloudVPNCustomerGateway_basic2(t *testing.T) {
 	resourceId := "alicloud_vpn_customer_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnCustomerGatewayMap3)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpnCustomerGateway")
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayCustomerGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

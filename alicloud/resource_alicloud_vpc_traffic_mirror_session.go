@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -100,10 +99,7 @@ func resourceAliCloudVpcTrafficMirrorSessionCreate(d *schema.ResourceData, meta 
 	action := "CreateTrafficMirrorSession"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -141,7 +137,7 @@ func resourceAliCloudVpcTrafficMirrorSessionCreate(d *schema.ResourceData, meta 
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -214,10 +210,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 	update := false
 	d.Partial(true)
 	action := "UpdateTrafficMirrorSessionAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["TrafficMirrorSessionId"] = d.Id()
@@ -267,7 +260,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -299,10 +292,6 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ResourceId"] = d.Id()
@@ -317,7 +306,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -344,10 +333,6 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 
 		if len(removed.([]interface{})) > 0 {
 			action = "RemoveSourcesFromTrafficMirrorSession"
-			conn, err = client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 
 			request["TrafficMirrorSessionId"] = d.Id()
@@ -359,7 +344,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -385,10 +370,6 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 
 		if len(added.([]interface{})) > 0 {
 			action = "AddSourcesToTrafficMirrorSession"
-			conn, err = client.NewVpcClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 
 			request["TrafficMirrorSessionId"] = d.Id()
@@ -400,7 +381,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -444,10 +425,7 @@ func resourceAliCloudVpcTrafficMirrorSessionDelete(d *schema.ResourceData, meta 
 	action := "DeleteTrafficMirrorSession"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["TrafficMirrorSessionId"] = d.Id()
@@ -460,7 +438,7 @@ func resourceAliCloudVpcTrafficMirrorSessionDelete(d *schema.ResourceData, meta 
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
