@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudSelectDBDbCluster() *schema.Resource {
+func resourceAliCloudSelectDBDbCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSelectDBDbClusterCreate,
-		Read:   resourceAlicloudSelectDBDbClusterRead,
-		Update: resourceAlicloudSelectDBDbClusterUpdate,
-		Delete: resourceAlicloudSelectDBDbClusterDelete,
+		Create: resourceAliCloudSelectDBDbClusterCreate,
+		Read:   resourceAliCloudSelectDBDbClusterRead,
+		Update: resourceAliCloudSelectDBDbClusterUpdate,
+		Delete: resourceAliCloudSelectDBDbClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -153,7 +153,7 @@ func resourceAlicloudSelectDBDbCluster() *schema.Resource {
 	}
 }
 
-func resourceAlicloudSelectDBDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSelectDBDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	selectDBService := SelectDBService{client}
 
@@ -177,10 +177,10 @@ func resourceAlicloudSelectDBDbClusterCreate(d *schema.ResourceData, meta interf
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudSelectDBDbClusterUpdate(d, meta)
+	return resourceAliCloudSelectDBDbClusterUpdate(d, meta)
 }
 
-func resourceAlicloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	selectDBService := SelectDBService{client}
 	d.Partial(true)
@@ -293,10 +293,10 @@ func resourceAlicloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 	}
 
 	d.Partial(false)
-	return resourceAlicloudSelectDBDbClusterRead(d, meta)
+	return resourceAliCloudSelectDBDbClusterRead(d, meta)
 }
 
-func resourceAlicloudSelectDBDbClusterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSelectDBDbClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	selectDBService := SelectDBService{client}
 
@@ -348,7 +348,7 @@ func resourceAlicloudSelectDBDbClusterRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAlicloudSelectDBDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSelectDBDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	selectDBService := SelectDBService{client}
 
