@@ -61,10 +61,6 @@ func testSweepVpcs(region string) error {
 	}
 
 	vpcIds := make([]string, 0)
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	action := "DescribeVpcs"
 	var response map[string]interface{}
 	request := map[string]interface{}{
@@ -73,9 +69,7 @@ func testSweepVpcs(region string) error {
 		"RegionId":   client.RegionId,
 	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
 			return nil
@@ -121,7 +115,7 @@ func testSweepVpcs(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

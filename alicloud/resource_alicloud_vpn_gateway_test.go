@@ -375,8 +375,8 @@ func TestAccAliCloudVPNGateway_basic2(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpnGateway")
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayVPNGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -503,8 +503,8 @@ func TestAccAliCloudVPNGateway_basic3(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpnGateway")
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayVPNGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -600,8 +600,8 @@ func TestAccAliCloudVPNGateway_basic4(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpnGateway")
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayVPNGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

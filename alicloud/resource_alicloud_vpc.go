@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -227,8 +226,6 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 		if v, ok := d.GetOkExists("ipv4_cidr_mask"); ok {
 			request["Ipv4CidrMask"] = v
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
@@ -277,8 +274,6 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 		if v, ok := d.GetOk("resource_group_id"); ok {
 			request["ResourceGroupId"] = v
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
@@ -418,20 +413,14 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		if _, ok := object["ClassicLinkEnabled"]; ok && object["ClassicLinkEnabled"].(bool) != target {
 			if target == true {
 				action := "EnableVpcClassicLink"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectVpcStatus"}) || NeedRetry(err) {
 							wait()
@@ -449,20 +438,14 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 			if target == false {
 				action := "DisableVpcClassicLink"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "IncorrectVpcStatus"}) || NeedRetry(err) {
 							wait()
@@ -482,10 +465,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	action := "ModifyVpcAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["VpcId"] = d.Id()
@@ -524,11 +504,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "OperationFailed.QueryCenIpv6Status", "IncorrectStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectVpcStatus"}) || NeedRetry(err) {
 					wait()
@@ -557,10 +535,6 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -571,11 +545,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "VPC"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -592,10 +564,6 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action = "ModifyRouteTableAttributes"
-	conn, err = client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
@@ -630,11 +598,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -660,10 +626,6 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			for _, item := range secondaryCidrBlocks {
 				action := "UnassociateVpcCidrBlock"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["VpcId"] = d.Id()
@@ -675,11 +637,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					}
 					request["SecondaryCidrBlock"] = jsonPathResult
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -707,10 +667,6 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			for _, item := range secondaryCidrBlocks {
 				action := "AssociateVpcCidrBlock"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["VpcId"] = d.Id()
@@ -730,11 +686,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 				if v, ok := d.GetOkExists("secondary_cidr_mask"); ok {
 					request["SecondaryCidrMask"] = v
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -774,10 +728,7 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["VpcId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -786,11 +737,9 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "IncorrectVpcStatus"}) || NeedRetry(err) {

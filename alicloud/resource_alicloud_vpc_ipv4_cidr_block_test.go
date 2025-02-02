@@ -24,7 +24,7 @@ func TestAccAliCloudVPCIpv4CidrBlock_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_ipv4_cidr_block.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCIpv4CidrBlockMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcIpv4CidrBlock")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

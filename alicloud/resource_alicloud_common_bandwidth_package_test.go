@@ -109,8 +109,8 @@ func TestAccAliCloudCommonBandwidthPackage_basic(t *testing.T) {
 	resourceId := "alicloud_common_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCommonBandwidthPackage")
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCbwpCommonBandwidthPackage")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -224,8 +224,8 @@ func TestAccAliCloudCommonBandwidthPackage_basic1(t *testing.T) {
 	resourceId := "alicloud_common_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCommonBandwidthPackage")
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCbwpCommonBandwidthPackage")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -331,8 +331,8 @@ func TestAccAliCloudCommonBandwidthPackage_basic2(t *testing.T) {
 	resourceId := "alicloud_common_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCommonBandwidthPackage")
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCbwpCommonBandwidthPackage")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -387,8 +387,8 @@ func TestAccAliCloudCommonBandwidthPackage_basic3(t *testing.T) {
 	resourceId := "alicloud_common_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCommonBandwidthPackage")
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCbwpCommonBandwidthPackage")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -442,8 +442,8 @@ func TestAccAliCloudCommonBandwidthPackage_basic4(t *testing.T) {
 	resourceId := "alicloud_common_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCommonBandwidthPackage")
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCbwpCommonBandwidthPackage")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

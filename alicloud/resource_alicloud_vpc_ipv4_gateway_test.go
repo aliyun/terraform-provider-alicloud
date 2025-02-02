@@ -113,7 +113,7 @@ func TestAccAlicloudVPCIpv4Gateway_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_ipv4_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCIpv4GatewayMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcIpv4Gateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

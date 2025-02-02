@@ -26,7 +26,7 @@ func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterIngressRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcTrafficMirrorFilterIngressRule")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -167,7 +167,7 @@ func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic1(t *testing.T) {
 	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterIngressRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcTrafficMirrorFilterIngressRule")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -224,7 +224,7 @@ func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic2(t *testing.T) {
 	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterIngressRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcTrafficMirrorFilterIngressRule")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

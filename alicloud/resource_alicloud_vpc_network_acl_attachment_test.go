@@ -25,7 +25,7 @@ func TestAccAliCloudVpcNetworkAclAttachment_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_network_acl_attachment.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcNetworkAclAttachmentMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcNetworkAclAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

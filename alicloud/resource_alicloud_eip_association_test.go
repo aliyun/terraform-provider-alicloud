@@ -15,7 +15,7 @@ func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -57,7 +57,7 @@ func TestAccAliCloudEipAssociation_basic0_twin(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -102,7 +102,7 @@ func TestAccAliCloudEipAssociation_basic1(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -146,7 +146,7 @@ func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -205,7 +205,7 @@ func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -251,7 +251,7 @@ func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEipAssociation")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

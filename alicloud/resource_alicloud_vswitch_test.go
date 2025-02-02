@@ -71,10 +71,6 @@ func testSweepVSwitches(region string) error {
 		"tf_testAcc",
 	}
 	action := "DescribeVSwitches"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
 	request := make(map[string]interface{})
 	request["PageSize"] = PageSizeLarge
@@ -82,9 +78,7 @@ func testSweepVSwitches(region string) error {
 	request["RegionId"] = client.RegionId
 	vswitches := make([]map[string]interface{}, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve VSwitch in service list: %s", err)
 			return nil

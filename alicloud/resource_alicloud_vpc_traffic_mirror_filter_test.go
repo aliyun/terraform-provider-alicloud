@@ -51,16 +51,10 @@ func testSweepVPCTrafficMirrorFilter(region string) error {
 	request["RegionId"] = client.RegionId
 
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -101,7 +95,7 @@ func testSweepVPCTrafficMirrorFilter(region string) error {
 				"TrafficMirrorFilterId": item["TrafficMirrorFilterId"],
 			}
 			request["RegionId"] = client.RegionId
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete VPC Traffic Mirror Filter (%s): %s", item["TrafficMirrorFilterName"].(string), err)
 			}
@@ -122,7 +116,7 @@ func TestAccAlicloudVPCTrafficMirrorFilter_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcTrafficMirrorFilter")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -197,7 +191,7 @@ func TestAccAlicloudVPCTrafficMirrorFilter_basic1(t *testing.T) {
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcTrafficMirrorFilter")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

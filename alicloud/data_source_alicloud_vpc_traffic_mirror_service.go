@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -36,21 +35,16 @@ func dataSourceAlicloudVpcTrafficMirrorServiceRead(d *schema.ResourceData, meta 
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	var response map[string]interface{}
 	request := map[string]interface{}{}
 
 	action := "GetTrafficMirrorServiceStatus"
 	request["ClientToken"] = buildClientToken(action)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -75,7 +69,7 @@ func dataSourceAlicloudVpcTrafficMirrorServiceRead(d *schema.ResourceData, meta 
 	action = "OpenTrafficMirrorService"
 	request["ClientToken"] = buildClientToken(action)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

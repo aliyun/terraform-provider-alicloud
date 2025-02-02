@@ -13,7 +13,7 @@ Provides a VPC Traffic Mirror Filter resource. Traffic mirror filter criteria.
 
 For information about VPC Traffic Mirror Filter and how to use it, see [What is Traffic Mirror Filter](https://www.alibabacloud.com/help/doc-detail/207513.htm).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -73,10 +73,10 @@ The following arguments are supported:
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:
   - **true**: The check request is sent without creating traffic Image filter conditions. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
   - **false** (default): Sends a normal request, returns a 2xx HTTP status code after passing the check, and directly creates a filter condition.
-* `egress_rules` - (Optional, ForceNew, Computed, Available in v1.206.0+) Information about the outbound rule. See the following `Block EgressRules`.
-* `ingress_rules` - (Optional, ForceNew, Computed, Available in v1.206.0+) Inward direction rule information. See the following `Block IngressRules`.
-* `resource_group_id` - (Optional, Computed, Available in v1.206.0+) The ID of the resource group to which the VPC belongs.
-* `tags` - (Optional, Map, Available in v1.206.0+) The tags of this resource.
+* `egress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Information about the outbound rule. See the following `Block EgressRules`.
+* `ingress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Inward direction rule information. See the following `Block IngressRules`.
+* `resource_group_id` - (Optional, Computed, Available since v1.206.0+) The ID of the resource group to which the VPC belongs.
+* `tags` - (Optional, Map, Available since v1.206.0+) The tags of this resource.
 * `traffic_mirror_filter_description` - (Optional) The description of the TrafficMirrorFilter.
 * `traffic_mirror_filter_name` - (Optional) The name of the TrafficMirrorFilter.
 

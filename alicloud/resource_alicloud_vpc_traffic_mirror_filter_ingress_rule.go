@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -111,10 +110,7 @@ func resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(d *schema.ResourceD
 	action := "CreateTrafficMirrorFilterRules"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["TrafficMirrorFilterId"] = d.Get("traffic_mirror_filter_id")
 	request["RegionId"] = client.RegionId
@@ -143,11 +139,9 @@ func resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(d *schema.ResourceD
 	requestIngressRulesMap = append(requestIngressRulesMap, requestIngressRules)
 	request["IngressRules"] = requestIngressRulesMap
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -217,10 +211,7 @@ func resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(d *schema.ResourceD
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateTrafficMirrorFilterRuleAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["TrafficMirrorFilterRuleId"] = parts[1]
 	request["RegionId"] = client.RegionId
@@ -266,11 +257,9 @@ func resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(d *schema.ResourceD
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -303,22 +292,16 @@ func resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(d *schema.ResourceD
 	action := "DeleteTrafficMirrorFilterRules"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["TrafficMirrorFilterRuleIds.1"] = parts[1]
 	request["TrafficMirrorFilterId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

@@ -15,7 +15,7 @@ func TestAccAlicloudVpcGatewayRouteTableAttachment_basic0(t *testing.T) {
 	resourceId := "alicloud_vpc_gateway_route_table_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayRouteTableAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcGatewayRouteTableAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

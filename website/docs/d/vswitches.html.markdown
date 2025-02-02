@@ -7,7 +7,7 @@ description: |-
     Provides a list of vSwitch owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_vswitches
+# alicloud_vswitches
 
 This data source provides a list of VSwitches owned by an Alibaba Cloud account.
 
