@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -64,10 +63,7 @@ func resourceAlicloudMhubAppCreate(d *schema.ResourceData, meta interface{}) err
 	var response map[string]interface{}
 	action := "CreateApp"
 	request := make(map[string]interface{})
-	conn, err := client.NewMhubClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Name"] = d.Get("app_name")
 	request["ProductId"] = d.Get("product_id")
 
@@ -82,7 +78,7 @@ func resourceAlicloudMhubAppCreate(d *schema.ResourceData, meta interface{}) err
 	request["Type"] = convertTypeRequest(d.Get("type").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -129,10 +125,7 @@ func resourceAlicloudMhubAppRead(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAlicloudMhubAppUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewMhubClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -162,7 +155,7 @@ func resourceAlicloudMhubAppUpdate(d *schema.ResourceData, meta interface{}) err
 		action := "ModifyApp"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -183,10 +176,7 @@ func resourceAlicloudMhubAppDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteApp"
 	var response map[string]interface{}
-	conn, err := client.NewMhubClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	request := map[string]interface{}{
 		"AppKey": parts[1],
@@ -194,7 +184,7 @@ func resourceAlicloudMhubAppDelete(d *schema.ResourceData, meta interface{}) err
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

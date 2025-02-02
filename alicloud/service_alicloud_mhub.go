@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -17,19 +16,14 @@ type MhubService struct {
 
 func (s *MhubService) DescribeMhubProduct(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMhubClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryProductInfo"
 	request := map[string]interface{}{
 		"ProductId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -59,21 +53,16 @@ func (s *MhubService) DescribeMhubProduct(id string) (object map[string]interfac
 
 func (s *MhubService) DescribeMhubApp(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewMhubClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListApps"
 	idExist := false
 	parts, err := ParseResourceId(id, 2)
 	request := map[string]interface{}{
 		"ProductId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
