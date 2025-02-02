@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,10 +69,7 @@ func resourceAlicloudFnfScheduleCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "CreateSchedule"
 	request := make(map[string]interface{})
-	conn, err := client.NewFnfClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["CronExpression"] = d.Get("cron_expression")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -91,7 +87,7 @@ func resourceAlicloudFnfScheduleCreate(d *schema.ResourceData, meta interface{})
 	request["ScheduleName"] = d.Get("schedule_name")
 	wait := incrementalWait(3*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("fnf", "2019-03-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError", "InternalServerError"}) || NeedRetry(err) {
 				wait()
@@ -138,10 +134,7 @@ func resourceAlicloudFnfScheduleRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudFnfScheduleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewFnfClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -172,7 +165,7 @@ func resourceAlicloudFnfScheduleUpdate(d *schema.ResourceData, meta interface{})
 		action := "UpdateSchedule"
 		wait := incrementalWait(3*time.Second, 1*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("fnf", "2019-03-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrentUpdateError", "InternalServerError"}) || NeedRetry(err) {
 					wait()
@@ -197,10 +190,6 @@ func resourceAlicloudFnfScheduleDelete(d *schema.ResourceData, meta interface{})
 	}
 	action := "DeleteSchedule"
 	var response map[string]interface{}
-	conn, err := client.NewFnfClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"FlowName":     parts[0],
 		"ScheduleName": parts[1],
@@ -208,7 +197,7 @@ func resourceAlicloudFnfScheduleDelete(d *schema.ResourceData, meta interface{})
 
 	wait := incrementalWait(3*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError", "InternalServerError"}) || NeedRetry(err) {
 				wait()

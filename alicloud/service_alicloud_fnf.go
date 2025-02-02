@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,18 +15,13 @@ type FnfService struct {
 
 func (s *FnfService) DescribeFnfFlow(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewFnfClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeFlow"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"Name":     id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("FnfFlow", id)), NotFoundMsg, ProviderERROR)
@@ -47,10 +41,7 @@ func (s *FnfService) DescribeFnfFlow(id string) (object map[string]interface{}, 
 
 func (s *FnfService) DescribeFnfSchedule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewFnfClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeSchedule"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -62,9 +53,7 @@ func (s *FnfService) DescribeFnfSchedule(id string) (object map[string]interface
 		"FlowName":     parts[0],
 		"ScheduleName": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists", "ScheduleNotExists"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("FnfSchedule", id)), NotFoundMsg, ProviderERROR)
@@ -84,10 +73,7 @@ func (s *FnfService) DescribeFnfSchedule(id string) (object map[string]interface
 
 func (s *FnfService) DescribeFnFExecution(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewFnfClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeExecution"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -98,11 +84,9 @@ func (s *FnfService) DescribeFnFExecution(id string) (object map[string]interfac
 		"ExecutionName": parts[1],
 		"FlowName":      parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -148,10 +132,7 @@ func (s *FnfService) FnFExecutionStateRefreshFunc(id string, failStates []string
 }
 func (s *FnfService) DescribeExecution(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewFnfClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeExecution"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -162,11 +143,9 @@ func (s *FnfService) DescribeExecution(id string) (object map[string]interface{}
 		"ExecutionName": parts[1],
 		"FlowName":      parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
