@@ -277,19 +277,13 @@ func (s *QuotasServiceV2) DescribeListQuotaApplicationsDetailForTemplate(id stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListQuotaApplicationsDetailForTemplate"
-	conn, err := client.NewQuotasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["BatchQuotaApplicationId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -349,10 +343,6 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateService(id string) (object map[s
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 0, len(parts)))
 	}
 	action := "GetQuotaTemplateServiceStatus"
-	conn, err := client.NewQuotasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -360,7 +350,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateService(id string) (object map[s
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

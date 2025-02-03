@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,18 +43,13 @@ func resourceAliCloudQuotasTemplateServiceCreate(d *schema.ResourceData, meta in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewQuotasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["ServiceStatus"] = d.Get("service_status")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -105,10 +99,7 @@ func resourceAliCloudQuotasTemplateServiceUpdate(d *schema.ResourceData, meta in
 	var query map[string]interface{}
 	update := false
 	action := "ModifyQuotaTemplateServiceStatus"
-	conn, err := client.NewQuotasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -117,11 +108,9 @@ func resourceAliCloudQuotasTemplateServiceUpdate(d *schema.ResourceData, meta in
 	}
 	request["ServiceStatus"] = d.Get("service_status")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
