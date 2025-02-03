@@ -242,7 +242,7 @@ func ActiontrailTrailBasicdependence(name string) string {
 	  description = "this is a test"
 	  force = true
 	}
-	
+
 	resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}-trigger"
 	  document = <<EOF
@@ -356,7 +356,7 @@ func ActiontrailTrailBasicdependence(name string) string {
 	  description = "this is a test"
 	  force = true
 	}
-	
+
 	resource "alicloud_ram_role_policy_attachment" "default" {
 	  role_name = "${alicloud_ram_role.default.name}"
 	  policy_name = "${alicloud_ram_policy.default.name}"
@@ -375,16 +375,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"trail_name":            "trail_name",
-		"oss_write_role_arn":    "oss_write_role_arn",
-		"oss_bucket_name":       "oss_bucket_name",
-		"status":                "Disable",
-		"event_rw":              "event_rw",
-		"is_organization_trail": true,
-		"oss_key_prefix":        "oss_key_prefix",
-		"sls_project_arn":       "sls_project_arn",
-		"sls_write_role_arn":    "sls_write_role_arn",
-		"trail_region":          "trail_region",
+		"trail_name":                 "trail_name",
+		"oss_write_role_arn":         "oss_write_role_arn",
+		"oss_bucket_name":            "oss_bucket_name",
+		"status":                     "Disable",
+		"event_rw":                   "event_rw",
+		"is_organization_trail":      true,
+		"oss_key_prefix":             "oss_key_prefix",
+		"sls_project_arn":            "sls_project_arn",
+		"sls_write_role_arn":         "sls_write_role_arn",
+		"max_compute_project_arn":    "max_compute_project_arn",
+		"max_compute_write_role_arn": "max_compute_write_role_arn",
+		"trail_region":               "trail_region",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -401,16 +403,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 	ReadMockResponse := map[string]interface{}{
 		"TrailList": []interface{}{
 			map[string]interface{}{
-				"EventRW":             "event_rw",
-				"IsOrganizationTrail": true,
-				"OssBucketName":       "MockName",
-				"OssKeyPrefix":        "oss_key_prefix",
-				"OssWriteRoleArn":     "oss_write_role_arn",
-				"SlsProjectArn":       "sls_project_arn",
-				"SlsWriteRoleArn":     "sls_write_role_arn",
-				"Status":              "Fresh",
-				"TrailRegion":         "trail_region",
-				"Name":                "MockName",
+				"EventRW":                "event_rw",
+				"IsOrganizationTrail":    true,
+				"OssBucketName":          "MockName",
+				"OssKeyPrefix":           "oss_key_prefix",
+				"OssWriteRoleArn":        "oss_write_role_arn",
+				"SlsProjectArn":          "sls_project_arn",
+				"SlsWriteRoleArn":        "sls_write_role_arn",
+				"MaxComputeProjectArn":   "max_compute_project_arn",
+				"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+				"Status":                 "Fresh",
+				"TrailRegion":            "trail_region",
+				"Name":                   "MockName",
 			},
 		},
 	}
@@ -456,16 +460,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			result := map[string]interface{}{
 				"TrailList": []interface{}{
 					map[string]interface{}{
-						"EventRW":             "event_rw",
-						"IsOrganizationTrail": true,
-						"OssBucketName":       "MockName",
-						"OssKeyPrefix":        "oss_key_prefix",
-						"OssWriteRoleArn":     "oss_write_role_arn",
-						"SlsProjectArn":       "sls_project_arn",
-						"SlsWriteRoleArn":     "sls_write_role_arn",
-						"Status":              "Disable",
-						"TrailRegion":         "trail_region",
-						"Name":                "MockName",
+						"EventRW":                "event_rw",
+						"IsOrganizationTrail":    true,
+						"OssBucketName":          "MockName",
+						"OssKeyPrefix":           "oss_key_prefix",
+						"OssWriteRoleArn":        "oss_write_role_arn",
+						"SlsProjectArn":          "sls_project_arn",
+						"SlsWriteRoleArn":        "sls_write_role_arn",
+						"MaxComputeProjectArn":   "max_compute_project_arn",
+						"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+						"Status":                 "Disable",
+						"TrailRegion":            "trail_region",
+						"Name":                   "MockName",
 					},
 				},
 				"Status": "Enable",
@@ -477,16 +483,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			result := map[string]interface{}{
 				"TrailList": []interface{}{
 					map[string]interface{}{
-						"EventRW":             "event_rw",
-						"IsOrganizationTrail": true,
-						"OssBucketName":       "MockName",
-						"OssKeyPrefix":        "oss_key_prefix",
-						"OssWriteRoleArn":     "oss_write_role_arn",
-						"SlsProjectArn":       "sls_project_arn",
-						"SlsWriteRoleArn":     "sls_write_role_arn",
-						"Status":              "Disable",
-						"TrailRegion":         "trail_region",
-						"Name":                "MockName",
+						"EventRW":                "event_rw",
+						"IsOrganizationTrail":    true,
+						"OssBucketName":          "MockName",
+						"OssKeyPrefix":           "oss_key_prefix",
+						"OssWriteRoleArn":        "oss_write_role_arn",
+						"SlsProjectArn":          "sls_project_arn",
+						"SlsWriteRoleArn":        "sls_write_role_arn",
+						"MaxComputeProjectArn":   "max_compute_project_arn",
+						"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+						"Status":                 "Disable",
+						"TrailRegion":            "trail_region",
+						"Name":                   "MockName",
 					},
 				},
 				"Status": "Disable",
@@ -498,16 +506,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			result := map[string]interface{}{
 				"TrailList": []interface{}{
 					map[string]interface{}{
-						"EventRW":             "event_rw",
-						"IsOrganizationTrail": true,
-						"OssBucketName":       "MockName",
-						"OssKeyPrefix":        "oss_key_prefix",
-						"OssWriteRoleArn":     "oss_write_role_arn",
-						"SlsProjectArn":       "sls_project_arn",
-						"SlsWriteRoleArn":     "sls_write_role_arn",
-						"Status":              "Enable",
-						"TrailRegion":         "trail_region",
-						"Name":                "MockName",
+						"EventRW":                "event_rw",
+						"IsOrganizationTrail":    true,
+						"OssBucketName":          "MockName",
+						"OssKeyPrefix":           "oss_key_prefix",
+						"OssWriteRoleArn":        "oss_write_role_arn",
+						"SlsProjectArn":          "sls_project_arn",
+						"SlsWriteRoleArn":        "sls_write_role_arn",
+						"MaxComputeProjectArn":   "max_compute_project_arn",
+						"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+						"Status":                 "Enable",
+						"TrailRegion":            "trail_region",
+						"Name":                   "MockName",
 					},
 				},
 				"Status": "Disable",
@@ -519,16 +529,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			result := map[string]interface{}{
 				"TrailList": []interface{}{
 					map[string]interface{}{
-						"EventRW":             "event_rw",
-						"IsOrganizationTrail": true,
-						"OssBucketName":       "MockName",
-						"OssKeyPrefix":        "oss_key_prefix",
-						"OssWriteRoleArn":     "oss_write_role_arn",
-						"SlsProjectArn":       "sls_project_arn",
-						"SlsWriteRoleArn":     "sls_write_role_arn",
-						"Status":              "Enable",
-						"TrailRegion":         "trail_region",
-						"Name":                "MockName",
+						"EventRW":                "event_rw",
+						"IsOrganizationTrail":    true,
+						"OssBucketName":          "MockName",
+						"OssKeyPrefix":           "oss_key_prefix",
+						"OssWriteRoleArn":        "oss_write_role_arn",
+						"SlsProjectArn":          "sls_project_arn",
+						"SlsWriteRoleArn":        "sls_write_role_arn",
+						"MaxComputeProjectArn":   "max_compute_project_arn",
+						"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+						"Status":                 "Enable",
+						"TrailRegion":            "trail_region",
+						"Name":                   "MockName",
 					},
 				},
 				"Status": "Enable",
@@ -749,16 +761,18 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) resource.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
-					"EventRW":             "event_rw",
-					"IsOrganizationTrail": true,
-					"OssBucketName":       "MockName",
-					"OssKeyPrefix":        "oss_key_prefix",
-					"OssWriteRoleArn":     "oss_write_role_arn",
-					"SlsProjectArn":       "sls_project_arn",
-					"SlsWriteRoleArn":     "sls_write_role_arn",
-					"Status":              "Disable",
-					"TrailRegion":         "trail_region",
-					"Name":                "MockName",
+					"EventRW":                "event_rw",
+					"IsOrganizationTrail":    true,
+					"OssBucketName":          "MockName",
+					"OssKeyPrefix":           "oss_key_prefix",
+					"OssWriteRoleArn":        "oss_write_role_arn",
+					"SlsProjectArn":          "sls_project_arn",
+					"SlsWriteRoleArn":        "sls_write_role_arn",
+					"MaxComputeProjectArn":   "max_compute_project_arn",
+					"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+					"Status":                 "Disable",
+					"TrailRegion":            "trail_region",
+					"Name":                   "MockName",
 				}
 				return object, "Disable", nil
 			}
@@ -847,14 +861,16 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 				object := map[string]interface{}{
 					"EventRW":             "event_rw",
 					"IsOrganizationTrail": true,
-					"OssBucketName":       "MockName",
-					"OssKeyPrefix":        "oss_key_prefix",
-					"OssWriteRoleArn":     "oss_write_role_arn",
-					"SlsProjectArn":       "sls_project_arn",
-					"SlsWriteRoleArn":     "sls_write_role_arn",
-					"Status":              "Enable",
-					"TrailRegion":         "trail_region",
-					"Name":                "MockName",
+					"OssBucketName":          "MockName",
+					"OssKeyPrefix":           "oss_key_prefix",
+					"OssWriteRoleArn":        "oss_write_role_arn",
+					"SlsProjectArn":          "sls_project_arn",
+					"SlsWriteRoleArn":        "sls_write_role_arn",
+					"MaxComputeProjectArn":   "max_compute_project_arn",
+					"MaxComputeWriteRoleArn": "max_compute_write_role_arn",
+					"Status":                 "Enable",
+					"TrailRegion":            "trail_region",
+					"Name":                   "MockName",
 				}
 				return object, "Enable", nil
 			}
