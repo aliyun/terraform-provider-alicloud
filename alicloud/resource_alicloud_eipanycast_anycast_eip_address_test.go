@@ -39,11 +39,6 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 
 	// delete all resource.
 	prefixes := []string{}
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	action := "ListAnycastEipAddresses"
 	request := map[string]interface{}{
 		"MaxResults": PageSizeLarge,
@@ -51,11 +46,9 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 	addressIds := make([]string, 0)
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -98,17 +91,13 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 	for _, addressId := range addressIds {
 		log.Printf("[INFO] Deleting Eip Address: (%s)", addressId)
 		action := "ReleaseAnycastEipAddress"
-		conn, err := client.NewEipanycastClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request := map[string]interface{}{
 			"AnycastId": addressId,
 		}
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*9, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
