@@ -14,18 +14,13 @@ type Brain_industrialService struct {
 
 func (s *Brain_industrialService) DescribeBrainIndustrialPidOrganization(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAistudioClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListPidOrganizations"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -56,10 +51,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidOrganization(id stri
 
 func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAistudioClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListPidProjects"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
@@ -70,7 +62,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 			return object, err
@@ -106,18 +98,13 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (
 
 func (s *Brain_industrialService) DescribeBrainIndustrialPidLoop(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAistudioClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetLoop"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"PidLoopId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return

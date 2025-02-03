@@ -51,14 +51,8 @@ func testSweepBrainIndustrialPidProject(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListPidProjects"
-	conn, err := client.NewAistudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+		response, _ = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 			log.Println(fmt.Errorf("%s failed: %v", action, response))
 			return nil
@@ -83,7 +77,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 			requestDelete := map[string]interface{}{
 				"PidProjectId": item["PidProjectId"],
 			}
-			response, err = conn.DoRequest(StringPointer(actionDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestDelete, &util.RuntimeOptions{})
+			response, err = client.RpcPost("brain-industrial", "2020-09-20", actionDelete, nil, requestDelete, true)
 			if fmt.Sprintf(`%v`, response["Code"]) == "200" {
 				log.Printf("[INFO] Delete Brain Industrial Project success: %s ", item["PidProjectName"].(string))
 			} else if fmt.Sprintf(`%v`, response["Code"]) == "-100" && strings.Contains(response["Message"].(string), "存在回路") {
@@ -98,7 +92,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 					runtime := util.RuntimeOptions{}
 					runtime.SetAutoretry(true)
 
-					responseLoop, _ := conn.DoRequest(StringPointer(actionLoopList), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestLoopList, &util.RuntimeOptions{})
+					responseLoop, _ := client.RpcPost("brain-industrial", "2020-09-20", actionLoopList, nil, requestLoopList, true)
 					respLoop, _ := jsonpath.Get("$.PidLoopList", responseLoop)
 
 					for _, v := range respLoop.([]interface{}) {
@@ -107,7 +101,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 						requestLoopDelete := map[string]interface{}{
 							"PidLoopId": itemLoop["PidLoopId"],
 						}
-						responseLoopDelete, _ := conn.DoRequest(StringPointer(actionLoopDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestLoopDelete, &util.RuntimeOptions{})
+						responseLoopDelete, _ := client.RpcPost("brain-industrial", "2020-09-20", actionLoopDelete, nil, requestLoopDelete, true)
 						if fmt.Sprintf(`%v`, responseLoopDelete["Code"]) != "200" {
 							log.Printf("[ERROR] Failed to delete Brain Industrial Loop (%s): %s", itemLoop["PidLoopId"].(string), responseLoopDelete["Message"].(string))
 						} else {
@@ -120,7 +114,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 					request["CurrentPage"] = request["CurrentPage"].(int) + 1
 				}
 				log.Printf("[INFO] Delete Loop Done, Then delete Brain Industrial Project again")
-				responseAgain, _ := conn.DoRequest(StringPointer(actionDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestDelete, &util.RuntimeOptions{})
+				responseAgain, _ := client.RpcPost("brain-industrial", "2020-09-20", actionDelete, nil, requestDelete, true)
 				if fmt.Sprintf(`%v`, responseAgain["Code"]) != "200" {
 					log.Printf("[ERROR] Failed to again delete Brain Industrial Project  (%s): %s", item["PidProjectName"].(string), responseAgain["Message"].(string))
 				} else {
