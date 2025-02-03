@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *OosServiceV2) DescribeOosPatchBaseline(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetPatchBaseline"
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Name"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -95,7 +87,6 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -110,10 +101,6 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewOosClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceIds"] = "[\"" + d.Id() + "\"]"
@@ -123,11 +110,9 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			request["TagKeys"] = convertListToJsonString(convertListStringToListInterface(removedTagKeys))
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -147,10 +132,6 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewOosClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceIds"] = "[\"" + d.Id() + "\"]"
@@ -158,11 +139,9 @@ func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			tagsString, _ := convertArrayObjectToJsonString(added)
 			request["Tags"] = tagsString
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -194,20 +173,14 @@ func (s *OosServiceV2) DescribeOosSecretParameter(id string) (object map[string]
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetSecretParameter"
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Name"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -239,21 +212,15 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceIds"] = expandSingletonToList(id)
 	request["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "secretparameter"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

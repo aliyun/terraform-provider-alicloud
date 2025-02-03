@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,10 +70,7 @@ func resourceAlicloudOosServiceSettingCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "SetServiceSettings"
 	request := make(map[string]interface{})
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("delivery_oss_bucket_name"); ok {
 		request["DeliveryOssBucketName"] = v
 	}
@@ -93,7 +89,7 @@ func resourceAlicloudOosServiceSettingCreate(d *schema.ResourceData, meta interf
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,10 +129,7 @@ func resourceAlicloudOosServiceSettingRead(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudOosServiceSettingUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{}
@@ -175,7 +168,7 @@ func resourceAlicloudOosServiceSettingUpdate(d *schema.ResourceData, meta interf
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
