@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -78,10 +77,7 @@ func resourceAlicloudDmsEnterpriseUserCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "RegisterUser"
 	request := make(map[string]interface{})
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("mobile"); ok {
 		request["Mobile"] = v
 	}
@@ -103,7 +99,7 @@ func resourceAlicloudDmsEnterpriseUserCreate(d *schema.ResourceData, meta interf
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -146,10 +142,7 @@ func resourceAlicloudDmsEnterpriseUserRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dmsEnterpriseService := DmsEnterpriseService{client}
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -186,7 +179,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 		action := "UpdateUser"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -222,7 +215,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 				action := "DisableUser"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -247,7 +240,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 				action := "EnableUser"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -272,10 +265,7 @@ func resourceAlicloudDmsEnterpriseUserDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteUser"
 	var response map[string]interface{}
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Uid": d.Id(),
 	}
@@ -285,7 +275,7 @@ func resourceAlicloudDmsEnterpriseUserDelete(d *schema.ResourceData, meta interf
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -53,10 +52,7 @@ func resourceAlicloudDmsEnterpriseProxyCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateProxy"
 	request := make(map[string]interface{})
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceId"] = d.Get("instance_id")
 	request["Password"] = d.Get("password")
 	if v, ok := d.GetOk("tid"); ok {
@@ -65,7 +61,7 @@ func resourceAlicloudDmsEnterpriseProxyCreate(d *schema.ResourceData, meta inter
 	request["Username"] = d.Get("username")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -107,10 +103,7 @@ func resourceAlicloudDmsEnterpriseProxyDelete(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteProxy"
 	var response map[string]interface{}
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ProxyId": d.Id(),
 	}
@@ -120,7 +113,7 @@ func resourceAlicloudDmsEnterpriseProxyDelete(d *schema.ResourceData, meta inter
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

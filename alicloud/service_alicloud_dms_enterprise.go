@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,10 +16,7 @@ type DmsEnterpriseService struct {
 
 func (s *DmsEnterpriseService) DescribeDmsEnterpriseInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstance"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -32,9 +28,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseInstance(id string) (object 
 		"Host":     parts[0],
 		"Port":     parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNoEnoughNumber"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("DmsEnterpriseInstance", id)), NotFoundMsg, ProviderERROR)
@@ -54,18 +48,13 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseInstance(id string) (object 
 
 func (s *DmsEnterpriseService) DescribeDmsEnterpriseUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetUser"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"Uid":      id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -81,20 +70,15 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseUser(id string) (object map[
 
 func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetProxy"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"ProxyId":  id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,10 +104,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxy(id string) (object map
 }
 
 func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxyAccess(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"ProxyAccessId": id,
@@ -132,11 +113,9 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxyAccess(id string) (obje
 
 	var response map[string]interface{}
 	action := "GetProxyAccess"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -180,10 +159,7 @@ func (s *DmsEnterpriseService) DmsEnterpriseProxyAccessStateRefreshFunc(d *schem
 }
 
 func (s *DmsEnterpriseService) InspectProxyAccessSecret(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"ProxyAccessId": id,
@@ -192,11 +168,9 @@ func (s *DmsEnterpriseService) InspectProxyAccessSecret(id string) (object map[s
 
 	var response map[string]interface{}
 	action := "InspectProxyAccessSecret"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -222,10 +196,7 @@ func (s *DmsEnterpriseService) InspectProxyAccessSecret(id string) (object map[s
 }
 
 func (s *DmsEnterpriseService) DescribeDmsEnterpriseLogicDatabase(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDmsenterpriseClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"DbId":     id,
@@ -234,11 +205,9 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseLogicDatabase(id string) (ob
 
 	var response map[string]interface{}
 	action := "GetLogicDatabase"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
