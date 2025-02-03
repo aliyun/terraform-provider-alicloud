@@ -16,10 +16,7 @@ type ResourceManagerService struct {
 
 func (s *ResourceManagerService) DescribeResourceManagerDelegatedAdministrator(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListDelegatedAdministrators"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -37,7 +34,7 @@ func (s *ResourceManagerService) DescribeResourceManagerDelegatedAdministrator(i
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -77,10 +74,7 @@ func (s *ResourceManagerService) DescribeResourceManagerDelegatedAdministrator(i
 
 func (s *ResourceManagerService) GetServiceLinkedRoleDeletionStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetServiceLinkedRoleDeletionStatus"
 	request := map[string]interface{}{
 		"DeletionTaskId": id,
@@ -89,7 +83,7 @@ func (s *ResourceManagerService) GetServiceLinkedRoleDeletionStatus(id string) (
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

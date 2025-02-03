@@ -49,16 +49,9 @@ func testSweepResourceManagerPolicy(region string) error {
 	request["PageNumber"] = 1
 	request["PolicyType"] = "Custom"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	var policyIds []string
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 				return nil
@@ -99,9 +92,7 @@ func testSweepResourceManagerPolicy(region string) error {
 		versionReq := make(map[string]interface{})
 		versionReq["PolicyType"] = "Custom"
 		versionReq["PolicyName"] = policyId
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, versionReq, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, versionReq, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve resource manager policy version (%s): %s", policyId, err)
 			continue
@@ -125,7 +116,7 @@ func testSweepResourceManagerPolicy(region string) error {
 				delRequest["VersionId"] = item["VersionId"]
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, delRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -149,7 +140,7 @@ func testSweepResourceManagerPolicy(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(deleteAction), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", deleteAction, nil, delRequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -59,16 +59,13 @@ func resourceAliCloudResourceManagerResourceDirectoryCreate(d *schema.ResourceDa
 	var response map[string]interface{}
 	action := "InitResourceDirectory"
 	request := make(map[string]interface{})
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -124,11 +121,6 @@ func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 	d.Partial(true)
 
 	if d.HasChange("status") {
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -140,12 +132,9 @@ func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 				request := map[string]interface{}{}
 
 				action := "DisableControlPolicy"
-
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -176,7 +165,7 @@ func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -203,11 +192,6 @@ func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 	}
 
 	if d.HasChange("member_deletion_status") {
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -220,12 +204,9 @@ func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 			}
 
 			action := "SetMemberDeletionPermission"
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -255,15 +236,8 @@ func resourceAliCloudResourceManagerResourceDirectoryDelete(d *schema.ResourceDa
 	resourceManagerService := ResourcemanagerService{client}
 	action := "DestroyResourceDirectory"
 	request := map[string]interface{}{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	var response map[string]interface{}
-
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -274,7 +248,7 @@ func resourceAliCloudResourceManagerResourceDirectoryDelete(d *schema.ResourceDa
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(disableAction), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", disableAction, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -298,7 +272,7 @@ func resourceAliCloudResourceManagerResourceDirectoryDelete(d *schema.ResourceDa
 
 	wait := incrementalWait(3*time.Second, 0*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-03-31"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("ResourceManager", "2020-03-31", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

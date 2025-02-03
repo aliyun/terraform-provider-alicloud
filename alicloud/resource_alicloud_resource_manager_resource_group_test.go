@@ -45,19 +45,12 @@ func testSweepResourceManagerResourceGroup(region string) error {
 	action := "ListResourceGroups"
 	request := make(map[string]interface{})
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	var groupIds []string
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	defaultGroupId := ""
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve resoure manager group in service list: %s", err)
 			return nil
@@ -107,7 +100,7 @@ func testSweepResourceManagerResourceGroup(region string) error {
 		action = "ListResources"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -142,7 +135,7 @@ func testSweepResourceManagerResourceGroup(region string) error {
 				action = "MoveResources"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 					log.Printf("[INFO] moving resource group %s %d resources got an error: %v", groupId, len(resources), err)
 					if err != nil {
 						if NeedRetry(err) {
@@ -162,7 +155,7 @@ func testSweepResourceManagerResourceGroup(region string) error {
 		}
 		wait = incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -48,16 +48,9 @@ func testSweepResourceManagerFolder(region string) error {
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	var folderIds []string
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExists.ResourceDirectory"}) {
 				return nil
@@ -100,7 +93,7 @@ func testSweepResourceManagerFolder(region string) error {
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

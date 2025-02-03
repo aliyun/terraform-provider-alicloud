@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -18,18 +17,13 @@ type ResourcemanagerService struct {
 
 func (s *ResourcemanagerService) DescribeResourceManagerRole(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetRole"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"RoleName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerRole", id)), NotFoundMsg, ProviderERROR)
@@ -51,20 +45,15 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceGroup(id string)
 	var response map[string]interface{}
 	action := "GetResourceGroup"
 
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"ResourceGroupId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,22 +109,16 @@ func (s *ResourcemanagerService) ResourceManagerResourceGroupStateRefreshFunc(id
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"FolderId": id,
 	}
 
 	var response map[string]interface{}
 	action := "GetFolder"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -163,18 +146,13 @@ func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (objec
 
 func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetHandshake"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"HandshakeId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerHandshake", id)), NotFoundMsg, ProviderERROR)
@@ -194,10 +172,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (ob
 
 func (s *ResourcemanagerService) GetPolicyVersion(id string, d *schema.ResourceData) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetPolicyVersion"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -207,9 +182,7 @@ func (s *ResourcemanagerService) GetPolicyVersion(id string, d *schema.ResourceD
 	if v, ok := d.GetOk("default_version"); ok {
 		request["VersionId"] = v.(string)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
@@ -229,19 +202,14 @@ func (s *ResourcemanagerService) GetPolicyVersion(id string, d *schema.ResourceD
 
 func (s *ResourcemanagerService) DescribeResourceManagerPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetPolicy"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"PolicyName": id,
 		"PolicyType": "Custom",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
@@ -261,20 +229,15 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicy(id string) (objec
 
 func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAccount"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"AccountId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -301,19 +264,14 @@ func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (obje
 
 func (s *ResourcemanagerService) GetAccountDeletionStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAccountDeletionStatus"
 	request := map[string]interface{}{
 		"AccountId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -365,16 +323,10 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id str
 	var response map[string]interface{}
 	action := "GetResourceDirectory"
 
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceDirectoryNotInUse"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceDirectory", id)), NotFoundMsg, ProviderERROR)
@@ -396,10 +348,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id str
 
 func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetPolicyVersion"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -412,9 +361,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string)
 		"VersionId":  parts[1],
 		"PolicyType": "Custom",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyVersion", id)), NotFoundMsg, ProviderERROR)
@@ -434,10 +381,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string)
 
 func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListPolicyAttachments"
 	parts, err := ParseResourceId(id, 5)
 	if err != nil {
@@ -452,9 +396,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 		"PrincipalType":   parts[3],
 		"ResourceGroupId": parts[4],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExists.ResourceGroup"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
@@ -477,18 +419,13 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 
 func (s *ResourcemanagerService) DescribeResourceManagerControlPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetControlPolicy"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"PolicyId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.ControlPolicy"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerControlPolicy", id)), NotFoundMsg, ProviderERROR)
@@ -510,10 +447,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 	var response map[string]interface{}
 	action := "ListControlPolicyAttachmentsForTarget"
 
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -525,11 +459,9 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -593,20 +525,15 @@ func (s *ResourcemanagerService) ResourceManagerResourceDirectoryStateRefreshFun
 
 func (s *ResourcemanagerService) GetPayerForAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetPayerForAccount"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"AccountId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -629,10 +556,7 @@ func (s *ResourcemanagerService) GetPayerForAccount(id string) (object map[strin
 }
 
 func (s *ResourcemanagerService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"ResourceType": resourceType,
@@ -645,7 +569,7 @@ func (s *ResourcemanagerService) ListTagResources(id string, resourceType string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			var err error
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -680,11 +604,7 @@ func (s *ResourcemanagerService) SetResourceTags(d *schema.ResourceData, resourc
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
+		client := s.client
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -702,7 +622,7 @@ func (s *ResourcemanagerService) SetResourceTags(d *schema.ResourceData, resourc
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -733,7 +653,7 @@ func (s *ResourcemanagerService) SetResourceTags(d *schema.ResourceData, resourc
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -756,19 +676,14 @@ func (s *ResourcemanagerService) SetResourceTags(d *schema.ResourceData, resourc
 
 func (s *ResourcemanagerService) DescribeResourceManagerAccountDeletionCheckTask(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewResourcemanagerClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAccountDeletionCheckResult"
 	request := map[string]interface{}{
 		"AccountId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
