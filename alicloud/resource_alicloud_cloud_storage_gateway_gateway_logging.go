@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -52,16 +51,13 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingCreate(d *schema.ResourceD
 	var response map[string]interface{}
 	action := "CreateGatewayLogging"
 	request := make(map[string]interface{})
-	conn, err := client.NewHcsSgwClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["GatewayId"] = d.Get("gateway_id")
 	request["SlsLogstore"] = d.Get("sls_logstore")
 	request["SlsProject"] = d.Get("sls_project")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -105,10 +101,6 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingRead(d *schema.ResourceDat
 func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	sgwService := SgwService{client}
-	conn, err := client.NewHcsSgwClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -127,7 +119,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 					if err != nil {
 
 						if NeedRetry(err) {
@@ -155,7 +147,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 					if err != nil {
 
 						if NeedRetry(err) {
@@ -185,10 +177,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingDelete(d *schema.ResourceD
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteGatewayLogging"
 	var response map[string]interface{}
-	conn, err := client.NewHcsSgwClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"GatewayId": d.Id(),
 	}
@@ -196,7 +185,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingDelete(d *schema.ResourceD
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 		if err != nil {
 
 			if NeedRetry(err) {

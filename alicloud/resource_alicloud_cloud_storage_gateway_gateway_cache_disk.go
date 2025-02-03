@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -66,10 +65,7 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskCreate(d *schema.Resourc
 	var response map[string]interface{}
 	action := "CreateGatewayCacheDisk"
 	request := make(map[string]interface{})
-	conn, err := client.NewHcsSgwClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["GatewayId"] = d.Get("gateway_id")
 	request["CacheDiskSizeInGB"] = d.Get("cache_disk_size_in_gb")
@@ -82,11 +78,9 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskCreate(d *schema.Resourc
 		request["PerformanceLevel"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -179,16 +173,9 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskUpdate(d *schema.Resourc
 
 	if update {
 		action := "ExpandCacheDisk"
-		conn, err := client.NewHcsSgwClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -223,10 +210,7 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskDelete(d *schema.Resourc
 	action := "DeleteGatewayCacheDisk"
 	var response map[string]interface{}
 
-	conn, err := client.NewHcsSgwClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -239,11 +223,9 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskDelete(d *schema.Resourc
 		"LocalFilePath": parts[2],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

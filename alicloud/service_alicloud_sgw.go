@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,18 +15,13 @@ type SgwService struct {
 
 func (s *SgwService) DescribeCloudStorageGatewayStorageBundle(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeStorageBundle"
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"StorageBundleId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StorageBundleNotExist"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("CloudStorageGatewayStorageBundle", id)), NotFoundMsg, ProviderERROR)
@@ -49,20 +43,15 @@ func (s *SgwService) DescribeCloudStorageGatewayGateway(id string) (object map[s
 	var response map[string]interface{}
 	action := "DescribeGateway"
 
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"GatewayId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -97,10 +86,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGateway(id string) (object map[s
 
 func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeGatewaySMBUsers"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -114,11 +100,9 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (objec
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -164,10 +148,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (objec
 
 func (s *SgwService) DescribeTasks(id, taskId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeTasks"
 	request := map[string]interface{}{
 		"TargetId":   id,
@@ -179,11 +160,9 @@ func (s *SgwService) DescribeTasks(id, taskId string) (object map[string]interfa
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -251,10 +230,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 	var response map[string]interface{}
 	action := "DescribeGatewayCaches"
 
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -266,11 +242,9 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -318,19 +292,14 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 
 func (s *SgwService) DescribeCloudStorageGatewayGatewayLogging(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeGatewayLogging"
 	request := map[string]interface{}{
 		"GatewayId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -363,10 +332,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayLogging(id string) (objec
 
 func (s *SgwService) DescribeCloudStorageGatewayGatewayBlockVolume(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeGatewayBlockVolumes"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -377,11 +343,9 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayBlockVolume(id string) (o
 		"GatewayId": parts[0],
 		"IndexId":   parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -418,10 +382,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayBlockVolume(id string) (o
 
 func (s *SgwService) DescribeCloudStorageGatewayGatewayFileShare(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeGatewayFileShares"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -433,11 +394,9 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayFileShare(id string) (obj
 		"IndexId":   parts[1],
 		"Refresh":   true,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -474,10 +433,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayFileShare(id string) (obj
 
 func (s *SgwService) DescribeExpressSyncShares(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, err
@@ -488,11 +444,9 @@ func (s *SgwService) DescribeExpressSyncShares(id string) (object map[string]int
 		"ExpressSyncIds": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -532,18 +486,13 @@ func (s *SgwService) DescribeExpressSyncShares(id string) (object map[string]int
 
 func (s *SgwService) DescribeExpressSyncs(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewHcsSgwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeExpressSyncs"
 	request := map[string]interface{}{}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
