@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -78,10 +77,7 @@ func resourceAliCloudImsOidcProviderCreate(d *schema.ResourceData, meta interfac
 	action := "CreateOIDCProvider"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["OIDCProviderName"] = d.Get("oidc_provider_name")
 
@@ -100,7 +96,7 @@ func resourceAliCloudImsOidcProviderCreate(d *schema.ResourceData, meta interfac
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -160,10 +156,7 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	update := false
 	action := "UpdateOIDCProvider"
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["OIDCProviderName"] = d.Id()
 	if !d.IsNewResource() && d.HasChange("description") {
@@ -184,7 +177,7 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -213,10 +206,6 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 
 			for _, item := range fingerprints {
 				action := "AddFingerprintToOIDCProvider"
-				conn, err := client.NewImsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				request["OIDCProviderName"] = d.Id()
 				if v, ok := item.(string); ok {
@@ -228,7 +217,7 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, false)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -253,10 +242,6 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 
 			for _, item := range fingerprints {
 				action := "RemoveFingerprintFromOIDCProvider"
-				conn, err := client.NewImsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				request["OIDCProviderName"] = d.Id()
 				if v, ok := item.(string); ok {
@@ -268,7 +253,7 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, false)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -298,16 +283,13 @@ func resourceAliCloudImsOidcProviderDelete(d *schema.ResourceData, meta interfac
 	action := "DeleteOIDCProvider"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["OIDCProviderName"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

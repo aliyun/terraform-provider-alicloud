@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,10 +62,7 @@ func resourceAlicloudRamSecurityPreferenceCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "SetSecurityPreference"
 	request := make(map[string]interface{})
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOkExists("allow_user_to_change_password"); ok {
 		request["AllowUserToChangePassword"] = v
 	}
@@ -89,11 +85,9 @@ func resourceAlicloudRamSecurityPreferenceCreate(d *schema.ResourceData, meta in
 		request["EnforceMFAForLogin"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -143,10 +137,7 @@ func resourceAlicloudRamSecurityPreferenceRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{}
@@ -188,11 +179,9 @@ func resourceAlicloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta in
 	if update {
 		action := "SetSecurityPreference"
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
