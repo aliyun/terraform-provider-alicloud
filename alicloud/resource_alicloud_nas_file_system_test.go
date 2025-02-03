@@ -49,15 +49,9 @@ func testSweepNasFileSystem(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	ids := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Error retrieving filesystem: %s", err)
 		}
@@ -92,9 +86,7 @@ func testSweepNasFileSystem(region string) error {
 						"MountTargetDomain": domainInfo["MountTargetDomain"],
 					}
 					action := "DeleteMountTarget"
-					runtime := util.RuntimeOptions{}
-					runtime.SetAutoretry(true)
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 					if err != nil {
 						log.Printf("[ERROR] Error delete mount target: %v with filesystem: %v err: %v", domainInfo["MountTargetDomain"], item["FileSystemId"], err)
 					}
@@ -113,9 +105,7 @@ func testSweepNasFileSystem(region string) error {
 			"FileSystemId": filesystemId,
 		}
 		action := "DeleteFileSystem"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Error delete filesystem: %s err: %v", filesystemId, err)
 		}

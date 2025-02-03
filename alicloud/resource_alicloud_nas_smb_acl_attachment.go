@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,10 +70,7 @@ func resourceAlicloudNasSmbAclAttachmentCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "EnableSmbAcl"
 	request := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["RegionId"] = client.Region
 	request["FileSystemId"] = d.Get("file_system_id")
 	request["Keytab"] = d.Get("keytab")
@@ -82,7 +78,7 @@ func resourceAlicloudNasSmbAclAttachmentCreate(d *schema.ResourceData, meta inte
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -102,10 +98,7 @@ func resourceAlicloudNasSmbAclAttachmentCreate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudNasSmbAclAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	request := map[string]interface{}{
 		"RegionId":     client.RegionId,
@@ -159,7 +152,7 @@ func resourceAlicloudNasSmbAclAttachmentUpdate(d *schema.ResourceData, meta inte
 		action := "ModifySmbAcl"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -205,10 +198,7 @@ func resourceAlicloudNasSmbAclAttachmentDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DisableSmbAcl"
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RegionId":     client.RegionId,
 		"FileSystemId": d.Id(),
@@ -216,7 +206,7 @@ func resourceAlicloudNasSmbAclAttachmentDelete(d *schema.ResourceData, meta inte
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

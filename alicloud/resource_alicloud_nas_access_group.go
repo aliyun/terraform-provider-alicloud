@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -84,10 +83,7 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AccessGroupName"] = d.Get("access_group_name")
 	query["FileSystemType"] = d.Get("file_system_type")
@@ -106,11 +102,9 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -169,10 +163,7 @@ func resourceAliCloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyAccessGroup"
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AccessGroupName"] = parts[0]
@@ -183,11 +174,9 @@ func resourceAliCloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -215,19 +204,14 @@ func resourceAliCloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AccessGroupName"] = parts[0]
 	query["FileSystemType"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
