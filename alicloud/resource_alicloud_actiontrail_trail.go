@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -105,10 +104,7 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateTrail"
 	request := make(map[string]interface{})
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("event_rw"); ok {
 		request["EventRW"] = v
 	}
@@ -151,7 +147,7 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 				wait()
@@ -203,10 +199,7 @@ func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	actiontrailService := ActiontrailService{client}
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -261,7 +254,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		action := "UpdateTrail"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 					wait()
@@ -297,7 +290,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				action := "StopLogging"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+					response, err = client.RpcGet("Actiontrail", "2020-07-06", action, request, nil)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
@@ -323,7 +316,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				action := "StartLogging"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
@@ -352,17 +345,14 @@ func resourceAlicloudActiontrailTrailDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTrail"
 	var response map[string]interface{}
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Name": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

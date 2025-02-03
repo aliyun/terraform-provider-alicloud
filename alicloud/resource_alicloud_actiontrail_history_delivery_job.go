@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -43,17 +42,12 @@ func resourceAlicloudActiontrailHistoryDeliveryJobCreate(d *schema.ResourceData,
 	var response map[string]interface{}
 	action := "CreateDeliveryHistoryJob"
 	request := make(map[string]interface{})
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["TrailName"] = d.Get("trail_name")
 	request["ClientToken"] = buildClientToken("CreateDeliveryHistoryJob")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -97,17 +91,14 @@ func resourceAlicloudActiontrailHistoryDeliveryJobDelete(d *schema.ResourceData,
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDeliveryHistoryJob"
 	var response map[string]interface{}
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"JobId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
