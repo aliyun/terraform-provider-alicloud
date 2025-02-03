@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -170,10 +169,7 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "RegisterInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("data_link_name"); ok {
 		request["DataLinkName"] = v
 	}
@@ -232,7 +228,7 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 
 	wait := incrementalWait(3*time.Second, 2*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RegisterInstanceFailure"}) || NeedRetry(err) {
 				wait()
@@ -296,10 +292,7 @@ func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta inte
 func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -398,7 +391,7 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		action := "UpdateInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -423,10 +416,6 @@ func resourceAlicloudDmsEnterpriseInstanceDelete(d *schema.ResourceData, meta in
 	}
 	action := "DeleteInstance"
 	var response map[string]interface{}
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"Host": parts[0],
 		"Port": parts[1],
@@ -440,7 +429,7 @@ func resourceAlicloudDmsEnterpriseInstanceDelete(d *schema.ResourceData, meta in
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

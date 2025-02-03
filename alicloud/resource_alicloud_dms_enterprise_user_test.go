@@ -49,15 +49,8 @@ func testSweepDMSEnterpriseUsers(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListUsers"
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_users", action, AlibabaCloudSdkGoERROR)
 		}
@@ -90,7 +83,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 			request := map[string]interface{}{
 				"Uid": item["Uid"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DMS Enterprise User (%v): %s", item["NickName"], err)
 				continue

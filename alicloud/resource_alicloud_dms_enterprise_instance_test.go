@@ -50,14 +50,8 @@ func testSweepDMSEnterpriseInstances(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListInstances"
-	conn, err := client.NewDmsenterpriseClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to list DMS Enterprise Instance : %s", err)
 			return nil
@@ -94,7 +88,7 @@ func testSweepDMSEnterpriseInstances(region string) error {
 				"Host": item["Host"],
 				"Port": item["Port"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DMS Enterprise Instance (%s (%s)): %s", item["InstanceAlias"].(string), id, err)
 				continue
