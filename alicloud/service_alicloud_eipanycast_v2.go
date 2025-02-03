@@ -7,7 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -26,10 +25,6 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeAnycastEipAddress"
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AnycastId"] = id
@@ -39,7 +34,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -92,7 +87,6 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -107,10 +101,6 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewEipanycastClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -120,11 +110,9 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -144,10 +132,6 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewEipanycastClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -160,11 +144,9 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -202,10 +184,6 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 4, len(parts)))
 	}
 	action := "DescribeAnycastEipAddress"
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AnycastId"] = parts[0]
@@ -214,7 +192,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

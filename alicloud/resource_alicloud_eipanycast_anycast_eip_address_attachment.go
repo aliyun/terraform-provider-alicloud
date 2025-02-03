@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -96,10 +95,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentCreate(d *schema.Resou
 	action := "AssociateAnycastEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["BindInstanceType"] = d.Get("bind_instance_type")
 	request["AnycastId"] = d.Get("anycast_id")
@@ -126,10 +122,8 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentCreate(d *schema.Resou
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -203,10 +197,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateAnycastEipAddressAssociations"
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["BindInstanceId"] = parts[1]
 	request["AnycastId"] = parts[0]
@@ -220,9 +211,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -255,10 +244,6 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 		if removed.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "UpdateAnycastEipAddressAssociations"
-			conn, err := client.NewEipanycastClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			request["BindInstanceId"] = parts[1]
 			request["AnycastId"] = parts[0]
@@ -276,9 +261,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -305,10 +288,6 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 		if added.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "UpdateAnycastEipAddressAssociations"
-			conn, err := client.NewEipanycastClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			request["BindInstanceId"] = parts[1]
 			request["AnycastId"] = parts[0]
@@ -326,9 +305,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentUpdate(d *schema.Resou
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -363,10 +340,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentDelete(d *schema.Resou
 	action := "UnassociateAnycastEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewEipanycastClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["BindInstanceType"] = parts[3]
 	request["AnycastId"] = parts[0]
@@ -381,9 +355,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentDelete(d *schema.Resou
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
