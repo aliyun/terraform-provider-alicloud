@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -101,10 +100,7 @@ func resourceAliCloudOosPatchBaselineCreate(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Name"] = d.Get("patch_baseline_name")
 	request["RegionId"] = client.RegionId
@@ -147,12 +143,9 @@ func resourceAliCloudOosPatchBaselineCreate(d *schema.ResourceData, meta interfa
 		sourcesMaps := v.([]interface{})
 		request["Sources"] = sourcesMaps
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -235,10 +228,7 @@ func resourceAliCloudOosPatchBaselineUpdate(d *schema.ResourceData, meta interfa
 	var query map[string]interface{}
 	update := false
 	action := "UpdatePatchBaseline"
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Name"] = d.Id()
@@ -305,11 +295,9 @@ func resourceAliCloudOosPatchBaselineUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -344,19 +332,14 @@ func resourceAliCloudOosPatchBaselineDelete(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Name"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

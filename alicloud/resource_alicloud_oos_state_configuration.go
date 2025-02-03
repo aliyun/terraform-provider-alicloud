@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -84,10 +83,7 @@ func resourceAlicloudOosStateConfigurationCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateStateConfiguration"
 	request := make(map[string]interface{})
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("configure_mode"); ok {
 		request["ConfigureMode"] = v
 	}
@@ -116,11 +112,9 @@ func resourceAlicloudOosStateConfigurationCreate(d *schema.ResourceData, meta in
 		request["TemplateVersion"] = v
 	}
 	request["ClientToken"] = buildClientToken("CreateStateConfiguration")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -165,10 +159,7 @@ func resourceAlicloudOosStateConfigurationRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudOosStateConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -224,11 +215,9 @@ func resourceAlicloudOosStateConfigurationUpdate(d *schema.ResourceData, meta in
 	if update {
 		action := "UpdateStateConfiguration"
 		request["ClientToken"] = buildClientToken("UpdateStateConfiguration")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -249,21 +238,16 @@ func resourceAlicloudOosStateConfigurationDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteStateConfigurations"
 	var response map[string]interface{}
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"StateConfigurationIds": convertListToJsonString([]interface{}{d.Id()}),
 	}
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("DeleteStateConfigurations")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

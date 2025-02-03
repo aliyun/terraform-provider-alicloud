@@ -46,14 +46,8 @@ func testSweepOosExecution(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListExecutions"
-	conn, err := client.NewOosClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "testSweepOosExecution", action, AlibabaCloudSdkGoERROR)
 		}
@@ -81,7 +75,7 @@ func testSweepOosExecution(region string) error {
 			request := map[string]interface{}{
 				"ExecutionIds": convertListToJsonString(convertListStringToListInterface([]string{item["ExecutionId"].(string)})),
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete OOS Execution (%s): %s", item["ExecutionId"].(string), err)
 			}
