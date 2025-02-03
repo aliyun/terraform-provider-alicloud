@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -43,19 +42,14 @@ func resourceAliCloudResourceManagerControlPolicyAttachmentCreate(d *schema.Reso
 	var response map[string]interface{}
 	action := "AttachControlPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["PolicyId"] = d.Get("policy_id")
 	request["TargetId"] = d.Get("target_id")
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
@@ -105,10 +99,7 @@ func resourceAliCloudResourceManagerControlPolicyAttachmentDelete(d *schema.Reso
 	client := meta.(*connectivity.AliyunClient)
 	action := "DetachControlPolicy"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -119,12 +110,9 @@ func resourceAliCloudResourceManagerControlPolicyAttachmentDelete(d *schema.Reso
 		"PolicyId": parts[0],
 		"TargetId": parts[1],
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -84,13 +83,8 @@ func dataSourceAlicloudResourceManagerControlPolicyAttachmentsRead(d *schema.Res
 	request["TargetId"] = d.Get("target_id")
 	var objects []map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	var err error
+	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_control_policy_attachments", action, AlibabaCloudSdkGoERROR)
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -87,16 +86,13 @@ func resourceAlicloudDbfsServiceLinkedRoleDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteServiceLinkedRole"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RoleName": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 0*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, request, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

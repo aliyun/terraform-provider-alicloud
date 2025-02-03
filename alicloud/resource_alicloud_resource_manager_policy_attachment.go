@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -58,10 +57,7 @@ func resourceAlicloudResourceManagerPolicyAttachmentCreate(d *schema.ResourceDat
 	var response map[string]interface{}
 	action := "AttachPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["PolicyName"] = d.Get("policy_name")
 	request["PolicyType"] = d.Get("policy_type")
 	request["PrincipalName"] = d.Get("principal_name")
@@ -69,7 +65,7 @@ func resourceAlicloudResourceManagerPolicyAttachmentCreate(d *schema.ResourceDat
 	request["ResourceGroupId"] = d.Get("resource_group_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -125,10 +121,6 @@ func resourceAlicloudResourceManagerPolicyAttachmentDelete(d *schema.ResourceDat
 	}
 	action := "DetachPolicy"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"PolicyName":      parts[0],
 		"PolicyType":      parts[1],
@@ -139,7 +131,7 @@ func resourceAlicloudResourceManagerPolicyAttachmentDelete(d *schema.ResourceDat
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

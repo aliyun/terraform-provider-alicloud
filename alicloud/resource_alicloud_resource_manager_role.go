@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,10 +71,7 @@ func resourceAlicloudResourceManagerRoleCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateRole"
 	request := make(map[string]interface{})
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AssumeRolePolicyDocument"] = d.Get("assume_role_policy_document")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -88,7 +84,7 @@ func resourceAlicloudResourceManagerRoleCreate(d *schema.ResourceData, meta inte
 	request["RoleName"] = d.Get("role_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -131,10 +127,7 @@ func resourceAlicloudResourceManagerRoleRead(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudResourceManagerRoleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -152,7 +145,7 @@ func resourceAlicloudResourceManagerRoleUpdate(d *schema.ResourceData, meta inte
 		action := "UpdateRole"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -173,17 +166,14 @@ func resourceAlicloudResourceManagerRoleDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRole"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"RoleName": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

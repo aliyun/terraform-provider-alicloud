@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -61,10 +60,7 @@ func resourceAlicloudResourceManagerPolicyCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreatePolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -73,7 +69,7 @@ func resourceAlicloudResourceManagerPolicyCreate(d *schema.ResourceData, meta in
 	request["PolicyName"] = d.Get("policy_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -119,10 +115,7 @@ func resourceAlicloudResourceManagerPolicyRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudResourceManagerPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	if !d.IsNewResource() && d.HasChange("default_version") {
 		request := map[string]interface{}{
@@ -132,7 +125,7 @@ func resourceAlicloudResourceManagerPolicyUpdate(d *schema.ResourceData, meta in
 		action := "SetDefaultPolicyVersion"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -153,17 +146,14 @@ func resourceAlicloudResourceManagerPolicyDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePolicy"
 	var response map[string]interface{}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"PolicyName": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
