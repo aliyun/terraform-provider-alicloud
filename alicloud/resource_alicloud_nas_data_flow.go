@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -83,10 +82,7 @@ func resourceAlicloudNasDataFlowCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "CreateDataFlow"
 	request := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -101,11 +97,9 @@ func resourceAlicloudNasDataFlowCreate(d *schema.ResourceData, meta interface{})
 	request["SourceStorage"] = d.Get("source_storage")
 	request["Throughput"] = d.Get("throughput")
 	request["ClientToken"] = buildClientToken("CreateDataFlow")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -154,10 +148,7 @@ func resourceAlicloudNasDataFlowRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -186,11 +177,9 @@ func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{})
 		}
 		action := "ModifyDataFlow"
 		modifyDataFlowReq["ClientToken"] = buildClientToken("ModifyDataFlow")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, modifyDataFlowReq, &runtime)
+			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, modifyDataFlowReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -229,11 +218,9 @@ func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{})
 				}
 				action := "StartDataFlow"
 				request["ClientToken"] = buildClientToken("StartDataFlow")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -262,11 +249,9 @@ func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{})
 				}
 				action := "StopDataFlow"
 				request["ClientToken"] = buildClientToken("StopDataFlow")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -299,10 +284,6 @@ func resourceAlicloudNasDataFlowDelete(d *schema.ResourceData, meta interface{})
 	}
 	action := "DeleteDataFlow"
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DataFlowId":   parts[1],
 		"FileSystemId": parts[0],
@@ -312,11 +293,9 @@ func resourceAlicloudNasDataFlowDelete(d *schema.ResourceData, meta interface{})
 		request["DryRun"] = v
 	}
 	request["ClientToken"] = buildClientToken("DeleteDataFlow")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

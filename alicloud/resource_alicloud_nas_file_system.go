@@ -4,7 +4,6 @@ package alicloud
 import (
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -167,10 +166,7 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -208,11 +204,9 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("snapshot_id"); ok {
 		request["SnapshotId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -355,10 +349,7 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	d.Partial(true)
 	action := "ModifyFileSystem"
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
@@ -369,11 +360,9 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -390,10 +379,6 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 	update = false
 	action = "UpgradeFileSystem"
-	conn, err = client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
@@ -405,11 +390,9 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	request["Capacity"] = d.Get("capacity")
 	request["DryRun"] = "false"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -431,10 +414,6 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -445,11 +424,9 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "filesystem"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -476,19 +453,13 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if objectRaw["Status"].(string) != target {
 			if target == "Enable" {
 				action := "EnableRecycleBin"
-				conn, err := client.NewNasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FileSystemId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -507,19 +478,13 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 			if target == "Disable" {
 				action := "DisableAndCleanRecycleBin"
-				conn, err := client.NewNasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FileSystemId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
+					response, err = client.RpcGet("NAS", "2017-06-26", action, request, nil)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -541,10 +506,6 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("recycle_bin.0.reserved_days") {
 		action = "UpdateRecycleBinAttribute"
-		conn, err = client.NewNasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		query = make(map[string]interface{})
 		request["FileSystemId"] = d.Id()
@@ -554,11 +515,9 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			request["ReservedDays"] = reservedDays
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("NAS", "2017-06-26", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -586,19 +545,13 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if objectRaw["Enabled"].(bool) != target {
 			if target == true {
 				action := "EnableNfsAcl"
-				conn, err := client.NewNasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FileSystemId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -617,19 +570,13 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 			if target == false {
 				action := "DisableNfsAcl"
-				conn, err := client.NewNasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["FileSystemId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -665,19 +612,14 @@ func resourceAliCloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

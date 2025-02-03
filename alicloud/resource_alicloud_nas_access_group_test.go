@@ -51,15 +51,9 @@ func testSweepNasAccessGroup(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	ids := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("NAS", "2017-06-26", action, request, nil, true)
 		if err != nil {
 			log.Println("[ERROR] List nas access groups failed. err:", err)
 		}
@@ -95,7 +89,7 @@ func testSweepNasAccessGroup(region string) error {
 		request := map[string]interface{}{
 			"AccessGroupName": id,
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		_, err = client.RpcPost("NAS", "2017-06-26", action, request, nil, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete  Nas Access Group (%s): %s", id, err)
 		}

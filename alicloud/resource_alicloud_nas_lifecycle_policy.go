@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,10 +58,7 @@ func resourceAlicloudNasLifecyclePolicyCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateLifecyclePolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["FileSystemId"] = d.Get("file_system_id")
 	request["LifecyclePolicyName"] = d.Get("lifecycle_policy_name")
 	request["LifecycleRuleName"] = d.Get("lifecycle_rule_name")
@@ -70,7 +66,7 @@ func resourceAlicloudNasLifecyclePolicyCreate(d *schema.ResourceData, meta inter
 	request["StorageType"] = d.Get("storage_type")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -110,10 +106,7 @@ func resourceAlicloudNasLifecyclePolicyRead(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudNasLifecyclePolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -133,7 +126,7 @@ func resourceAlicloudNasLifecyclePolicyUpdate(d *schema.ResourceData, meta inter
 		action := "ModifyLifecyclePolicy"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -158,10 +151,6 @@ func resourceAlicloudNasLifecyclePolicyDelete(d *schema.ResourceData, meta inter
 	}
 	action := "DeleteLifecyclePolicy"
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"FileSystemId":        parts[0],
 		"LifecyclePolicyName": parts[1],
@@ -169,7 +158,7 @@ func resourceAlicloudNasLifecyclePolicyDelete(d *schema.ResourceData, meta inter
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

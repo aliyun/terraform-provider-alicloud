@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -78,10 +77,7 @@ func resourceAlicloudNasMountTargetCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "CreateMountTarget"
 	request := make(map[string]interface{})
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["FileSystemId"] = d.Get("file_system_id")
 	if v, ok := d.GetOk("access_group_name"); ok {
 		request["AccessGroupName"] = v
@@ -113,7 +109,7 @@ func resourceAlicloudNasMountTargetCreate(d *schema.ResourceData, meta interface
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) {
 				wait()
@@ -166,10 +162,7 @@ func resourceAlicloudNasMountTargetRead(d *schema.ResourceData, meta interface{}
 }
 func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	if len(strings.Split(d.Id(), ":")) != 2 {
 		d.SetId(fmt.Sprintf("%v:%v", strings.Split(d.Id(), "-")[0], d.Id()))
@@ -195,7 +188,7 @@ func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyMountTarget"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) {
 					wait()
@@ -228,17 +221,13 @@ func resourceAlicloudNasMountTargetDelete(d *schema.ResourceData, meta interface
 	}
 	action := "DeleteMountTarget"
 	var response map[string]interface{}
-	conn, err := client.NewNasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"FileSystemId":      parts[0],
 		"MountTargetDomain": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"VolumeStatusForbidOperation", "OperationDenied.InvalidState"}) {
 				wait()
