@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -58,10 +57,7 @@ func resourceAlicloudActiontrailGlobalEventsStorageRegionRead(d *schema.Resource
 func resourceAlicloudActiontrailGlobalEventsStorageRegionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{}
 	if d.HasChange("storage_region") {
@@ -73,11 +69,9 @@ func resourceAlicloudActiontrailGlobalEventsStorageRegionUpdate(d *schema.Resour
 
 	if update {
 		action := "UpdateGlobalEventsStorageRegion"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &runtime)
+			resp, err := client.RpcGet("Actiontrail", "2020-07-06", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

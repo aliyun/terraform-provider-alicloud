@@ -52,13 +52,7 @@ func testSweepActiontrailTrail(region string) error {
 	request := make(map[string]interface{})
 	var response map[string]interface{}
 	action := "DescribeTrails"
-	conn, err := client.NewActiontrailClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
 	}
@@ -87,7 +81,7 @@ func testSweepActiontrailTrail(region string) error {
 		request := map[string]interface{}{
 			"Name": item["Name"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete ActionTrail Trail (%s): %s", item["Name"].(string), err)
 		}

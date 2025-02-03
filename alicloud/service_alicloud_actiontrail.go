@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,18 +15,13 @@ type ActiontrailService struct {
 
 func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewActiontrailClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeTrails"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"NameList": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -70,19 +64,14 @@ func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failSta
 
 func (s *ActiontrailService) DescribeActiontrailHistoryDeliveryJob(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewActiontrailClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetDeliveryHistoryJob"
 	request := map[string]interface{}{
 		"JobId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -129,15 +118,10 @@ func (s *ActiontrailService) ActiontrailHistoryDeliveryJobStateRefreshFunc(id st
 
 func (s *ActiontrailService) DescribeActiontrailGlobalEventsStorageRegion(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewActiontrailClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetGlobalEventsStorageRegion"
 	request := map[string]interface{}{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &runtime)
+	response, err = client.RpcGet("Actiontrail", "2020-07-06", action, request, nil)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
