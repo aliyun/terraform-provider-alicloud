@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,10 +70,7 @@ func resourceAlicloudBrainIndustrialPidLoopCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "CreatePidLoop"
 	request := make(map[string]interface{})
-	conn, err := client.NewAistudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["PidLoopConfiguration"] = d.Get("pid_loop_configuration")
 	request["PidLoopDcsType"] = d.Get("pid_loop_dcs_type")
 	if v, ok := d.GetOk("pid_loop_desc"); ok {
@@ -85,12 +81,10 @@ func resourceAlicloudBrainIndustrialPidLoopCreate(d *schema.ResourceData, meta i
 	request["PidLoopName"] = d.Get("pid_loop_name")
 	request["PidLoopType"] = d.Get("pid_loop_type")
 	request["PidProjectId"] = d.Get("pid_project_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreatePidLoop")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -137,10 +131,7 @@ func resourceAlicloudBrainIndustrialPidLoopRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudBrainIndustrialPidLoopUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAistudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -178,7 +169,7 @@ func resourceAlicloudBrainIndustrialPidLoopUpdate(d *schema.ResourceData, meta i
 		action := "UpdatePidLoop"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -202,17 +193,14 @@ func resourceAlicloudBrainIndustrialPidLoopDelete(d *schema.ResourceData, meta i
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePidLoop"
 	var response map[string]interface{}
-	conn, err := client.NewAistudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"PidLoopId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

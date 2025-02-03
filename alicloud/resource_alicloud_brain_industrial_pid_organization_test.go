@@ -54,14 +54,7 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 	request := map[string]interface{}{}
 	var response map[string]interface{}
 	action := "ListPidOrganizations"
-	conn, err := client.NewAistudioClient()
-	if err != nil {
-		log.Printf("%s failed: %v", action, err)
-		return nil
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+	response, _ = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 		log.Printf("%s failed: %v", action, response)
 		return nil
@@ -89,7 +82,7 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 		request := map[string]interface{}{
 			"OrganizationId": item["OrganizationId"],
 		}
-		responseDelete, _ := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		responseDelete, _ := client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, false)
 		if fmt.Sprintf(`%v`, responseDelete["Code"]) != "200" {
 			log.Printf("[ERROR] Failed to delete Brain Industrial Organization (%s): %s", item["OrganizationName"].(string), responseDelete["Message"])
 		}
