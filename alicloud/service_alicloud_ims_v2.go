@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -23,17 +22,13 @@ func (s *ImsServiceV2) DescribeImsOidcProvider(id string) (object map[string]int
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetOIDCProvider"
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["OIDCProviderName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

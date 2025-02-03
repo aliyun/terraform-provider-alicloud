@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +54,7 @@ func resourceAliCloudRamSamlProviderCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateSAMLProvider"
 	request := make(map[string]interface{})
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["SAMLProviderName"] = d.Get("saml_provider_name")
 	request["EncodedSAMLMetadataDocument"] = d.Get("encodedsaml_metadata_document")
@@ -67,11 +63,9 @@ func resourceAliCloudRamSamlProviderCreate(d *schema.ResourceData, meta interfac
 		request["Description"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,6 +117,7 @@ func resourceAliCloudRamSamlProviderRead(d *schema.ResourceData, meta interface{
 func resourceAliCloudRamSamlProviderUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -143,16 +138,9 @@ func resourceAliCloudRamSamlProviderUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "UpdateSAMLProvider"
-		conn, err := client.NewImsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -176,20 +164,15 @@ func resourceAliCloudRamSamlProviderDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSAMLProvider"
 	var response map[string]interface{}
-	conn, err := client.NewImsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"SAMLProviderName": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ims", "2019-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
