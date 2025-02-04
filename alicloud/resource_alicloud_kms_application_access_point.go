@@ -9,7 +9,6 @@ import (
 	"github.com/blues/jsonata-go"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +54,7 @@ func resourceAliCloudKmsApplicationAccessPointCreate(d *schema.ResourceData, met
 	action := "CreateApplicationAccessPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Get("application_access_point_name")
 
@@ -74,7 +70,7 @@ func resourceAliCloudKmsApplicationAccessPointCreate(d *schema.ResourceData, met
 	request["AuthenticationMethod"] = "ClientKey"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -126,10 +122,7 @@ func resourceAliCloudKmsApplicationAccessPointUpdate(d *schema.ResourceData, met
 	var response map[string]interface{}
 	update := false
 	action := "UpdateApplicationAccessPoint"
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 	if d.HasChange("description") {
@@ -149,7 +142,7 @@ func resourceAliCloudKmsApplicationAccessPointUpdate(d *schema.ResourceData, met
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -175,16 +168,13 @@ func resourceAliCloudKmsApplicationAccessPointDelete(d *schema.ResourceData, met
 	action := "DeleteApplicationAccessPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

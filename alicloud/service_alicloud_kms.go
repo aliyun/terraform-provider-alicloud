@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,20 +21,13 @@ func (s *KmsService) DescribeKmsKey(id string) (object map[string]interface{}, e
 	var response map[string]interface{}
 	action := "DescribeKey"
 
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"KeyId": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -94,20 +86,13 @@ func (s *KmsService) DescribeKmsKeyPolicy(id string) (object map[string]interfac
 	var response map[string]interface{}
 	action := "GetKeyPolicy"
 
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"KeyId": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -143,10 +128,7 @@ func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string
 	}
 
 	var response map[string]interface{}
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return plaintext, WrapError(err)
-	}
+	client := s.client
 	action := "Decrypt"
 	request := map[string]interface{}{
 		"RegionId":          s.client.RegionId,
@@ -155,7 +137,7 @@ func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -181,20 +163,13 @@ func (s *KmsService) DescribeKmsSecret(id string) (object map[string]interface{}
 	var response map[string]interface{}
 	action := "DescribeSecret"
 
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"SecretName": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -227,20 +202,13 @@ func (s *KmsService) GetSecretValue(id string) (object map[string]interface{}, e
 	var response map[string]interface{}
 	action := "GetSecretValue"
 
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"SecretName": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -270,20 +238,13 @@ func (s *KmsService) DescribeKmsSecretPolicy(id string) (object map[string]inter
 	var response map[string]interface{}
 	action := "GetSecretPolicy"
 
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"SecretName": id,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -314,10 +275,7 @@ func (s *KmsService) DescribeKmsSecretPolicy(id string) (object map[string]inter
 
 func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListAliases"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -326,11 +284,9 @@ func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{},
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -370,10 +326,7 @@ func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{},
 
 func (s *KmsService) DescribeKmsKeyVersion(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeKeyVersion"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -385,11 +338,9 @@ func (s *KmsService) DescribeKmsKeyVersion(id string) (object map[string]interfa
 		"KeyId":        parts[0],
 		"KeyVersionId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -412,10 +363,7 @@ func (s *KmsService) DescribeKmsKeyVersion(id string) (object map[string]interfa
 }
 
 func (s *KmsService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 
 	request := map[string]interface{}{
@@ -440,11 +388,9 @@ func (s *KmsService) ListTagResources(id string, resourceType string) (object in
 	var response map[string]interface{}
 
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -485,10 +431,7 @@ func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -518,12 +461,9 @@ func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -564,12 +504,9 @@ func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				request[fmt.Sprintf("Tag.%d.Value", count)] = value
 				count++
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

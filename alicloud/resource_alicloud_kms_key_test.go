@@ -55,14 +55,8 @@ func testSweepKmsKey(region string) error {
 	action := "ListKeys"
 
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_key", action, AlibabaCloudSdkGoERROR)
 		}
@@ -96,7 +90,7 @@ func testSweepKmsKey(region string) error {
 				"ProtectedResourceArn":     item["KeyArn"],
 				"EnableDeletionProtection": false,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to cancel Kms Key DeletionProtection %s (%s): %s", item["Description"], item["KeyId"], err)
 			}
@@ -106,7 +100,7 @@ func testSweepKmsKey(region string) error {
 				"KeyId":               item["KeyId"],
 				"PendingWindowInDays": 7,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Kms Key %s (%s): %s", item["Description"], item["KeyId"], err)
 			}

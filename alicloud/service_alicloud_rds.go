@@ -2432,19 +2432,13 @@ func (s *RdsService) DescribeInstanceCrossBackupPolicy(id string) (object map[st
 func (s *RdsService) FindKmsRoleArnDdr(k string) (string, error) {
 	action := "DescribeKey"
 	var response map[string]interface{}
-
+	var err error
+	client := s.client
 	request := make(map[string]interface{})
 	request["KeyId"] = k
-
-	conn, err := s.client.NewKmsClient()
-	if err != nil {
-		return "", WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

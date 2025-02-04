@@ -9,8 +9,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
@@ -2228,19 +2226,12 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 func findKmsRoleArn(client *connectivity.AliyunClient, k string) (string, error) {
 	action := "DescribeKey"
 	var response map[string]interface{}
-
+	var err error
 	request := make(map[string]interface{})
 	request["KeyId"] = k
-
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return "", WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
