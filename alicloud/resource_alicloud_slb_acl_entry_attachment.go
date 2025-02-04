@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -50,10 +48,7 @@ func resourceAlicloudSlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "AddAccessControlListEntry"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = map[string]interface{}{
 		"AclId":    d.Id(),
 		"RegionId": client.RegionId,
@@ -73,7 +68,7 @@ func resourceAlicloudSlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	request["AclEntrys"] = aclEntries
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AclEntryProcessing"}) || NeedRetry(err) {
 				wait()
@@ -120,10 +115,7 @@ func resourceAlicloudSlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveAccessControlListEntry"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -145,7 +137,7 @@ func resourceAlicloudSlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	request["AclEntrys"] = aclEntries
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AclEntryProcessing"}) || NeedRetry(err) {
 				wait()

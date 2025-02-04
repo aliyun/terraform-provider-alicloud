@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -227,10 +226,7 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateLoadBalancer"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("address"); ok {
 		request["Address"] = v
 	}
@@ -318,11 +314,9 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		request["VSwitchId"] = vswitchId
 	}
 	request["ClientToken"] = buildClientToken("CreateLoadBalancer")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.TokenIsProcessing"}) || NeedRetry(err) {
 				wait()
@@ -388,6 +382,7 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -402,13 +397,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 		request["LoadBalancerStatus"] = d.Get("status")
 		action := "SetLoadBalancerStatus"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -431,13 +422,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		request["DeleteProtection"] = d.Get("delete_protection")
 		request["RegionId"] = client.RegionId
 		action := "SetLoadBalancerDeleteProtection"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -467,13 +454,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	if update {
 		action := "SetLoadBalancerName"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -501,13 +484,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	modifyLoadBalancerInstanceChargeTypeReq["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyLoadBalancerInstanceChargeType"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerInstanceChargeTypeReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, modifyLoadBalancerInstanceChargeTypeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -537,13 +516,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	modifyLoadBalancerInstanceSpecReq["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyLoadBalancerInstanceSpec"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerInstanceSpecReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, modifyLoadBalancerInstanceSpecReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -575,13 +550,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	if update {
 		action := "SetLoadBalancerModificationProtection"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, setLoadBalancerModificationProtectionReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, setLoadBalancerModificationProtectionReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -613,13 +584,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	modifyLoadBalancerInternetSpecReq["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyLoadBalancerInternetSpec"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerInternetSpecReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, modifyLoadBalancerInternetSpecReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -660,13 +627,9 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	if update {
 		action := "ModifyLoadBalancerPayType"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerPayTypeReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, modifyLoadBalancerPayTypeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -694,10 +657,7 @@ func resourceAlicloudSlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	slbService := SlbService{client}
 	action := "DeleteLoadBalancer"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LoadBalancerId": d.Id(),
 	}
@@ -705,7 +665,7 @@ func resourceAlicloudSlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

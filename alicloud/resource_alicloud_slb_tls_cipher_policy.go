@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,17 +47,14 @@ func resourceAlicloudSlbTlsCipherPolicyCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateTLSCipherPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Ciphers"] = d.Get("ciphers")
 	request["RegionId"] = client.RegionId
 	request["Name"] = d.Get("tls_cipher_policy_name")
 	request["TLSVersions"] = d.Get("tls_versions")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -98,10 +94,7 @@ func resourceAlicloudSlbTlsCipherPolicyRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudSlbTlsCipherPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"TLSCipherPolicyId": d.Id(),
@@ -123,7 +116,7 @@ func resourceAlicloudSlbTlsCipherPolicyUpdate(d *schema.ResourceData, meta inter
 		action := "SetTLSCipherPolicyAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -144,10 +137,7 @@ func resourceAlicloudSlbTlsCipherPolicyDelete(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTLSCipherPolicy"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"TLSCipherPolicyId": d.Id(),
 	}
@@ -155,7 +145,7 @@ func resourceAlicloudSlbTlsCipherPolicyDelete(d *schema.ResourceData, meta inter
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

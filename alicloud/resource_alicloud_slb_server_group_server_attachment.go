@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -72,10 +70,7 @@ func resourceAlicloudSlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	var response map[string]interface{}
 	action := "AddVServerGroupBackendServers"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
@@ -104,7 +99,7 @@ func resourceAlicloudSlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	request["BackendServers"] = serverEntries
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VServerGroupProcessing", "ServiceIsStopping", "ServiceIsConfiguring"}) || NeedRetry(err) {
 				wait()
@@ -154,10 +149,7 @@ func resourceAlicloudSlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveVServerGroupBackendServers"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -192,7 +184,7 @@ func resourceAlicloudSlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VServerGroupProcessing"}) || NeedRetry(err) {
 				wait()

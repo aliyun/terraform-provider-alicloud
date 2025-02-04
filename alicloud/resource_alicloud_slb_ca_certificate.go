@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -58,10 +57,7 @@ func resourceAlicloudSlbCaCertificateCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "UploadCACertificate"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["CACertificate"] = d.Get("ca_certificate")
 	if v, ok := d.GetOk("ca_certificate_name"); ok {
 		request["CACertificateName"] = v
@@ -76,7 +72,7 @@ func resourceAlicloudSlbCaCertificateCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,10 +114,7 @@ func resourceAlicloudSlbCaCertificateRead(d *schema.ResourceData, meta interface
 func resourceAlicloudSlbCaCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -147,7 +140,7 @@ func resourceAlicloudSlbCaCertificateUpdate(d *schema.ResourceData, meta interfa
 		action := "SetCACertificateName"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -171,10 +164,7 @@ func resourceAlicloudSlbCaCertificateDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteCACertificate"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"CACertificateId": d.Id(),
 	}
@@ -182,7 +172,7 @@ func resourceAlicloudSlbCaCertificateDelete(d *schema.ResourceData, meta interfa
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationBusy", "ServiceIsConfiguring", "ServiceIsStopping", "SystemBusy"}) || NeedRetry(err) {
 				wait()

@@ -45,19 +45,13 @@ func testSweepSlbCACertificate(region string) error {
 		"tf_testAcc",
 	}
 	action := "DescribeCACertificates"
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -104,7 +98,7 @@ func testSweepSlbCACertificate(region string) error {
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

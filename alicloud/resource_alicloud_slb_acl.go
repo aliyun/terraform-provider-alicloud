@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"time"
@@ -75,10 +73,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 	var response map[string]interface{}
 	action := "CreateAccessControlList"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["RegionId"] = client.RegionId
 	if v := d.Get("resource_group_id").(string); v != "" {
 		request["ResourceGroupId"] = v
@@ -90,7 +85,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -154,10 +149,7 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	slbService := SlbService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -180,7 +172,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		action := "SetAccessControlListAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -219,7 +211,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				action := "RemoveAccessControlListEntry"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, removedRequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Slb", "2014-05-15", action, nil, removedRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -251,7 +243,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				action := "AddAccessControlListEntry"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, addedRequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Slb", "2014-05-15", action, nil, addedRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -278,10 +270,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAccessControlList"
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"AclId":    d.Id(),
 		"RegionId": client.RegionId,
@@ -289,7 +278,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

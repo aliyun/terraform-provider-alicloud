@@ -10,8 +10,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"log"
 	"time"
 
@@ -783,13 +781,11 @@ func (s *SlbService) sweepSlb(id string) error {
 		"LoadBalancerId":   id,
 		"DeleteProtection": "off",
 	}
-	conn, err := s.client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
+	var err error
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -809,7 +805,7 @@ func (s *SlbService) sweepSlb(id string) error {
 	}
 	action = "DeleteLoadBalancer"
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Slb", "2014-05-15", action, nil, delRequest, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
