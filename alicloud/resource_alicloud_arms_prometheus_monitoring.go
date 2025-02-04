@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,10 +72,7 @@ func resourceAliCloudArmsPrometheusMonitoringCreate(d *schema.ResourceData, meta
 	action := "CreatePrometheusMonitoring"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ClusterId"] = d.Get("cluster_id")
 	request["Type"] = d.Get("type")
@@ -88,7 +84,7 @@ func resourceAliCloudArmsPrometheusMonitoringCreate(d *schema.ResourceData, meta
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -146,10 +142,7 @@ func resourceAliCloudArmsPrometheusMonitoringUpdate(d *schema.ResourceData, meta
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdatePrometheusMonitoring"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Type"] = parts[2]
 	request["ClusterId"] = parts[0]
@@ -162,7 +155,7 @@ func resourceAliCloudArmsPrometheusMonitoringUpdate(d *schema.ResourceData, meta
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -182,10 +175,6 @@ func resourceAliCloudArmsPrometheusMonitoringUpdate(d *schema.ResourceData, meta
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "UpdatePrometheusMonitoringStatus"
-	conn, err = client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["MonitoringName"] = parts[1]
 	request["ClusterId"] = parts[0]
@@ -199,7 +188,7 @@ func resourceAliCloudArmsPrometheusMonitoringUpdate(d *schema.ResourceData, meta
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -228,10 +217,7 @@ func resourceAliCloudArmsPrometheusMonitoringDelete(d *schema.ResourceData, meta
 	action := "DeletePrometheusMonitoring"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["MonitoringName"] = parts[1]
 	request["ClusterId"] = parts[0]
@@ -240,7 +226,7 @@ func resourceAliCloudArmsPrometheusMonitoringDelete(d *schema.ResourceData, meta
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

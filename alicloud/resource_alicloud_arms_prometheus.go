@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -82,10 +81,7 @@ func resourceAliCloudArmsPrometheusCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "CreatePrometheusInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClusterType"] = d.Get("cluster_type")
@@ -120,11 +116,9 @@ func resourceAliCloudArmsPrometheusCreate(d *schema.ResourceData, meta interface
 		request["ResourceGroupId"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -186,6 +180,7 @@ func resourceAliCloudArmsPrometheusUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	armsService := ArmsService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -211,16 +206,9 @@ func resourceAliCloudArmsPrometheusUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		action := "UpdatePrometheusGlobalView"
-		conn, err := client.NewArmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, updatePrometheusGlobalViewReq, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, updatePrometheusGlobalViewReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -252,16 +240,9 @@ func resourceAliCloudArmsPrometheusUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		action := "BindPrometheusGrafanaInstance"
-		conn, err := client.NewArmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, bindPrometheusGrafanaInstanceReq, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, bindPrometheusGrafanaInstanceReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -296,16 +277,9 @@ func resourceAliCloudArmsPrometheusUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		action := "ChangeResourceGroup"
-		conn, err := client.NewArmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, changeResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -334,21 +308,16 @@ func resourceAliCloudArmsPrometheusDelete(d *schema.ResourceData, meta interface
 	action := "UninstallPromCluster"
 	var response map[string]interface{}
 
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RegionId":  client.RegionId,
 		"ClusterId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

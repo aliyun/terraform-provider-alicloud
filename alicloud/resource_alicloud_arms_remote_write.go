@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,10 +59,7 @@ func resourceAliCloudArmsRemoteWriteCreate(d *schema.ResourceData, meta interfac
 	action := "AddPrometheusRemoteWrite"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ClusterId"] = d.Get("cluster_id")
 	request["RegionId"] = client.RegionId
@@ -71,7 +67,7 @@ func resourceAliCloudArmsRemoteWriteCreate(d *schema.ResourceData, meta interfac
 	request["RemoteWriteYaml"] = d.Get("remote_write_yaml")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -121,10 +117,7 @@ func resourceAliCloudArmsRemoteWriteUpdate(d *schema.ResourceData, meta interfac
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdatePrometheusRemoteWrite"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RemoteWriteName"] = parts[1]
 	request["ClusterId"] = parts[0]
@@ -136,7 +129,7 @@ func resourceAliCloudArmsRemoteWriteUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -163,10 +156,7 @@ func resourceAliCloudArmsRemoteWriteDelete(d *schema.ResourceData, meta interfac
 	action := "DeletePrometheusRemoteWrite"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ClusterId"] = parts[0]
 	request["RemoteWriteNames"] = parts[1]
@@ -174,7 +164,7 @@ func resourceAliCloudArmsRemoteWriteDelete(d *schema.ResourceData, meta interfac
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

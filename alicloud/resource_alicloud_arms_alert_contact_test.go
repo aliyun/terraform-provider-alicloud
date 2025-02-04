@@ -49,17 +49,11 @@ func testSweepArmsAlertContact(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["CurrentPage"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		action := "SearchAlertContact"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -102,7 +96,7 @@ func testSweepArmsAlertContact(region string) error {
 				"RegionId":  client.RegionId,
 			}
 
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete alarm contact (%s): %s", name, err)
 			}
