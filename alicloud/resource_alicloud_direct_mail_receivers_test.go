@@ -41,11 +41,6 @@ func testSweepDirectMailReceivers(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	conn, err := client.NewDmClient()
-	if err != nil {
-		log.Println(WrapError(err))
-		return nil
-	}
 	action := "QueryReceiverByParam"
 	request := map[string]interface{}{
 		"PageSize": PageSizeLarge,
@@ -54,11 +49,9 @@ func testSweepDirectMailReceivers(region string) error {
 	Ids := make([]string, 0)
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -100,16 +93,9 @@ func testSweepDirectMailReceivers(region string) error {
 	for _, Id := range Ids {
 		log.Printf("[INFO] Deleting Direct Mail Receivers: (%s)", Id)
 		action := "DeleteReceiver"
-		conn, err := client.NewDmClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		request := map[string]interface{}{
-			"ReceiverId": Id,
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*9, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

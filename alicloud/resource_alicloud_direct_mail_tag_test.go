@@ -53,17 +53,10 @@ func testSweepDirectMailTag(region string) error {
 	request["PageNo"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewDmClient()
-	if err != nil {
-		log.Println(WrapError(err))
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -102,7 +95,7 @@ func testSweepDirectMailTag(region string) error {
 			request := map[string]interface{}{
 				"TagId": item["TagId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Direct Mail Tag (%s): %s", item["TagName"].(string), err)
 			}

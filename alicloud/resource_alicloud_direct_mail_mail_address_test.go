@@ -47,18 +47,10 @@ func testSweepDirectMailAddress(region string) error {
 		"PageSize": PageSizeLarge,
 	}
 	var response map[string]interface{}
-	conn, err := client.NewDmClient()
-	if err != nil {
-		log.Println(WrapError(err))
-		return nil
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -101,7 +93,7 @@ func testSweepDirectMailAddress(region string) error {
 			request := map[string]interface{}{
 				"MailAddressId": item["MailAddressId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DirectMail Mail Address (%s): %s", item["AccountName"].(string), err)
 			}

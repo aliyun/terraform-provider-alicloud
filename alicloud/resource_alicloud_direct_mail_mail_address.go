@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -57,10 +56,7 @@ func resourceAlicloudDirectMailMailAddressCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateMailAddress"
 	request := make(map[string]interface{})
-	conn, err := client.NewDmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AccountName"] = d.Get("account_name")
 	if v, ok := d.GetOk("reply_address"); ok {
 		request["ReplyAddress"] = v
@@ -68,7 +64,7 @@ func resourceAlicloudDirectMailMailAddressCreate(d *schema.ResourceData, meta in
 	request["Sendtype"] = d.Get("sendtype")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -107,10 +103,7 @@ func resourceAlicloudDirectMailMailAddressRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudDirectMailMailAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -132,7 +125,7 @@ func resourceAlicloudDirectMailMailAddressUpdate(d *schema.ResourceData, meta in
 		action := "ModifyMailAddress"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -153,17 +146,14 @@ func resourceAlicloudDirectMailMailAddressDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMailAddress"
 	var response map[string]interface{}
-	conn, err := client.NewDmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"MailAddressId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
