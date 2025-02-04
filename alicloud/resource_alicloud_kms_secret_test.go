@@ -49,16 +49,10 @@ func testSweepKmsSecret(region string) error {
 	action := "ListSecrets"
 
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	swept := false
 
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, SweepDefaultErrorMsg, "alicloud_kms_secret", action)
 		}
@@ -91,7 +85,7 @@ func testSweepKmsSecret(region string) error {
 				"SecretName":                 item["SecretName"],
 				"ForceDeleteWithoutRecovery": true,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Kms Secret (%s): %s", item["SecretName"].(string), err)
 			}

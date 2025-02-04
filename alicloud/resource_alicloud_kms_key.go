@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -173,10 +172,7 @@ func resourceAliCloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("description"); ok {
@@ -216,11 +212,9 @@ func resourceAliCloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 		request["Tags"] = tagsJson
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.DKMSInstanceStateInvalid"}) || NeedRetry(err) {
 				wait()
@@ -382,19 +376,13 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 		if object["KeyState"].(string) != statusTarget {
 			if statusTarget == "Disabled" {
 				action := "DisableKey"
-				conn, err := client.NewKmsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["KeyId"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -418,19 +406,13 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			if statusTarget == "Enabled" {
 				action := "EnableKey"
-				conn, err := client.NewKmsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["KeyId"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -455,10 +437,7 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action := "UpdateKeyDescription"
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KeyId"] = d.Id()
@@ -470,11 +449,9 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["Description"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -491,10 +468,6 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action = "UpdateRotationPolicy"
-	conn, err = client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KeyId"] = d.Id()
@@ -514,11 +487,9 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -535,10 +506,6 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action = "SetDeletionProtection"
-	conn, err = client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KeyId"] = d.Id()
@@ -558,11 +525,9 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -579,10 +544,6 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	update = false
 	action = "SetKeyPolicy"
-	conn, err = client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KeyId"] = d.Id()
@@ -594,11 +555,9 @@ func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["Policy"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -631,10 +590,7 @@ func resourceAliCloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["KeyId"] = d.Id()
 
@@ -646,11 +602,9 @@ func resourceAliCloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(Error(`[ERROR] Argument "pending_window_in_days" or "deletion_window_in_days" must be set one!`))
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

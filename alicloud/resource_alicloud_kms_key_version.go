@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -38,14 +37,11 @@ func resourceAlicloudKmsKeyVersionCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateKeyVersion"
 	request := make(map[string]interface{})
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["KeyId"] = d.Get("key_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

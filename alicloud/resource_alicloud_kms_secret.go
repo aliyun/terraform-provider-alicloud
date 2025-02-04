@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -142,10 +141,7 @@ func resourceAliCloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	action := "CreateSecret"
 	request := make(map[string]interface{})
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["SecretName"] = d.Get("secret_name")
 	request["SecretData"] = d.Get("secret_data")
@@ -197,11 +193,9 @@ func resourceAliCloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 		request["Tags"] = tagsJson
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -291,6 +285,7 @@ func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -329,16 +324,9 @@ func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if update {
 		action := "PutSecretValue"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, putSecretValueReq, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, putSecretValueReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -381,16 +369,9 @@ func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if update {
 		action := "UpdateSecretRotationPolicy"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, updateSecretRotationPolicyReq, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, updateSecretRotationPolicyReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -424,16 +405,9 @@ func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if update {
 		action := "SetSecretPolicy"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, setSecretPolicyReq, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, setSecretPolicyReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -466,16 +440,9 @@ func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if update {
 		action := "UpdateSecret"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, updateSecretReq, &runtime)
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, updateSecretReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -511,10 +478,7 @@ func resourceAliCloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSecret"
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"SecretName": d.Id(),
@@ -528,11 +492,9 @@ func resourceAliCloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) e
 		request["RecoveryWindowInDays"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

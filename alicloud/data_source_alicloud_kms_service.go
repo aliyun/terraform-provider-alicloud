@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -37,12 +36,13 @@ func dataSourceAlicloudKmsServiceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	action := "OpenKmsService"
 	request := map[string]interface{}{}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenKmsService)
+	var err error
+	client := meta.(*connectivity.AliyunClient)
 	if err != nil {
 		return WrapError(err)
 	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPostWithEndpoint("Kms", "2016-01-20", action, nil, request, false, connectivity.OpenKmsService)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)

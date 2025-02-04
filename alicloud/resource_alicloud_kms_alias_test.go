@@ -51,15 +51,9 @@ func testSweepKmsAlias(region string) error {
 	action := "ListAliases"
 
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	sweeped := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_alias", action, AlibabaCloudSdkGoERROR)
 		}
@@ -91,7 +85,7 @@ func testSweepKmsAlias(region string) error {
 			request := map[string]interface{}{
 				"AliasName": item["AliasName"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Kms Alias (%s): %s", item["AliasName"], err)
 			}

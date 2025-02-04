@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -67,10 +66,7 @@ func resourceAliCloudKmsPolicyCreate(d *schema.ResourceData, meta interface{}) e
 	action := "CreatePolicy"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Get("policy_name")
 
@@ -93,7 +89,7 @@ func resourceAliCloudKmsPolicyCreate(d *schema.ResourceData, meta interface{}) e
 	request["AccessControlRules"] = d.Get("access_control_rules")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -155,10 +151,7 @@ func resourceAliCloudKmsPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	update := false
 	action := "UpdatePolicy"
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 	if d.HasChange("description") {
@@ -191,7 +184,7 @@ func resourceAliCloudKmsPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -217,16 +210,13 @@ func resourceAliCloudKmsPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	action := "DeletePolicy"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

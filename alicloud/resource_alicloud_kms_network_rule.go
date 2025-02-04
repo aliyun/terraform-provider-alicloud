@@ -9,7 +9,6 @@ import (
 	"github.com/blues/jsonata-go"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,10 +55,7 @@ func resourceAliCloudKmsNetworkRuleCreate(d *schema.ResourceData, meta interface
 	action := "CreateNetworkRule"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Get("network_rule_name")
 
@@ -75,7 +71,7 @@ func resourceAliCloudKmsNetworkRuleCreate(d *schema.ResourceData, meta interface
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -127,10 +123,7 @@ func resourceAliCloudKmsNetworkRuleUpdate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	update := false
 	action := "UpdateNetworkRule"
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 	if d.HasChange("description") {
@@ -150,7 +143,7 @@ func resourceAliCloudKmsNetworkRuleUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -176,16 +169,13 @@ func resourceAliCloudKmsNetworkRuleDelete(d *schema.ResourceData, meta interface
 	action := "DeleteNetworkRule"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
