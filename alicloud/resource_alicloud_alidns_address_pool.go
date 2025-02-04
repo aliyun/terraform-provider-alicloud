@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -83,10 +82,7 @@ func resourceAlicloudAlidnsAddressPoolCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "AddDnsGtmAddressPool"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Name"] = d.Get("address_pool_name")
 	request["InstanceId"] = d.Get("instance_id")
@@ -112,7 +108,7 @@ func resourceAlicloudAlidnsAddressPoolCreate(d *schema.ResourceData, meta interf
 	request["Type"] = d.Get("type")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DnsGtmSystemBusyness"}) {
 				wait()
@@ -151,10 +147,7 @@ func resourceAlicloudAlidnsAddressPoolRead(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudAlidnsAddressPoolUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -193,7 +186,7 @@ func resourceAlicloudAlidnsAddressPoolUpdate(d *schema.ResourceData, meta interf
 		action := "UpdateDnsGtmAddressPool"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DnsGtmSystemBusyness"}) {
 					wait()
@@ -214,16 +207,13 @@ func resourceAlicloudAlidnsAddressPoolDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDnsGtmAddressPool"
 	var response map[string]interface{}
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"AddrPoolId": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DnsGtmSystemBusyness"}) {
 				wait()

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,10 +58,7 @@ func resourceAlicloudAlidnsCustomLineCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "AddCustomLine"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for index, ipSegment := range d.Get("ip_segment_list").(*schema.Set).List() {
 		ipSegmentArg := ipSegment.(map[string]interface{})
 		request[fmt.Sprintf("IpSegment.%d.EndIp", index+1)] = ipSegmentArg["end_ip"]
@@ -77,7 +73,7 @@ func resourceAlicloudAlidnsCustomLineCreate(d *schema.ResourceData, meta interfa
 	request["LineName"] = d.Get("custom_line_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -125,10 +121,7 @@ func resourceAlicloudAlidnsCustomLineRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudAlidnsCustomLineUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -157,7 +150,7 @@ func resourceAlicloudAlidnsCustomLineUpdate(d *schema.ResourceData, meta interfa
 		action := "UpdateCustomLine"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -178,10 +171,7 @@ func resourceAlicloudAlidnsCustomLineDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteCustomLines"
 	var response map[string]interface{}
-	conn, err := client.NewAlidnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LineIds": d.Id(),
 	}
@@ -191,7 +181,7 @@ func resourceAlicloudAlidnsCustomLineDelete(d *schema.ResourceData, meta interfa
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

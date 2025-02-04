@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -202,19 +200,14 @@ func (s *AlidnsService) DescribeAlidnsInstance(id string) (object map[string]int
 
 func (s *AlidnsService) DescribeAlidnsCustomLine(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlidnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeCustomLine"
 	request := map[string]interface{}{
 		"LineId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -241,19 +234,14 @@ func (s *AlidnsService) DescribeAlidnsCustomLine(id string) (object map[string]i
 
 func (s *AlidnsService) DescribeCustomLine(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlidnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeCustomLine"
 	request := map[string]interface{}{
 		"LineId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -314,19 +302,14 @@ func (s *AlidnsService) DescribeAlidnsGtmInstance(id string) (object map[string]
 
 func (s *AlidnsService) DescribeAlidnsAddressPool(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlidnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDnsGtmInstanceAddressPool"
 	request := map[string]interface{}{
 		"AddrPoolId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -353,19 +336,14 @@ func (s *AlidnsService) DescribeAlidnsAddressPool(id string) (object map[string]
 
 func (s *AlidnsService) DescribeAlidnsAccessStrategy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlidnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDnsGtmAccessStrategy"
 	request := map[string]interface{}{
 		"StrategyId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -392,19 +370,14 @@ func (s *AlidnsService) DescribeAlidnsAccessStrategy(id string) (object map[stri
 
 func (s *AlidnsService) DescribeAlidnsMonitorConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlidnsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDnsGtmMonitorConfig"
 	request := map[string]interface{}{
 		"MonitorConfigId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-09"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
