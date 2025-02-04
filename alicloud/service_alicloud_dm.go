@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,10 +15,7 @@ type DmService struct {
 
 func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryReceiverByParam"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -28,11 +24,9 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -71,19 +65,14 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 }
 func (s *DmService) DescribeDirectMailDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescDomain"
 	request := map[string]interface{}{
 		"DomainId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -109,19 +98,14 @@ func (s *DmService) DescribeDirectMailDomain(id string) (object map[string]inter
 }
 func (s *DmService) DescDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescDomain"
 	request := map[string]interface{}{
 		"DomainId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -147,21 +131,16 @@ func (s *DmService) DescDomain(id string) (object map[string]interface{}, err er
 }
 func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryMailAddressByParam"
 	request := map[string]interface{}{
 		"PageSize": PageSizeLarge,
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -200,21 +179,16 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 }
 func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDmClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "QueryTagByParam"
 	request := map[string]interface{}{
 		"PageSize": 10,
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

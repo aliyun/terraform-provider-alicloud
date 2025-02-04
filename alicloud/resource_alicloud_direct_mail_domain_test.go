@@ -50,21 +50,11 @@ func testSweepDirectMailDomain(region string) error {
 	}
 
 	var dmDomains []interface{}
-
-	conn, err := client.NewDmClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-
 	for {
 		var response map[string]interface{}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -121,7 +111,7 @@ func testSweepDirectMailDomain(region string) error {
 		request := map[string]interface{}{
 			"DomainId": item["DomainId"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Direct Mail Domain (%s): %s", item["DomainName"].(string), err)
 		}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -41,14 +40,11 @@ func resourceAlicloudDirectMailDomainCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateDomain"
 	request := make(map[string]interface{})
-	conn, err := client.NewDmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DomainName"] = d.Get("domain_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -87,16 +83,13 @@ func resourceAlicloudDirectMailDomainDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDomain"
 	var response map[string]interface{}
-	conn, err := client.NewDmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DomainId": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-11-23"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
