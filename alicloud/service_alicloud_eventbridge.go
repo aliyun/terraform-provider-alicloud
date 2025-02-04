@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,20 +15,15 @@ type EventbridgeService struct {
 
 func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEventbridgeClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetEventBus"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"EventBusName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -41,13 +35,10 @@ func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:EventBus", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:EventBus", id)), NotFoundMsg, ProviderERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("GetEventBus failed, response: %v", response))
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
@@ -58,13 +49,9 @@ func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[
 }
 
 func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "GetRule"
-
-	conn, err := s.client.NewEventbridgeClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -76,11 +63,9 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 		"RuleName":     parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -93,18 +78,10 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 	addDebug(action, response, request)
 
 	if err != nil {
-		//if IsExpectedErrors(err, []string{"NotExist.Policy"}) {
-		//	return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundWithResponse, response)
-		//}
+		if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist", "EventRuleNotExisted"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist", "EventRuleNotExisted"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundMsg, ProviderERROR)
-	}
-
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return object, WrapError(fmt.Errorf("GetRule failed, response: %v", response))
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -140,20 +117,15 @@ func (s *EventbridgeService) EventBridgeRuleStateRefreshFunc(id string, failStat
 
 func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEventbridgeClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "CheckRoleForProduct"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"ProductName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-04-01"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("eventbridge", "2020-04-01", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -166,9 +138,6 @@ func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (ob
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("CheckRoleForProduct failed, response: %v", response))
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
@@ -199,10 +168,7 @@ func (s *EventbridgeService) CheckRoleForProductRefreshFunc(id string, failState
 
 func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEventbridgeClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListUserDefinedEventSources"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -210,11 +176,9 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -227,9 +191,6 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 		addDebug(action, response, request)
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		v, err := jsonpath.Get("$.Data.EventSourceList", response)
 		if err != nil {

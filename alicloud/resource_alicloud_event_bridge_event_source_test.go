@@ -47,16 +47,9 @@ func testSweepEventBridgeEventSource(region string) error {
 		"RegionId": client.RegionId,
 		"Limit":    PageSizeLarge,
 	}
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		log.Println("new eventBridge client failed:", err)
-		return nil
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -67,7 +60,7 @@ func testSweepEventBridgeEventSource(region string) error {
 		return nil
 	})
 	addDebug(action, response, request)
-	if err != nil || fmt.Sprint(response["Success"]) != "true" {
+	if err != nil {
 		return WrapError(fmt.Errorf("ListUserDefinedEventSources failed. Response: %v. Error: %v", response, err))
 	}
 	resp, err := jsonpath.Get("$.Data.EventSourceList", response)
@@ -99,7 +92,7 @@ func testSweepEventBridgeEventSource(region string) error {
 			"EventSourceName": item["Name"],
 		}
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -109,7 +102,7 @@ func testSweepEventBridgeEventSource(region string) error {
 			}
 			return nil
 		})
-		if err != nil || fmt.Sprint(response["Success"]) != "true" {
+		if err != nil {
 			log.Printf("\n[ERROR] Deleting EventBridge source %s failed. Response: %v. Error: %v.", item["Name"], response, err)
 		}
 	}

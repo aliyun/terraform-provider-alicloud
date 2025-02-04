@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -50,13 +49,10 @@ func resourceAlicloudEventBridgeServiceLinkedRoleCreate(d *schema.ResourceData, 
 	request := map[string]interface{}{
 		"ProductName": d.Get("product_name"),
 	}
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
