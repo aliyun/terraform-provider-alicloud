@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -301,10 +300,7 @@ func (s *CassandraService) DescribeAccounts(id string) (object cassandra.Describ
 
 func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackupPlans"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -316,11 +312,9 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		"ClusterId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cassandra", "2019-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
