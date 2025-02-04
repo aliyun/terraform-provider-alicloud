@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -177,10 +176,7 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateRestoreJob"
 	request := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("exclude"); ok {
 		request["Exclude"] = v
@@ -265,11 +261,9 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	}
 
 	request["ClientToken"] = buildClientToken("CreateRestoreJob")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -282,9 +276,6 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hbr_restore_job", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(response["RestoreId"], ":", request["RestoreType"]))

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -92,14 +91,11 @@ func resourceAlicloudHbrEcsBackupClientCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "InstallBackupClients"
 	request := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceIds"] = "[\"" + d.Get("instance_id").(string) + "\"]"
 	wait := incrementalWait(30*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"CloudAssistNotRunningOnInstance"}) || NeedRetry(err) {
 				wait()
@@ -112,9 +108,6 @@ func resourceAlicloudHbrEcsBackupClientCreate(d *schema.ResourceData, meta inter
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hbr_ecs_backup_client", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	hbrService := HbrService{client}
@@ -162,6 +155,7 @@ func resourceAlicloudHbrEcsBackupClientUpdate(d *schema.ResourceData, meta inter
 
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"ClientId": d.Id(),
@@ -222,13 +216,9 @@ func resourceAlicloudHbrEcsBackupClientUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		action := "UpdateClientSettings"
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -241,9 +231,6 @@ func resourceAlicloudHbrEcsBackupClientUpdate(d *schema.ResourceData, meta inter
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
@@ -276,10 +263,7 @@ func resourceAlicloudHbrEcsBackupClientUninstall(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	action := "UninstallBackupClients"
 	var response map[string]interface{}
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ClientIds": "[\"" + d.Id() + "\"]",
 	}
@@ -287,7 +271,7 @@ func resourceAlicloudHbrEcsBackupClientUninstall(d *schema.ResourceData, meta in
 	request["InstanceIds"] = "[\"" + d.Get("instance_id").(string) + "\"]"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -300,9 +284,6 @@ func resourceAlicloudHbrEcsBackupClientUninstall(d *schema.ResourceData, meta in
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	hbrService := HbrService{client}
@@ -321,17 +302,13 @@ func resourceAlicloudHbrEcsBackupClientDelete(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteBackupClient"
 	var response map[string]interface{}
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ClientId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -344,9 +321,6 @@ func resourceAlicloudHbrEcsBackupClientDelete(d *schema.ResourceData, meta inter
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }

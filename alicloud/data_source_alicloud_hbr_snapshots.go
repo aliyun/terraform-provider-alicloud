@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -298,16 +297,11 @@ func dataSourceAlicloudHbrSnapshotsRead(d *schema.ResourceData, meta interface{}
 	}
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -320,9 +314,6 @@ func dataSourceAlicloudHbrSnapshotsRead(d *schema.ResourceData, meta interface{}
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_hbr_snapshots", action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		resp, err := jsonpath.Get("$.Snapshots.Snapshot", response)
 		if err != nil {

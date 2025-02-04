@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -38,12 +37,9 @@ func dataSourceAlicloudHbrServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenHbrService)
-	if err != nil {
-		return WrapError(err)
-	}
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	client := meta.(*connectivity.AliyunClient)
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err := client.RpcPostWithEndpoint("hbr", "2017-09-08", action, nil, request, false, connectivity.OpenHbrService)
 		if err != nil {
 			if NeedRetry(err) {
 				return resource.RetryableError(err)

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -101,10 +100,7 @@ func resourceAlicloudHbrHanaInstanceCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateHanaInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("alert_setting"); ok {
 		request["AlertSetting"] = v
 	}
@@ -141,7 +137,7 @@ func resourceAlicloudHbrHanaInstanceCreate(d *schema.ResourceData, meta interfac
 	request["VaultId"] = d.Get("vault_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -196,10 +192,7 @@ func resourceAlicloudHbrHanaInstanceRead(d *schema.ResourceData, meta interface{
 }
 func resourceAlicloudHbrHanaInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -262,7 +255,7 @@ func resourceAlicloudHbrHanaInstanceUpdate(d *schema.ResourceData, meta interfac
 		action := "UpdateHanaInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -290,10 +283,6 @@ func resourceAlicloudHbrHanaInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 	action := "DeleteHanaInstance"
 	var response map[string]interface{}
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ClusterId": parts[1],
 		"VaultId":   parts[0],
@@ -309,7 +298,7 @@ func resourceAlicloudHbrHanaInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -51,22 +51,11 @@ func testSweepHbrServerBackupPlan(region string) error {
 	}
 
 	var hbrPlans []interface{}
-
-	conn, err := client.NewHbrClient()
-
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-
 	for {
 		var response map[string]interface{}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -123,7 +112,7 @@ func testSweepHbrServerBackupPlan(region string) error {
 		request := map[string]interface{}{
 			"PlanId": item["PlanId"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete HBR Ecs Server Backup Plan (%s): %s", item["PlanName"].(string), err)
 		}
