@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -40,20 +39,15 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateEventBus"
 	request := make(map[string]interface{})
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
 	request["EventBusName"] = d.Get("event_bus_name")
 	request["ClientToken"] = buildClientToken("CreateEventBus")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -95,19 +89,16 @@ func resourceAlicloudEventBridgeEventBusRead(d *schema.ResourceData, meta interf
 func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	if d.HasChange("description") {
 		request := map[string]interface{}{
 			"EventBusName": d.Id(),
 		}
 		request["Description"] = d.Get("description")
 		action := "UpdateEventBus"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -131,20 +122,15 @@ func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteEventBus"
 	var response map[string]interface{}
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"EventBusName": d.Id(),
 	}
 
 	request["ClientToken"] = buildClientToken("DeleteEventBus")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -160,9 +146,6 @@ func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta inte
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("DeleteEventBus failed, response: %v", response))
 	}
 	return nil
 }

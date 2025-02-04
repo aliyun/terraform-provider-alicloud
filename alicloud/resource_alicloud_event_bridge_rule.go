@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -149,10 +148,7 @@ func resourceAliCloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["EventBusName"] = d.Get("event_bus_name")
 	request["RuleName"] = d.Get("rule_name")
@@ -228,12 +224,9 @@ func resourceAliCloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 	}
 
 	request["EventTargets"] = targetsMapsJson
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -381,16 +374,9 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "UpdateRule"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -492,16 +478,9 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "PutTargets"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, putTargetsReq, &runtime)
+			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, putTargetsReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -539,16 +518,9 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				}
 
 				action := "DisableRule"
-				conn, err := client.NewEventbridgeClient()
-				if err != nil {
-					return WrapError(err)
-				}
-
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -581,16 +553,9 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				}
 
 				action := "EnableRule"
-				conn, err := client.NewEventbridgeClient()
-				if err != nil {
-					return WrapError(err)
-				}
-
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -631,10 +596,7 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 	action := "DeleteRule"
 	var response map[string]interface{}
 
-	conn, err := client.NewEventbridgeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -646,11 +608,9 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 		"RuleName":     parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -672,11 +632,6 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
 		return nil
 	}
-
-	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
