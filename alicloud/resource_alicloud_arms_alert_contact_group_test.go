@@ -47,13 +47,7 @@ func testSweepArmsAlertContactGroup(region string) error {
 	request := make(map[string]interface{})
 	request["IsDetail"] = false
 	request["RegionId"] = client.RegionId
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+	response, err := client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 	if err != nil {
 		log.Printf("[ERROR] %s failed error: %v", action, err)
 		return nil
@@ -84,7 +78,7 @@ func testSweepArmsAlertContactGroup(region string) error {
 			"ContactGroupId": fmt.Sprint(item["ContactGroupId"]),
 			"RegionId":       client.RegionId,
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] %s failed error: %v", action, err)
 		}

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -19,20 +18,15 @@ type ArmsService struct {
 
 func (s *ArmsService) DescribeArmsAlertContact(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "SearchAlertContact"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"ContactIds": convertListToJsonString([]interface{}{id}),
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -63,21 +57,16 @@ func (s *ArmsService) DescribeArmsAlertContact(id string) (object map[string]int
 
 func (s *ArmsService) DescribeArmsAlertContactGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "SearchAlertContactGroup"
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"ContactGroupIds": convertListToJsonString([]interface{}{id}),
 		"IsDetail":        "true",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -108,21 +97,16 @@ func (s *ArmsService) DescribeArmsAlertContactGroup(id string) (object map[strin
 
 func (s *ArmsService) DescribeArmsAlertRobot(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeIMRobots"
 	request := map[string]interface{}{
 		"RobotIds": id,
 		"Page":     1,
 		"Size":     PageSizeXLarge,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -152,10 +136,7 @@ func (s *ArmsService) DescribeArmsAlertRobot(id string) (object map[string]inter
 }
 
 func (s *ArmsService) DescribeArmsDispatchRule(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Id":       id,
@@ -164,11 +145,9 @@ func (s *ArmsService) DescribeArmsDispatchRule(id string) (object map[string]int
 
 	var response map[string]interface{}
 	action := "DescribeDispatchRule"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -192,10 +171,7 @@ func (s *ArmsService) DescribeArmsDispatchRule(id string) (object map[string]int
 
 func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListPrometheusAlertRules"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -207,11 +183,9 @@ func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[str
 		"ClusterId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -246,10 +220,7 @@ func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[str
 
 func (s *ArmsService) ListArmsNotificationPolicies(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListNotificationPolicies"
 	request := map[string]interface{}{
 		"Page":     1,
@@ -257,11 +228,9 @@ func (s *ArmsService) ListArmsNotificationPolicies(id string) (object map[string
 		"IsDetail": true,
 		"RegionId": s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -312,21 +281,16 @@ func (s *ArmsService) DescribeArmsPrometheus(id string) (object map[string]inter
 	var response map[string]interface{}
 	action := "GetPrometheusInstance"
 
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ClusterId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -357,10 +321,7 @@ func (s *ArmsService) DescribeArmsPrometheus(id string) (object map[string]inter
 }
 
 func (s *ArmsService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 
 	request := map[string]interface{}{
@@ -383,13 +344,10 @@ func (s *ArmsService) ListTagResources(id string, resourceType string) (object i
 
 	tags := make([]interface{}, 0)
 	var response map[string]interface{}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -428,10 +386,7 @@ func (s *ArmsService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewArmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -461,12 +416,9 @@ func (s *ArmsService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -506,12 +458,9 @@ func (s *ArmsService) SetResourceTags(d *schema.ResourceData, resourceType strin
 				request[fmt.Sprintf("Tag.%d.Value", count)] = value
 				count++
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("ARMS", "2019-08-08", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -536,10 +485,7 @@ func (s *ArmsService) DescribeArmsIntegrationExporter(id string) (object map[str
 	var response map[string]interface{}
 	action := "GetPrometheusIntegration"
 
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -553,11 +499,9 @@ func (s *ArmsService) DescribeArmsIntegrationExporter(id string) (object map[str
 		"InstanceId":      parts[2],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -591,10 +535,7 @@ func (s *ArmsService) DescribeArmsRemoteWrite(id string) (object map[string]inte
 	var response map[string]interface{}
 	action := "GetPrometheusRemoteWrite"
 
-	conn, err := s.client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -607,11 +548,9 @@ func (s *ArmsService) DescribeArmsRemoteWrite(id string) (object map[string]inte
 		"RemoteWriteName": parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

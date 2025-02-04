@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -563,10 +562,7 @@ func resourceAliCloudArmsSyntheticTaskCreate(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -1005,11 +1001,9 @@ func resourceAliCloudArmsSyntheticTaskCreate(d *schema.ResourceData, meta interf
 		request["AvailableAssertions"], _ = convertListMapToJsonString(availableAssertionsMaps)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1329,10 +1323,7 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 	update := false
 	d.Partial(true)
 	action := "UpdateTimingSyntheticTask"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["TaskId"] = d.Id()
@@ -1789,11 +1780,9 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -1814,10 +1803,6 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -1829,11 +1814,9 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 
 	request["ResourceType"] = "SYNTHETICTASK"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -1863,19 +1846,13 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 		if object["Status"].(string) != target {
 			if target == "RUNNING" {
 				action = "StartTimingSyntheticTask"
-				conn, err = client.NewArmsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["TaskIds"] = "[\"" + d.Id() + "\"]"
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -1894,19 +1871,13 @@ func resourceAliCloudArmsSyntheticTaskUpdate(d *schema.ResourceData, meta interf
 			}
 			if target == "STOP" {
 				action = "StopTimingSyntheticTask"
-				conn, err = client.NewArmsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["TaskIds"] = "[\"" + d.Id() + "\"]"
 				request["RegionId"] = client.RegionId
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -1944,19 +1915,14 @@ func resourceAliCloudArmsSyntheticTaskDelete(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["TaskId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,21 +62,16 @@ func resourceAliCloudArmsEnvFeatureCreate(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["EnvironmentId"] = d.Get("environment_id")
 	query["FeatureName"] = d.Get("env_feature_name")
 	query["RegionId"] = client.RegionId
 
 	query["FeatureVersion"] = d.Get("feature_version")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -151,10 +145,7 @@ func resourceAliCloudArmsEnvFeatureUpdate(d *schema.ResourceData, meta interface
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpgradeEnvironmentFeature"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EnvironmentId"] = parts[0]
@@ -165,11 +156,9 @@ func resourceAliCloudArmsEnvFeatureUpdate(d *schema.ResourceData, meta interface
 	}
 	request["FeatureVersion"] = d.Get("feature_version")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -202,20 +191,15 @@ func resourceAliCloudArmsEnvFeatureDelete(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["EnvironmentId"] = parts[0]
 	query["FeatureName"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

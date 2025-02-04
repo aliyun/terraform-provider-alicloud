@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -30,10 +28,6 @@ func (s *ArmsServiceV2) DescribeArmsPrometheusMonitoring(id string) (object map[
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "GetPrometheusMonitoring"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ClusterId"] = parts[0]
@@ -43,7 +37,7 @@ func (s *ArmsServiceV2) DescribeArmsPrometheusMonitoring(id string) (object map[
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -103,10 +97,6 @@ func (s *ArmsServiceV2) DescribeArmsRemoteWrite(id string) (object map[string]in
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetPrometheusRemoteWrite"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ClusterId"] = parts[0]
@@ -115,7 +105,7 @@ func (s *ArmsServiceV2) DescribeArmsRemoteWrite(id string) (object map[string]in
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -171,20 +161,14 @@ func (s *ArmsServiceV2) DescribeArmsEnvironment(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeEnvironment"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EnvironmentId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -239,7 +223,6 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -254,10 +237,6 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewArmsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -266,11 +245,9 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -290,10 +267,6 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewArmsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -305,11 +278,9 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -341,20 +312,14 @@ func (s *ArmsServiceV2) DescribeArmsPrometheus(id string) (object map[string]int
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetPrometheusInstance"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ClusterId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -415,21 +380,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvFeature(id string) (object map[string]int
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeEnvironmentFeature"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FeatureName"] = parts[1]
 	query["EnvironmentId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -490,21 +449,15 @@ func (s *ArmsServiceV2) DescribeArmsAddonRelease(id string) (object map[string]i
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeAddonRelease"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ReleaseName"] = parts[1]
 	query["EnvironmentId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -565,10 +518,6 @@ func (s *ArmsServiceV2) DescribeArmsEnvPodMonitor(id string) (object map[string]
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeEnvPodMonitor"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["PodMonitorName"] = parts[2]
@@ -576,11 +525,9 @@ func (s *ArmsServiceV2) DescribeArmsEnvPodMonitor(id string) (object map[string]
 	query["Namespace"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -641,10 +588,6 @@ func (s *ArmsServiceV2) DescribeArmsEnvServiceMonitor(id string) (object map[str
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeEnvServiceMonitor"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ServiceMonitorName"] = parts[2]
@@ -652,11 +595,9 @@ func (s *ArmsServiceV2) DescribeArmsEnvServiceMonitor(id string) (object map[str
 	query["Namespace"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -717,21 +658,15 @@ func (s *ArmsServiceV2) DescribeArmsEnvCustomJob(id string) (object map[string]i
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeEnvCustomJob"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["CustomJobName"] = parts[1]
 	query["EnvironmentId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -788,20 +723,14 @@ func (s *ArmsServiceV2) DescribeArmsSyntheticTask(id string) (object map[string]
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetTimingSyntheticTask"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["TaskId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("ARMS", "2019-08-08", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -862,20 +791,14 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetGrafanaWorkspace"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["GrafanaWorkspaceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,10 +70,7 @@ func resourceAliCloudArmsGrafanaWorkspaceCreate(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -93,11 +89,9 @@ func resourceAliCloudArmsGrafanaWorkspaceCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("grafana_workspace_name"); ok {
 		request["GrafanaWorkspaceName"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -162,10 +156,7 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 	update := false
 	d.Partial(true)
 	action := "UpdateGrafanaWorkspace"
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["GrafanaWorkspaceId"] = d.Id()
@@ -181,11 +172,9 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -205,10 +194,6 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 	}
 	update = false
 	action = "UpdateGrafanaWorkspaceVersion"
-	conn, err = client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["GrafanaWorkspaceId"] = d.Id()
@@ -219,11 +204,9 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -242,10 +225,6 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -257,11 +236,9 @@ func resourceAliCloudArmsGrafanaWorkspaceUpdate(d *schema.ResourceData, meta int
 
 	request["ResourceType"] = "grafanaworkspace"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -297,19 +274,14 @@ func resourceAliCloudArmsGrafanaWorkspaceDelete(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewArmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["GrafanaWorkspaceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
