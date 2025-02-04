@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,10 +69,7 @@ func resourceAliCloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "CreateOrGetAccount"
 	request := make(map[string]interface{})
-	conn, err := client.NewOnsproxyClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	timestamp := time.Now().UnixMilli()
 	request["createTimestamp"] = timestamp
@@ -96,11 +92,9 @@ func resourceAliCloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interf
 	stringToBase64Encode := "2:" + request["instanceId"].(string) + ":" + request["accountAccessKey"].(string)
 	request["userName"] = base64.StdEncoding.EncodeToString([]byte(stringToBase64Encode))
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -154,10 +148,7 @@ func resourceAliCloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAccount"
 	var response map[string]interface{}
-	conn, err := client.NewOnsproxyClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := make(map[string]interface{})
 
@@ -168,11 +159,9 @@ func resourceAliCloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interf
 		request["CreateTimestamp"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

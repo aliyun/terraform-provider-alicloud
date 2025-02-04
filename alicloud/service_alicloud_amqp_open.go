@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,10 +16,7 @@ type AmqpOpenService struct {
 
 func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListVirtualHosts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -33,11 +29,9 @@ func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -79,10 +73,7 @@ func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]
 
 func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListQueues"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -96,11 +87,9 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -142,10 +131,7 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 
 func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListExchanges"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -159,11 +145,9 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -205,21 +189,16 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 
 func (s *AmqpOpenService) DescribeAmqpInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListInstances"
 	request := map[string]interface{}{
 		"MaxResults": 100,
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -282,10 +261,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 	var response map[string]interface{}
 	action := "ListBindings"
 
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
@@ -300,11 +276,9 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("amqp-open", "2019-12-12", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -317,6 +291,9 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 		addDebug(action, response, request)
 
 		if err != nil {
+			if IsExpectedErrors(err, []string{"ExchangeNotExist"}) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
@@ -351,10 +328,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 }
 
 func (s *AmqpOpenService) DescribeAmqpStaticAccount(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewOnsproxyClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -365,11 +339,9 @@ func (s *AmqpOpenService) DescribeAmqpStaticAccount(id string) (object map[strin
 
 	var response map[string]interface{}
 	action := "ListAccounts"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("amqp-open", "2019-12-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
