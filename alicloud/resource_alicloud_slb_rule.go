@@ -7,8 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -187,10 +185,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	var response map[string]interface{}
 	action := "CreateRules"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	rule := make(map[string]interface{}, 0)
 	if v, ok := d.GetOk("domain"); ok {
@@ -216,7 +211,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceIsConfiguring", "BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
 				wait()
@@ -288,14 +283,10 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "SetRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	update := false
 	fullUpdate := false
@@ -368,7 +359,7 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
 					wait()
@@ -408,17 +399,14 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 	var response map[string]interface{}
 	action := "DeleteRules"
 	request := make(map[string]interface{})
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["RuleIds"] = fmt.Sprintf("['%s']", d.Id())
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
 				wait()

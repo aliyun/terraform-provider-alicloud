@@ -410,6 +410,11 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		slbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.slbconn = slbconn
+	} else {
+		err := client.slbconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
+		}
 	}
 
 	return do(client.slbconn)
@@ -2246,122 +2251,6 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return result, nil
-}
-
-func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
-	productCode := "nas"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
-	productCode := "dms_enterprise"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "dms-enterprise.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
-	productCode := "sgw"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
-	productCode := "ddoscoo"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewSlbClient() (*rpc.Client, error) {
-	productCode := "slb"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
 }
 
 func (client *AliyunClient) NewKmsClient() (*rpc.Client, error) {

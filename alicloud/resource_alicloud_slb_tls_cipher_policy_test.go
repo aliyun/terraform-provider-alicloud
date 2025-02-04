@@ -45,21 +45,14 @@ func testSweepSLBTlsCipherPolicy(region string) error {
 		"tf_testAcc",
 	}
 	var response map[string]interface{}
-	conn, err := client.NewSlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	for {
 		action := "ListTLSCipherPolicies"
 		request := map[string]interface{}{
 			"RegionId": region,
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -103,7 +96,7 @@ func testSweepSLBTlsCipherPolicy(region string) error {
 				"RegionId":          region,
 				"TLSCipherPolicyId": item["InstanceId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Slb Tls Cipher Policy (%s): %s", item["Name"].(string), err)
 			} else {
