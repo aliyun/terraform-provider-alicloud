@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -98,10 +97,7 @@ func resourceAlicloudHbrNasBackupPlanCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateBackupPlan"
 	request := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["BackupType"] = d.Get("backup_type")
 	if v, ok := d.GetOk("create_time"); ok {
 		request["CreateTime"] = ConvertNasFileSystemStringToUnix(v.(string))
@@ -133,7 +129,7 @@ func resourceAlicloudHbrNasBackupPlanCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -193,6 +189,7 @@ func resourceAlicloudHbrNasBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	hbrService := HbrService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -233,13 +230,9 @@ func resourceAlicloudHbrNasBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	request["SourceType"] = "NAS"
 	if update {
 		action := "UpdateBackupPlan"
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -281,13 +274,9 @@ func resourceAlicloudHbrNasBackupPlanUpdate(d *schema.ResourceData, meta interfa
 			}
 			request["VaultId"] = d.Get("vault_id")
 			request["SourceType"] = "NAS"
-			conn, err := client.NewHbrClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -315,10 +304,7 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteBackupPlan"
 	var response map[string]interface{}
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"PlanId": d.Id(),
 	}
@@ -329,7 +315,7 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -359,13 +345,9 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 		if v, ok := d.GetOk("create_time"); ok {
 			request["CreateTime"] = ConvertNasFileSystemStringToUnix(v.(string))
 		}
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

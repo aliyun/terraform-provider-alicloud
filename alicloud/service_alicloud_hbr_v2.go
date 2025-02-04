@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -23,19 +22,13 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribePoliciesV2"
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -100,21 +93,15 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribePolicyBindings"
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = parts[0]
 	query["SourceType"] = parts[1]
 	request["MaxResults"] = PageSizeLarge
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -199,18 +186,12 @@ func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]int
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeCrossAccounts"
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

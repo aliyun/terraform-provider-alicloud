@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -57,10 +56,7 @@ func resourceAliCloudHbrCrossAccountCreate(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("cross_account_user_id"); ok {
 		request["CrossAccountUserId"] = v
@@ -72,11 +68,9 @@ func resourceAliCloudHbrCrossAccountCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("alias"); ok {
 		request["Alias"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -135,19 +129,14 @@ func resourceAliCloudHbrCrossAccountDelete(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewHbrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["CrossAccountUserId"] = parts[0]
 	request["CrossAccountRoleName"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
