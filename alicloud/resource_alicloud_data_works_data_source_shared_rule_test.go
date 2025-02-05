@@ -25,7 +25,7 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8955(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8955)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -108,7 +108,7 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8166(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
