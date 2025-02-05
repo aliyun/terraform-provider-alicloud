@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetProject"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002", "9990040003"}) {
@@ -96,7 +88,6 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -111,10 +102,6 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewDataworkspublicClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -123,12 +110,9 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-18"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -147,10 +131,6 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewDataworkspublicClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -162,12 +142,9 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 				request[fmt.Sprintf("Tag.%d.Value", count)] = value
 				count++
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-18"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -202,21 +179,15 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetProjectMember"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ProjectId"] = parts[0]
 	request["UserId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002"}) {
@@ -286,20 +257,14 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSource(id string) (object map[
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetDataSource"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -369,20 +334,14 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListDataSourceSharedRules"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DataSourceId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -467,21 +426,15 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListDIAlarmRules"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DIAlarmRuleId"] = parts[1]
 	query["JobId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -555,21 +508,15 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[strin
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetDIJob"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DIJobId"] = parts[1]
 	query["ProjectId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -635,20 +582,14 @@ func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetNetwork"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -716,20 +657,14 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetResourceGroup"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-05-18"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil || IsExpectedErrors(err, []string{"9990040003"}) {
 			if NeedRetry(err) {

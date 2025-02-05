@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,10 +14,7 @@ type DataworksPublicService struct {
 
 func (s *DataworksPublicService) DescribeDataWorksFolder(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDataworkspublicClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetFolder"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -29,11 +25,9 @@ func (s *DataworksPublicService) DescribeDataWorksFolder(id string) (object map[
 		"FolderId":  parts[0],
 		"ProjectId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-18"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -60,10 +54,7 @@ func (s *DataworksPublicService) DescribeDataWorksFolder(id string) (object map[
 
 func (s *DataworksPublicService) GetFolder(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDataworkspublicClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetFolder"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -74,11 +65,9 @@ func (s *DataworksPublicService) GetFolder(id string) (object map[string]interfa
 		"FolderId":  parts[0],
 		"ProjectId": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-18"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

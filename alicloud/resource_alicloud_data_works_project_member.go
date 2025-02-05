@@ -76,10 +76,7 @@ func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ProjectId"] = d.Get("project_id")
 	request["UserId"] = d.Get("user_id")
@@ -102,7 +99,7 @@ func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -183,10 +180,6 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 		if len(removed.([]interface{})) > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "RevokeMemberProjectRoles"
-			conn, err := client.NewDataworkspublicClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ProjectId"] = parts[0]
@@ -210,7 +203,7 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -230,10 +223,6 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 		if len(added.([]interface{})) > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "GrantMemberProjectRoles"
-			conn, err := client.NewDataworkspublicClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ProjectId"] = parts[0]
@@ -257,7 +246,7 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -285,10 +274,7 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ProjectId"] = parts[0]
 	request["UserId"] = parts[1]
@@ -298,7 +284,7 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
