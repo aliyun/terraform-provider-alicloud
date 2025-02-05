@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,10 +71,7 @@ func resourceAliCloudThreatDetectionImageEventOperationCreate(d *schema.Resource
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("event_type"); ok {
@@ -96,11 +92,9 @@ func resourceAliCloudThreatDetectionImageEventOperationCreate(d *schema.Resource
 	if v, ok := d.GetOk("scenarios"); ok {
 		request["Scenarios"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -154,10 +148,7 @@ func resourceAliCloudThreatDetectionImageEventOperationUpdate(d *schema.Resource
 	var query map[string]interface{}
 	update := false
 	action := "UpdateImageEventOperation"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = d.Id()
@@ -167,11 +158,9 @@ func resourceAliCloudThreatDetectionImageEventOperationUpdate(d *schema.Resource
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -198,18 +187,13 @@ func resourceAliCloudThreatDetectionImageEventOperationDelete(d *schema.Resource
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Id"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -20,20 +19,15 @@ func (s *ThreatDetectionService) DescribeThreatDetectionBackupPolicy(id string) 
 	var response map[string]interface{}
 	action := "DescribeBackupPolicy"
 
-	conn, err := s.client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Id": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,21 +79,14 @@ func (s *ThreatDetectionService) ThreatDetectionBackupPolicyStateRefreshFunc(id 
 func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetVulWhitelist"
-
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"VulWhitelistId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -132,10 +119,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 }
 
 func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"NodeId": id,
@@ -143,11 +127,9 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) 
 
 	var response map[string]interface{}
 	action := "GetHoneypotNode"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -199,20 +181,15 @@ func (s *ThreatDetectionService) DescribeThreatDetectionLogShipper(id string) (o
 	var response map[string]interface{}
 	action := "DescribeLogShipperStatus"
 
-	conn, err := s.client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"From": "sas",
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -239,10 +216,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionLogShipper(id string) (o
 }
 
 func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"HoneypotPresetId": id,
@@ -250,11 +224,9 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string
 
 	var response map[string]interface{}
 	action := "GetHoneypotPreset"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

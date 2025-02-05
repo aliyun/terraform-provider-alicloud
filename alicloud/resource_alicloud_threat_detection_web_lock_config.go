@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -76,10 +75,7 @@ func resourceAlicloudThreatDetectionWebLockConfig() *schema.Resource {
 func resourceAlicloudThreatDetectionWebLockConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewSasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DefenceMode"] = d.Get("defence_mode")
 
@@ -104,7 +100,7 @@ func resourceAlicloudThreatDetectionWebLockConfigCreate(d *schema.ResourceData, 
 	action := "ModifyWebLockStart"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -153,10 +149,7 @@ func resourceAlicloudThreatDetectionWebLockConfigRead(d *schema.ResourceData, me
 
 func resourceAlicloudThreatDetectionWebLockConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewSasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Uuid": d.Id(),
@@ -165,7 +158,7 @@ func resourceAlicloudThreatDetectionWebLockConfigDelete(d *schema.ResourceData, 
 	action := "ModifyWebLockUnbind"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

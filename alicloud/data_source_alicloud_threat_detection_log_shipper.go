@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +54,7 @@ func dataSourceAlicloudThreatDetectionLogShipperRead(d *schema.ResourceData, met
 	var response map[string]interface{}
 	action := "ModifyOpenLogShipper"
 	request := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("ThreatDetectionLogShipperHasNotBeenOpened")
@@ -73,11 +69,9 @@ func dataSourceAlicloudThreatDetectionLogShipperRead(d *schema.ResourceData, met
 
 	request["From"] = "sas"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -148,10 +148,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientUserDefineRule(i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetClientUserDefineRule"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
@@ -160,7 +156,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientUserDefineRule(i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -221,10 +217,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetLogMeta"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["LogStore"] = id
@@ -233,7 +225,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -297,10 +289,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientFileProtect(id s
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetFileProtectRule"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
@@ -309,7 +297,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientFileProtect(id s
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -369,10 +357,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionFileUploadLimit(id str
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 0, len(parts)))
 	}
 	action := "GetFileUploadLimit"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
@@ -380,7 +364,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionFileUploadLimit(id str
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -441,10 +425,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelist
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetMaliciousFileWhitelistConfig"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = id
@@ -453,7 +433,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelist
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -509,10 +489,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionImageEventOperation(id
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetImageEventOperation"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
@@ -521,7 +497,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionImageEventOperation(id
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -584,10 +560,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionSasTrail(id string) (o
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 0, len(parts)))
 	}
 	action := "GetServiceTrail"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
@@ -596,7 +568,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionSasTrail(id string) (o
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -657,10 +629,6 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetOssScanConfig"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = id
@@ -669,7 +637,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -17,18 +17,13 @@ type SasService struct {
 
 func (s *SasService) DescribeAllGroups(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAllGroups"
 	request := map[string]interface{}{}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -63,17 +58,12 @@ func (s *SasService) DescribeAllGroups(id string) (object map[string]interface{}
 
 func (s *SasService) DescribeSecurityCenterServiceLinkedRole(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeServiceLinkedRoleStatus"
 	request := map[string]interface{}{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-12-03"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("Sas", "2018-12-03", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -116,10 +106,7 @@ func (s *SasService) SecurityCenterServiceLinkedRoleStateRefreshFunc(id string, 
 }
 
 func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Uuid": id,
@@ -127,11 +114,9 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 
 	var response map[string]interface{}
 	action := "DescribeWebLockConfigList"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -159,10 +144,7 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 }
 
 func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Id": id,
@@ -173,7 +155,7 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
@@ -195,10 +177,7 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 }
 
 func (s *SasService) DescribeStrategy(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"StrategyIds": id,
@@ -209,7 +188,7 @@ func (s *SasService) DescribeStrategy(id string) (object map[string]interface{},
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
@@ -249,10 +228,7 @@ func (s *SasService) ThreatDetectionBaselineStrategyStateRefreshFunc(d *schema.R
 }
 
 func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Id": id,
@@ -260,11 +236,9 @@ func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (objec
 
 	var response map[string]interface{}
 	action := "DescribeAntiBruteForceRules"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -312,10 +286,7 @@ func (s *SasService) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(d *schema
 }
 
 func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"HoneypotIds.1": id,
@@ -323,11 +294,9 @@ func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[stri
 
 	var response map[string]interface{}
 	action := "ListHoneypot"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -379,10 +348,7 @@ func (s *SasService) ThreatDetectionHoneyPotStateRefreshFunc(d *schema.ResourceD
 }
 
 func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewSasClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"ProbeId": id,
@@ -390,11 +356,9 @@ func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map
 
 	var response map[string]interface{}
 	action := "GetHoneypotProbe"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) || NeedRetry(err) {
 				wait()

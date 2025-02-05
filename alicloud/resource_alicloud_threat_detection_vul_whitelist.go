@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,10 +47,7 @@ func resourceAlicloudThreatDetectionVulWhitelistCreate(d *schema.ResourceData, m
 	var response map[string]interface{}
 	action := "ModifyCreateVulWhitelist"
 	request := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Whitelist"] = d.Get("whitelist")
 
@@ -65,7 +61,7 @@ func resourceAlicloudThreatDetectionVulWhitelistCreate(d *schema.ResourceData, m
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -113,6 +109,7 @@ func resourceAlicloudThreatDetectionVulWhitelistRead(d *schema.ResourceData, met
 func resourceAlicloudThreatDetectionVulWhitelistUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -135,14 +132,9 @@ func resourceAlicloudThreatDetectionVulWhitelistUpdate(d *schema.ResourceData, m
 
 	if update {
 		action := "ModifyVulWhitelistTarget"
-		conn, err := client.NewThreatdetectionClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -167,10 +159,7 @@ func resourceAlicloudThreatDetectionVulWhitelistDelete(d *schema.ResourceData, m
 	action := "DeleteVulWhitelist"
 	var response map[string]interface{}
 
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Id": d.Id(),
@@ -178,7 +167,7 @@ func resourceAlicloudThreatDetectionVulWhitelistDelete(d *schema.ResourceData, m
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
