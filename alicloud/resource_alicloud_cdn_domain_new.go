@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -163,10 +162,7 @@ func resourceAliCloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("domain_name"); ok {
 		request["DomainName"] = v
@@ -206,11 +202,9 @@ func resourceAliCloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -355,19 +349,13 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if object["DomainStatus"].(string) != target {
 			if target == "offline" {
 				action := "StopCdnDomain"
-				conn, err := client.NewCdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["DomainName"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -390,19 +378,13 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			if target == "online" {
 				action := "StartCdnDomain"
-				conn, err := client.NewCdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["DomainName"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -427,10 +409,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	action := "ModifyCdnDomain"
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DomainName"] = d.Id()
@@ -463,11 +442,9 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -489,10 +466,6 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	update = false
 	action = "SetCdnDomainSSLCertificate"
-	conn, err = client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DomainName"] = d.Id()
@@ -557,11 +530,9 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		request["Env"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -578,10 +549,6 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	update = false
 	action = "ModifyCdnDomainSchdmByProperty"
-	conn, err = client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DomainName"] = d.Id()
@@ -591,11 +558,9 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	request["Property"] = d.Get("scope")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -628,18 +593,13 @@ func resourceAliCloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["DomainName"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

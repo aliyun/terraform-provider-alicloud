@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -61,10 +60,7 @@ func resourceAliCloudCdnRealTimeLogDeliveryCreate(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("domain"); ok {
 		query["Domain"] = v
@@ -82,11 +78,9 @@ func resourceAliCloudCdnRealTimeLogDeliveryCreate(d *schema.ResourceData, meta i
 		query["Region"] = StringPointer(v.(string))
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("Cdn", "2018-05-10", action, query, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
@@ -157,19 +151,13 @@ func resourceAliCloudCdnRealTimeLogDeliveryUpdate(d *schema.ResourceData, meta i
 		if object["Status"].(string) != target {
 			if target == "online" {
 				action := "EnableRealtimeLogDelivery"
-				conn, err := client.NewCdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["Domain"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcGet("Cdn", "2018-05-10", action, query, request)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -192,19 +180,13 @@ func resourceAliCloudCdnRealTimeLogDeliveryUpdate(d *schema.ResourceData, meta i
 			}
 			if target == "offline" {
 				action := "DisableRealtimeLogDelivery"
-				conn, err := client.NewCdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["Domain"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcGet("Cdn", "2018-05-10", action, query, request)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -229,10 +211,7 @@ func resourceAliCloudCdnRealTimeLogDeliveryUpdate(d *schema.ResourceData, meta i
 	}
 
 	action := "ModifyRealtimeLogDelivery"
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Domain"] = d.Id()
@@ -259,11 +238,9 @@ func resourceAliCloudCdnRealTimeLogDeliveryUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcGet("Cdn", "2018-05-10", action, query, request)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -289,10 +266,7 @@ func resourceAliCloudCdnRealTimeLogDeliveryDelete(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Domain"] = d.Id()
 
@@ -308,11 +282,9 @@ func resourceAliCloudCdnRealTimeLogDeliveryDelete(d *schema.ResourceData, meta i
 		query["Region"] = StringPointer(v.(string))
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("Cdn", "2018-05-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {

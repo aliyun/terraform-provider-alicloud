@@ -81,10 +81,7 @@ func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 	var response map[string]interface{}
-	conn, err := cdnService.client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "BatchSetCdnDomainConfig"
 
 	config := make([]map[string]interface{}, 1)
@@ -116,7 +113,7 @@ func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 				wait()
@@ -161,10 +158,7 @@ func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 	var response map[string]interface{}
-	conn, err := cdnService.client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -211,7 +205,7 @@ func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -318,10 +312,6 @@ func resourceAliCloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 
 	action := "DeleteSpecificConfig"
 	var response map[string]interface{}
-	conn, err := cdnService.client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -338,7 +328,7 @@ func resourceAliCloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 				wait()
