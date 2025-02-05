@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -94,10 +93,7 @@ func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -127,11 +123,9 @@ func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenewEnabled"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -212,10 +206,7 @@ func resourceAliCloudDataWorksDwResourceGroupUpdate(d *schema.ResourceData, meta
 	update := false
 
 	action := "UpdateResourceGroup"
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Id"] = d.Id()
@@ -235,11 +226,9 @@ func resourceAliCloudDataWorksDwResourceGroupUpdate(d *schema.ResourceData, meta
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -271,19 +260,14 @@ func resourceAliCloudDataWorksDwResourceGroupDelete(d *schema.ResourceData, meta
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDataworkspublicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Id"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-05-18"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
