@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -54,13 +53,8 @@ func dataSourceAlicloudAlbZonesRead(d *schema.ResourceData, meta interface{}) er
 	request["RegionId"] = client.RegionId
 	var objects []map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+	var err error
+	response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_zones", action, AlibabaCloudSdkGoERROR)
 	}

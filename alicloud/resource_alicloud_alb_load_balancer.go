@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -224,10 +223,7 @@ func resourceAliCloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -304,11 +300,9 @@ func resourceAliCloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
 				wait()
@@ -518,20 +512,14 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if currentValue != nil && currentValue.(bool) != target {
 			if target == true {
 				action := "EnableDeletionProtection"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ResourceId"] = d.Id()
 
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 							wait()
@@ -554,21 +542,15 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			if target == false {
 				action := "DisableDeletionProtection"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ResourceId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 							wait()
@@ -602,10 +584,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if object["Ipv6AddressType"].(string) != target {
 			if target == "Internet" {
 				action := "EnableLoadBalancerIpv6Internet"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
@@ -615,11 +593,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 					request["DryRun"] = v
 				}
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 							wait()
@@ -642,10 +618,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			if target == "Intranet" {
 				action := "DisableLoadBalancerIpv6Internet"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
@@ -655,11 +627,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 					request["DryRun"] = v
 				}
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 							wait()
@@ -684,10 +654,7 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	action := "UpdateLoadBalancerAttribute"
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -721,11 +688,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 					wait()
@@ -747,10 +712,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerEdition"
-	conn, err = client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -765,11 +726,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 					wait()
@@ -791,10 +750,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -806,11 +761,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["ResourceType"] = "loadbalancer"
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 					wait()
@@ -832,10 +785,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerZones"
-	conn, err = client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -857,11 +806,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 					wait()
@@ -883,10 +830,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerAddressTypeConfig"
-	conn, err = client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -898,11 +841,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["AddressType"] = d.Get("address_type")
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
 					wait()
@@ -945,16 +886,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 
 			action := "DisableLoadBalancerAccessLog"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"OperationDenied.AccessLogEnabled", "SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
@@ -997,16 +931,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 
 			action := "EnableLoadBalancerAccessLog"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"OperationDenied.AccessLogEnabled", "SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
@@ -1043,20 +970,15 @@ func resourceAliCloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

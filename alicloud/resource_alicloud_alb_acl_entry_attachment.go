@@ -6,8 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -56,10 +54,7 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "AddEntriesToAcl"
 	request := map[string]interface{}{
 		"AclId": d.Get("acl_id"),
@@ -74,11 +69,9 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	aclEntriesMaps = append(aclEntriesMaps, aclEntriesMap)
 	request["AclEntries"] = aclEntriesMaps
 	request["ClientToken"] = buildClientToken("AddEntriesToAcl")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring"}) || NeedRetry(err) {
 				wait()
@@ -131,10 +124,7 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	albService := AlbService{client}
 	action := "RemoveEntriesFromAcl"
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -149,11 +139,9 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	aclEntriesMaps = append(aclEntriesMaps, parts[1])
 	request["Entries"] = aclEntriesMaps
 	request["ClientToken"] = buildClientToken("RemoveEntriesFromAcl")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring"}) || NeedRetry(err) {
 				wait()

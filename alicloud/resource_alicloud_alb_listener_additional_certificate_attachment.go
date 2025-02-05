@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,20 +50,15 @@ func resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(d *schema.
 	var response map[string]interface{}
 	action := "AssociateAdditionalCertificatesWithListener"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Certificates.1.CertificateId"] = d.Get("certificate_id")
 	request["ListenerId"] = d.Get("listener_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("AssociateAdditionalCertificatesWithListener")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
 				wait()
@@ -119,21 +113,15 @@ func resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d *schema.
 	}
 	action := "DissociateAdditionalCertificatesFromListener"
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ListenerId": parts[0],
 	}
 	request["Certificates.1.CertificateId"] = parts[1]
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("DissociateAdditionalCertificatesFromListener")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
 				wait()
