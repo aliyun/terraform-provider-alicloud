@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -49,10 +48,7 @@ func resourceAlicloudSaeConfigMapCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "/pop/v1/sam/configmap/configMap"
 	request := make(map[string]*string)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Data"] = StringPointer(d.Get("data").(string))
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = StringPointer(v.(string))
@@ -60,7 +56,7 @@ func resourceAlicloudSaeConfigMapCreate(d *schema.ResourceData, meta interface{}
 	request["Name"], request["NamespaceId"] = StringPointer(d.Get("name").(string)), StringPointer(d.Get("namespace_id").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -73,14 +69,6 @@ func resourceAlicloudSaeConfigMapCreate(d *schema.ResourceData, meta interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_config_map", "POST "+action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["ConfigMapId"]))
@@ -112,6 +100,7 @@ func resourceAlicloudSaeConfigMapRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudSaeConfigMapUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]*string{
 		"ConfigMapId": StringPointer(d.Id()),
@@ -128,13 +117,9 @@ func resourceAlicloudSaeConfigMapUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if update {
 		action := "/pop/v1/sam/configmap/configMap"
-		conn, err := client.NewServerlessClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -150,16 +135,7 @@ func resourceAlicloudSaeConfigMapUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-		}
 		addDebug(action, response, request)
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 	return resourceAlicloudSaeConfigMapRead(d, meta)
 }
@@ -167,17 +143,14 @@ func resourceAlicloudSaeConfigMapDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/sam/configmap/configMap"
 	var response map[string]interface{}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]*string{
 		"ConfigMapId": StringPointer(d.Id()),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -188,19 +161,11 @@ func resourceAlicloudSaeConfigMapDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound.ConfigMap"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
 	addDebug(action, response, request)
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"NotFound.ConfigMap"}) {
-		return nil
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	return nil
 }

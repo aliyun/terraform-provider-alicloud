@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -40,23 +38,9 @@ func testSweepSaeIngress(region string) error {
 	request["ContainCustom"] = StringPointer(strconv.FormatBool(true))
 
 	action := "/pop/v1/sam/namespace/describeNamespaceList"
-	conn, err := client.NewServerlessClient()
+	response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 	if err != nil {
 		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		log.Printf("%s failed, response: %v", "AlicloudSaeNameSpaceRead", response)
 		return nil
 	}
 	resp, err := jsonpath.Get("$.Data", response)
@@ -69,22 +53,11 @@ func testSweepSaeIngress(region string) error {
 		item := v.(map[string]interface{})
 
 		action = "/pop/v1/sam/ingress/IngressList"
-		conn, err = client.NewServerlessClient()
-		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
-		}
 		request["RegionId"] = StringPointer(client.RegionId)
 		request["NamespaceId"] = StringPointer(item["NamespaceId"].(string))
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
-		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			log.Printf("%s failed, response: %v", "AlicloudSaeIngressRead", response)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.Data.IngressList", response)
@@ -116,7 +89,7 @@ func testSweepSaeIngress(region string) error {
 			request := map[string]*string{
 				"IngressId": StringPointer(strconv.FormatFloat(item["Id"].(float64), 'f', 0, 64)),
 			}
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ecs SnapShot Policy (%s (%v)): %s", item["Description"].(string), item["Id"].(float64), err)
 			}

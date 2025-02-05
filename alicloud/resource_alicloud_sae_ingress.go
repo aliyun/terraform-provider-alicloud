@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -125,10 +124,7 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 	action := "/pop/v1/sam/ingress/Ingress"
 	request := make(map[string]*string)
 
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["SlbId"] = StringPointer(d.Get("slb_id").(string))
 	request["ListenerPort"] = StringPointer(strconv.Itoa(d.Get("listener_port").(int)))
@@ -196,7 +192,7 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -210,16 +206,6 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_ingress", action, AlibabaCloudSdkGoERROR)
-	}
-
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	responseData := response["Data"].(map[string]interface{})
@@ -301,6 +287,7 @@ func resourceAlicloudSaeIngressRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]*string{
 		"IngressId": StringPointer(d.Id()),
@@ -392,13 +379,9 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		action := "/pop/v1/sam/ingress/Ingress"
-		conn, err := client.NewServerlessClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -413,10 +396,6 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "PUT "+action, response))
-		}
 	}
 
 	return resourceAlicloudSaeIngressRead(d, meta)
@@ -426,17 +405,14 @@ func resourceAlicloudSaeIngressDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/sam/ingress/Ingress"
 	var response map[string]interface{}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]*string{
 		"IngressId": StringPointer(d.Id()),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -450,10 +426,6 @@ func resourceAlicloudSaeIngressDelete(d *schema.ResourceData, meta interface{}) 
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
 	}
 
 	return nil

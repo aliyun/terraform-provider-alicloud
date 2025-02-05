@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,10 +59,7 @@ func resourceAlicloudSaeNamespaceCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "/pop/v1/paas/namespace"
 	request := make(map[string]*string)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["NamespaceName"] = StringPointer(d.Get("namespace_name").(string))
 
@@ -82,12 +78,9 @@ func resourceAlicloudSaeNamespaceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("enable_micro_registration"); ok {
 		request["EnableMicroRegistration"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -102,17 +95,6 @@ func resourceAlicloudSaeNamespaceCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_namespace", "POST "+action, AlibabaCloudSdkGoERROR)
 	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-
 	if responseData, ok := response["Data"].(map[string]interface{}); ok {
 		d.SetId(fmt.Sprint(responseData["NamespaceId"]))
 	} else {
@@ -147,6 +129,7 @@ func resourceAlicloudSaeNamespaceRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudSaeNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]*string{
 		"NamespaceId": StringPointer(d.Id()),
@@ -173,16 +156,9 @@ func resourceAlicloudSaeNamespaceUpdate(d *schema.ResourceData, meta interface{}
 
 	if update {
 		action := "/pop/v1/paas/namespace"
-		conn, err := client.NewServerlessClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+			response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -200,17 +176,6 @@ func resourceAlicloudSaeNamespaceUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-		}
-
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-		}
-
 	}
 
 	return resourceAlicloudSaeNamespaceRead(d, meta)
@@ -220,19 +185,14 @@ func resourceAlicloudSaeNamespaceDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/paas/namespace"
 	var response map[string]interface{}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]*string{
 		"NamespaceId": StringPointer(d.Id()),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 1*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidNamespaceId.NotFound"}) || NeedRetry(err) {
 				wait()
@@ -245,22 +205,10 @@ func resourceAlicloudSaeNamespaceDelete(d *schema.ResourceData, meta interface{}
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidNamespaceId.NotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "AlicloudSaeNamespaceDelete", response))
-	}
-
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
-
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"InvalidNamespaceId.NotFound"}) {
-		return nil
-	}
-
 	return nil
 }
