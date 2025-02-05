@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,20 +16,15 @@ type CloudphoneService struct {
 
 func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCloudphoneClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListKeyPairs"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"KeyPairName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-12-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -63,10 +57,7 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	var response map[string]interface{}
 	action := "ListInstances"
 
-	conn, err := s.client.NewCloudphoneClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -76,11 +67,9 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-12-30"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -149,10 +138,7 @@ func (s *CloudphoneService) EcpInstanceStateRefreshFunc(id string, failStates []
 
 func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, status string) (err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCloudphoneClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 
 	switch status {
 	case "Running":
@@ -162,12 +148,9 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			"RegionId":   s.client.RegionId,
 			"InstanceId": []string{d.Id()},
 		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-12-30"), StringPointer("AK"), nil, startInstanceReq, &runtime)
+			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, startInstanceReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -199,11 +182,9 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			stopInstanceReq["Force"] = v
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-12-30"), StringPointer("AK"), nil, stopInstanceReq, &runtime)
+			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, stopInstanceReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -230,20 +211,15 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 
 func (s *CloudphoneService) ListInstanceVncUrl(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCloudphoneClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListInstanceVncUrl"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-12-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

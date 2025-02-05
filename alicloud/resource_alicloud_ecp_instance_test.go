@@ -45,7 +45,7 @@ func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -168,7 +168,7 @@ func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -231,7 +231,7 @@ func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"payment_type":      "Subscription",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -348,7 +348,7 @@ func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -420,8 +420,12 @@ func AliCloudEcpInstanceBasicDependence0(name string) string {
   		zone_id = data.alicloud_ecp_zones.default.zones.0.zone_id
 	}
 
-	data "alicloud_security_groups" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+	//data "alicloud_security_groups" "default" {
+  	//	vpc_id = data.alicloud_vpcs.default.ids.0
+	//}
+    resource "alicloud_security_group" "default" {
+		security_group_name = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 `, name)
 }
