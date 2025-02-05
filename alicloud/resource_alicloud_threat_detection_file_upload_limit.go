@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,18 +43,13 @@ func resourceAliCloudThreatDetectionFileUploadLimitCreate(d *schema.ResourceData
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Limit"] = d.Get("limit")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -104,10 +98,7 @@ func resourceAliCloudThreatDetectionFileUploadLimitUpdate(d *schema.ResourceData
 	var query map[string]interface{}
 	update := false
 	action := "UpdateFileUploadLimit"
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	if d.HasChange("limit") {
@@ -115,11 +106,9 @@ func resourceAliCloudThreatDetectionFileUploadLimitUpdate(d *schema.ResourceData
 	}
 	request["Limit"] = d.Get("limit")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {

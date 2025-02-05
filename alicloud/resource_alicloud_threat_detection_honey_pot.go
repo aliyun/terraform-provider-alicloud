@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,10 +69,7 @@ func resourceAlicloudThreatDetectionHoneyPot() *schema.Resource {
 func resourceAlicloudThreatDetectionHoneyPotCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewSasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("honeypot_image_id"); ok {
 		request["HoneypotImageId"] = v
@@ -92,7 +88,7 @@ func resourceAlicloudThreatDetectionHoneyPotCreate(d *schema.ResourceData, meta 
 	action := "CreateHoneypot"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -145,10 +141,7 @@ func resourceAlicloudThreatDetectionHoneyPotRead(d *schema.ResourceData, meta in
 func resourceAlicloudThreatDetectionHoneyPotUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewSasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"HoneypotId": d.Id(),
@@ -165,7 +158,7 @@ func resourceAlicloudThreatDetectionHoneyPotUpdate(d *schema.ResourceData, meta 
 		action := "UpdateHoneypot"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -187,10 +180,7 @@ func resourceAlicloudThreatDetectionHoneyPotUpdate(d *schema.ResourceData, meta 
 func resourceAlicloudThreatDetectionHoneyPotDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	sasService := SasService{client}
-	conn, err := client.NewSasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"HoneypotId": d.Id(),
@@ -199,7 +189,7 @@ func resourceAlicloudThreatDetectionHoneyPotDelete(d *schema.ResourceData, meta 
 	action := "DeleteHoneypot"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

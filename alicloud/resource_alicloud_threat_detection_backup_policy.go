@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -64,10 +63,7 @@ func resourceAlicloudThreatDetectionBackupPolicyCreate(d *schema.ResourceData, m
 	var response map[string]interface{}
 	action := "CreateBackupPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Name"] = d.Get("backup_policy_name")
 	request["Policy"] = d.Get("policy")
@@ -80,7 +76,7 @@ func resourceAlicloudThreatDetectionBackupPolicyCreate(d *schema.ResourceData, m
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -140,6 +136,7 @@ func resourceAlicloudThreatDetectionBackupPolicyUpdate(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	threatDetectionService := ThreatDetectionService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -170,14 +167,9 @@ func resourceAlicloudThreatDetectionBackupPolicyUpdate(d *schema.ResourceData, m
 
 	if update {
 		action := "ModifyBackupPolicy"
-		conn, err := client.NewThreatdetectionClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -208,10 +200,7 @@ func resourceAlicloudThreatDetectionBackupPolicyDelete(d *schema.ResourceData, m
 	action := "DeleteBackupPolicy"
 	var response map[string]interface{}
 
-	conn, err := client.NewThreatdetectionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"Id": d.Id(),
@@ -219,7 +208,7 @@ func resourceAlicloudThreatDetectionBackupPolicyDelete(d *schema.ResourceData, m
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
