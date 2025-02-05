@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -93,10 +92,7 @@ func resourceAlicloudEcdSimpleOfficeSiteCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateSimpleOfficeSite"
 	request := make(map[string]interface{})
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["CidrBlock"] = d.Get("cidr_block")
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOkExists("enable_admin_access"); ok {
@@ -125,7 +121,7 @@ func resourceAlicloudEcdSimpleOfficeSiteCreate(d *schema.ResourceData, meta inte
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -179,10 +175,7 @@ func resourceAlicloudEcdSimpleOfficeSiteRead(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 	update := false
@@ -200,7 +193,7 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 		action := "ModifyOfficeSiteCrossDesktopAccess"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
 					wait()
@@ -232,7 +225,7 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 		action := "ModifyOfficeSiteMfaEnabled"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
 					wait()
@@ -264,7 +257,7 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 		action := "SetOfficeSiteSsoStatus"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
 					wait()
@@ -302,7 +295,7 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 		action := "ModifyOfficeSiteAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DirectoryNotReady"}) {
 					wait()
@@ -340,10 +333,6 @@ func resourceAlicloudEcdSimpleOfficeSiteDelete(d *schema.ResourceData, meta inte
 	}
 	action := "DeleteOfficeSites"
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"OfficeSiteId": []string{d.Id()},
 	}
@@ -351,7 +340,7 @@ func resourceAlicloudEcdSimpleOfficeSiteDelete(d *schema.ResourceData, meta inte
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

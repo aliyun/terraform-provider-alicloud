@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -166,10 +165,7 @@ func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "CreateDesktops"
 	request := make(map[string]interface{})
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("amount"); ok {
 		request["Amount"] = v
 	}
@@ -220,7 +216,7 @@ func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -269,6 +265,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	ecdService := EcdService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if !d.IsNewResource() && d.HasChange("tags") {
@@ -286,13 +283,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		request["RegionId"] = client.RegionId
 		action := "ModifyDesktopName"
-		conn, err := client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -317,13 +310,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		request["RegionId"] = client.RegionId
 
 		action := "ModifyDesktopsPolicyGroup"
-		conn, err := client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -351,13 +340,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		action := "ModifyEntitlement"
-		conn, err := client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -387,13 +372,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				request["RegionId"] = client.RegionId
 				action := "StartDesktops"
-				conn, err := client.NewGwsecdClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -417,13 +398,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 					request["StoppedMode"] = v
 				}
 				action := "StopDesktops"
-				conn, err := client.NewGwsecdClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -463,13 +440,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 			request["UserDiskSizeGib"] = v
 		}
 		action := "ModifyDesktopSpec"
-		conn, err := client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -514,13 +487,9 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 					request["AutoPay"] = v
 				}
 				action := "ModifyDesktopChargeType"
-				conn, err := client.NewGwsecdClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -550,17 +519,14 @@ func resourceAlicloudEcdDesktopDelete(d *schema.ResourceData, meta interface{}) 
 	ecdService := EcdService{client}
 	action := "DeleteDesktops"
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DesktopId.1": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

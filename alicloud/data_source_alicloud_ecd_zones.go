@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -46,13 +45,8 @@ func dataSourceAlicloudEcdZonesRead(d *schema.ResourceData, meta interface{}) er
 	request["RegionId"] = client.RegionId
 	var objects []map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+	var err error
+	response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecd_zones", action, AlibabaCloudSdkGoERROR)
 	}
