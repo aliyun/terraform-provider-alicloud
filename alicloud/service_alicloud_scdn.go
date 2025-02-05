@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -18,19 +17,14 @@ type ScdnService struct {
 
 func (s *ScdnService) DescribeScdnDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnDomainCertificateInfo"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -92,19 +86,14 @@ func (s *ScdnService) convertFunctionsToString(v []interface{}) (string, error) 
 
 func (s *ScdnService) DescribeScdnDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,19 +140,14 @@ func (s *ScdnService) ScdnDomainStateRefreshFunc(id string, failStates []string)
 
 func (s *ScdnService) DescribeScdnCertificateList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnCertificateList"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -194,19 +178,14 @@ func (s *ScdnService) DescribeScdnCertificateList(id string) (object map[string]
 
 func (s *ScdnService) DescribeScdnDomainCname(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnDomainCname"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-11-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("scdn", "2017-11-15", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -237,19 +216,14 @@ func (s *ScdnService) DescribeScdnDomainCname(id string) (object map[string]inte
 
 func (s *ScdnService) DescribeScdnDomainConfigs(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnDomainConfigs"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -280,19 +254,14 @@ func (s *ScdnService) DescribeScdnDomainConfigs(id string) (object map[string]in
 
 func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeScdnDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -319,10 +288,7 @@ func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]int
 
 func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewScdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		err = WrapError(err)
@@ -336,9 +302,7 @@ func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]int
 	if parts[2] != "" {
 		request["ConfigId"] = parts[2]
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ScdnDomainConfig", id)), NotFoundMsg, ProviderERROR)

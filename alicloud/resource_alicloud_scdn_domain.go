@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -126,10 +125,7 @@ func resourceAlicloudScdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "AddScdnDomain"
 	request := make(map[string]interface{})
-	conn, err := client.NewScdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("check_url"); ok {
 		request["CheckUrl"] = v
 	}
@@ -155,7 +151,7 @@ func resourceAlicloudScdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -241,6 +237,7 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	scdnService := ScdnService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -282,13 +279,9 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 			setScdnDomainCertificateReq["ForceSet"] = v
 		}
 		action := "SetScdnDomainCertificate"
-		conn, err := client.NewScdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, setScdnDomainCertificateReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, setScdnDomainCertificateReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -343,13 +336,9 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "UpdateScdnDomain"
-		conn, err := client.NewScdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, updateScdnDomainReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, updateScdnDomainReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -382,13 +371,9 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 					"DomainName": d.Id(),
 				}
 				action := "StopScdnDomain"
-				conn, err := client.NewScdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -412,13 +397,9 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 					"DomainName": d.Id(),
 				}
 				action := "StartScdnDomain"
-				conn, err := client.NewScdnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -448,17 +429,14 @@ func resourceAlicloudScdnDomainDelete(d *schema.ResourceData, meta interface{}) 
 	scdnService := ScdnService{client}
 	action := "DeleteScdnDomain"
 	var response map[string]interface{}
-	conn, err := client.NewScdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DomainName": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

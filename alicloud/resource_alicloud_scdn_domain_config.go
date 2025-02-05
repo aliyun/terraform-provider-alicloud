@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -67,10 +66,7 @@ func resourceAlicloudScdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "BatchSetScdnDomainConfigs"
 	request := make(map[string]interface{})
-	conn, err := client.NewScdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	config := make([]map[string]interface{}, 1)
 	functionArgs := d.Get("function_args").(*schema.Set).List()
@@ -91,7 +87,7 @@ func resourceAlicloudScdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 	request["Functions"] = string(bytconfig)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -157,10 +153,6 @@ func resourceAlicloudScdnDomainConfigRead(d *schema.ResourceData, meta interface
 
 func resourceAlicloudScdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewScdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	scdnService := ScdnService{client}
 	var response map[string]interface{}
 	if d.HasChange("function_args") {
@@ -191,7 +183,7 @@ func resourceAlicloudScdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 		request["Functions"] = string(bytconfig)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -220,10 +212,7 @@ func resourceAlicloudScdnDomainConfigDelete(d *schema.ResourceData, meta interfa
 	scdnService := ScdnService{client}
 	var response map[string]interface{}
 	action := "DeleteScdnSpecificConfig"
-	conn, err := client.NewScdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
@@ -233,7 +222,7 @@ func resourceAlicloudScdnDomainConfigDelete(d *schema.ResourceData, meta interfa
 	request["DomainName"] = parts[0]
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
