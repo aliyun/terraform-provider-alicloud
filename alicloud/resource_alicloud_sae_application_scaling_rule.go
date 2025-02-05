@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -210,10 +209,7 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 	var response map[string]interface{}
 	action := "/pop/v1/sam/scale/applicationScalingRule"
 	request := make(map[string]*string)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AppId"] = StringPointer(d.Get("app_id").(string))
 	request["ScalingRuleName"] = StringPointer(d.Get("scaling_rule_name").(string))
 	request["ScalingRuleType"] = StringPointer(d.Get("scaling_rule_type").(string))
@@ -308,7 +304,7 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -322,12 +318,6 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_application_scaling_rule", "POST "+action, AlibabaCloudSdkGoERROR)
-	}
-
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 
 	responseData := response["Data"].(map[string]interface{})
@@ -447,10 +437,7 @@ func resourceAlicloudSaeApplicationScalingRuleRead(d *schema.ResourceData, meta 
 
 func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -565,7 +552,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 		action := "/pop/v1/sam/scale/applicationScalingRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 					wait()
@@ -603,7 +590,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 				action := "/pop/v1/sam/scale/enableApplicationScalingRule"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+					response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 							wait()
@@ -627,7 +614,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 				action := "/pop/v1/sam/scale/disableApplicationScalingRule"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+					response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 							wait()
@@ -655,10 +642,7 @@ func resourceAlicloudSaeApplicationScalingRuleDelete(d *schema.ResourceData, met
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/sam/scale/applicationScalingRule"
 	var response map[string]interface{}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -670,7 +654,7 @@ func resourceAlicloudSaeApplicationScalingRuleDelete(d *schema.ResourceData, met
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 				wait()

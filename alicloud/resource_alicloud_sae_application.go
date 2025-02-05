@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -836,10 +835,7 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "/pop/v1/sam/app/createApplication"
 	request := make(map[string]*string)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["AppName"] = StringPointer(d.Get("app_name").(string))
 	request["PackageType"] = StringPointer(d.Get("package_type").(string))
@@ -1467,11 +1463,9 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 		request["PvtzDiscoverySvc"] = StringPointer(pvtzDiscoverySvcJson)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1486,17 +1480,6 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_application", "POST "+action, AlibabaCloudSdkGoERROR)
 	}
-
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["AppId"]))
 
@@ -2171,6 +2154,7 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -3076,16 +3060,9 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		action := "/pop/v1/sam/app/deployApplication"
-		conn, err := client.NewServerlessClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), deployApplicationReq, nil, nil, &runtime)
+			response, err = client.RoaPost("sae", "2019-05-06", action, deployApplicationReq, nil, nil, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 					wait()
@@ -3100,17 +3077,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
 		}
-
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-
 		responseData := response["Data"].(map[string]interface{})
 
 		stateConf := BuildStateConf([]string{}, []string{"2", "8", "11", "12"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, saeService.SaeApplicationChangeOrderStateRefreshFunc(fmt.Sprint(responseData["ChangeOrderId"]), []string{}))
@@ -3193,16 +3159,9 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		action := "/pop/v1/sam/app/updateAppDescription"
-		conn, err := client.NewServerlessClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), updateApplicationDescriptionReq, nil, nil, &runtime)
+			response, err = client.RoaPut("sae", "2019-05-06", action, updateApplicationDescriptionReq, nil, nil, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 					wait()
@@ -3217,17 +3176,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
 		}
-
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-
 		d.SetPartial("app_description")
 	}
 
@@ -3246,16 +3194,9 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 				}
 
 				action := "/pop/v1/sam/app/startApplication"
-				conn, err := client.NewServerlessClient()
-				if err != nil {
-					return WrapError(err)
-				}
-
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+					response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 							wait()
@@ -3270,16 +3211,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-
-				if respBody, isExist := response["body"]; isExist {
-					response = respBody.(map[string]interface{})
-				} else {
-					return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-				}
-
-				if fmt.Sprint(response["Success"]) == "false" {
-					return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-				}
 			}
 
 			if target == "STOPPED" {
@@ -3288,16 +3219,9 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 				}
 
 				action := "/pop/v1/sam/app/stopApplication"
-				conn, err := client.NewServerlessClient()
-				if err != nil {
-					return WrapError(err)
-				}
-
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+					response, err = client.RoaPut("sae", "2019-05-06", action, request, nil, nil, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.InvalidStatus"}) || NeedRetry(err) {
 							wait()
@@ -3312,16 +3236,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
-				}
-
-				if respBody, isExist := response["body"]; isExist {
-					response = respBody.(map[string]interface{})
-				} else {
-					return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-				}
-
-				if fmt.Sprint(response["Success"]) == "false" {
-					return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
 				}
 			}
 
@@ -3344,20 +3258,15 @@ func resourceAliCloudSaeApplicationDelete(d *schema.ResourceData, meta interface
 	action := "/pop/v1/sam/app/deleteApplication"
 	var response map[string]interface{}
 
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]*string{
 		"AppId": StringPointer(d.Id()),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
 				wait()
@@ -3373,16 +3282,6 @@ func resourceAliCloudSaeApplicationDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
 
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
-
 	action = "/pop/v1/sam/app/describeApplicationConfig"
 	request = map[string]*string{
 		"AppId": StringPointer(d.Id()),
@@ -3390,7 +3289,7 @@ func resourceAliCloudSaeApplicationDelete(d *schema.ResourceData, meta interface
 
 	wait = incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(5*time.Minute), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if response != nil {
 			err = fmt.Errorf("application have not been destroyed yet")
 			return resource.RetryableError(err)

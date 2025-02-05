@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -369,16 +368,11 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 	}
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -391,14 +385,6 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_applications", "GET "+action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "GET "+action, response))
-		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "GET "+action, response))
 		}
 		resp, err := jsonpath.Get("$.Data.Applications", response)
 		if err != nil {

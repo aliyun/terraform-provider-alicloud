@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,10 +70,7 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetCreate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	action := "/pop/v1/sam/app/slb"
 	request := make(map[string]*string)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AppId"] = StringPointer(d.Get("app_id").(string))
 	if v, ok := d.GetOk("intranet_slb_id"); ok {
 		request["IntranetSlbId"] = StringPointer(v.(string))
@@ -96,7 +92,7 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetCreate(d *schema.ResourceData, me
 	request["Intranet"] = StringPointer(string(obj))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 				wait()
@@ -109,14 +105,6 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetCreate(d *schema.ResourceData, me
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 	d.SetId(fmt.Sprint(d.Get("app_id")))
 
@@ -157,10 +145,7 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetRead(d *schema.ResourceData, meta
 func resourceAlicloudSaeSaeLoadBalancerIntranetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]*string{
@@ -196,7 +181,7 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetUpdate(d *schema.ResourceData, me
 		action := "/pop/v1/sam/app/slb"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaPost("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 					wait()
@@ -206,18 +191,9 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetUpdate(d *schema.ResourceData, me
 			}
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
-		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		addDebug(action, response, request)
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 	stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, saeService.SaeApplicationStateRefreshFunc(d.Get("app_id").(string), []string{"FAIL", "AUTO_BATCH_WAIT", "APPROVED", "WAIT_APPROVAL", "WAIT_BATCH_CONFIRM", "ABORT", "SYSTEM_FAIL"}))
@@ -232,16 +208,13 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetDelete(d *schema.ResourceData, me
 		"Intranet": StringPointer(strconv.FormatBool(true)),
 	}
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	action := "/pop/v1/sam/app/slb"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var response map[string]interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 				wait()
@@ -254,14 +227,6 @@ func resourceAlicloudSaeSaeLoadBalancerIntranetDelete(d *schema.ResourceData, me
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
 	}
 	return nil
 }

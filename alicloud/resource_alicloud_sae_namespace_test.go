@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strconv"
 	"strings"
@@ -29,20 +28,9 @@ func testSweepSaeNamespace(region string) error {
 
 	request["ContainCustom"] = StringPointer(strconv.FormatBool(true))
 	action := "/pop/v1/sam/namespace/describeNamespaceList"
-	conn, err := client.NewServerlessClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+	response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 	if err != nil {
 		log.Printf("[ERROR] %s got an error: %s", action, err)
-		return nil
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
 		return nil
 	}
 	resp, err := jsonpath.Get("$.Data", response)
@@ -71,15 +59,12 @@ func testSweepSaeNamespace(region string) error {
 		}
 
 		action := "/pop/v1/paas/namespace"
-		conn, err = client.NewServerlessClient()
 		request = map[string]*string{
 			"NamespaceId": StringPointer(fmt.Sprint(item["NamespaceId"])),
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaDelete("sae", "2019-05-06", action, request, nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
