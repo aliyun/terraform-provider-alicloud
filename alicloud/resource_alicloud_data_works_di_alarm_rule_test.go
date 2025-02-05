@@ -25,7 +25,7 @@ func TestAccAliCloudDataWorksDiAlarmRule_basic8956(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDiAlarmRuleBasicDependence8956)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
