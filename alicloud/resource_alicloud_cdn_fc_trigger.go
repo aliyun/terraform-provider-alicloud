@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -66,10 +65,7 @@ func resourceAlicloudCdnFcTriggerCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "AddFCTrigger"
 	request := make(map[string]interface{})
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["EventMetaName"] = d.Get("event_meta_name")
 	request["EventMetaVersion"] = d.Get("event_meta_version")
 	if v, ok := d.GetOk("function_arn"); ok {
@@ -81,7 +77,7 @@ func resourceAlicloudCdnFcTriggerCreate(d *schema.ResourceData, meta interface{}
 	request["TriggerARN"] = d.Get("trigger_arn")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,10 +119,7 @@ func resourceAlicloudCdnFcTriggerRead(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudCdnFcTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -151,7 +144,7 @@ func resourceAlicloudCdnFcTriggerUpdate(d *schema.ResourceData, meta interface{}
 		action := "UpdateFCTrigger"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,17 +165,14 @@ func resourceAlicloudCdnFcTriggerDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteFCTrigger"
 	var response map[string]interface{}
-	conn, err := client.NewCdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"TriggerARN": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
