@@ -2346,11 +2346,13 @@ func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]inte
 	if err != nil {
 		return nil, WrapError(err)
 	}
+
 	action := "DescribeDeploymentSets"
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
 		"DeploymentSetIds": convertListToJsonString([]interface{}{id}),
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -2366,13 +2368,16 @@ func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]inte
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.DeploymentSets.DeploymentSet", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DeploymentSets.DeploymentSet", response)
 	}
+
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 	} else {
@@ -2380,7 +2385,9 @@ func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]inte
 			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 		}
 	}
+
 	object = v.([]interface{})[0].(map[string]interface{})
+
 	return object, nil
 }
 
