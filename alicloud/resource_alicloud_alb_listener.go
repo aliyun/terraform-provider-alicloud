@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -412,10 +411,7 @@ func resourceAliCloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -616,11 +612,9 @@ func resourceAliCloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 
 		request["XForwardedForConfig"] = xforwardedForConfigMap
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "-21020"}) || NeedRetry(err) {
 				wait()
@@ -900,10 +894,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		if object["ListenerStatus"].(string) != target {
 			if target == "Running" {
 				action := "StartListener"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ListenerId"] = d.Id()
@@ -913,11 +903,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 					request["DryRun"] = v
 				}
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "VipStatusNotSupport", "-22001"}) || NeedRetry(err) {
 							wait()
@@ -940,10 +928,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			}
 			if target == "Stopped" {
 				action := "StopListener"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ListenerId"] = d.Id()
@@ -953,11 +937,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 					request["DryRun"] = v
 				}
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "-22001", "VipStatusNotSupport"}) || NeedRetry(err) {
 							wait()
@@ -982,10 +964,7 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	action := "UpdateListenerAttribute"
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
@@ -1215,11 +1194,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "VipStatusNotSupport", "-22001"}) || NeedRetry(err) {
 					wait()
@@ -1241,10 +1218,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "UpdateListenerLogConfig"
-	conn, err = client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
@@ -1282,11 +1255,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectBusinessStatus.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "-22001", "VipStatusNotSupport"}) || NeedRetry(err) {
 					wait()
@@ -1337,15 +1308,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				}
 			}
 			dissociateAclsFromListenerReq["AclIds"] = associateAclIds
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, dissociateAclsFromListenerReq, &runtime)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, dissociateAclsFromListenerReq, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"VipStatusNotSupport"}) || NeedRetry(err) {
 						wait()
@@ -1388,15 +1353,9 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				associateAclsWithListenerReq["AclType"] = aclConfig.(map[string]interface{})["acl_type"]
 			}
 			associateAclsWithListenerReq["AclIds"] = associateAclIds
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, associateAclsWithListenerReq, &runtime)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, associateAclsWithListenerReq, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"VipStatusNotSupport"}) || NeedRetry(err) {
 						wait()
@@ -1434,20 +1393,15 @@ func resourceAliCloudAlbListenerDelete(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

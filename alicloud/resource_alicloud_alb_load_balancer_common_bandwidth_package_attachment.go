@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -53,10 +52,7 @@ func resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentCreate(d *sc
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("bandwidth_package_id"); ok {
 		request["BandwidthPackageId"] = v
@@ -71,11 +67,9 @@ func resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentCreate(d *sc
 	request["ClientToken"] = buildClientToken("AttachCommonBandwidthPackageToLoadBalancer")
 	var response map[string]interface{}
 	action := "AttachCommonBandwidthPackageToLoadBalancer"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -131,10 +125,7 @@ func resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentUpdate(d *sc
 func resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -151,11 +142,9 @@ func resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentDelete(d *sc
 
 	request["ClientToken"] = buildClientToken("DetachCommonBandwidthPackageFromLoadBalancer")
 	action := "DetachCommonBandwidthPackageFromLoadBalancer"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

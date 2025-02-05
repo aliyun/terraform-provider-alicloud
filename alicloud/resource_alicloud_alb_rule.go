@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -526,10 +525,7 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	var direction string
 	action := "CreateRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ClientToken"] = buildClientToken("CreateRule")
 	request["ListenerId"] = d.Get("listener_id")
@@ -788,11 +784,9 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	request["RuleConditions"] = ruleConditionsMaps
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.Listener", "ResourceInConfiguring.Listener"}) || NeedRetry(err) {
 				wait()
@@ -1187,6 +1181,7 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -1465,16 +1460,9 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 
 		action := "UpdateRuleAttribute"
 
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener"}) || NeedRetry(err) {
 					wait()
@@ -1503,10 +1491,7 @@ func resourceAliCloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRule"
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"ClientToken": buildClientToken("DeleteRule"),
@@ -1517,11 +1502,9 @@ func resourceAliCloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 		request["DryRun"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Rule", "SystemBusy", "-21013"}) || NeedRetry(err) {
 				wait()

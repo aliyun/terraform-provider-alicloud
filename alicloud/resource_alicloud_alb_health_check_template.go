@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -137,10 +136,7 @@ func resourceAliCloudAlbHealthCheckTemplateCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "CreateHealthCheckTemplate"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ClientToken"] = buildClientToken("CreateHealthCheckTemplate")
 	request["HealthCheckTemplateName"] = d.Get("health_check_template_name")
@@ -193,11 +189,9 @@ func resourceAliCloudAlbHealthCheckTemplateCreate(d *schema.ResourceData, meta i
 		request["DryRun"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "QuotaExceeded.HealthCheckTemplatesNum", "SystemBusy"}) || NeedRetry(err) {
 				wait()
@@ -266,6 +260,7 @@ func resourceAliCloudAlbHealthCheckTemplateRead(d *schema.ResourceData, meta int
 func resourceAliCloudAlbHealthCheckTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 
 	request := map[string]interface{}{
@@ -366,16 +361,9 @@ func resourceAliCloudAlbHealthCheckTemplateUpdate(d *schema.ResourceData, meta i
 
 	if update {
 		action := "UpdateHealthCheckTemplateAttribute"
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.HealthCheckTemplate", "SystemBusy"}) || NeedRetry(err) {
 					wait()
@@ -399,10 +387,7 @@ func resourceAliCloudAlbHealthCheckTemplateDelete(d *schema.ResourceData, meta i
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHealthCheckTemplates"
 	var response map[string]interface{}
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"ClientToken":              buildClientToken("DeleteHealthCheckTemplates"),
@@ -413,11 +398,9 @@ func resourceAliCloudAlbHealthCheckTemplateDelete(d *schema.ResourceData, meta i
 		request["DryRun"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.HealthCheckTemplate", "SystemBusy"}) || NeedRetry(err) {
 				wait()

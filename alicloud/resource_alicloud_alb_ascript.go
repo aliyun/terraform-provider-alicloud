@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -96,10 +95,7 @@ func resourceAliCloudAlbAScriptCreate(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -155,11 +151,9 @@ func resourceAliCloudAlbAScriptCreate(d *schema.ResourceData, meta interface{}) 
 	AScriptsMap := make([]interface{}, 0)
 	AScriptsMap = append(AScriptsMap, objectDataLocalMap)
 	request["AScripts"] = AScriptsMap
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -252,10 +246,7 @@ func resourceAliCloudAlbAScriptUpdate(d *schema.ResourceData, meta interface{}) 
 	update := false
 
 	action := "UpdateAScripts"
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	jsonString := "{}"
@@ -326,11 +317,9 @@ func resourceAliCloudAlbAScriptUpdate(d *schema.ResourceData, meta interface{}) 
 	AScriptsMap = append(AScriptsMap, objectDataLocalMap)
 	request["AScripts"] = AScriptsMap
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -361,10 +350,7 @@ func resourceAliCloudAlbAScriptDelete(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["AScriptIds.1"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -373,11 +359,9 @@ func resourceAliCloudAlbAScriptDelete(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
