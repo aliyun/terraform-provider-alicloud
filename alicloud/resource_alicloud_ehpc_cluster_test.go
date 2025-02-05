@@ -39,15 +39,9 @@ func testSweepEhpcCluster(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 
-	conn, err := client.NewEhsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		action := "ListClusters"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-04-12"), StringPointer("AK"), request, nil, &runtime)
+		response, err := client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
 			break
@@ -85,7 +79,7 @@ func testSweepEhpcCluster(region string) error {
 					"ReleaseInstance": "true",
 				}
 				request["ClientToken"] = buildClientToken("DeleteCluster")
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-04-12"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+				response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 				addDebug(action, response, request)
 				if err != nil {
 					log.Printf("[ERROR] Deleting ephc cluster %s got an error: %s", itemId, err)
