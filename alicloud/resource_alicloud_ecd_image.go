@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,10 +50,7 @@ func resourceAlicloudEcdImageCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "CreateImage"
 	request := make(map[string]interface{})
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -65,7 +61,7 @@ func resourceAlicloudEcdImageCreate(d *schema.ResourceData, meta interface{}) er
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -109,10 +105,7 @@ func resourceAlicloudEcdImageRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudEcdImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"ImageId": d.Id(),
@@ -134,7 +127,7 @@ func resourceAlicloudEcdImageUpdate(d *schema.ResourceData, meta interface{}) er
 		action := "ModifyImageAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -161,10 +154,7 @@ func resourceAlicloudEcdImageDelete(d *schema.ResourceData, meta interface{}) er
 	ecdService := EcdService{client}
 	action := "DeleteImages"
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ImageId": []string{d.Id()},
 	}
@@ -172,7 +162,7 @@ func resourceAlicloudEcdImageDelete(d *schema.ResourceData, meta interface{}) er
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

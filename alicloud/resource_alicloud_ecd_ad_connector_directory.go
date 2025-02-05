@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -111,10 +110,7 @@ func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "CreateADConnectorDirectory"
 	request := make(map[string]interface{})
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DirectoryName"] = d.Get("directory_name")
 	if v, ok := d.GetOk("desktop_access_type"); ok {
 		request["DesktopAccessType"] = v
@@ -142,7 +138,7 @@ func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta 
 	request["VSwitchId"] = d.Get("vswitch_ids")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -194,17 +190,14 @@ func resourceAlicloudEcdAdConnectorDirectoryDelete(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDirectories"
 	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DirectoryId": []string{d.Id()},
 	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidDirectoryStatus"}) {
 				wait()

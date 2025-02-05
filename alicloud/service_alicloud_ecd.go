@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -18,20 +17,15 @@ type EcdService struct {
 
 func (s *EcdService) DescribeEcdPolicyGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribePolicyGroups"
 	request := map[string]interface{}{
 		"RegionId":      s.client.RegionId,
 		"PolicyGroupId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -70,12 +64,10 @@ func parsingResourceType(d *schema.ResourceData, resourceType string) ([]interfa
 func (s *EcdService) setAuthAccessPolicyRules(d *schema.ResourceData, request map[string]interface{}, resourceType string) error {
 	if d.HasChange(resourceType) {
 		removed, added := parsingResourceType(d, resourceType)
+		client := s.client
+		var err error
 		if len(removed) > 0 {
 			action := "ModifyPolicyGroup"
-			conn, err := s.client.NewGwsecdClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			req := map[string]interface{}{
 				"PolicyGroupId": d.Id(),
 			}
@@ -87,7 +79,7 @@ func (s *EcdService) setAuthAccessPolicyRules(d *schema.ResourceData, request ma
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, req, &util.RuntimeOptions{})
+				response, err = client.RpcPost("ecd", "2020-09-30", action, nil, req, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
@@ -116,12 +108,10 @@ func (s *EcdService) setAuthAccessPolicyRules(d *schema.ResourceData, request ma
 func (s *EcdService) setAuthSecurityPolicyRules(d *schema.ResourceData, request map[string]interface{}, resourceType string) error {
 	if d.HasChange(resourceType) {
 		removed, added := parsingResourceType(d, resourceType)
+		var err error
+		client := s.client
 		if len(removed) > 0 {
 			action := "ModifyPolicyGroup"
-			conn, err := s.client.NewGwsecdClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			req := map[string]interface{}{
 				"PolicyGroupId": d.Id(),
 			}
@@ -138,7 +128,7 @@ func (s *EcdService) setAuthSecurityPolicyRules(d *schema.ResourceData, request 
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, req, &util.RuntimeOptions{})
+				response, err = client.RpcPost("ecd", "2020-09-30", action, nil, req, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
@@ -171,20 +161,15 @@ func (s *EcdService) setAuthSecurityPolicyRules(d *schema.ResourceData, request 
 
 func (s *EcdService) DescribeEcdSimpleOfficeSite(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeOfficeSites"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"OfficeSiteId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -230,20 +215,15 @@ func (s *EcdService) EcdSimpleOfficeSiteStateRefreshFunc(id string) resource.Sta
 
 func (s *EcdService) DescribeEcdNasFileSystem(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeNASFileSystems"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"FileSystemId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -274,20 +254,15 @@ func (s *EcdService) DescribeEcdNasFileSystem(id string) (object map[string]inte
 
 func (s *EcdService) DescribeEcdNetworkPackage(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeNetworkPackages"
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
 		"NetworkPackageId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -360,10 +335,7 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -383,7 +355,7 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -415,7 +387,7 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -438,20 +410,15 @@ func (s *EcdService) SetResourceTags(d *schema.ResourceData, resourceType string
 
 func (s *EcdService) DescribeEcdDesktop(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDesktops"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"DesktopId.1": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -545,20 +512,15 @@ func (s *EcdService) EcdDesktopChargeTypeFunc(id string, failStates []string) re
 
 func (s *EcdService) DescribeEcdImage(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeImages"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"ImageId":  []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -609,21 +571,16 @@ func (s *EcdService) EcdImageStateRefreshFunc(id string, failStates []string) re
 
 func (s *EcdService) DescribeEcdCommand(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	action := "DescribeInvocations"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"InvokeId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -674,10 +631,7 @@ func (s *EcdService) EcdCommandStateRefreshFunc(id string, failStates []string) 
 }
 
 func (s *EcdService) DescribeEcdSnapshot(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"SnapshotId": id,
@@ -686,11 +640,9 @@ func (s *EcdService) DescribeEcdSnapshot(id string) (object map[string]interface
 
 	var response map[string]interface{}
 	action := "DescribeSnapshots"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -719,10 +671,7 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 	var response map[string]interface{}
 	action := "DescribeBundles"
 
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -730,11 +679,9 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -775,20 +722,15 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 
 func (s *EcdService) DescribeEcdRamDirectory(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDirectories"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"DirectoryId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -819,20 +761,15 @@ func (s *EcdService) DescribeEcdRamDirectory(id string) (object map[string]inter
 
 func (s *EcdService) DescribeEcdAdConnectorDirectory(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDirectories"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"DirectoryId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -863,20 +800,15 @@ func (s *EcdService) DescribeEcdAdConnectorDirectory(id string) (object map[stri
 
 func (s *EcdService) DescribeEcdAdConnectorOfficeSite(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGwsecdClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeOfficeSites"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"OfficeSiteId": []string{id},
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

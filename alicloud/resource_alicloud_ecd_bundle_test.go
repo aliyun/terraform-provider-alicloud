@@ -54,17 +54,10 @@ func testSweepEcdBundle(region string) error {
 	request["BundleType"] = "CUSTOM"
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewGwsecdClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+			response, err = aliyunClient.RpcPost("ecd", "2020-09-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -104,7 +97,7 @@ func testSweepEcdBundle(region string) error {
 				"BundleId": []string{fmt.Sprint(item["BundleId"])},
 				"RegionId": aliyunClient.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = aliyunClient.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ecd Bundle (%s): %s", item["BundleName"].(string), err)
 			}
