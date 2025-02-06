@@ -50,16 +50,10 @@ func testSweepIMMProject(region string) error {
 	}
 
 	var response map[string]interface{}
-	conn, err := client.NewImmClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("imm", "2017-09-06", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -98,17 +92,13 @@ func testSweepIMMProject(region string) error {
 			sweeped = true
 			action := "DeleteProject"
 			var response map[string]interface{}
-			conn, err := client.NewImmClient()
-			if err != nil {
-				log.Printf("[ERROR] %s get an error: %#v", action, err)
-			}
 			request := map[string]interface{}{
 				"Project": item["Project"],
 			}
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("imm", "2017-09-06", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

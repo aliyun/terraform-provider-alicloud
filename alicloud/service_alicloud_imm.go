@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,22 +14,16 @@ type ImmService struct {
 }
 
 func (s *ImmService) DescribeImmProject(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewImmClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"Project": id,
 	}
 
 	var response map[string]interface{}
 	action := "GetProject"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("imm", "2017-09-06", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
