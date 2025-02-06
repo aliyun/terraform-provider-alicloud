@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -132,10 +131,7 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "CreateDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewGdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DBInstanceCategory"] = strings.ToLower(d.Get("db_instance_category").(string))
 	if v, ok := d.GetOk("db_instance_description"); ok {
 		request["DBInstanceDescription"] = v
@@ -157,11 +153,9 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 		request["VPCId"] = v
 	}
 	request["ClientToken"] = buildClientToken("CreateDBInstance")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -232,10 +226,7 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gdbService := GdbService{client}
-	conn, err := client.NewGdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -253,7 +244,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 		action := "ModifyDBInstanceDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -296,7 +287,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = "Empty"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceAccessWhiteListReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceAccessWhiteListReq, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
@@ -323,7 +314,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = dBInstanceIPArrayArg["security_ips"]
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceAccessWhiteListReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceAccessWhiteListReq, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
@@ -363,11 +354,9 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 		modifyDBInstanceSpecReq["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 		action := "ModifyDBInstanceSpec"
 		modifyDBInstanceSpecReq["ClientToken"] = buildClientToken("ModifyDBInstanceSpec")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceSpecReq, &runtime)
+			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceSpecReq, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 					wait()
@@ -397,17 +386,14 @@ func resourceAlicloudGraphDatabaseDbInstanceDelete(d *schema.ResourceData, meta 
 	gdbService := GdbService{client}
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
-	conn, err := client.NewGdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

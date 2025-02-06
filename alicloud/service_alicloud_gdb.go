@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,19 +15,14 @@ type GdbService struct {
 
 func (s *GdbService) DescribeGraphDatabaseDbInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -69,19 +63,14 @@ func (s *GdbService) DescribeGraphDatabaseDbInstance(id string) (object map[stri
 
 func (s *GdbService) GetDBInstanceAccessWhiteList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAccessWhiteList"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -128,19 +117,14 @@ func (s *GdbService) GraphDatabaseDbInstanceStateRefreshFunc(id string, failStat
 
 func (s *GdbService) DescribeDBInstanceAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
