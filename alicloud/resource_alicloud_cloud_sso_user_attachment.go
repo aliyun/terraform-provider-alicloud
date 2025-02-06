@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,10 +43,7 @@ func resourceAlicloudCloudSsoUserAttachmentCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "AddUserToGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DirectoryId"] = d.Get("directory_id")
 	request["GroupId"] = d.Get("group_id")
@@ -55,7 +51,7 @@ func resourceAlicloudCloudSsoUserAttachmentCreate(d *schema.ResourceData, meta i
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 
 			if NeedRetry(err) {
@@ -105,10 +101,6 @@ func resourceAlicloudCloudSsoUserAttachmentDelete(d *schema.ResourceData, meta i
 	}
 	action := "RemoveUserFromGroup"
 	var response map[string]interface{}
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DirectoryId": parts[0],
 		"GroupId":     parts[1],
@@ -118,7 +110,7 @@ func resourceAlicloudCloudSsoUserAttachmentDelete(d *schema.ResourceData, meta i
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 
 			if NeedRetry(err) {

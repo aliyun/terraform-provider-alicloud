@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,16 +71,13 @@ func resourceAlicloudCloudSsoDirectoryCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "CreateDirectory"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("directory_name"); ok {
 		request["DirectoryName"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -132,6 +128,7 @@ func resourceAlicloudCloudSsoDirectoryRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -146,13 +143,9 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "SetMFAAuthenticationStatus"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -180,13 +173,9 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "SetSCIMSynchronizationStatus"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, setSCIMSynchronizationStatusReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, setSCIMSynchronizationStatusReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -214,13 +203,9 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "UpdateDirectory"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, updateDirectoryReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, updateDirectoryReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -256,13 +241,9 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "SetExternalSAMLIdentityProvider"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, setExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, setExternalSAMLIdentityProviderReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -284,7 +265,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-
+	var err error
 	if _, ok := d.GetOk("saml_identity_provider_configuration"); ok {
 		deleteExternalSAMLIdentityProviderReq := map[string]interface{}{
 			"DirectoryId": d.Id(),
@@ -292,13 +273,9 @@ func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interf
 
 		deleteExternalSAMLIdentityProviderReq["SSOStatus"] = "Disabled"
 		action := "SetExternalSAMLIdentityProvider"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, deleteExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, deleteExternalSAMLIdentityProviderReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -318,7 +295,7 @@ func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interf
 		}
 		action = "ClearExternalSAMLIdentityProvider"
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, clearExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, clearExternalSAMLIdentityProviderReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -335,17 +312,13 @@ func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interf
 	}
 
 	action := "DeleteDirectory"
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DirectoryId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeletionConflict.Directory.Task"}) || NeedRetry(err) {
 				wait()

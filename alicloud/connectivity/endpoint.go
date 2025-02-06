@@ -463,6 +463,7 @@ var regularProductEndpoint = map[string]string{
 	"live":                 "live.aliyuncs.com",
 	"dts":                  "dts.%s.aliyuncs.com",
 	"dg":                   "dg.%s.aliyuncs.com",
+	"cloudsso":             "cloudsso.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
