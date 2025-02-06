@@ -324,14 +324,13 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	action := "DescribeVscMountPoints"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = parts[0]
-	query["MountPointId"] = parts[1]
-	query["InputRegionId"] = client.RegionId
+	request["FileSystemId"] = parts[0]
+	request["MountPointId"] = parts[1]
+	request["InputRegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -339,15 +338,13 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VscMountPoint.NotFound", "InvalidParameter.FileSystemNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VscMountPoint", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
