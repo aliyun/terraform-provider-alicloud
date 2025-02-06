@@ -49,17 +49,10 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewGdsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -103,7 +96,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 			deleteRequest := map[string]interface{}{
 				"DBInstanceId": item["DBInstanceId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, deleteRequest, &util.RuntimeOptions{})
+			_, err = client.RpcPost("gdb", "2019-09-03", action, nil, deleteRequest, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Graph Database DbInstance (%s): %s", item["DBInstanceDescription"].(string), err)
 			}
