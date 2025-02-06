@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -66,10 +65,7 @@ func resourceAlicloudQuickBiUserCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "AddUser"
 	request := make(map[string]interface{})
-	conn, err := client.NewQuickbiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("account_id"); ok {
 		request["AccountId"] = v
 	}
@@ -80,7 +76,7 @@ func resourceAlicloudQuickBiUserCreate(d *schema.ResourceData, meta interface{})
 	request["UserType"] = convertQuickBiUserUserTypeRequest(d.Get("user_type").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("quickbi-public", "2020-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,10 +119,7 @@ func resourceAlicloudQuickBiUserRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudQuickBiUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewQuickbiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -150,7 +143,7 @@ func resourceAlicloudQuickBiUserUpdate(d *schema.ResourceData, meta interface{})
 		action := "UpdateUser"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("quickbi-public", "2020-08-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -171,17 +164,14 @@ func resourceAlicloudQuickBiUserDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteUser"
 	var response map[string]interface{}
-	conn, err := client.NewQuickbiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"UserId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("quickbi-public", "2020-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

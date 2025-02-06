@@ -464,6 +464,7 @@ var regularProductEndpoint = map[string]string{
 	"dts":                  "dts.%s.aliyuncs.com",
 	"dg":                   "dg.%s.aliyuncs.com",
 	"cloudsso":             "cloudsso.%s.aliyuncs.com",
+	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
