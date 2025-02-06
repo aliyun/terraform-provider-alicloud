@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -83,10 +82,7 @@ func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceDat
 	var response map[string]interface{}
 	action := "CreateInstances"
 	request := make(map[string]interface{})
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Amount"] = 1
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenew"] = v
@@ -105,11 +101,9 @@ func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceDat
 	request["PlanId"] = d.Get("plan_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateInstances")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -156,10 +150,7 @@ func resourceAlicloudSimpleApplicationServerInstanceRead(d *schema.ResourceData,
 func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	swasOpenService := SwasOpenService{client}
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -175,11 +166,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	if update {
 		action := "ResetSystem"
 		request["ClientToken"] = buildClientToken("ResetSystem")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 10*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
@@ -211,11 +200,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	if update {
 		action := "UpgradeInstance"
 		request["ClientToken"] = buildClientToken("UpgradeInstance")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 10*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, upgradeInstanceReq, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, upgradeInstanceReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
@@ -255,11 +242,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	if update {
 		action := "UpdateInstanceAttribute"
 		request["ClientToken"] = buildClientToken("UpdateInstanceAttribute")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 10*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, updateInstanceAttributeReq, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, updateInstanceAttributeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 					wait()
@@ -294,11 +279,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				request["RegionId"] = client.RegionId
 				action := "RebootInstance"
 				request["ClientToken"] = buildClientToken("RebootInstance")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 10*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 							wait()
@@ -324,11 +307,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				request["RegionId"] = client.RegionId
 				action := "StartInstance"
 				request["ClientToken"] = buildClientToken("StartInstance")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 10*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 							wait()
@@ -354,11 +335,9 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				request["RegionId"] = client.RegionId
 				action := "StopInstance"
 				request["ClientToken"] = buildClientToken("StopInstance")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 10*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "Throttling.User"}) || NeedRetry(err) {
 							wait()

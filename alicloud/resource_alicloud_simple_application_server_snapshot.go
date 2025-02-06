@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -50,19 +49,14 @@ func resourceAlicloudSimpleApplicationServerSnapshotCreate(d *schema.ResourceDat
 	var response map[string]interface{}
 	action := "CreateSnapshot"
 	request := make(map[string]interface{})
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DiskId"] = d.Get("disk_id")
 	request["RegionId"] = client.RegionId
 	request["SnapshotName"] = d.Get("snapshot_name")
 	request["ClientToken"] = buildClientToken("CreateSnapshot")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -107,21 +101,16 @@ func resourceAlicloudSimpleApplicationServerSnapshotDelete(d *schema.ResourceDat
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSnapshot"
 	var response map[string]interface{}
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"SnapshotId": d.Id(),
 	}
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("DeleteSnapshot")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

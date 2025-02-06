@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,20 +15,15 @@ type SwasOpenService struct {
 
 func (s *SwasOpenService) DescribeSimpleApplicationServerInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSwasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListInstances"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"InstanceIds": "[\"" + id + "\"]",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -82,10 +76,7 @@ func (s *SwasOpenService) SimpleApplicationServerInstanceStateRefreshFunc(id str
 }
 func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSwasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListFirewallRules"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -100,11 +91,9 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 	}
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -144,20 +133,15 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 
 func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSwasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListSnapshots"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"SnapshotIds": fmt.Sprintf(`["%s"]`, id),
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -211,21 +195,16 @@ func (s *SwasOpenService) SimpleApplicationServerSnapshotStateRefreshFunc(id str
 
 func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewSwasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListImages"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ImageIds":  fmt.Sprintf(`["%s"]`, id),
 		"ImageType": "custom",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

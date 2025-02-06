@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -42,7 +41,7 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 				Optional: true,
 			},
 			"memory": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeFloat,
 				Optional: true,
 			},
 			"platform": {
@@ -85,7 +84,7 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 							Computed: true,
 						},
 						"memory": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeFloat,
 							Computed: true,
 						},
 						"support_platform": {
@@ -124,15 +123,10 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 	flow, flowOk := d.GetOk("flow")
 
 	var response map[string]interface{}
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -171,7 +165,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 			continue
 		}
 
-		if memoryOk && memory.(int) != 0 && memory.(int) != formatInt(item["Memory"]) {
+		if memoryOk && memory.(float64) != 0 && memory.(float64) != formatFloat64(item["Memory"]) {
 			continue
 		}
 
@@ -195,7 +189,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 			"flow":             formatInt(object["Flow"]),
 			"id":               fmt.Sprint(object["PlanId"]),
 			"plan_id":          fmt.Sprint(object["PlanId"]),
-			"memory":           formatInt(object["Memory"]),
+			"memory":           formatFloat64(object["Memory"]),
 			"support_platform": fmt.Sprint(object["SupportPlatform"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
