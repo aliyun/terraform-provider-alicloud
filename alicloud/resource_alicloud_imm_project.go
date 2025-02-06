@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -41,10 +40,7 @@ func resourceAlicloudImmProject() *schema.Resource {
 func resourceAlicloudImmProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewImmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Project"] = d.Get("project")
 	if v, ok := d.GetOk("service_role"); ok {
 		request["ServiceRole"] = v
@@ -52,7 +48,7 @@ func resourceAlicloudImmProjectCreate(d *schema.ResourceData, meta interface{}) 
 	action := "PutProject"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("imm", "2017-09-06", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -95,10 +91,7 @@ func resourceAlicloudImmProjectRead(d *schema.ResourceData, meta interface{}) er
 }
 func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewImmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	update := false
 	request := map[string]interface{}{
@@ -114,7 +107,7 @@ func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateProject"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("imm", "2017-09-06", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -133,10 +126,7 @@ func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudImmProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewImmClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Project": d.Id(),
 	}
@@ -144,7 +134,7 @@ func resourceAlicloudImmProjectDelete(d *schema.ResourceData, meta interface{}) 
 	action := "DeleteProject"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("imm", "2017-09-06", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
