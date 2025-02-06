@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -127,10 +126,7 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "/v4/openapi/app-groups"
 	body := make(map[string]interface{})
-	conn, err := client.NewOpensearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	body["name"] = d.Get("app_group_name")
 	body["type"] = d.Get("type")
 	body["chargeType"] = convertOpenSearchAppGroupPaymentTypeRequest(d.Get("payment_type").(string))
@@ -161,7 +157,7 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), nil, nil, body, &util.RuntimeOptions{})
+		response, err = client.RoaPost("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -222,6 +218,7 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	openSearchService := OpenSearchService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 	body := map[string]interface{}{
 		"appGroupIdentity": d.Id(),
@@ -246,13 +243,9 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		action := "/v4/openapi/app-groups/" + d.Id()
-		conn, err := client.NewOpensearchClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), nil, nil, body, &util.RuntimeOptions{})
+			response, err = client.RoaPut("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -293,13 +286,9 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		action := fmt.Sprintf("/v4/openapi/app-groups/%s/quota", d.Id())
-		conn, err := client.NewOpensearchClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), nil, nil, body, &util.RuntimeOptions{})
+			response, err = client.RoaPut("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -339,17 +328,14 @@ func resourceAlicloudOpenSearchAppGroupDelete(d *schema.ResourceData, meta inter
 	}
 	action := "/v4/openapi/app-groups/" + d.Id()
 	var response map[string]interface{}
-	conn, err := client.NewOpensearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]*string{
 		"appGroupIdentity": StringPointer(d.Id()),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("OpenSearch", "2017-12-25", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
