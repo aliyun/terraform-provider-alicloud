@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -47,10 +46,7 @@ func resourceAlicloudRdcOrganizationCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "CreateDevopsOrganization"
 	request := make(map[string]interface{})
-	conn, err := client.NewDevopsrdcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("desired_member_count"); ok {
 		request["DesiredMemberCount"] = v
 	}
@@ -61,7 +57,7 @@ func resourceAlicloudRdcOrganizationCreate(d *schema.ResourceData, meta interfac
 	request["Source"] = d.Get("source")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -103,17 +99,14 @@ func resourceAlicloudRdcOrganizationDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDevopsOrganization"
 	var response map[string]interface{}
-	conn, err := client.NewDevopsrdcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"OrgId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

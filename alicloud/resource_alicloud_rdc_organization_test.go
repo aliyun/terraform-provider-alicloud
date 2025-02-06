@@ -34,21 +34,15 @@ func testSweepRdcOrganization(region string) error {
 		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	conn, err := client.NewDevopsrdcClient()
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 	action := "ListUserOrganization"
-
 	request := map[string]interface{}{}
 
 	var response map[string]interface{}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-03"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, true)
 
 	if err != nil {
 		log.Printf("[ERROR] %s got an error: %s", action, err)
@@ -84,7 +78,7 @@ func testSweepRdcOrganization(region string) error {
 			"OrgId": item["Id"],
 		}
 
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, false)
 
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete organization(%s (%s)): %s", name, id, err)
