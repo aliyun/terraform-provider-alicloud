@@ -48,16 +48,10 @@ func testSweepQuickBIUser(region string) error {
 	request["PageNum"] = 1
 
 	var response map[string]interface{}
-	conn, err := client.NewQuickbiClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(30*time.Second, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-08-01"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("quickbi-public", "2020-08-01", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -100,7 +94,7 @@ func testSweepQuickBIUser(region string) error {
 				"UserId": item["UserId"],
 			}
 			request["ClientToken"] = buildClientToken("DeleteUser")
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("quickbi-public", "2020-08-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete QuickBI User (%s): %s", item["UserId"].(string), err)
 			}
