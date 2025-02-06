@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -115,10 +114,7 @@ func resourceAlicloudVodDomainCreate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	action := "AddVodDomain"
 	request := make(map[string]interface{})
-	conn, err := client.NewVodClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DomainName"] = d.Get("domain_name")
 	if v, ok := d.GetOk("check_url"); ok {
 		request["CheckUrl"] = v
@@ -150,7 +146,7 @@ func resourceAlicloudVodDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-03-21"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -215,6 +211,7 @@ func resourceAlicloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	vodService := VodService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"DomainName": d.Id(),
@@ -245,13 +242,9 @@ func resourceAlicloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	if update {
 		action := "UpdateVodDomain"
-		conn, err := client.NewVodClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-03-21"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"3", "2001"}) || NeedRetry(err) {
 					wait()
@@ -282,17 +275,14 @@ func resourceAlicloudVodDomainDelete(d *schema.ResourceData, meta interface{}) e
 	vodService := VodService{client}
 	action := "DeleteVodDomain"
 	var response map[string]interface{}
-	conn, err := client.NewVodClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DomainName": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-03-21"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"2001"}) || NeedRetry(err) {
 				wait()
