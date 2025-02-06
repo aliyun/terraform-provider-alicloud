@@ -45,15 +45,8 @@ func testSweepDeviceGroup(region string) error {
 	}
 	var response map[string]interface{}
 	action := "QueryDeviceGroupList"
-	conn, err := client.NewIotClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %#v", action, err)
 			return nil
@@ -87,7 +80,7 @@ func testSweepDeviceGroup(region string) error {
 			request := map[string]interface{}{
 				"GroupId": item["GroupId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Iot Device Group (%v): %s", item["GroupName"], err)
 				continue
