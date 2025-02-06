@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,10 +50,7 @@ func resourceAlicloudIotDeviceGroupCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "CreateDeviceGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewIotClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("group_desc"); ok {
 		request["GroupDesc"] = v
 	}
@@ -67,7 +63,7 @@ func resourceAlicloudIotDeviceGroupCreate(d *schema.ResourceData, meta interface
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -80,9 +76,6 @@ func resourceAlicloudIotDeviceGroupCreate(d *schema.ResourceData, meta interface
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_iot_device_group", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["GroupId"]))
@@ -112,10 +105,7 @@ func resourceAlicloudIotDeviceGroupRead(d *schema.ResourceData, meta interface{}
 }
 func resourceAlicloudIotDeviceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewIotClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -137,7 +127,7 @@ func resourceAlicloudIotDeviceGroupUpdate(d *schema.ResourceData, meta interface
 		action := "UpdateDeviceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -151,9 +141,6 @@ func resourceAlicloudIotDeviceGroupUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 	return resourceAlicloudIotDeviceGroupRead(d, meta)
 }
@@ -161,10 +148,7 @@ func resourceAlicloudIotDeviceGroupDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDeviceGroup"
 	var response map[string]interface{}
-	conn, err := client.NewIotClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"GroupId": d.Id(),
 	}
@@ -174,7 +158,7 @@ func resourceAlicloudIotDeviceGroupDelete(d *schema.ResourceData, meta interface
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -187,10 +171,6 @@ func resourceAlicloudIotDeviceGroupDelete(d *schema.ResourceData, meta interface
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }
