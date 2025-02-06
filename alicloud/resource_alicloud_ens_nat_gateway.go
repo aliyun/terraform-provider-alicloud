@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,10 +67,7 @@ func resourceAliCloudEnsNatGatewayCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["EnsRegionId"] = d.Get("ens_region_id")
@@ -83,11 +79,9 @@ func resourceAliCloudEnsNatGatewayCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("nat_name"); ok {
 		request["Name"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,10 +145,7 @@ func resourceAliCloudEnsNatGatewayUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]interface{}
 	update := false
 	action := "ModifyNatGatewayAttribute"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NatGatewayId"] = d.Id()
@@ -164,11 +155,9 @@ func resourceAliCloudEnsNatGatewayUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -194,18 +183,13 @@ func resourceAliCloudEnsNatGatewayDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["NatGatewayId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
