@@ -56,10 +56,7 @@ func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.Resource
 	var response map[string]interface{}
 	action := "CreateCustomImage"
 	request := make(map[string]interface{})
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["ImageName"] = d.Get("custom_image_name")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -68,11 +65,9 @@ func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.Resource
 	request["RegionId"] = client.RegionId
 	request["SystemSnapshotId"] = d.Get("system_snapshot_id")
 	request["ClientToken"] = buildClientToken("CreateCustomImage")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -109,10 +104,7 @@ func resourceAlicloudSimpleApplicationServerCustomImageRead(d *schema.ResourceDa
 }
 func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -127,11 +119,9 @@ func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.Resource
 	if update {
 		action := "ModifyImageShareStatus"
 		request["ClientToken"] = buildClientToken("ModifyImageShareStatus")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -152,21 +142,18 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 	client := meta.(*connectivity.AliyunClient)
 	if v := d.Get("status"); v.(string) == "Share" {
 		var response map[string]interface{}
+		var err error
 		request := map[string]interface{}{
 			"ImageId":   d.Id(),
 			"Operation": "UnShare",
 		}
 		action := "ModifyImageShareStatus"
-		conn, err := client.NewSwasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ModifyImageShareStatus")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -183,21 +170,16 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 	}
 	action := "DeleteCustomImage"
 	var response map[string]interface{}
-	conn, err := client.NewSwasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ImageId": d.Id(),
 	}
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("DeleteCustomImage")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
