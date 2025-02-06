@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -33,21 +31,14 @@ func testSweepOpenSearchAppGroup(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	conn, err := client.NewOpensearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	action := "/v4/openapi/app-groups"
 	request := make(map[string]*string)
 	ids := make([]string, 0)
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaGet("OpenSearch", "2017-12-25", action, request, nil, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -97,16 +88,12 @@ func testSweepOpenSearchAppGroup(region string) error {
 	for _, id := range ids {
 		log.Printf("[INFO] Deleting App Group: (%s)", id)
 		action := "/v4/openapi/app-groups/" + id
-		conn, err := client.NewOpensearchClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request := map[string]*string{
 			"appGroupIdentity": StringPointer(id),
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*9, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2017-12-25"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaDelete("OpenSearch", "2017-12-25", action, request, nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
