@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -95,10 +94,7 @@ func resourceAlicloudVideoSurveillanceSystemGroupCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "CreateGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewVsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["Region"] = client.RegionId
 	request["InProtocol"] = d.Get("in_protocol")
 	request["OutProtocol"] = d.Get("out_protocol")
@@ -108,7 +104,7 @@ func resourceAlicloudVideoSurveillanceSystemGroupCreate(d *schema.ResourceData, 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("vs", "2018-12-12", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -158,6 +154,7 @@ func resourceAlicloudVideoSurveillanceSystemGroupRead(d *schema.ResourceData, me
 func resourceAlicloudVideoSurveillanceSystemGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"Id": d.Id(),
@@ -200,13 +197,9 @@ func resourceAlicloudVideoSurveillanceSystemGroupUpdate(d *schema.ResourceData, 
 	}
 	if update {
 		action := "ModifyGroup"
-		conn, err := client.NewVsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("vs", "2018-12-12", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"2001"}) || NeedRetry(err) {
 					wait()
@@ -226,17 +219,14 @@ func resourceAlicloudVideoSurveillanceSystemGroupUpdate(d *schema.ResourceData, 
 func resourceAlicloudVideoSurveillanceSystemGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewVsClient()
+	var err error
 	action := "DeleteGroup"
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"Id": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("vs", "2018-12-12", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
