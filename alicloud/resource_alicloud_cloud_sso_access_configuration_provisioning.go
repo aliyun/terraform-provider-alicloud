@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -124,10 +123,6 @@ func resourceAlicloudCloudSsoAccessConfigurationProvisioningDelete(d *schema.Res
 	}
 	action := "DeprovisionAccessConfiguration"
 	var response map[string]interface{}
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"AccessConfigurationId": parts[1],
 		"DirectoryId":           parts[0],
@@ -137,7 +132,7 @@ func resourceAlicloudCloudSsoAccessConfigurationProvisioningDelete(d *schema.Res
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict.Task", "DeletionConflict.AccessConfigurationProvisioning.AccessAssignment"}) || NeedRetry(err) {
 				wait()

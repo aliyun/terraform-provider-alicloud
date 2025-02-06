@@ -7,7 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -74,10 +73,7 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	action := "CreateAccessAssignment"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["AccessConfigurationId"] = d.Get("access_configuration_id")
 	request["DirectoryId"] = d.Get("directory_id")
@@ -87,7 +83,7 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 	request["TargetType"] = d.Get("target_type")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 				wait()
@@ -154,10 +150,6 @@ func resourceAlicloudCloudSsoAccessAssignmentDelete(d *schema.ResourceData, meta
 	}
 	action := "DeleteAccessAssignment"
 	var response map[string]interface{}
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DirectoryId":           parts[0],
 		"AccessConfigurationId": parts[1],
@@ -175,7 +167,7 @@ func resourceAlicloudCloudSsoAccessAssignmentDelete(d *schema.ResourceData, meta
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict.Task", "DeletionConflict.AccessConfigurationProvisioning.AccessAssignment"}) || NeedRetry(err) {
 				wait()

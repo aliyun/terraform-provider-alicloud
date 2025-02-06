@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -116,10 +115,7 @@ func resourceAliCloudCloudSsoAccessConfigurationCreate(d *schema.ResourceData, m
 	var response map[string]interface{}
 	action := "CreateAccessConfiguration"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DirectoryId"] = d.Get("directory_id")
 	request["AccessConfigurationName"] = d.Get("access_configuration_name")
@@ -136,11 +132,9 @@ func resourceAliCloudCloudSsoAccessConfigurationCreate(d *schema.ResourceData, m
 		request["Description"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -268,16 +262,9 @@ func resourceAliCloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 
 	if update {
 		action := "UpdateAccessConfiguration"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, updateAccessConfigurationReq, &runtime)
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, updateAccessConfigurationReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 					wait()
@@ -303,11 +290,6 @@ func resourceAliCloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 		removed := oldPermissionPolicies.(*schema.Set).Difference(newPermissionPolicies.(*schema.Set)).List()
 		added := newPermissionPolicies.(*schema.Set).Difference(oldPermissionPolicies.(*schema.Set)).List()
 
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		if len(removed) > 0 {
 			action := "RemovePermissionPolicyFromAccessConfiguration"
 
@@ -322,11 +304,9 @@ func resourceAliCloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 				removePermissionPolicyFromAccessConfigurationReq["PermissionPolicyType"] = permissionPoliciesArg["permission_policy_type"]
 				removePermissionPolicyFromAccessConfigurationReq["PermissionPolicyName"] = permissionPoliciesArg["permission_policy_name"]
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, removePermissionPolicyFromAccessConfigurationReq, &runtime)
+					response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, removePermissionPolicyFromAccessConfigurationReq, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
@@ -365,11 +345,9 @@ func resourceAliCloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 					}
 				}
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, addPermissionPolicyToAccessConfigurationReq, &runtime)
+					response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, addPermissionPolicyToAccessConfigurationReq, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
@@ -412,10 +390,7 @@ func resourceAliCloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -439,11 +414,9 @@ func resourceAliCloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 				removePermissionPolicyFromAccessConfigurationReq["PermissionPolicyType"] = permissionPoliciesArg["permission_policy_type"]
 				removePermissionPolicyFromAccessConfigurationReq["PermissionPolicyName"] = permissionPoliciesArg["permission_policy_name"]
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, removePermissionPolicyFromAccessConfigurationReq, &runtime)
+					response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, removePermissionPolicyFromAccessConfigurationReq, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
@@ -473,11 +446,9 @@ func resourceAliCloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 		request["ForceRemovePermissionPolicies"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeletionConflict.AccessConfiguration.Provisioning", "DeletionConflict.AccessConfiguration.AccessAssignment", "OperationConflict.Task", "DeletionConflict.AccessConfiguration.Task"}) || NeedRetry(err) {
 				wait()

@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,10 +76,7 @@ func resourceAlicloudCloudSsoUserCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateUser"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -105,7 +101,7 @@ func resourceAlicloudCloudSsoUserCreate(d *schema.ResourceData, meta interface{}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -153,10 +149,7 @@ func resourceAlicloudCloudSsoUserRead(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudCloudSsoUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -179,7 +172,7 @@ func resourceAlicloudCloudSsoUserUpdate(d *schema.ResourceData, meta interface{}
 		action := "UpdateUserStatus"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -234,7 +227,7 @@ func resourceAlicloudCloudSsoUserUpdate(d *schema.ResourceData, meta interface{}
 		action := "UpdateUser"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, updateUserReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, updateUserReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -265,10 +258,6 @@ func resourceAlicloudCloudSsoUserDelete(d *schema.ResourceData, meta interface{}
 	}
 	action := "DeleteUser"
 	var response map[string]interface{}
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DirectoryId": parts[0],
 		"UserId":      parts[1],
@@ -276,7 +265,7 @@ func resourceAlicloudCloudSsoUserDelete(d *schema.ResourceData, meta interface{}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeletionConflict.User.AccessAssigment"}) || NeedRetry(err) {
 				wait()

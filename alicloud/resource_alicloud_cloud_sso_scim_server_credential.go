@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -46,14 +45,11 @@ func resourceAlicloudCloudSsoScimServerCredentialCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "CreateSCIMServerCredential"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DirectoryId"] = d.Get("directory_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -110,13 +106,9 @@ func resourceAlicloudCloudSsoScimServerCredentialUpdate(d *schema.ResourceData, 
 		}
 	}
 	action := "UpdateSCIMServerCredentialStatus"
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -140,10 +132,6 @@ func resourceAlicloudCloudSsoScimServerCredentialDelete(d *schema.ResourceData, 
 	}
 	action := "DeleteSCIMServerCredential"
 	var response map[string]interface{}
-	conn, err := client.NewCloudssoClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"CredentialId": parts[1],
 		"DirectoryId":  parts[0],
@@ -151,7 +139,7 @@ func resourceAlicloudCloudSsoScimServerCredentialDelete(d *schema.ResourceData, 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
