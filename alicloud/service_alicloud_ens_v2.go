@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -24,19 +23,13 @@ func (s *EnsServiceV2) DescribeEnsInstance(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeInstances"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -70,20 +63,14 @@ func (s *EnsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListTagResources"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 
 	request["ResourceType"] = "instance"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -144,19 +131,13 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDisks"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DiskId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -222,19 +203,13 @@ func (s *EnsServiceV2) DescribeEnsSnapshot(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSnapshots"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SnapshotId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -295,19 +270,13 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeNetworks"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -368,19 +337,13 @@ func (s *EnsServiceV2) DescribeEnsEip(id string) (object map[string]interface{},
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeEnsEipAddresses"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AllocationId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -441,19 +404,13 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeLoadBalancerAttribute"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["LoadBalancerId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -510,19 +467,13 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVSwitches"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["VSwitchId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -583,19 +534,13 @@ func (s *EnsServiceV2) DescribeEnsSecurityGroup(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSecurityGroupAttribute"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SecurityGroupId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -649,19 +594,13 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSelfImages"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ImageId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -726,20 +665,14 @@ func (s *EnsServiceV2) DescribeEnsDiskInstanceAttachment(id string) (object map[
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeDisks"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DiskId"] = parts[0]
 	query["InstanceId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -804,20 +737,14 @@ func (s *EnsServiceV2) DescribeEnsInstanceSecurityGroupAttachment(id string) (ob
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeInstances"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = parts[0]
 	query["SecurityGroupId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -882,20 +809,14 @@ func (s *EnsServiceV2) DescribeEnsEipInstanceAttachment(id string) (object map[s
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeEnsEipAddresses"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AllocationId"] = parts[0]
 	query["AssociatedInstanceId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -970,19 +891,13 @@ func (s *EnsServiceV2) DescribeEnsNatGateway(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeNatGateways"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NatGatewayId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("Ens", "2017-11-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1042,19 +957,13 @@ func (s *EnsServiceV2) DescribeEnsKeyPair(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeKeyPairs"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["KeyPairId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

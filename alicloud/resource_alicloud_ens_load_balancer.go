@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -110,10 +109,7 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["EnsRegionId"] = d.Get("ens_region_id")
@@ -124,11 +120,9 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	request["PayType"] = convertEnsLoadBalancerPayTypeRequest(d.Get("payment_type").(string))
 	request["NetworkId"] = d.Get("network_id")
 	request["VSwitchId"] = d.Get("vswitch_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -225,10 +219,7 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	var query map[string]interface{}
 	update := false
 	action := "ModifyLoadBalancerAttribute"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["LoadBalancerId"] = d.Id()
@@ -238,11 +229,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	request["LoadBalancerName"] = d.Get("load_balancer_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -265,10 +254,6 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		if len(removed.([]interface{})) > 0 {
 			action := "RemoveBackendServers"
-			conn, err := client.NewEnsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["LoadBalancerId"] = d.Id()
@@ -291,11 +276,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			request["BackendServers"] = string(backendServersMapsJson)
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -314,10 +297,6 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		if len(added.([]interface{})) > 0 {
 			action := "AddBackendServers"
-			conn, err := client.NewEnsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["LoadBalancerId"] = d.Id()
@@ -340,11 +319,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			request["BackendServers"] = string(backendServersMapsJson)
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -371,18 +348,13 @@ func resourceAliCloudEnsLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["LoadBalancerId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

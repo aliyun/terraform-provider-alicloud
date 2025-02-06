@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -275,10 +274,7 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("internet_charge_type"); ok {
@@ -412,11 +408,9 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("key_pair_name"); ok {
 		request["KeyPairName"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -580,10 +574,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 	action := "ModifyInstanceAttribute"
-	conn, err := client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -607,11 +598,9 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -634,10 +623,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "ModifyPrepayInstanceSpec"
-	conn, err = client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -646,11 +631,9 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request["InstanceType"] = d.Get("instance_type")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -672,10 +655,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "ModifyPostPaidInstanceSpec"
-	conn, err = client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
@@ -684,11 +663,9 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request["InstanceType"] = d.Get("instance_type")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -710,10 +687,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "ModifyInstanceChargeType"
-	conn, err = client.NewEnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIds"] = "[\"" + d.Id() + "\"]"
@@ -735,11 +708,9 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	query["AutoPay"] = "true"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -778,10 +749,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if object["Status"].(string) != target {
 			if target == "Stopped" {
 				action = "StopInstance"
-				conn, err = client.NewEnsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["InstanceId"] = d.Id()
@@ -789,11 +756,9 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				if v, ok := d.GetOk("force_stop"); ok {
 					request["ForceStop"] = v
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -816,19 +781,13 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			}
 			if target == "Running" {
 				action = "StartInstance"
-				conn, err = client.NewEnsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["InstanceId"] = d.Id()
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -857,6 +816,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliCloudEnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	var err error
 
 	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
 		client := meta.(*connectivity.AliyunClient)
@@ -864,18 +824,12 @@ func resourceAliCloudEnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
-		conn, err := client.NewEnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		query["InstanceId"] = d.Id()
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -907,18 +861,12 @@ func resourceAliCloudEnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
-		conn, err := client.NewEnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		query["InstanceId"] = d.Id()
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {

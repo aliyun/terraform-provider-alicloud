@@ -3893,6 +3893,12 @@ func formatError(response map[string]interface{}, err error) error {
 	if ok2 && fmt.Sprint(success) == "true" {
 		return err
 	}
+	// There is a bug in some product api that the request is success but its message is empty and the code is 0
+	// like ENS API
+	message, ok3 := response["Message"]
+	if fmt.Sprint(code) == "0" && (!ok3 || message == nil || fmt.Sprint(message) == "") {
+		return err
+	}
 	if ok1 || ok2 {
 		statusCode := 200
 		if v, ok := response["StatusCode"]; ok {
@@ -3901,7 +3907,7 @@ func formatError(response map[string]interface{}, err error) error {
 		return tea.NewSDKError(map[string]interface{}{
 			"statusCode": statusCode,
 			"code":       tea.ToString(code),
-			"message":    tea.ToString(response["Message"]),
+			"message":    tea.ToString(message),
 			"data":       response,
 		})
 	}
