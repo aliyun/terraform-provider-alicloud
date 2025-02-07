@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -52,10 +51,7 @@ func resourceAlicloudCrChartNamespaceCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateChartNamespace"
 	request := make(map[string]interface{})
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOkExists("auto_create_repo"); ok {
 		request["AutoCreateRepo"] = v
 	}
@@ -67,7 +63,7 @@ func resourceAlicloudCrChartNamespaceCreate(d *schema.ResourceData, meta interfa
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -90,7 +86,7 @@ func resourceAlicloudCrChartNamespaceRead(d *schema.ResourceData, meta interface
 	crService := CrService{client}
 	object, err := crService.DescribeCrChartNamespace(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cr_chart_namespace crService.DescribeCrChartNamespace Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -109,10 +105,7 @@ func resourceAlicloudCrChartNamespaceRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudCrChartNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -140,7 +133,7 @@ func resourceAlicloudCrChartNamespaceUpdate(d *schema.ResourceData, meta interfa
 		action := "UpdateChartNamespace"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -165,10 +158,6 @@ func resourceAlicloudCrChartNamespaceDelete(d *schema.ResourceData, meta interfa
 	}
 	action := "DeleteChartNamespace"
 	var response map[string]interface{}
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"InstanceId":    parts[0],
 		"NamespaceName": parts[1],
@@ -177,7 +166,7 @@ func resourceAlicloudCrChartNamespaceDelete(d *schema.ResourceData, meta interfa
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

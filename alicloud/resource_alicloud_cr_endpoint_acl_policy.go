@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -61,10 +60,7 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateInstanceEndpointAclPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Comment"] = v
 	}
@@ -77,7 +73,7 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SLB_SERVICE_ERROR"}) || NeedRetry(err) {
 				wait()
@@ -130,10 +126,6 @@ func resourceAlicloudCrEndpointAclPolicyDelete(d *schema.ResourceData, meta inte
 	}
 	action := "DeleteInstanceEndpointAclPolicy"
 	var response map[string]interface{}
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"EndpointType": parts[1],
 		"Entry":        parts[2],
@@ -145,7 +137,7 @@ func resourceAlicloudCrEndpointAclPolicyDelete(d *schema.ResourceData, meta inte
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SLB_SERVICE_ERROR"}) || NeedRetry(err) {
 				wait()

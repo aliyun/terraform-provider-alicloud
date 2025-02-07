@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -153,10 +152,7 @@ func resourceAlicloudCrChainCreate(d *schema.ResourceData, meta interface{}) err
 	var response map[string]interface{}
 	action := "CreateChain"
 	request := make(map[string]interface{})
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("chain_config"); ok {
 		request["ChainConfig"], _ = convertCrChainConfigToJsonString(v.(*schema.Set).List())
 	}
@@ -173,7 +169,7 @@ func resourceAlicloudCrChainCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -187,9 +183,6 @@ func resourceAlicloudCrChainCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_chain", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Code"]) != "success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", response["ChainId"]))
 
 	return resourceAlicloudCrChainRead(d, meta)
@@ -199,7 +192,7 @@ func resourceAlicloudCrChainRead(d *schema.ResourceData, meta interface{}) error
 	crService := CrService{client}
 	object, err := crService.DescribeCrChain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cr_chain crService.DescribeCrChain Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -288,10 +281,7 @@ func resourceAlicloudCrChainRead(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAlicloudCrChainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -323,7 +313,7 @@ func resourceAlicloudCrChainUpdate(d *schema.ResourceData, meta interface{}) err
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -337,9 +327,6 @@ func resourceAlicloudCrChainUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Code"]) != "success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
 	}
 	return resourceAlicloudCrChainRead(d, meta)
 }
@@ -351,10 +338,6 @@ func resourceAlicloudCrChainDelete(d *schema.ResourceData, meta interface{}) err
 	}
 	action := "DeleteChain"
 	var response map[string]interface{}
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"ChainId":    parts[1],
 		"InstanceId": parts[0],
@@ -362,7 +345,7 @@ func resourceAlicloudCrChainDelete(d *schema.ResourceData, meta interface{}) err
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
