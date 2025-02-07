@@ -55,17 +55,10 @@ func testSweepSmartagFlowLog(region string) error {
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewSmartagClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &runtime)
+			response, err = aliyunClient.RpcPost("Smartag", "2018-03-13", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -105,7 +98,7 @@ func testSweepSmartagFlowLog(region string) error {
 				"FlowLogId": item["FlowLogId"],
 				"RegionId":  aliyunClient.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = aliyunClient.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Smartag Flow Log (%s): %s", item["Name"].(string), err)
 			}
