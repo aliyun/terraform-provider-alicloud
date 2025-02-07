@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -129,10 +128,7 @@ func dataSourceAliCloudEssScalingRules() *schema.Resource {
 func dataSourceAliCloudEssScalingRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewEssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"PageSize":   requests.NewInteger(PageSizeLarge),
 		"PageNumber": requests.NewInteger(1),
@@ -148,11 +144,8 @@ func dataSourceAliCloudEssScalingRulesRead(d *schema.ResourceData, meta interfac
 	}
 
 	var allScalingRules []interface{}
-
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer("DescribeScalingRules"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScalingRules", nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scaling_rules", "DescribeScalingRules", AlibabaCloudSdkGoERROR)
 		}

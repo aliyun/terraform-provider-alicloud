@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -732,10 +731,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	action := "CreateEciScalingConfiguration"
 	request := make(map[string]interface{})
-	conn, err := client.NewEssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["ScalingGroupId"] = d.Get("scaling_group_id")
 	request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
 	request["Description"] = d.Get("description")
@@ -1050,11 +1046,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		}
 		request["HostAliase"] = HostAliases
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", action, AlibabaCloudSdkGoERROR)
 	}
@@ -1906,11 +1898,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["InstanceType"] = types
 	}
 	if update {
-		conn, err := client.NewEssClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		_, err = conn.DoRequest(StringPointer("ModifyEciScalingConfiguration"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Ess", "2014-08-28", "ModifyEciScalingConfiguration", nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", "ModifyEciScalingConfiguration", AlibabaCloudSdkGoERROR)
 		}
@@ -1923,10 +1911,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 func resourceAliyunEssEciScalingConfigurationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
-	conn, err := client.NewEssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	o, err := essService.DescribeEssEciScalingConfiguration(d.Id())
 	if err != nil {
@@ -1958,7 +1943,7 @@ func resourceAliyunEssEciScalingConfigurationDelete(d *schema.ResourceData, meta
 			"ScalingConfigurationId": d.Id(),
 			"RegionId":               client.RegionId,
 		}
-		_, err = conn.DoRequest(StringPointer("DeleteEciScalingConfiguration"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("Ess", "2014-08-28", "DeleteEciScalingConfiguration", nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteEciScalingConfiguration", AlibabaCloudSdkGoERROR)
 		}

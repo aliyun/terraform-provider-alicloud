@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -244,40 +242,30 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 }
 
 func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
+	var response map[string]interface{}
 	request, err := buildAlicloudEssScalingGroupArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-
-	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEssClient()
-	essService := EssService{client}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			var response map[string]interface{}
-			response, err = conn.DoRequest(StringPointer("CreateScalingGroup"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
-			if err != nil {
-				return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "CreateScalingGroup", AlibabaCloudSdkGoERROR)
-			}
-			return response, nil
-		})
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ess", "2014-08-28", "CreateScalingGroup", nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling, "IncorrectLoadBalancerHealthCheck", "IncorrectLoadBalancerStatus"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{Throttling, "IncorrectLoadBalancerHealthCheck", "IncorrectLoadBalancerStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		d.SetId(raw.(map[string]interface{})["ScalingGroupId"].(string))
-		d.Set("alb_server_group", request["AlbServerGroup"])
-
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "CreateScalingGroup", AlibabaCloudSdkGoERROR)
 	}
+	d.SetId(fmt.Sprint(response["ScalingGroupId"]))
+	d.Set("alb_server_group", request["AlbServerGroup"])
+
 	if err := essService.WaitForEssScalingGroup(d.Id(), Inactive, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -462,7 +450,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 
 func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEssClient()
+	var err error
 	action := "ModifyScalingGroup"
 	request := map[string]interface{}{
 		"ScalingGroupId": d.Id(),
@@ -601,7 +589,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	_, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, false)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "ModifyScalingGroup", AlibabaCloudSdkGoERROR)
 	}
@@ -908,10 +896,7 @@ func attachOrDetachAlbServerGroups(d *schema.ResourceData, client *connectivity.
 	detachAlbServerGroupSet := oldAlbServerGroupSet.Difference(newAlbServerGroupSet).List()
 	attachAlbServerGroupSet := newAlbServerGroupSet.Difference(oldAlbServerGroupSet).List()
 	var response map[string]interface{}
-	conn, err := client.NewEssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if len(detachAlbServerGroupSet) > 0 {
 		var subLists = SplitSlice(detachAlbServerGroupSet, int(AttachDetachAlbServerGroupBatchsize))
 		for _, subList := range subLists {
@@ -932,9 +917,8 @@ func attachOrDetachAlbServerGroups(d *schema.ResourceData, client *connectivity.
 				albServerGroupsMaps = append(albServerGroupsMaps, albServerGroupsMap)
 			}
 			albRequest["AlbServerGroup"] = albServerGroupsMaps
-			runtime := util.RuntimeOptions{}
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, albRequest, &runtime)
+				response, err = client.RpcPost("Ess", "2014-08-28", action, nil, albRequest, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
 						return resource.RetryableError(err)
@@ -971,9 +955,8 @@ func attachOrDetachAlbServerGroups(d *schema.ResourceData, client *connectivity.
 				albServerGroupsMaps = append(albServerGroupsMaps, albServerGroupsMap)
 			}
 			albRequest["AlbServerGroup"] = albServerGroupsMaps
-			runtime := util.RuntimeOptions{}
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, albRequest, &runtime)
+				response, err = client.RpcPost("Ess", "2014-08-28", action, nil, albRequest, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
 						return resource.RetryableError(err)
