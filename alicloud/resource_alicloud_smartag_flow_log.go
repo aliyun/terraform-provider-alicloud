@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -94,10 +93,7 @@ func resourceAlicloudSmartagFlowLogCreate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	action := "CreateFlowLog"
 	request := make(map[string]interface{})
-	conn, err := client.NewSmartagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("active_aging"); ok {
 		request["ActiveAging"] = v
 	}
@@ -135,7 +131,7 @@ func resourceAlicloudSmartagFlowLogCreate(d *schema.ResourceData, meta interface
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -189,10 +185,7 @@ func resourceAlicloudSmartagFlowLogRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudSmartagFlowLogUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	SagService := SagService{client}
-	conn, err := client.NewSmartagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -265,7 +258,7 @@ func resourceAlicloudSmartagFlowLogUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyFlowLogAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -301,7 +294,7 @@ func resourceAlicloudSmartagFlowLogUpdate(d *schema.ResourceData, meta interface
 			action := "ActiveFlowLog"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -328,7 +321,7 @@ func resourceAlicloudSmartagFlowLogUpdate(d *schema.ResourceData, meta interface
 			action := "DeactiveFlowLog"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -356,10 +349,7 @@ func resourceAlicloudSmartagFlowLogDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteFlowLog"
 	var response map[string]interface{}
-	conn, err := client.NewSmartagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"FlowLogId": d.Id(),
 	}
@@ -367,7 +357,7 @@ func resourceAlicloudSmartagFlowLogDelete(d *schema.ResourceData, meta interface
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Smartag", "2018-03-13", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

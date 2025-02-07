@@ -132,6 +132,6 @@ resource "alicloud_smartag_flow_log" "default" {
 data "alicloud_smartag_flow_logs" "default" {	
 	%s
 }
-`, rand, strings.Join(pairs, " \n "), defaultRegionToTest)
+`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }
