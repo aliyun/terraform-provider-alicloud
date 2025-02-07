@@ -52,17 +52,9 @@ func testSweepEdasNamespace(region string) error {
 	request := map[string]*string{}
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewEdasClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = aliyunClient.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -76,14 +68,6 @@ func testSweepEdasNamespace(region string) error {
 	if err != nil {
 		log.Printf("[ERROR] %s get an error: %#v", action, err)
 		return nil
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-	if fmt.Sprint(response["Code"]) != "200" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 
 	resp, err := jsonpath.Get("$.UserDefineRegionList.UserDefineRegionEntity", response)
@@ -109,7 +93,7 @@ func testSweepEdasNamespace(region string) error {
 		request := map[string]*string{
 			"Id": StringPointer(fmt.Sprint(item["Id"])),
 		}
-		_, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		_, err = aliyunClient.RoaDelete("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Edas Namespace (%s): %s", item["RegionName"].(string), err)
 		}

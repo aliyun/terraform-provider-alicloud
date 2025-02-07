@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 
@@ -438,10 +437,7 @@ func (e *EdasService) DescribeEdasApplicationV2(appId string) (object map[string
 
 func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[string]string) (map[string]interface{}, error) {
 	var response map[string]interface{}
-	conn, err := e.client.NewEdasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := e.client
 	request := map[string]*string{}
 	for k := range params {
 		v := params[k]
@@ -451,11 +447,21 @@ func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[s
 	httpMethod := requestConfig["httpMethod"]
 	id := requestConfig["id"]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer(strings.ToUpper(httpMethod)), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		switch httpMethod {
+		case "POST":
+			response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
+		case "PUT":
+			response, err = client.RoaPut("Edas", "2017-08-01", action, request, nil, nil, false)
+		case "DELETE":
+			response, err = client.RoaDelete("Edas", "2017-08-01", action, request, nil, nil, false)
+		case "GET":
+			response, err = client.RoaGet("Edas", "2017-08-01", action, request, nil, nil)
+		default:
+			response, err = nil, fmt.Errorf("httpMethod %s is not support", httpMethod)
+		}
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -468,14 +474,6 @@ func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[s
 	addDebug(action, response, request)
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return nil, WrapError(fmt.Errorf("%s failed, response: %v", strings.ToUpper(httpMethod)+" "+action, response))
-	}
-	if fmt.Sprint(response["Code"]) != "200" {
-		return nil, WrapError(fmt.Errorf("%s failed, response: %v", strings.ToUpper(httpMethod)+" "+action, response))
 	}
 	return response, nil
 }
@@ -818,18 +816,13 @@ func (e *EdasService) IsJsonArrayEqual(v1, v2 interface{}) bool {
 }
 func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEdasClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "/pop/v5/user_region_defs"
 	request := map[string]*string{}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -842,14 +835,6 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-	if fmt.Sprint(response["Code"]) != "200" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 	v, err := jsonpath.Get("$.UserDefineRegionList.UserDefineRegionEntity", response)
 	if err != nil {
