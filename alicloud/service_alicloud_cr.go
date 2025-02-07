@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -263,10 +262,7 @@ func (c *CrService) InstanceStatusRefreshFunc(id string, failStates []string) re
 
 func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceEndpoint"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -278,11 +274,9 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		"InstanceId":   parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -317,10 +311,7 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 
 func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceEndpoint"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -331,11 +322,9 @@ func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]i
 		"EndpointType": parts[1],
 		"InstanceId":   parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -379,10 +368,7 @@ func (s *CrService) CrEndpointAclServiceStateRefreshFunc(id string, failStates [
 
 func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetChartNamespace"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -394,11 +380,9 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 		"InstanceId":    parts[0],
 		"NamespaceName": parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -409,10 +393,10 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 		return nil
 	})
 	addDebug(action, response, request)
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"CHART_NAMESPACE_NOT_EXIST"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, response)
-	}
 	if err != nil {
+		if IsExpectedErrors(err, []string{"CHART_NAMESPACE_NOT_EXIST"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, err)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
@@ -425,10 +409,7 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 
 func (s *CrService) DescribeCrChartRepository(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetChartRepository"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -440,11 +421,9 @@ func (s *CrService) DescribeCrChartRepository(id string) (object map[string]inte
 		"RepoNamespaceName": parts[1],
 		"InstanceId":        parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -455,10 +434,10 @@ func (s *CrService) DescribeCrChartRepository(id string) (object map[string]inte
 		return nil
 	})
 	addDebug(action, response, request)
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"CHART_REPO_NOT_EXIST"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, response)
-	}
 	if err != nil {
+		if IsExpectedErrors(err, []string{"CHART_REPO_NOT_EXIST"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, err)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
@@ -471,10 +450,7 @@ func (s *CrService) DescribeCrChartRepository(id string) (object map[string]inte
 
 func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetChain"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -485,11 +461,9 @@ func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, e
 		"ChainId":    parts[1],
 		"InstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -501,10 +475,10 @@ func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, e
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"CHAIN_NOT_EXIST"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CR:Chain", id)), NotFoundMsg, ProviderERROR, err)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) == "CHAIN_NOT_EXIST" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR:Chain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	v, err := jsonpath.Get("$", response)
@@ -517,10 +491,7 @@ func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, e
 
 func (s *CrService) GetChain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetChain"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -531,11 +502,9 @@ func (s *CrService) GetChain(id string) (object map[string]interface{}, err erro
 		"ChainId":    parts[1],
 		"InstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -560,12 +529,7 @@ func (s *CrService) GetChain(id string) (object map[string]interface{}, err erro
 func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetInstanceVpcEndpoint"
-
-	conn, err := s.client.NewAcrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -577,11 +541,9 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -595,10 +557,6 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["IsSuccess"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.LinkedVpcs", response)

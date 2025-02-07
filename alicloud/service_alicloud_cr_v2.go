@@ -169,10 +169,6 @@ func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[s
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetInstance"
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -182,7 +178,7 @@ func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[s
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -247,10 +243,6 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 	}
 
 	action := "ListRepoSyncRule"
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = parts[0]
@@ -261,11 +253,9 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -65,10 +64,7 @@ func resourceAlicloudCrVpcEndpointLinkedVpcCreate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	action := "CreateInstanceVpcEndpointLinkedVpc"
 	request := make(map[string]interface{})
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["InstanceId"] = d.Get("instance_id")
 	request["VpcId"] = d.Get("vpc_id")
@@ -79,11 +75,9 @@ func resourceAlicloudCrVpcEndpointLinkedVpcCreate(d *schema.ResourceData, meta i
 		request["EnableCreateDNSRecordInPvzt"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,10 +145,7 @@ func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta i
 	action := "DeleteInstanceVpcEndpointLinkedVpc"
 	var response map[string]interface{}
 
-	conn, err := client.NewAcrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
@@ -168,11 +159,9 @@ func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta i
 		"ModuleName": parts[3],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -185,14 +174,10 @@ func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta i
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"INSTANCE_ACCESS_NOT_EXIST"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Code"]) == "INSTANCE_ACCESS_NOT_EXIST" {
-		return nil
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, crService.CrVpcEndpointLinkedVpcStateRefreshFunc(d.Id(), []string{}))

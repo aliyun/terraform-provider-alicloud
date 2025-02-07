@@ -114,7 +114,6 @@ variable "name" {
 }
 
 data "alicloud_cr_ee_instances" "default" {
-  name_regex = "tf-testacc"
 }
 
 resource "alicloud_cr_ee_namespace" "default" {
