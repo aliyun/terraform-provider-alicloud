@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,10 +76,7 @@ func resourceAlicloudDdosBasicAntiddosCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "ModifyDefenseThreshold"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdosbasicClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DdosRegionId"] = client.RegionId
 	request["InstanceId"] = d.Get("instance_id")
 	request["InstanceType"] = d.Get("instance_type")
@@ -99,7 +95,7 @@ func resourceAlicloudDdosBasicAntiddosCreate(d *schema.ResourceData, meta interf
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-05-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -158,10 +154,6 @@ func resourceAlicloudDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	action := "ModifyDefenseThreshold"
-	conn, err := client.NewDdosbasicClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	update := false
 	request := map[string]interface{}{
 		"DdosRegionId": client.RegionId,
@@ -197,7 +189,7 @@ func resourceAlicloudDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interf
 	if update {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-05-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
