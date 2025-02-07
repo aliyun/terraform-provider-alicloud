@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -67,10 +66,7 @@ func resourceAliCloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateSaslUser"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["InstanceId"] = d.Get("instance_id")
@@ -99,11 +95,9 @@ func resourceAliCloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		request["Password"] = decryptResp
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
@@ -161,10 +155,7 @@ func resourceAliCloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -202,12 +193,9 @@ func resourceAliCloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 		}
 
 		action := "CreateSaslUser"
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
@@ -237,10 +225,7 @@ func resourceAliCloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSaslUser"
 	var response map[string]interface{}
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -257,11 +242,9 @@ func resourceAliCloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interfa
 		request["Type"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()

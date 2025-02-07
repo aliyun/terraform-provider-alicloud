@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -228,10 +227,7 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 
 	action := "GetInstanceList"
 	request := make(map[string]interface{})
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 
@@ -254,11 +250,9 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	pageNo, pageSize := 1, PageSizeLarge
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
