@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -730,20 +728,15 @@ func (s *AlikafkaService) tagsFromMap(m map[string]interface{}) []alikafka.TagRe
 
 func (s *AlikafkaService) GetAllowedIpList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetAllowedIpList"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -765,10 +758,7 @@ func (s *AlikafkaService) GetAllowedIpList(id string) (object map[string]interfa
 func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewAlikafkaClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -788,7 +778,7 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
@@ -820,7 +810,7 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
 						wait()
@@ -843,10 +833,7 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 
 func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetConsumerList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -858,11 +845,9 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 		"InstanceId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -875,9 +860,6 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.ConsumerList.ConsumerVO", response)
 	if err != nil {
@@ -901,12 +883,7 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeSaslUsers"
-
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -918,11 +895,9 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -935,14 +910,10 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR"}) {
+		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.SaslUserList.SaslUserVO", response)
@@ -972,10 +943,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	var response map[string]interface{}
 	action := "GetAllowedIpList"
 
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
@@ -989,11 +957,9 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1006,14 +972,10 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR"}) {
+		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	var resp interface{}
@@ -1059,10 +1021,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	var response map[string]interface{}
 	action := "GetInstanceList"
 
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -1070,11 +1029,9 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
@@ -1088,10 +1045,6 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
@@ -1119,20 +1072,15 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 
 func (s *AlikafkaService) GetQuotaTip(instanceId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetQuotaTip"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": instanceId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1146,9 +1094,6 @@ func (s *AlikafkaService) GetQuotaTip(instanceId string) (object map[string]inte
 	if err != nil {
 		return object, WrapError(err)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	v, err := jsonpath.Get("$.QuotaData", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, instanceId, "$.QuotaData", response)
@@ -1158,10 +1103,7 @@ func (s *AlikafkaService) GetQuotaTip(instanceId string) (object map[string]inte
 
 func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, timeout int) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewAlikafkaClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetInstanceList"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
@@ -1170,11 +1112,9 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
@@ -1187,9 +1127,6 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 		addDebug(action, response, request)
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, orderId, action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		v, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
 		if err != nil {

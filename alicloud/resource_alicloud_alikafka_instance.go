@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -237,10 +235,7 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
 	vpcService := VpcService{client}
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	// 1. Create order
 	var createOrderAction string
@@ -289,11 +284,9 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		createOrderResponse, err = conn.DoRequest(StringPointer(createOrderAction), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, createOrderReq, &runtime)
+		createOrderResponse, err = client.RpcPost("alikafka", "2019-09-16", createOrderAction, nil, createOrderReq, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL", "ONS_SYSTEM_ERROR"}) || NeedRetry(err) {
 				wait()
@@ -381,7 +374,7 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		startInstanceResponse, err = conn.DoRequest(StringPointer(startInstanceAction), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, startInstanceReq, &runtime)
+		startInstanceResponse, err = client.RpcPost("alikafka", "2019-09-16", startInstanceAction, nil, startInstanceReq, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
@@ -494,10 +487,7 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -517,11 +507,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			request["InstanceName"] = v
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
@@ -564,11 +552,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 				"InstanceId": d.Id(),
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 						wait()
@@ -653,11 +639,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			action = "UpgradePrePayOrder"
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
 					wait()
@@ -719,11 +703,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			request["TargetVersion"] = v
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
@@ -768,11 +750,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			request["Config"] = v
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
@@ -817,11 +797,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "ChangeResourceGroup"
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, changeResourceGroupReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -857,11 +835,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "EnableAutoGroupCreation"
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, enableAutoGroupCreationReq, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoGroupCreationReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -900,11 +876,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "EnableAutoTopicCreation"
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, enableAutoTopicCreationReq, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoTopicCreationReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -949,11 +923,9 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "EnableAutoTopicCreation"
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, updateTopicPartitionNumReq, &runtime)
+			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, updateTopicPartitionNumReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -986,10 +958,7 @@ func resourceAliCloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	alikafkaService := AlikafkaService{client}
 
 	action := "ReleaseInstance"
-	conn, err := client.NewAlikafkaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	request := map[string]interface{}{
 		"InstanceId":          d.Id(),
@@ -1002,11 +971,9 @@ func resourceAliCloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 		return nil
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
@@ -1038,7 +1005,7 @@ func resourceAliCloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	}
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
