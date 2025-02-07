@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,10 +15,7 @@ type TagService struct {
 
 func (s *TagService) ListTagValues(key string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewTagClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagValues"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
@@ -28,11 +24,9 @@ func (s *TagService) ListTagValues(key string) (object []interface{}, err error)
 	}
 	values := make([]interface{}, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -67,20 +61,15 @@ func (s *TagService) ListTagValues(key string) (object []interface{}, err error)
 
 func (s *TagService) DescribeTagPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewTagClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetPolicy"
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"PolicyId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -109,10 +98,7 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 	var response map[string]interface{}
 	action := "ListTargetsForPolicy"
 
-	conn, err := s.client.NewTagClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, WrapError(err)
@@ -122,11 +108,9 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 		"PolicyId": parts[0],
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -164,10 +148,7 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 
 func (s *TagService) DescribeTagValue(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewTagClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceIdN(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -180,11 +161,9 @@ func (s *TagService) DescribeTagValue(id string) (object []interface{}, err erro
 	}
 	values := make([]interface{}, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

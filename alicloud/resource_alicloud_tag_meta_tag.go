@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -44,10 +43,7 @@ func resourceAlicloudTagMetaTagCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateTags"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	conn, err := client.NewTagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	tagKeyValueParamLists := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOk("key"); ok {
 		tagKeyValueParamList := make(map[string]interface{})
@@ -68,7 +64,7 @@ func resourceAlicloudTagMetaTagCreate(d *schema.ResourceData, meta interface{}) 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -106,10 +102,7 @@ func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTag"
 	var response map[string]interface{}
-	conn, err := client.NewTagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceIdN(d.Id(), 2)
 	w, _ := d.GetOk("values")
 	strings := w.([]interface{})
@@ -122,7 +115,7 @@ func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) 
 		request["RegionId"] = client.RegionId
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -145,7 +138,7 @@ func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) 
 	requestAll["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, requestAll, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, requestAll, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
