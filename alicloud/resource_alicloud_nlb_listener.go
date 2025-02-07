@@ -2,10 +2,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -69,9 +71,8 @@ func resourceAliCloudNlbListener() *schema.Resource {
 				ValidateFunc: IntBetween(0, 900),
 			},
 			"listener_description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringLenBetween(2, 256),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"listener_port": {
 				Type:         schema.TypeInt,
@@ -95,9 +96,36 @@ func resourceAliCloudNlbListener() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: IntBetween(0, 1500),
 			},
+			"proxy_protocol_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"proxy_protocol_config_private_link_eps_id_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"proxy_protocol_config_private_link_ep_id_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"proxy_protocol_config_vpc_id_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"proxy_protocol_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"sec_sensor_enabled": {
@@ -154,20 +182,20 @@ func resourceAliCloudNlbListenerCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["LoadBalancerId"] = d.Get("load_balancer_id")
 	request["ServerGroupId"] = d.Get("server_group_id")
-	if v, ok := d.GetOk("idle_timeout"); ok {
+	if v, ok := d.GetOkExists("idle_timeout"); ok && v.(int) > 0 {
 		request["IdleTimeout"] = v
 	}
 	if v, ok := d.GetOk("security_policy_id"); ok {
 		request["SecurityPolicyId"] = v
 	}
 	if v, ok := d.GetOk("certificate_ids"); ok {
-		certificateIdsMaps := v.([]interface{})
-		request["CertificateIds"] = certificateIdsMaps
+		certificateIdsMapsArray := v.([]interface{})
+		request["CertificateIds"] = certificateIdsMapsArray
 	}
 
 	if v, ok := d.GetOk("ca_certificate_ids"); ok {
-		caCertificateIdsMaps := v.([]interface{})
-		request["CaCertificateIds"] = caCertificateIdsMaps
+		caCertificateIdsMapsArray := v.([]interface{})
+		request["CaCertificateIds"] = caCertificateIdsMapsArray
 	}
 
 	if v, ok := d.GetOk("alpn_policy"); ok {
@@ -185,25 +213,51 @@ func resourceAliCloudNlbListenerCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOkExists("ca_enabled"); ok {
 		request["CaEnabled"] = v
 	}
-	if v, ok := d.GetOk("start_port"); ok {
+	if v, ok := d.GetOkExists("start_port"); ok {
 		request["StartPort"] = v
 	}
-	if v, ok := d.GetOk("end_port"); ok {
+	if v, ok := d.GetOkExists("end_port"); ok {
 		request["EndPort"] = v
 	}
-	if v, ok := d.GetOk("cps"); ok {
+	if v, ok := d.GetOkExists("cps"); ok {
 		request["Cps"] = v
 	}
-	if v, ok := d.GetOk("mss"); ok {
+	if v, ok := d.GetOkExists("mss"); ok {
 		request["Mss"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("proxy_protocol_config"); !IsNil(v) {
+		proxyProtocolConfigVpcIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_vpc_id_enabled", v)
+		if proxyProtocolConfigVpcIdEnabled != nil && proxyProtocolConfigVpcIdEnabled != "" {
+			objectDataLocalMap["Ppv2VpcIdEnabled"] = proxyProtocolConfigVpcIdEnabled
+		}
+		proxyProtocolConfigPrivateLinkEpIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_private_link_ep_id_enabled", v)
+		if proxyProtocolConfigPrivateLinkEpIdEnabled != nil && proxyProtocolConfigPrivateLinkEpIdEnabled != "" {
+			objectDataLocalMap["Ppv2PrivateLinkEpIdEnabled"] = proxyProtocolConfigPrivateLinkEpIdEnabled
+		}
+		proxyProtocolConfigPrivateLinkEpsIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_private_link_eps_id_enabled", v)
+		if proxyProtocolConfigPrivateLinkEpsIdEnabled != nil && proxyProtocolConfigPrivateLinkEpsIdEnabled != "" {
+			objectDataLocalMap["Ppv2PrivateLinkEpsIdEnabled"] = proxyProtocolConfigPrivateLinkEpsIdEnabled
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["ProxyProtocolV2Config"] = string(objectDataLocalMapJson)
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy"}) || NeedRetry(err) {
 				wait()
@@ -211,9 +265,9 @@ func resourceAliCloudNlbListenerCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nlb_listener", action, AlibabaCloudSdkGoERROR)
@@ -244,36 +298,91 @@ func resourceAliCloudNlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("alpn_enabled", objectRaw["AlpnEnabled"])
-	d.Set("alpn_policy", objectRaw["AlpnPolicy"])
-	d.Set("ca_enabled", objectRaw["CaEnabled"])
-	d.Set("cps", objectRaw["Cps"])
-	d.Set("end_port", formatInt(objectRaw["EndPort"]))
-	d.Set("idle_timeout", objectRaw["IdleTimeout"])
-	d.Set("listener_description", objectRaw["ListenerDescription"])
-	d.Set("listener_port", objectRaw["ListenerPort"])
-	d.Set("listener_protocol", objectRaw["ListenerProtocol"])
-	d.Set("load_balancer_id", objectRaw["LoadBalancerId"])
-	d.Set("mss", objectRaw["Mss"])
-	d.Set("proxy_protocol_enabled", objectRaw["ProxyProtocolEnabled"])
-	d.Set("sec_sensor_enabled", objectRaw["SecSensorEnabled"])
-	d.Set("security_policy_id", objectRaw["SecurityPolicyId"])
-	d.Set("server_group_id", objectRaw["ServerGroupId"])
-	d.Set("start_port", formatInt(objectRaw["StartPort"]))
-	d.Set("status", objectRaw["ListenerStatus"])
+	if objectRaw["AlpnEnabled"] != nil {
+		d.Set("alpn_enabled", objectRaw["AlpnEnabled"])
+	}
+	if objectRaw["AlpnPolicy"] != nil {
+		d.Set("alpn_policy", objectRaw["AlpnPolicy"])
+	}
+	if objectRaw["CaEnabled"] != nil {
+		d.Set("ca_enabled", objectRaw["CaEnabled"])
+	}
+	if objectRaw["Cps"] != nil {
+		d.Set("cps", objectRaw["Cps"])
+	}
+	if objectRaw["EndPort"] != nil {
+		d.Set("end_port", formatInt(objectRaw["EndPort"]))
+	}
+	if objectRaw["IdleTimeout"] != nil {
+		d.Set("idle_timeout", objectRaw["IdleTimeout"])
+	}
+	if objectRaw["ListenerDescription"] != nil {
+		d.Set("listener_description", objectRaw["ListenerDescription"])
+	}
+	if objectRaw["ListenerPort"] != nil {
+		d.Set("listener_port", objectRaw["ListenerPort"])
+	}
+	if objectRaw["ListenerProtocol"] != nil {
+		d.Set("listener_protocol", objectRaw["ListenerProtocol"])
+	}
+	if objectRaw["LoadBalancerId"] != nil {
+		d.Set("load_balancer_id", objectRaw["LoadBalancerId"])
+	}
+	if objectRaw["Mss"] != nil {
+		d.Set("mss", objectRaw["Mss"])
+	}
+	if objectRaw["ProxyProtocolEnabled"] != nil {
+		d.Set("proxy_protocol_enabled", objectRaw["ProxyProtocolEnabled"])
+	}
+	if objectRaw["RegionId"] != nil {
+		d.Set("region_id", objectRaw["RegionId"])
+	}
+	if objectRaw["SecSensorEnabled"] != nil {
+		d.Set("sec_sensor_enabled", objectRaw["SecSensorEnabled"])
+	}
+	if objectRaw["SecurityPolicyId"] != nil {
+		d.Set("security_policy_id", objectRaw["SecurityPolicyId"])
+	}
+	if objectRaw["ServerGroupId"] != nil {
+		d.Set("server_group_id", objectRaw["ServerGroupId"])
+	}
+	if objectRaw["StartPort"] != nil {
+		d.Set("start_port", formatInt(objectRaw["StartPort"]))
+	}
+	if objectRaw["ListenerStatus"] != nil {
+		d.Set("status", objectRaw["ListenerStatus"])
+	}
 
-	caCertificateIds1Raw := make([]interface{}, 0)
+	caCertificateIds2Raw := make([]interface{}, 0)
 	if objectRaw["CaCertificateIds"] != nil {
-		caCertificateIds1Raw = objectRaw["CaCertificateIds"].([]interface{})
+		caCertificateIds2Raw = objectRaw["CaCertificateIds"].([]interface{})
 	}
 
-	d.Set("ca_certificate_ids", caCertificateIds1Raw)
-	certificateIds1Raw := make([]interface{}, 0)
+	d.Set("ca_certificate_ids", caCertificateIds2Raw)
+	certificateIds2Raw := make([]interface{}, 0)
 	if objectRaw["CertificateIds"] != nil {
-		certificateIds1Raw = objectRaw["CertificateIds"].([]interface{})
+		certificateIds2Raw = objectRaw["CertificateIds"].([]interface{})
 	}
 
-	d.Set("certificate_ids", certificateIds1Raw)
+	d.Set("certificate_ids", certificateIds2Raw)
+	proxyProtocolConfigMaps := make([]map[string]interface{}, 0)
+	proxyProtocolConfigMap := make(map[string]interface{})
+	proxyProtocolV2Config2Raw := make(map[string]interface{})
+	if objectRaw["ProxyProtocolV2Config"] != nil {
+		proxyProtocolV2Config2Raw = objectRaw["ProxyProtocolV2Config"].(map[string]interface{})
+	}
+	if len(proxyProtocolV2Config2Raw) > 0 {
+		proxyProtocolConfigMap["proxy_protocol_config_private_link_ep_id_enabled"] = proxyProtocolV2Config2Raw["Ppv2PrivateLinkEpIdEnabled"]
+		proxyProtocolConfigMap["proxy_protocol_config_private_link_eps_id_enabled"] = proxyProtocolV2Config2Raw["Ppv2PrivateLinkEpsIdEnabled"]
+		proxyProtocolConfigMap["proxy_protocol_config_vpc_id_enabled"] = proxyProtocolV2Config2Raw["Ppv2VpcIdEnabled"]
+
+		proxyProtocolConfigMaps = append(proxyProtocolConfigMaps, proxyProtocolConfigMap)
+	}
+	if objectRaw["ProxyProtocolV2Config"] != nil {
+		if err := d.Set("proxy_protocol_config", proxyProtocolConfigMaps); err != nil {
+			return err
+		}
+	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -286,6 +395,91 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	if d.HasChange("status") {
+		nlbServiceV2 := NlbServiceV2{client}
+		object, err := nlbServiceV2.DescribeNlbListener(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("status").(string)
+		if object["ListenerStatus"].(string) != target {
+			if target == "Running" {
+				action := "StartListener"
+				conn, err := client.NewNlbClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["ListenerId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				request["ClientToken"] = buildClientToken(action)
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				nlbServiceV2 := NlbServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+
+			}
+			if target == "Stopped" {
+				action := "StopListener"
+				conn, err := client.NewNlbClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["ListenerId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				request["ClientToken"] = buildClientToken(action)
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				nlbServiceV2 := NlbServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+
+			}
+		}
+	}
+
 	action := "UpdateListenerAttribute"
 	conn, err := client.NewNlbClient()
 	if err != nil {
@@ -312,17 +506,17 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 
 	if !d.IsNewResource() && d.HasChange("certificate_ids") {
 		update = true
-		if v, ok := d.GetOk("certificate_ids"); ok {
-			certificateIdsMaps := v.([]interface{})
-			request["CertificateIds"] = certificateIdsMaps
+		if v, ok := d.GetOk("certificate_ids"); ok || d.HasChange("certificate_ids") {
+			certificateIdsMapsArray := v.([]interface{})
+			request["CertificateIds"] = certificateIdsMapsArray
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("ca_certificate_ids") {
 		update = true
-		if v, ok := d.GetOk("ca_certificate_ids"); ok {
-			caCertificateIdsMaps := v.([]interface{})
-			request["CaCertificateIds"] = caCertificateIdsMaps
+		if v, ok := d.GetOk("ca_certificate_ids"); ok || d.HasChange("ca_certificate_ids") {
+			caCertificateIdsMapsArray := v.([]interface{})
+			request["CaCertificateIds"] = caCertificateIdsMapsArray
 		}
 	}
 
@@ -366,14 +560,38 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		request["Mss"] = d.Get("mss")
 	}
 
+	if !d.IsNewResource() && d.HasChange("proxy_protocol_config") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+
+		if v := d.Get("proxy_protocol_config"); v != nil {
+			proxyProtocolConfigVpcIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_vpc_id_enabled", v)
+			if proxyProtocolConfigVpcIdEnabled != nil && (d.HasChange("proxy_protocol_config.0.proxy_protocol_config_vpc_id_enabled") || proxyProtocolConfigVpcIdEnabled != "") {
+				objectDataLocalMap["Ppv2VpcIdEnabled"] = proxyProtocolConfigVpcIdEnabled
+			}
+			proxyProtocolConfigPrivateLinkEpIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_private_link_ep_id_enabled", v)
+			if proxyProtocolConfigPrivateLinkEpIdEnabled != nil && (d.HasChange("proxy_protocol_config.0.proxy_protocol_config_private_link_ep_id_enabled") || proxyProtocolConfigPrivateLinkEpIdEnabled != "") {
+				objectDataLocalMap["Ppv2PrivateLinkEpIdEnabled"] = proxyProtocolConfigPrivateLinkEpIdEnabled
+			}
+			proxyProtocolConfigPrivateLinkEpsIdEnabled, _ := jsonpath.Get("$[0].proxy_protocol_config_private_link_eps_id_enabled", v)
+			if proxyProtocolConfigPrivateLinkEpsIdEnabled != nil && (d.HasChange("proxy_protocol_config.0.proxy_protocol_config_private_link_eps_id_enabled") || proxyProtocolConfigPrivateLinkEpsIdEnabled != "") {
+				objectDataLocalMap["Ppv2PrivateLinkEpsIdEnabled"] = proxyProtocolConfigPrivateLinkEpsIdEnabled
+			}
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["ProxyProtocolV2Config"] = string(objectDataLocalMapJson)
+		}
+	}
+
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -381,9 +599,9 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -394,101 +612,11 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if d.HasChange("status") {
-		client := meta.(*connectivity.AliyunClient)
-		nlbServiceV2 := NlbServiceV2{client}
-		object, err := nlbServiceV2.DescribeNlbListener(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
-		target := d.Get("status").(string)
-		if object["ListenerStatus"].(string) != target {
-			if target == "Running" {
-				action = "StartListener"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["ListenerId"] = d.Id()
-				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-					request["ClientToken"] = buildClientToken(action)
-
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				nlbServiceV2 := NlbServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-
-			}
-			if target == "Stopped" {
-				action = "StopListener"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["ListenerId"] = d.Id()
-				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-					request["ClientToken"] = buildClientToken(action)
-
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				nlbServiceV2 := NlbServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-
-			}
-		}
-	}
-
 	if d.HasChange("tags") {
 		nlbServiceV2 := NlbServiceV2{client}
 		if err := nlbServiceV2.SetResourceTags(d, "listener"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	return resourceAliCloudNlbListenerRead(d, meta)
 }
@@ -507,7 +635,6 @@ func resourceAliCloudNlbListenerDelete(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
@@ -524,18 +651,22 @@ func resourceAliCloudNlbListenerDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	nlbServiceV2 := NlbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nlbServiceV2.DescribeAsyncNlbListenerStateRefreshFunc(d, response, "$.Status", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 30*time.Second, nlbServiceV2.DescribeAsyncNlbListenerStateRefreshFunc(d, response, "$.Status", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
+
 	return nil
 }

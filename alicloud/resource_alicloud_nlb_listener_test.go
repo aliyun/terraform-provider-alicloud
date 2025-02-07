@@ -379,37 +379,64 @@ func TestAccAliCloudNlbListener_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"listener_protocol": "TCP",
-					"listener_port":     "80",
-					"load_balancer_id":  "${alicloud_nlb_load_balancer.default.id}",
-					"server_group_id":   "${alicloud_nlb_server_group.default.0.id}",
+					"listener_protocol":      "TCP",
+					"listener_port":          "80",
+					"load_balancer_id":       "${alicloud_nlb_load_balancer.default.id}",
+					"server_group_id":        "${alicloud_nlb_server_group.default.0.id}",
+					"proxy_protocol_enabled": "true",
+					"proxy_protocol_config": []map[string]interface{}{
+						{
+							"proxy_protocol_config_private_link_eps_id_enabled": "true",
+							"proxy_protocol_config_private_link_ep_id_enabled":  "true",
+							"proxy_protocol_config_vpc_id_enabled":              "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"listener_protocol": "TCP",
-						"listener_port":     "80",
-						"load_balancer_id":  CHECKSET,
-						"server_group_id":   CHECKSET,
+						"listener_protocol":      "TCP",
+						"listener_port":          "80",
+						"load_balancer_id":       CHECKSET,
+						"server_group_id":        CHECKSET,
+						"proxy_protocol_enabled": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"listener_description": "${var.name}_update",
+					"listener_description":   "${var.name}_update",
+					"proxy_protocol_enabled": "false",
+					"proxy_protocol_config": []map[string]interface{}{
+						{
+							"proxy_protocol_config_private_link_eps_id_enabled": "true",
+							"proxy_protocol_config_private_link_ep_id_enabled":  "true",
+							"proxy_protocol_config_vpc_id_enabled":              "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"listener_description": name + "_update",
+						"listener_description":   name + "_update",
+						"proxy_protocol_enabled": "false",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cps": "0",
+					"cps":                    "0",
+					"proxy_protocol_enabled": "true",
+					"proxy_protocol_config": []map[string]interface{}{
+						{
+							"proxy_protocol_config_private_link_eps_id_enabled": "true",
+							"proxy_protocol_config_private_link_ep_id_enabled":  "true",
+							"proxy_protocol_config_vpc_id_enabled":              "false",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cps": "0",
+						"cps":                    "0",
+						"proxy_protocol_enabled": "true",
 					}),
 				),
 			},
