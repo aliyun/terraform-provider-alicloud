@@ -99,12 +99,9 @@ func dataSourceAlicloudSaeInstanceSpecificationsRead(d *schema.ResourceData, met
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_instance_specifications", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-	resp, err := jsonpath.Get("$.body.Data", response)
+	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.Data", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

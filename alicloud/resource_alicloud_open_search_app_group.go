@@ -171,11 +171,6 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_open_search_app_group", "POST "+action, AlibabaCloudSdkGoERROR)
 	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
 	d.SetId(fmt.Sprint(response["result"].(map[string]interface{})["instanceId"]))
 
 	return resourceAlicloudOpenSearchAppGroupUpdate(d, meta)
@@ -259,15 +254,6 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		if code, exist := response["code"]; exist && code.(string) != "Success" {
-			return WrapError(Error("Update AppGroup failed for " + response["message"].(string)))
-		}
-
 	}
 	update = false
 	if d.HasChange("quota") && !d.IsNewResource() {
@@ -301,14 +287,6 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 		addDebug("PUT "+action, response, body)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		if code, exist := response["code"]; exist && code.(string) != "Success" {
-			return WrapError(Error("Update AppGroup failed for " + response["message"].(string)))
 		}
 	}
 	stateConf := BuildStateConf([]string{}, []string{"config_pending", "normal"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, openSearchService.OpenSearchAppStateRefreshFunc(d.Id(), []string{}))

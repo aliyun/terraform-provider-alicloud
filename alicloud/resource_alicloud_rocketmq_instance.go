@@ -403,7 +403,7 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	id, _ := jsonpath.Get("$.body.data", response)
+	id, _ := jsonpath.Get("$.data", response)
 	d.SetId(fmt.Sprint(id))
 
 	rocketmqServiceV2 := RocketmqServiceV2{client}

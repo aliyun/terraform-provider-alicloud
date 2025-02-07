@@ -52,7 +52,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
@@ -90,7 +89,6 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -266,7 +264,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
@@ -344,7 +341,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -414,7 +410,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaSchedule(id string) (object
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -484,7 +479,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.data.users[*]", response)
 	if err != nil {
@@ -567,7 +561,6 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTunnelQuotaTimer(id string) (obj
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }

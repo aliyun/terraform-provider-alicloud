@@ -397,9 +397,6 @@ func resourceAliCloudSaeGreyTagRouteUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
-		}
 	}
 	return resourceAliCloudSaeGreyTagRouteRead(d, meta)
 }
@@ -428,8 +425,5 @@ func resourceAliCloudSaeGreyTagRouteDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "AliCloudSaeGreyTagRouteDelete", response))
-	}
 	return nil
 }

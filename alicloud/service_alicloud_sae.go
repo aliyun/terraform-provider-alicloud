@@ -581,9 +581,6 @@ func (s *SaeService) DescribeSaeGreyTagRoute(id string) (object map[string]inter
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)

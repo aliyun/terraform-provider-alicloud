@@ -3886,16 +3886,25 @@ func formatError(response map[string]interface{}, err error) error {
 		return err
 	}
 	code, ok1 := response["Code"]
+	if !ok1 {
+		code, ok1 = response["code"]
+	}
 	if ok1 && (strings.ToLower(fmt.Sprint(code)) == "success" || fmt.Sprint(code) == "200") {
 		return err
 	}
 	success, ok2 := response["Success"]
+	if !ok2 {
+		success, ok2 = response["success"]
+	}
 	if ok2 && fmt.Sprint(success) == "true" {
 		return err
 	}
 	// There is a bug in some product api that the request is success but its message is empty and the code is 0
 	// like ENS API
 	message, ok3 := response["Message"]
+	if !ok3 {
+		message, ok3 = response["message"]
+	}
 	if fmt.Sprint(code) == "0" && (!ok3 || message == nil || fmt.Sprint(message) == "") {
 		return err
 	}
