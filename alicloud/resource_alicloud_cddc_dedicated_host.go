@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -106,10 +105,7 @@ func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "CreateDedicatedHost"
 	request := make(map[string]interface{})
-	conn, err := client.NewCddcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("auto_renew"); ok {
 		request["AutoRenew"] = v
 	}
@@ -137,11 +133,9 @@ func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interf
 		request["VSwitchId"] = v
 	}
 	request["ClientToken"] = buildClientToken("CreateDedicatedHost")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -195,10 +189,7 @@ func resourceAlicloudCddcDedicatedHostRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cddcService := CddcService{client}
-	conn, err := client.NewCddcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -226,7 +217,7 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		action := "ModifyDedicatedHostAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -256,7 +247,7 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		action := "ModifyDedicatedHostClass"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

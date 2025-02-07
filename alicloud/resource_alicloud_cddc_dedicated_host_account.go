@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +54,7 @@ func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	action := "CreateDedicatedHostAccount"
 	request := make(map[string]interface{})
-	conn, err := client.NewCddcClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AccountName"] = d.Get("account_name")
 	request["AccountPassword"] = d.Get("account_password")
 	if v, ok := d.GetOk("account_type"); ok {
@@ -67,11 +63,9 @@ func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta
 	request["DedicatedHostId"] = d.Get("dedicated_host_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateDedicatedHostAccount")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -128,13 +122,9 @@ func resourceAlicloudCddcDedicatedHostAccountUpdate(d *schema.ResourceData, meta
 	}
 	request["RegionId"] = client.RegionId
 	action := "ModifyDedicatedHostAccount"
-	conn, err := client.NewCddcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -158,10 +148,6 @@ func resourceAlicloudCddcDedicatedHostAccountDelete(d *schema.ResourceData, meta
 	}
 	action := "DeleteDedicatedHostAccount"
 	var response map[string]interface{}
-	conn, err := client.NewCddcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"AccountName":     parts[1],
 		"DedicatedHostId": parts[0],
@@ -170,7 +156,7 @@ func resourceAlicloudCddcDedicatedHostAccountDelete(d *schema.ResourceData, meta
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

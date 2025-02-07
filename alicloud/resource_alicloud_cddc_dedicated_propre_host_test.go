@@ -19,7 +19,7 @@ func SkipTestAccAliCloudCddcDedicatedPropreHost_basic4362(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedproprehost%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacccddcdedicatedproprehost%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCddcDedicatedPropreHostBasicDependence4362)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -154,7 +154,7 @@ resource "alicloud_key_pair" "default" {
 
 data "alicloud_cddc_dedicated_host_groups" "default" {
   engine     = "MySQL"
-  name_regex     = "tf-testacc-cddc_dedicated_propre_host"
+  name_regex     = "^NO-DELETING"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {
@@ -346,7 +346,7 @@ resource "alicloud_key_pair" "default" {
 
 data "alicloud_cddc_dedicated_host_groups" "default" {
   engine     = "MySQL"
-  name_regex     = "tf-testacc-cddc_dedicated_propre_host"
+  name_regex     = "^NO-DELETING"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {

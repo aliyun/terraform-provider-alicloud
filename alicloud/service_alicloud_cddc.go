@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,20 +16,15 @@ type CddcService struct {
 
 func (s *CddcService) DescribeCddcDedicatedHostGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCddcClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDedicatedHostGroups"
 	request := map[string]interface{}{
 		"RegionId":             s.client.RegionId,
 		"DedicatedHostGroupId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -60,10 +54,7 @@ func (s *CddcService) DescribeCddcDedicatedHostGroup(id string) (object map[stri
 }
 
 func (s *CddcService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewCddcClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
@@ -81,7 +72,7 @@ func (s *CddcService) ListTagResources(id string, resourceType string) (object i
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -119,12 +110,8 @@ func (s *CddcService) SetResourceTags(d *schema.ResourceData, resourceType strin
 		return WrapError(err)
 	}
 	if d.HasChange("tags") {
+		client := s.client
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewCddcClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -143,7 +130,7 @@ func (s *CddcService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -175,7 +162,7 @@ func (s *CddcService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -198,10 +185,7 @@ func (s *CddcService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 func (s *CddcService) DescribeCddcDedicatedHost(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCddcClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
@@ -213,11 +197,9 @@ func (s *CddcService) DescribeCddcDedicatedHost(id string) (object map[string]in
 		"DedicatedHostGroupId": parts[0],
 		"DedicatedHostId":      parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -266,10 +248,7 @@ func (s *CddcService) CddcDedicatedHostStateRefreshFunc(id string, failStates []
 }
 func (s *CddcService) DescribeCddcDedicatedHostAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewCddcClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDedicatedHosts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -281,11 +260,9 @@ func (s *CddcService) DescribeCddcDedicatedHostAccount(id string) (object map[st
 		"DedicatedHostId": parts[0],
 		"PageSize":        PageSizeMedium,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
