@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -39,8 +40,12 @@ func TestAccAlicloudCddcHostEcsLevelInfosDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCddcHostEcsLevelInfosDataSourceNameMapFunc,
 		fakeMapFunc:  fakeCddcHostEcsLevelInfosMapFunc,
 	}
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+	}
 
-	alicloudCddcHostEcsLevelInfoCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	alicloudCddcHostEcsLevelInfoCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }
 func testAccCheckAlicloudCddcHostEcsLevelInfosDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

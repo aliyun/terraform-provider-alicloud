@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -141,7 +141,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -264,7 +264,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -386,7 +386,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -508,7 +508,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -630,7 +630,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -680,7 +680,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -730,7 +730,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
@@ -780,7 +780,7 @@ func SkipTestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudCddcDedicatedHostGroup_basic8(t *testing.T) {
+func TestAccAliCloudCddcDedicatedHostGroup_basic8(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -67,8 +68,12 @@ func TestAccAlicloudCddcDedicatedHostGroupsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCddcDedicatedHostGroupsNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCddcDedicatedHostGroupsNameMapFunc,
 	}
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+	}
 
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -141,7 +146,7 @@ func TestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T) {
 			"names.0":                            fmt.Sprintf("tf-testAccName-%d", rand),
 			"ids.#":                              "1",
 			"groups.#":                           "1",
-			"groups.0.engine":                    "SQLServer",
+			"groups.0.engine":                    CHECKSET,
 			"groups.0.dedicated_host_group_desc": fmt.Sprintf("tf-testAccName-%d", rand),
 			"groups.0.allocation_policy":         "Evenly",
 			"groups.0.cpu_allocation_ratio":      "101",
@@ -163,7 +168,11 @@ func TestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudCddcDedicatedHostGroupsNameMapFunc,
 	}
 
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+	}
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

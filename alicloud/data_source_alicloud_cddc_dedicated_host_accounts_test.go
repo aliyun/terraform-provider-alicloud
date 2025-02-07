@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -70,8 +71,12 @@ func TestAccAlicloudCddcDedicatedHostAccountsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
 	}
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+	}
 
-	alicloudCddcDedicatedHostAccountsCheckInfo.dataSourceTestCheck(t, rand, idsConf, dedicatedHostIdConf, nameRegexConf, allConf)
+	alicloudCddcDedicatedHostAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, dedicatedHostIdConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string
@@ -85,15 +90,37 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_cddc_dedicated_host_groups" "default" {}
+data "alicloud_cddc_zones" "default" {}
 
-data "alicloud_cddc_dedicated_hosts" "default" {
-  dedicated_host_group_id = data.alicloud_cddc_dedicated_host_groups.default.ids.0
+data "alicloud_cddc_host_ecs_level_infos" "default" {
+  db_type      = "mysql"
+  zone_id      = data.alicloud_cddc_zones.default.ids.0
+  storage_type = "cloud_essd"
 }
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_cddc_dedicated_host_groups.default.groups.0.vpc_id
+  zone_id = data.alicloud_cddc_zones.default.ids.0
+}
+
+data "alicloud_cddc_dedicated_host_groups" "default" {
+  name_regex = "^NO-DELETING"
+  engine     = "MySQL"
+}
+
+resource "alicloud_cddc_dedicated_host" "default" {
+  host_name               = var.name
+  dedicated_host_group_id = data.alicloud_cddc_dedicated_host_groups.default.ids.0
+  host_class              = data.alicloud_cddc_host_ecs_level_infos.default.infos.0.res_class_code
+  zone_id                 = data.alicloud_cddc_zones.default.ids.0
+  vswitch_id              = data.alicloud_vswitches.default.ids.0
+  payment_type            = "Subscription"
+}
+
 resource "alicloud_cddc_dedicated_host_account" "default" {
   account_name      = var.name
   account_password  = "Test1234+!"
-  dedicated_host_id = data.alicloud_cddc_dedicated_hosts.default.hosts.0.dedicated_host_id
+  dedicated_host_id = alicloud_cddc_dedicated_host.default.dedicated_host_id
   account_type      = "Normal"
 }
 

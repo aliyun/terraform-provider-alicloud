@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
+func TestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostMap0)
@@ -34,6 +34,7 @@ func SkipTestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -41,7 +42,7 @@ func SkipTestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_group_id": "${local.dedicated_host_group_id}",
+					"dedicated_host_group_id": "${data.alicloud_cddc_dedicated_host_groups.default.ids.0}",
 					"host_class":              "${data.alicloud_cddc_host_ecs_level_infos.default.infos.0.res_class_code}",
 					"zone_id":                 "${data.alicloud_cddc_zones.default.ids.0}",
 					"vswitch_id":              "${data.alicloud_vswitches.default.ids.0}",
@@ -130,7 +131,7 @@ func SkipTestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCddcDedicatedHost_basic1(t *testing.T) {
+func TestAccAlicloudCddcDedicatedHost_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostMap0)
@@ -145,6 +146,7 @@ func SkipTestAccAlicloudCddcDedicatedHost_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -152,7 +154,7 @@ func SkipTestAccAlicloudCddcDedicatedHost_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_group_id": "${local.dedicated_host_group_id}",
+					"dedicated_host_group_id": "${data.alicloud_cddc_dedicated_host_groups.default.ids.0}",
 					"host_class":              "${data.alicloud_cddc_host_ecs_level_infos.default.infos.0.res_class_code}",
 					"auto_renew":              "false",
 					"zone_id":                 "${data.alicloud_cddc_zones.default.ids.0}",
@@ -203,10 +205,6 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^tf-example$"
-}
-
 data "alicloud_cddc_zones" "default" {}
 
 data "alicloud_cddc_host_ecs_level_infos" "default" {
@@ -216,28 +214,15 @@ data "alicloud_cddc_host_ecs_level_infos" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+  vpc_id  = data.alicloud_cddc_dedicated_host_groups.default.groups.0.vpc_id
   zone_id = data.alicloud_cddc_zones.default.ids.0
 }
 
 data "alicloud_cddc_dedicated_host_groups" "default" {
+  name_regex = "^NO-DELETING"
   engine     = "MySQL"
 }
 
-resource "alicloud_cddc_dedicated_host_group" "default" {
-	count = length(data.alicloud_cddc_dedicated_host_groups.default.ids) > 0 ? 0 : 1
-	engine                    = "MySQL"
-	vpc_id                    = data.alicloud_vpcs.default.ids.0
-	cpu_allocation_ratio      = 101
-	mem_allocation_ratio      = 50
-	disk_allocation_ratio     = 200
-	allocation_policy         = "Evenly"
-	host_replace_policy       = "Manual"
-	dedicated_host_group_desc = var.name
-}
-locals {
-	dedicated_host_group_id = length(data.alicloud_cddc_dedicated_host_groups.default.ids) > 0 ? data.alicloud_cddc_dedicated_host_groups.default.ids.0 : concat(alicloud_cddc_dedicated_host_group.default[*].id, [""])[0]
-}
 `, name)
 }
 
