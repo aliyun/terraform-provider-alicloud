@@ -3,28 +3,22 @@ subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_listener"
 description: |-
-  Provides a Alicloud NLB Listener resource.
+  Provides a Alicloud Network Load Balancer (NLB) Listener resource.
 ---
 
 # alicloud_nlb_listener
 
-Provides a NLB Listener resource.
+Provides a Network Load Balancer (NLB) Listener resource.
 
 
 
-For information about NLB Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createlistener).
+For information about Network Load Balancer (NLB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createlistener).
 
 -> **NOTE:** Available since v1.191.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_listener&exampleId=719b36d3-b3c5-f8e2-9897-0b9972458db784c383ce&activeTab=example&spm=docs.r.nlb_listener.0.719b36d3b3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -146,23 +140,22 @@ The following arguments are supported:
 -> **NOTE:**  This parameter takes effect only for TCPSSL listeners.
 
 * `cps` - (Optional, Int) The maximum number of connections that can be created per second on the NLB instance. Valid values: `0` to `1000000`. `0` specifies that the number of connections is unlimited.
-* `end_port` - (Optional, ForceNew) The last port in the listener port range. Valid values: `0` to `65535`. The number of the last port must be greater than the number of the first port.
+* `end_port` - (Optional, ForceNew, Int) The last port in the listener port range. Valid values: `0` to `65535`. The number of the last port must be greater than the number of the first port.
 
 -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
-* `idle_timeout` - (Optional, Int) The timeout period of idle connections. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
+* `idle_timeout` - (Optional, Computed, Int) The timeout period of idle connections. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
 * `listener_description` - (Optional) Enter a name for the listener.
-
-  The description must be 2 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (\_), and hyphens (-).
+The description must be 2 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (\_), and hyphens (-).
 * `listener_port` - (Required, ForceNew, Int) The listener port. Valid values: `0` to `65535`.
-
-  If you set the value to `0`, the listener listens by port range. If you set the value to `0`, you must specify `StartPort` and `EndPort`.
+If you set the value to `0`, the listener listens by port range. If you set the value to `0`, you must specify `StartPort` and `EndPort`.
 * `listener_protocol` - (Required, ForceNew) The listening protocol. Valid values: `TCP`, `UDP`, and `TCPSSL`.
 * `load_balancer_id` - (Required, ForceNew) The ID of the Network Load Balancer (NLB) instance.
 * `mss` - (Optional, Int) The maximum size of a TCP segment. Unit: bytes. Valid values: `0` to `1500`. `0` specifies that the maximum segment size remains unchanged.
 
 -> **NOTE:**  This parameter is supported only by TCP listeners and listeners that use SSL over TCP.
 
+* `proxy_protocol_config` - (Optional, Computed, List, Available since v1.243.0) The Proxy Protocol is used to carry the VpcId, PrivateLinkEpId, and PrivateLinkEpsId information to the backend server for configuration. See [`proxy_protocol_config`](#proxy_protocol_config) below.
 * `proxy_protocol_enabled` - (Optional, Computed) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Valid values:
   - `true`
   - `false` (default)
@@ -174,33 +167,42 @@ The following arguments are supported:
 
 * `security_policy_id` - (Optional, Computed) The security policy ID. System security policies and custom security policies are supported.
 
-  Valid values: `tls_cipher_policy\_1\_0` (default), `tls_cipher_policy\_1\_1`, `tls_cipher_policy\_1\_2`, `tls_cipher_policy\_1\_2\_strict`, and `tls_cipher_policy\_1\_2\_strict_with\_1\_3`.
+Valid values: `tls_cipher_policy\_1\_0` (default), `tls_cipher_policy\_1\_1`, `tls_cipher_policy\_1\_2`, `tls_cipher_policy\_1\_2\_strict`, and `tls_cipher_policy\_1\_2\_strict_with\_1\_3`.
 
 -> **NOTE:**  This parameter takes effect only for listeners that use SSL over TCP.
 
 * `server_group_id` - (Required) The ID of the server group.
-* `start_port` - (Optional, ForceNew) The first port in the listener port range. Valid values: `0` to `65535`.
+* `start_port` - (Optional, ForceNew, Int) The first port in the listener port range. Valid values: `0` to `65535`.
 
 -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`, `Stopped`. When you want to enable this instance, you can set the property value to `Running`; 
 * `tags` - (Optional, Map) The tag of the resource
 
+### `proxy_protocol_config`
+
+The proxy_protocol_config supports the following:
+* `proxy_protocol_config_private_link_ep_id_enabled` - (Optional, Computed, Available since v1.243.0) Whether to enable carrying PrivateLinkEpId to backend servers through Proxy Protocol.
+* `proxy_protocol_config_private_link_eps_id_enabled` - (Optional, Available since v1.243.0) Whether to enable carrying PrivateLinkEpsId to backend servers through the Proxy Protocol.
+* `proxy_protocol_config_vpc_id_enabled` - (Optional, Available since v1.243.0) Whether to enable carrying VpcId to backend servers through Proxy Protocol.
+
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `region_id` - The ID of the region where the Network Load Balancer (NLB) instance is deployed.
+You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/doc-detail/443657.html) operation to query the most recent region list.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Listener.
-* `delete` - (Defaults to 5 mins) Used when delete the Listener.
-* `update` - (Defaults to 5 mins) Used when update the Listener.
+* `create` - (Defaults to 30 mins) Used when create the Listener.
+* `delete` - (Defaults to 30 mins) Used when delete the Listener.
+* `update` - (Defaults to 30 mins) Used when update the Listener.
 
 ## Import
 
-NLB Listener can be imported using the id, e.g.
+Network Load Balancer (NLB) Listener can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nlb_listener.example <id>

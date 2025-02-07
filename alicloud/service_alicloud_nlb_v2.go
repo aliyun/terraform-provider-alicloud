@@ -184,51 +184,6 @@ func (s *NlbServiceV2) NlbListenerAdditionalCertificateAttachmentStateRefreshFun
 	}
 }
 
-func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
-	client := s.client
-	id := d.Id()
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	parts := strings.Split(id, ":")
-	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
-	}
-	action := "GetJobStatus"
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["JobId"], err = jsonpath.Get("$.JobId", res)
-
-	request["ClientToken"] = buildClientToken(action)
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	return response, nil
-}
-
 func (s *NlbServiceV2) DescribeAsyncNlbListenerAdditionalCertificateAttachmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetJobStatus(d, res)
@@ -473,18 +428,16 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
+			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -492,9 +445,9 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -525,8 +478,6 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -534,9 +485,9 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -740,6 +691,7 @@ func (s *NlbServiceV2) NlbServerGroupServerAttachmentStateRefreshFunc(id string,
 }
 
 // DescribeNlbServerGroupServerAttachment >>> Encapsulated.
+
 // DescribeNlbListener <<< Encapsulated get interface for Nlb Listener.
 
 func (s *NlbServiceV2) DescribeNlbListener(id string) (object map[string]interface{}, err error) {
@@ -747,15 +699,15 @@ func (s *NlbServiceV2) DescribeNlbListener(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetListenerAttribute"
 	conn, err := client.NewNlbClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ListenerId"] = id
+	request["ListenerId"] = id
 	request["RegionId"] = client.RegionId
+	action := "GetListenerAttribute"
 	request["ClientToken"] = buildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
@@ -772,10 +724,9 @@ func (s *NlbServiceV2) DescribeNlbListener(id string) (object map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.listener"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Listener", id)), NotFoundMsg, response)
@@ -799,6 +750,13 @@ func (s *NlbServiceV2) NlbListenerStateRefreshFunc(id string, field string, fail
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -815,14 +773,23 @@ func (s *NlbServiceV2) DescribeAsyncNlbListenerStateRefreshFunc(d *schema.Resour
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
@@ -965,3 +932,47 @@ func (s *NlbServiceV2) DescribeAsyncNlbLoadBalancerStateRefreshFunc(d *schema.Re
 }
 
 // DescribeNlbLoadBalancer >>> Encapsulated.
+
+// Async Api <<< Encapsulated for Nlb.
+func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	conn, err := client.NewNlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["JobId"], err = jsonpath.Get("$.JobId", res)
+
+	action := "GetJobStatus"
+	request["ClientToken"] = buildClientToken(action)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// Async Api >>> Encapsulated.
