@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,19 +15,14 @@ type ServicemeshService struct {
 
 func (s *ServicemeshService) DescribeServiceMeshServiceMesh(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewServicemeshClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeServiceMeshDetail"
 	request := map[string]interface{}{
 		"ServiceMeshId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -40,7 +34,7 @@ func (s *ServicemeshService) DescribeServiceMeshServiceMesh(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound"}) {
+		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound", "StatusForbidden"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh:ServiceMesh", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -55,19 +49,14 @@ func (s *ServicemeshService) DescribeServiceMeshServiceMesh(id string) (object m
 
 func (s *ServicemeshService) DescribeServiceMeshDetail(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewServicemeshClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeServiceMeshDetail"
 	request := map[string]interface{}{
 		"ServiceMeshId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,19 +100,14 @@ func (s *ServicemeshService) ServiceMeshServiceMeshStateRefreshFunc(id string, f
 
 func (s *ServicemeshService) DescribeUserPermissions(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewServicemeshClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeUserPermissions"
 	request := map[string]interface{}{
 		"SubAccountUserId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"StatusForbidden"}) {
 				wait()
@@ -148,10 +132,7 @@ func (s *ServicemeshService) DescribeUserPermissions(id string) (object map[stri
 
 func (s *ServicemeshService) DescribeServiceMeshExtensionProvider(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewServicemeshClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return object, WrapError(err)
@@ -163,11 +144,9 @@ func (s *ServicemeshService) DescribeServiceMeshExtensionProvider(id string) (ob
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
