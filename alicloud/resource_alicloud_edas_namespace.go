@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -58,10 +57,7 @@ func resourceAlicloudEdasNamespaceCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "/pop/v5/user_region_def"
 	request := make(map[string]*string)
-	conn, err := client.NewEdasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOkExists("debug_enable"); ok {
 		request["DebugEnable"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
@@ -72,7 +68,7 @@ func resourceAlicloudEdasNamespaceCreate(d *schema.ResourceData, meta interface{
 	request["RegionName"] = StringPointer(d.Get("namespace_name").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,14 +81,6 @@ func resourceAlicloudEdasNamespaceCreate(d *schema.ResourceData, meta interface{
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_namespace", action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-	}
-	if fmt.Sprint(response["Code"]) != "200" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 	responseUserDefineRegionEntity := response["UserDefineRegionEntity"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseUserDefineRegionEntity["Id"]))
@@ -119,10 +107,7 @@ func resourceAlicloudEdasNamespaceRead(d *schema.ResourceData, meta interface{})
 }
 func resourceAlicloudEdasNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEdasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]*string{
@@ -150,7 +135,7 @@ func resourceAlicloudEdasNamespaceUpdate(d *schema.ResourceData, meta interface{
 		action := "/pop/v5/user_region_def"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = client.RoaPost("Edas", "2017-08-01", action, request, nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -164,14 +149,6 @@ func resourceAlicloudEdasNamespaceUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		if fmt.Sprint(response["Code"]) != "200" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
 	}
 	return resourceAlicloudEdasNamespaceRead(d, meta)
 }
@@ -179,17 +156,14 @@ func resourceAlicloudEdasNamespaceDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v5/user_region_def"
 	var response map[string]interface{}
-	conn, err := client.NewEdasClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]*string{
 		"Id": StringPointer(d.Id()),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("Edas", "2017-08-01", action, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -202,14 +176,6 @@ func resourceAlicloudEdasNamespaceDelete(d *schema.ResourceData, meta interface{
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
-	}
-	if fmt.Sprint(response["Code"]) != "200" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
 	}
 	return nil
 }
