@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -27,10 +26,6 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "GetJobInfo"
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["GroupId"] = parts[1]
@@ -38,11 +33,9 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	query["Namespace"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-04-30"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -55,6 +48,9 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"groupid not exist"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Job", id)), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -105,20 +101,14 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListNamespaces"
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Namespace"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -188,10 +178,6 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["GroupId"] = parts[1]
@@ -199,11 +185,9 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	request["RegionId"] = client.RegionId
 	action := "GetAppGroup"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -216,6 +200,9 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"groupid not exist"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("AppGroup", id)), NotFoundMsg, err)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
