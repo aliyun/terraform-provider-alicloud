@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"strings"
 	"time"
@@ -53,7 +52,7 @@ func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interfac
 	action := "CreateNotificationConfiguration"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	conn, err := client.NewEssClient()
+	var err error
 	request["ScalingGroupId"] = d.Get("scaling_group_id").(string)
 	request["NotificationArn"] = d.Get("notification_arn").(string)
 	if v, ok := d.GetOk("time_zone"); ok {
@@ -71,11 +70,9 @@ func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interfac
 			request["NotificationType"] = notificationTypes
 		}
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -116,7 +113,7 @@ func resourceAlicloudEssNotificationUpdate(d *schema.ResourceData, meta interfac
 	action := "ModifyNotificationConfiguration"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	conn, err := client.NewEssClient()
+	var err error
 	request["RegionId"] = client.RegionId
 	parts := strings.SplitN(d.Id(), ":", 2)
 	request["ScalingGroupId"] = parts[0]
@@ -137,11 +134,9 @@ func resourceAlicloudEssNotificationUpdate(d *schema.ResourceData, meta interfac
 			request["TimeZone"] = v
 		}
 	}
-	runtime := util.RuntimeOptions{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	runtime.SetAutoretry(true)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

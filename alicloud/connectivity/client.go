@@ -541,6 +541,11 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 		essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		essconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.essconn = essconn
+	} else {
+		err := client.essconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
+		}
 	}
 
 	return do(client.essconn)

@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -124,20 +122,14 @@ func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout i
 
 func (s *EssService) DescribeEssNotification(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEssClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts := strings.SplitN(id, ":", 2)
 	scalingGroupId, notificationArn := parts[0], parts[1]
 	request := map[string]interface{}{
 		"ScalingGroupId": scalingGroupId,
 		"RegionId":       s.client.RegionId,
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("DescribeNotificationConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeNotificationConfigurations", nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotificationConfigurationNotExist", "InvalidScalingGroupId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
@@ -225,17 +217,13 @@ func (s *EssService) ActivityStateRefreshFunc(activityId string, failStates []st
 
 func (s *EssService) DescribeEssScalingGroupById(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEssClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	request := map[string]interface{}{
 		"ScalingGroupId.1": id,
 		"RegionId":         s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("DescribeScalingGroups"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScalingGroups", nil, request, true)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingGroups", AlibabaCloudSdkGoERROR)
 	}
@@ -336,18 +324,13 @@ func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.Scal
 
 func (s *EssService) DescribeEssEciScalingConfiguration(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEssClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	request := map[string]interface{}{
 		"ScalingConfigurationId.1": id,
 		"RegionId":                 s.client.RegionId,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("DescribeEciScalingConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeEciScalingConfigurations", nil, request, true)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeEciScalingConfigurations", AlibabaCloudSdkGoERROR)
 	}
@@ -367,18 +350,13 @@ func (s *EssService) DescribeEssEciScalingConfiguration(id string) (object map[s
 
 func (s *EssService) DescribeEssScalingConfigurationByCommonApi(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewEssClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	request := map[string]interface{}{
 		"ScalingConfigurationId.1": id,
 		"RegionId":                 s.client.RegionId,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("DescribeScalingConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScalingConfigurations", nil, request, true)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingConfigurations", AlibabaCloudSdkGoERROR)
 	}
@@ -615,17 +593,12 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 func (s *EssService) DescribeEssScheduledTask(id string) (object map[string]interface{}, err error) {
 
 	var response map[string]interface{}
-	conn, err := s.client.NewEssClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	request := map[string]interface{}{
 		"ScheduledTaskId.1": id,
 		"RegionId":          s.client.RegionId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("DescribeScheduledTasks"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScheduledTasks", nil, request, true)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScheduledTasks", AlibabaCloudSdkGoERROR)
 	}

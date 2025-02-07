@@ -11,7 +11,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -481,10 +480,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	action := "CreateScalingConfiguration"
 	request := make(map[string]interface{})
-	conn, err := client.NewEssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	securityGroupId := d.Get("security_group_id").(string)
 	securityGroupIds := d.Get("security_group_ids").([]interface{})
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
@@ -773,10 +769,8 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if d.Get("is_outdated").(bool) == true {
 		request["IoOptimized"] = string(NoneOptimized)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{Throttling, "IncorrectScalingGroupStatus"}) {
 				return resource.RetryableError(err)
@@ -845,7 +839,7 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 
 func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEssClient()
+	var err error
 	action := "ModifyScalingConfiguration"
 	request := map[string]interface{}{
 		"ScalingConfigurationId": d.Id(),
@@ -1189,14 +1183,9 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if update {
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
