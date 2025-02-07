@@ -37,17 +37,20 @@ func TestAccAliCloudAckOneCluster_basic4593(t *testing.T) {
 					"cluster_name": name,
 					"network": []map[string]interface{}{
 						{
-							"vpc_id": "${alicloud_vpc.defaultVpc.id}",
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 							"vswitches": []string{
-								"${alicloud_vswitch.defaultyVSwitch.id}"},
+								"${data.alicloud_vswitches.default.ids.0}",
+							},
 						},
 					},
-					"profile": "Default",
+					"profile":        "Default",
+					"argocd_enabled": false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name": CHECKSET,
-						"profile":      "Default",
+						"cluster_name":   CHECKSET,
+						"profile":        "Default",
+						"argocd_enabled": "false",
 					}),
 				),
 			},
@@ -87,9 +90,9 @@ func TestAccAliCloudAckOneCluster_basic4593_XFlow(t *testing.T) {
 					"cluster_name": name,
 					"network": []map[string]interface{}{
 						{
-							"vpc_id": "${alicloud_vpc.defaultVpc.id}",
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 							"vswitches": []string{
-								"${alicloud_vswitch.defaultyVSwitch.id}"},
+								"${data.alicloud_vswitches.default.ids.0}"},
 						},
 					},
 					"profile": "XFlow",
@@ -136,14 +139,88 @@ func TestAccAliCloudAckOneCluster_basic4593_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"network": []map[string]interface{}{
 						{
-							"vpc_id": "${alicloud_vpc.defaultVpc.id}",
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 							"vswitches": []string{
-								"${alicloud_vswitch.defaultyVSwitch.id}"},
+								"${data.alicloud_vswitches.default.ids.0}"},
 						},
 					},
+					"argocd_enabled": false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAckOneCluster_updateArgocdEnabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ack_one_cluster.default"
+	ra := resourceAttrInit(resourceId, AlicloudAckOneClusterMap4593)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AckOneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAckOneCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sackonecluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckOneClusterBasicDependence4593)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AckOneSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_name": name,
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+							"vswitches": []string{
+								"${data.alicloud_vswitches.default.ids.0}"},
+						},
+					},
+					"profile":        "Default",
+					"argocd_enabled": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name":   CHECKSET,
+						"profile":        "Default",
+						"argocd_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_name": name,
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+							"vswitches": []string{
+								"${data.alicloud_vswitches.default.ids.0}"},
+						},
+					},
+					"profile":        "Default",
+					"argocd_enabled": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name":   CHECKSET,
+						"profile":        "Default",
+						"argocd_enabled": "false",
+					}),
 				),
 			},
 			{
@@ -163,31 +240,31 @@ var AlicloudAckOneClusterMap4593 = map[string]string{
 	"profile":      CHECKSET,
 }
 
+// use existing vpc and vswitch because https://project.aone.alibaba-inc.com/v2/project/206563/bug/63062057
 func AlicloudAckOneClusterBasicDependence4593(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "defaultVpc" {
-  cidr_block = "172.16.0.0/12"
-  vpc_name   = var.name
-
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_vswitch" "defaultyVSwitch" {
-  vpc_id       = alicloud_vpc.defaultVpc.id
-  cidr_block   = "172.16.2.0/24"
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = var.name
-
+resource "alicloud_security_group" "default" {
+  count               = 2
+  vpc_id              = data.alicloud_vpcs.default.ids.0
+  security_group_name = "${var.name}"
 }
 
-
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
+}
 `, name)
 }
 
