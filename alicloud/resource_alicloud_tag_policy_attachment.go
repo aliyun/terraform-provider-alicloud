@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -46,17 +45,14 @@ func resourceAlicloudTagPolicyAttachmentCreate(d *schema.ResourceData, meta inte
 	action := "AttachPolicy"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	conn, err := client.NewTagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["PolicyId"] = d.Get("policy_id")
 	request["TargetType"] = d.Get("target_type")
 	request["TargetId"] = d.Get("target_id")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -99,10 +95,7 @@ func resourceAlicloudTagPolicyAttachmentDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DetachPolicy"
 	var response map[string]interface{}
-	conn, err := client.NewTagClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{}
 	request["RegionId"] = client.RegionId
 	parts, err := ParseResourceId(d.Id(), 3)
@@ -115,7 +108,7 @@ func resourceAlicloudTagPolicyAttachmentDelete(d *schema.ResourceData, meta inte
 	request["TargetType"] = targetType
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
