@@ -888,6 +888,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_rewrite_url_rule":                                 resourceAliCloudEsaRewriteUrlRule(),
+			"alicloud_esa_redirect_rule":                                    resourceAliCloudEsaRedirectRule(),
+			"alicloud_esa_http_response_header_modification_rule":           resourceAliCloudEsaHttpResponseHeaderModificationRule(),
 			"alicloud_max_compute_tunnel_quota_timer":                       resourceAliCloudMaxComputeTunnelQuotaTimer(),
 			"alicloud_max_compute_role_user_attachment":                     resourceAliCloudMaxComputeRoleUserAttachment(),
 			"alicloud_max_compute_quota_schedule":                           resourceAliCloudMaxComputeQuotaSchedule(),
