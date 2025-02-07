@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +54,7 @@ func resourceAlicloudServiceMeshExtensionProviderCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "CreateExtensionProvider"
 	request := make(map[string]interface{})
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ServiceMeshId"] = d.Get("service_mesh_id")
 	request["Type"] = d.Get("type")
@@ -67,7 +63,7 @@ func resourceAlicloudServiceMeshExtensionProviderCreate(d *schema.ResourceData, 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -136,14 +132,9 @@ func resourceAlicloudServiceMeshExtensionProviderUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "UpdateExtensionProvider"
-		conn, err := client.NewServicemeshClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -168,10 +159,7 @@ func resourceAlicloudServiceMeshExtensionProviderDelete(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteExtensionProvider"
 	var response map[string]interface{}
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -185,7 +173,7 @@ func resourceAlicloudServiceMeshExtensionProviderDelete(d *schema.ResourceData, 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

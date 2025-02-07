@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -556,10 +555,7 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
 
@@ -743,11 +739,9 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 			request["ClusterDomain"] = jsonPathResult31
 		}
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NameAlreadyExist", "InvalidActiveState.ACK", "ERR404"}) || NeedRetry(err) {
 				wait()
@@ -1147,10 +1141,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	update := false
 	d.Partial(true)
 	action := "UpdateMeshFeature"
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1431,11 +1422,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1457,10 +1446,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	update = false
 	action = "UpdateMeshCRAggregation"
-	conn, err = client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1474,11 +1459,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1500,10 +1483,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	update = false
 	action = "UpgradeMeshEditionPartially"
-	conn, err = client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1515,11 +1494,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 	request["ASMGatewayContinue"] = "false"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1541,10 +1518,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	update = false
 	action = "UpdateControlPlaneLogConfig"
-	conn, err = client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1574,11 +1547,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1600,10 +1571,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	update = false
 	action = "ModifyServiceMeshName"
-	conn, err = client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1613,11 +1580,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	request["Name"] = d.Get("service_mesh_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1634,10 +1599,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	update = false
 	action = "UpdateKialiConfiguration"
-	conn, err = client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
@@ -1769,11 +1730,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1804,10 +1763,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 			for _, item := range clusterIds {
 				action := "RemoveClusterFromServiceMesh"
-				conn, err := client.NewServicemeshClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
@@ -1819,11 +1774,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 					request["ClusterId"] = jsonPathResult
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1851,10 +1804,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 			for _, item := range clusterIds {
 				action := "AddClusterIntoServiceMesh"
-				conn, err := client.NewServicemeshClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
@@ -1866,11 +1815,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 					request["ClusterId"] = jsonPathResult
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1907,10 +1854,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		log.Printf("[INFO] Resource load_balancer.0.pilot_public_eip_id  removed %s removedOk %v added %s addedOk %v", removed, removedOk, added, addedOk)
 		if removedOk && len(removed) > 0 && added != removed {
 			action := "ModifyPilotEipResource"
-			conn, err := client.NewServicemeshClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ServiceMeshId"] = d.Id()
@@ -1922,11 +1865,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					request["EipId"] = jsonPathResult
 				}
 			}
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1949,10 +1890,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 		if addedOk && len(added) > 0 && added != removed {
 			action := "ModifyPilotEipResource"
-			conn, err := client.NewServicemeshClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ServiceMeshId"] = d.Id()
@@ -1964,11 +1901,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				}
 			}
 			request["Operation"] = "BindEip"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -2000,21 +1935,16 @@ func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
 
 	if v, ok := d.GetOkExists("force"); ok {
 		request["Force"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RelatedResourceReused", "StillInitializing"}) || NeedRetry(err) {

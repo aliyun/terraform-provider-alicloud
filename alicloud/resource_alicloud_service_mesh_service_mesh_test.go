@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -37,16 +36,9 @@ func testSweepServiceMeshServiceMesh(region string) error {
 	request := map[string]interface{}{}
 
 	var response map[string]interface{}
-	conn, err := client.NewServicemeshClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcGet("servicemesh", "2020-01-11", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,7 +77,7 @@ func testSweepServiceMeshServiceMesh(region string) error {
 		request := map[string]interface{}{
 			"ServiceMeshId": item["ServiceMeshInfo"].(map[string]interface{})["ServiceMeshId"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Service Mesh (%s): %s", item["ServiceMeshInfo"].(map[string]interface{})["Name"].(string), err)
 		}
@@ -133,7 +125,10 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							// In testing, `customized_zipkin` needs to be set to true for the following reasons:
+							// 1. When creating with version 1.22.89 or higher, setting `customizedZipkin` to false will enable new trace configuration and set `customizedZipkin` to true, which is a product-side behavior.
+							// 2. `tracing` controls whether it is enabled, while `customizedZipkin` controls where it is exported to; this field will gradually become deprecated.
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"kiali": []map[string]interface{}{
@@ -222,7 +217,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin": "true",
+							"customized_zipkin": "false",
 							"telemetry":         "true",
 							"kiali": []map[string]interface{}{
 								{
@@ -465,7 +460,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"kiali": []map[string]interface{}{
@@ -624,7 +619,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"kiali": []map[string]interface{}{
@@ -778,7 +773,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"kiali": []map[string]interface{}{
@@ -1094,7 +1089,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"kiali": []map[string]interface{}{
@@ -1430,7 +1425,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "false",
 							"kiali": []map[string]interface{}{
@@ -1808,7 +1803,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic7(t *testing.T) {
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"tracing":            "false",
@@ -2008,13 +2003,13 @@ func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip": "false",
+							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
 					"mesh_config": []map[string]interface{}{
 						{
-							"customized_zipkin":  "false",
+							"customized_zipkin":  "true",
 							"enable_locality_lb": "false",
 							"telemetry":          "true",
 							"tracing":            "false",
