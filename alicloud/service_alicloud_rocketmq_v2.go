@@ -50,7 +50,6 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -38,11 +37,6 @@ func (s *OpenSearchService) DescribeOpenSearchAppGroup(id string) (object map[st
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
 
 	v, err := jsonpath.Get("$.result", response)

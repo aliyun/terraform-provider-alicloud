@@ -270,8 +270,8 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		resp, _ := jsonpath.Get("$.body.data.projects[*]", response)
-		marker, _ := jsonpath.Get("$.body.data.marker", response)
+		resp, _ := jsonpath.Get("$.data.projects[*]", response)
+		marker, _ := jsonpath.Get("$.data.marker", response)
 		for _, v := range resp.([]interface{}) {
 			item := v.(map[string]interface{})
 			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["name"])) {

@@ -213,9 +213,6 @@ func dataSourceAlicloudSaeGreyTagRoutesRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_grey_tag_routes", action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 		resp, err := jsonpath.Get("$.Data.Result", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Result", response)

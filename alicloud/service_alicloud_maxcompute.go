@@ -37,7 +37,7 @@ func (s *MaxComputeService) DescribeMaxcomputeProject(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.body.data", response)
+	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
 	}
