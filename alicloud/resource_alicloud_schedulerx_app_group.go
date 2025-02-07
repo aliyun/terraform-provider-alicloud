@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -105,10 +104,7 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("namespace"); ok {
 		query["Namespace"] = v
@@ -162,11 +158,9 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 		query["MonitorContactsJson"] = StringPointer(v.(string))
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, request)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -238,10 +232,7 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateAppGroup"
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Namespace"] = parts[0]
@@ -271,11 +262,9 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 		request["MaxConcurrency"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -302,10 +291,7 @@ func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewSchedulerxClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["Namespace"] = parts[0]
 	request["GroupId"] = parts[1]
@@ -314,11 +300,9 @@ func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOkExists("delete_jobs"); ok {
 		request["DeleteJobs"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

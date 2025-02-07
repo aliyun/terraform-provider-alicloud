@@ -24,7 +24,7 @@ func TestAccAliCloudSchedulerxNamespace_basic0(t *testing.T) {
 	resourceId := "alicloud_schedulerx_namespace.default"
 	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Schedulerx2Service{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSchedulerxNamespace")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
