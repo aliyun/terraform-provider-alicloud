@@ -70,7 +70,7 @@ The following arguments are supported:
 
 **Note**: When profile is Default, vswitches might not be deleted when cluster is deleted because there are some remaining resources in the vswitches. We are still fixing this problem.
 
-* `argocd_enabled` - (Optional) Whether to enable ArgoCD. Default to true. Only valid when `profile` is 'Default'. It has to be false when cluster is deleted.
+* `argocd_enabled` - (Optional) (Available since v1.243.0) Whether to enable ArgoCD. Default to true. Only valid when `profile` is 'Default'. It has to be false when cluster is deleted.
 
 
 ### `network`
