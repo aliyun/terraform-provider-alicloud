@@ -235,12 +235,14 @@ The `node_attributes` block supports the following:
 * `key_pair_name` - (Required, ForceNew) The name of the key pair.
 * `data_disk_encrypted` - (Optional, ForceNew, Available since v1.204.0) Whether to enable data disk encryption.
 * `data_disk_kms_key_id` - (Optional, ForceNew, Available since v1.204.0) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
+* `system_disk_encrypted` - (Optional, ForceNew, Available since v1.242.0) Whether to enable system disk encryption.
+* `system_disk_kms_key_id` - (Optional, ForceNew, Available since v1.242.0) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
 
 ### `node_groups`
 
 The node_groups mapping supports the following: 
 
-* `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK. Node group type of GATEWAY is available since v1.219.0.
+* `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK. Node group type of GATEWAY is available since v1.219.0. Node group type of MASTER-EXTEND is available since v1.243.0.
 * `node_group_name` - (Required) The node group name of emr cluster.
 * `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
@@ -462,7 +464,7 @@ The bootstrap_scripts mapping supports the following:
 * `script_path` - (Required) The bootstrap script path, e.g. "oss://bucket/path".
 * `script_args` - (Required) The bootstrap script args, e.g. "--a=b".
 * `priority` - (Deprecated since v1.227.0) The bootstrap scripts priority.
-* `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ .
+* `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’, ‘AFTER_STARTED’ or ‘BEFORE_START’. The execution moment of BEFORE_START is available since v1.243.0.
 * `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCK’ or ‘FAILED_CONTINUE’ .
 * `node_selector` - (Required) The bootstrap scripts execution target. See [`node_selector`](#bootstrap_scripts-node_selector) below.
 
