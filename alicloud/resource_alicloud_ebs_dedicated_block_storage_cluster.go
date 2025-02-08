@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -106,10 +105,7 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterCreate(d *schema.ResourceDat
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewEbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("dedicated_block_storage_cluster_name"); ok {
 		request["DbscName"] = v
@@ -126,7 +122,7 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterCreate(d *schema.ResourceDat
 	action := "CreateDedicatedBlockStorageCluster"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -192,10 +188,7 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterRead(d *schema.ResourceData,
 func resourceAlicloudEbsDedicatedBlockStorageClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewEbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -215,11 +208,9 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterUpdate(d *schema.ResourceDat
 
 	if update {
 		action := "ModifyDedicatedBlockStorageClusterAttribute"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

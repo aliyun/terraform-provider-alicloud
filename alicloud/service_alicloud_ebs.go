@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -16,10 +15,7 @@ type EbsService struct {
 }
 
 func (s *EbsService) DescribeEbsDiskReplicaGroup(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewEbsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"GroupIds": id,
@@ -28,11 +24,9 @@ func (s *EbsService) DescribeEbsDiskReplicaGroup(id string) (object map[string]i
 
 	var response map[string]interface{}
 	action := "DescribeDiskReplicaGroups"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -79,10 +73,7 @@ func (s *EbsService) EbsDiskReplicaGroupStateRefreshFunc(d *schema.ResourceData,
 }
 
 func (s *EbsService) DescribeEbsDedicatedBlockStorageCluster(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewEbsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"DedicatedBlockStorageClusterId": []string{id},
@@ -91,11 +82,9 @@ func (s *EbsService) DescribeEbsDedicatedBlockStorageCluster(id string) (object 
 
 	var response map[string]interface{}
 	action := "DescribeDedicatedBlockStorageClusters"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -139,10 +128,7 @@ func (s *EbsService) EbsDedicatedBlockStorageClusterStateRefreshFunc(d *schema.R
 }
 
 func (s *EbsService) DescribeEbsDiskReplicaPair(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewEbsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"PairIds":  id,
@@ -151,11 +137,9 @@ func (s *EbsService) DescribeEbsDiskReplicaPair(id string) (object map[string]in
 
 	var response map[string]interface{}
 	action := "DescribeDiskReplicaPairs"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
