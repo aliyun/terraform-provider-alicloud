@@ -73,10 +73,7 @@ func resourceAliCloudApiGatewayAccessControlListCreate(d *schema.ResourceData, m
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["AclName"] = d.Get("access_control_list_name")
@@ -87,7 +84,7 @@ func resourceAliCloudApiGatewayAccessControlListCreate(d *schema.ResourceData, m
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -147,7 +144,7 @@ func resourceAliCloudApiGatewayAccessControlListUpdate(d *schema.ResourceData, m
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-
+	var err error
 	if d.HasChange("acl_entrys") {
 		oldEntry, newEntry := d.GetChange("acl_entrys")
 		oldEntrySet := oldEntry.(*schema.Set)
@@ -157,10 +154,6 @@ func resourceAliCloudApiGatewayAccessControlListUpdate(d *schema.ResourceData, m
 
 		if removed.Len() > 0 {
 			action := "RemoveAccessControlListEntry"
-			conn, err := client.NewApigatewayClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["AclId"] = d.Id()
@@ -179,7 +172,7 @@ func resourceAliCloudApiGatewayAccessControlListUpdate(d *schema.ResourceData, m
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -198,10 +191,6 @@ func resourceAliCloudApiGatewayAccessControlListUpdate(d *schema.ResourceData, m
 
 		if added.Len() > 0 {
 			action := "AddAccessControlListEntry"
-			conn, err := client.NewApigatewayClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["AclId"] = d.Id()
@@ -220,7 +209,7 @@ func resourceAliCloudApiGatewayAccessControlListUpdate(d *schema.ResourceData, m
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -248,10 +237,7 @@ func resourceAliCloudApiGatewayAccessControlListDelete(d *schema.ResourceData, m
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["AclId"] = d.Id()
 
@@ -259,7 +245,7 @@ func resourceAliCloudApiGatewayAccessControlListDelete(d *schema.ResourceData, m
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

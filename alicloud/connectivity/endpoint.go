@@ -180,7 +180,7 @@ var productCodeToLocationCode = map[string]string{
 	"gpdb":                 "gpdb",    //GPDB
 	"fc_open":              "fc",      // FC, FCV2
 	"fc":                   "fc",      // FCV3
-	"apigateway":           "apigateway",
+	"cloudapi":             "apigateway",
 	"datahub":              "datahub",         // DataHub
 	"mns_open":             "mns",             // MessageService
 	"elasticsearch":        "elasticsearch",   // Elasticsearch
@@ -379,7 +379,7 @@ var regularProductEndpoint = map[string]string{
 	"polardbx":             "polardbx.%s.aliyuncs.com",
 	"fc_open":              "%s.fc.aliyuncs.com",
 	"fc":                   "%s.fc.aliyuncs.com",
-	"apigateway":           "apigateway.%s.aliyuncs.com",
+	"cloudapi":             "apigateway.%s.aliyuncs.com",
 	"mns_open":             "mns-open.%s.aliyuncs.com",
 	"elasticsearch":        "elasticsearch.%s.aliyuncs.com",
 	"alikafka":             "alikafka.%s.aliyuncs.com",

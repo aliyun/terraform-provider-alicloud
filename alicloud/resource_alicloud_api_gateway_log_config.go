@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -49,10 +48,7 @@ func resourceAlicloudApiGatewayLogConfigCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateLogConfig"
 	request := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["SlsProject"] = d.Get("sls_project")
 	request["SlsLogStore"] = d.Get("sls_log_store")
@@ -60,7 +56,7 @@ func resourceAlicloudApiGatewayLogConfigCreate(d *schema.ResourceData, meta inte
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -102,6 +98,7 @@ func resourceAlicloudApiGatewayLogConfigRead(d *schema.ResourceData, meta interf
 func resourceAlicloudApiGatewayLogConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"LogType": d.Id(),
@@ -115,13 +112,9 @@ func resourceAlicloudApiGatewayLogConfigUpdate(d *schema.ResourceData, meta inte
 
 	if update {
 		action := "ModifyLogConfig"
-		conn, err := client.NewApigatewayClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -144,17 +137,14 @@ func resourceAlicloudApiGatewayLogConfigDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLogConfig"
 	var response map[string]interface{}
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LogType": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

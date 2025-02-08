@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -66,10 +65,7 @@ func resourceAliCloudApiGatewayPluginCreate(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["PluginType"] = d.Get("plugin_type")
@@ -83,11 +79,9 @@ func resourceAliCloudApiGatewayPluginCreate(d *schema.ResourceData, meta interfa
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -141,10 +135,7 @@ func resourceAliCloudApiGatewayPluginUpdate(d *schema.ResourceData, meta interfa
 	var query map[string]interface{}
 	update := false
 	action := "ModifyPlugin"
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["PluginId"] = d.Id()
@@ -162,11 +153,9 @@ func resourceAliCloudApiGatewayPluginUpdate(d *schema.ResourceData, meta interfa
 	}
 	request["PluginData"] = d.Get("plugin_data")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -198,18 +187,13 @@ func resourceAliCloudApiGatewayPluginDelete(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["PluginId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

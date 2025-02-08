@@ -37,12 +37,6 @@ func testSweepApiGatewayLogConfig(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	prefixes := []string{
 		"tf-testacc",
 		"tf_testacc",
@@ -51,11 +45,9 @@ func testSweepApiGatewayLogConfig(region string) error {
 	request := make(map[string]interface{})
 	var response map[string]interface{}
 	ApiGatewayLogConfigIds := make([]string, 0)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -101,7 +93,7 @@ func testSweepApiGatewayLogConfig(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(deleteAction), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("CloudAPI", "2016-07-14", deleteAction, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
