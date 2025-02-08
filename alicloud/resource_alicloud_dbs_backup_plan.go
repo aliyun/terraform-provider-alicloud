@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -247,10 +246,7 @@ func resourceAlicloudDbsBackupPlanCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateAndStartBackupPlan"
 	request := make(map[string]interface{})
-	conn, err := client.NewCbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("backup_gateway_id"); ok {
 		request["BackupGatewayId"] = v
 	}
@@ -354,11 +350,9 @@ func resourceAlicloudDbsBackupPlanCreate(d *schema.ResourceData, meta interface{
 		request["UsedTime"] = v
 	}
 	request["ClientToken"] = buildClientToken("CreateAndStartBackupPlan")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"undefined"}) || NeedRetry(err) {
 				wait()
@@ -430,10 +424,6 @@ func resourceAlicloudDbsBackupPlanRead(d *schema.ResourceData, meta interface{})
 }
 func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	dbsService := DbsService{client}
 	var response map[string]interface{}
 	if d.HasChange("status") {
@@ -450,11 +440,9 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 				request["StopMethod"] = "ALL"
 				action := "StopBackupPlan"
 				request["ClientToken"] = buildClientToken("StopBackupPlan")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -479,11 +467,9 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 				}
 				action := "StartBackupPlan"
 				request["ClientToken"] = buildClientToken("StartBackupPlan")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -511,20 +497,15 @@ func resourceAlicloudDbsBackupPlanDelete(d *schema.ResourceData, meta interface{
 	dbsService := DbsService{client}
 	action := "ReleaseBackupPlan"
 	var response map[string]interface{}
-	conn, err := client.NewCbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"BackupPlanId": d.Id(),
 	}
 
 	request["ClientToken"] = buildClientToken("ReleaseBackupPlan")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

@@ -50,17 +50,10 @@ func testSweepDbsBackupPlan(region string) error {
 	request["PageNum"] = 0
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewCbsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &runtime)
+			response, err = aliyunClient.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -99,7 +92,7 @@ func testSweepDbsBackupPlan(region string) error {
 			request := map[string]interface{}{
 				"BackupPlanId": item["BackupPlanId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = aliyunClient.RpcPost("Dbs", "2019-03-06", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Dbs Backup Plan (%s): %s", item["BackupPlanName"].(string), err)
 			}
@@ -231,7 +224,7 @@ data "alicloud_db_zones" "default"{
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -239,7 +232,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -260,7 +253,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 resource "alicloud_security_group" "default" {
@@ -271,11 +264,12 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	security_group_ids = alicloud_security_group.default.*.id
 }
 resource "alicloud_db_database" "default" {
   instance_id = alicloud_db_instance.default.id
