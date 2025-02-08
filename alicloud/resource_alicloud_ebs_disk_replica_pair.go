@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -112,10 +111,7 @@ func resourceAlicloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewEbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("bandwidth"); ok {
 		request["Bandwidth"] = v
@@ -157,11 +153,9 @@ func resourceAlicloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 	request["ClientToken"] = buildClientToken("CreateDiskReplicaPair")
 	var response map[string]interface{}
 	action := "CreateDiskReplicaPair"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -222,10 +216,7 @@ func resourceAlicloudEbsDiskReplicaPairRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewEbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	d.Partial(true)
 	update := false
 	request := map[string]interface{}{
@@ -248,11 +239,9 @@ func resourceAlicloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "ModifyDiskReplicaPair"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -276,10 +265,7 @@ func resourceAlicloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 
 func resourceAlicloudEbsDiskReplicaPairDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEbsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 
@@ -289,11 +275,9 @@ func resourceAlicloudEbsDiskReplicaPairDelete(d *schema.ResourceData, meta inter
 
 	request["ClientToken"] = buildClientToken("DeleteDiskReplicaPair")
 	action := "DeleteDiskReplicaPair"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
