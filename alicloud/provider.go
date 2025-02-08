@@ -3511,6 +3511,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["apigateway_endpoint"],
 				},
+				"cloudapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["apigateway_endpoint"],
+				},
 				"datahub": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3804,6 +3810,7 @@ var deprecatedEndpointMap = map[string]string{
 	"servicecatalog":   "srvcatalog",
 	"oceanbasepro":     "oceanbase",
 	"chatbot":          "beebot",
+	"cloudapi":         "apigateway",
 }
 
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {

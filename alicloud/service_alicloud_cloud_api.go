@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -14,10 +13,7 @@ func (s *CloudApiService) SetResourceTags(d *schema.ResourceData, resourceType s
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewApigatewayClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -37,7 +33,7 @@ func (s *CloudApiService) SetResourceTags(d *schema.ResourceData, resourceType s
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -69,7 +65,7 @@ func (s *CloudApiService) SetResourceTags(d *schema.ResourceData, resourceType s
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -92,19 +88,14 @@ func (s *CloudApiService) SetResourceTags(d *schema.ResourceData, resourceType s
 
 func (s *CloudApiService) DescribeApiGatewayPlugin(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewApigatewayClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribePlugins"
 	request := map[string]interface{}{
 		"PluginId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

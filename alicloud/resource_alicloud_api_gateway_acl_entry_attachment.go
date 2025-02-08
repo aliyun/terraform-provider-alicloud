@@ -47,10 +47,7 @@ func resourceAliCloudApiGatewayAclEntryAttachmentCreate(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	action := "AddAccessControlListEntry"
 	var response map[string]interface{}
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"AclId": d.Get("acl_id"),
 	}
@@ -68,12 +65,9 @@ func resourceAliCloudApiGatewayAclEntryAttachmentCreate(d *schema.ResourceData, 
 		return WrapError(err)
 	}
 	request["AclEntrys"] = aclEntriesJSON
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -128,10 +122,7 @@ func resourceAliCloudApiGatewayAclEntryAttachmentDelete(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveAccessControlListEntry"
 	var response map[string]interface{}
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	request := map[string]interface{}{
 		"AclId": parts[0],
@@ -151,7 +142,7 @@ func resourceAliCloudApiGatewayAclEntryAttachmentDelete(d *schema.ResourceData, 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

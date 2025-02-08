@@ -1213,16 +1213,21 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 		}
-		cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		cloudapiconn.SourceIp = client.config.SourceIp
-		cloudapiconn.SecureTransport = client.config.SecureTransport
-		cloudapiconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		cloudapiconn.AppendUserAgent(Provider, providerVersion)
-		cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		cloudapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cloudapiconn = cloudapiconn
+	} else {
+		err := client.cloudapiconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
+		}
 	}
+	client.cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.cloudapiconn.SourceIp = client.config.SourceIp
+	client.cloudapiconn.SecureTransport = client.config.SecureTransport
+	client.cloudapiconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
+	client.cloudapiconn.AppendUserAgent(Provider, providerVersion)
+	client.cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+	client.cloudapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 
 	return do(client.cloudapiconn)
 }

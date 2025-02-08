@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,17 +54,14 @@ func resourceAlicloudApiGatewayPluginAttachmentCreate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	action := "AttachPlugin"
 	request := make(map[string]interface{})
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["PluginId"] = d.Get("plugin_id")
 	request["GroupId"] = d.Get("group_id")
 	request["ApiId"] = d.Get("api_id")
 	request["StageName"] = d.Get("stage_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -121,10 +117,6 @@ func resourceAlicloudApiGatewayPluginAttachmentDelete(d *schema.ResourceData, me
 	var response map[string]interface{}
 	request := make(map[string]interface{})
 	action := "DetachPlugin"
-	conn, err := client.NewApigatewayClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["RegionId"] = client.RegionId
 	request["GroupId"] = parts[0]
 	request["ApiId"] = parts[1]
@@ -133,7 +125,7 @@ func resourceAlicloudApiGatewayPluginAttachmentDelete(d *schema.ResourceData, me
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
