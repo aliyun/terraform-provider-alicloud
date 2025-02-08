@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -47,7 +48,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -176,7 +177,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"whiten_gfbr_nets":        "true",
 							"enable_drop_icmp":        "true",
 							"region_block_country_list": []string{
@@ -268,7 +269,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -725,7 +726,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -854,7 +855,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"whiten_gfbr_nets":        "true",
 							"enable_drop_icmp":        "true",
 							"region_block_country_list": []string{
@@ -946,7 +947,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654543",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -1392,7 +1393,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021_twin(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -1622,7 +1623,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912_twin(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -1852,7 +1853,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021_raw(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -1985,7 +1986,7 @@ func TestAccAliCloudDdosBgpPolicy_basic7021_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"whiten_gfbr_nets":        "true",
 							"enable_drop_icmp":        "true",
 							"region_block_country_list": []string{
@@ -2269,7 +2270,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912_raw(t *testing.T) {
 					"type": "l3",
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"intelligence_level":      "weak",
 							"whiten_gfbr_nets":        "false",
 							"region_block_country_list": []string{
@@ -2402,7 +2403,7 @@ func TestAccAliCloudDdosBgpPolicy_basic6912_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"content": []map[string]interface{}{
 						{
-							"black_ip_list_expire_at": "1719654544",
+							"black_ip_list_expire_at": fmt.Sprint(time.Now().Add(10 * time.Minute).Unix()),
 							"whiten_gfbr_nets":        "true",
 							"enable_drop_icmp":        "true",
 							"region_block_country_list": []string{

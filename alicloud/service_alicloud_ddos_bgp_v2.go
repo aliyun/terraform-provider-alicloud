@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -22,18 +21,12 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListPolicy"
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
