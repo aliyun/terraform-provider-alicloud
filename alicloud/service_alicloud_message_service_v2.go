@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -26,19 +24,13 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetQueueAttributes"
-	conn, err := client.NewMnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["QueueName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -75,19 +67,13 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceTopic(id string) (object
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetTopicAttributes"
-	conn, err := client.NewMnsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TopicName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -121,7 +107,6 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -136,10 +121,6 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewMnsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["RegionId"] = client.RegionId
@@ -155,11 +136,9 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 				return WrapError(err)
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -178,10 +157,6 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewMnsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["RegionId"] = client.RegionId
@@ -200,11 +175,9 @@ func (s *MessageServiceServiceV2) SetResourceTags(d *schema.ResourceData, resour
 				return WrapError(err)
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
