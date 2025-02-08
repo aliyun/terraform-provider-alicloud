@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -58,10 +57,7 @@ func resourceAlicloudDdosbgpIpCreate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	action := "AddIp"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceId"] = d.Get("instance_id")
 	if memberUid, ok := d.GetOk("member_uid"); !ok {
 		request["IpList"] = fmt.Sprintf("[{\"ip\":\"%s\"}]", d.Get("ip"))
@@ -74,7 +70,7 @@ func resourceAlicloudDdosbgpIpCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,10 +119,6 @@ func resourceAlicloudDdosbgpIpDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	action := "DeleteIp"
 	var response map[string]interface{}
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"InstanceId": parts[0],
 		"IpList":     fmt.Sprintf("[{\"ip\":\"%s\"}]", parts[1]),
@@ -138,7 +130,7 @@ func resourceAlicloudDdosbgpIpDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

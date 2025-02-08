@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -65,8 +64,6 @@ func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string) (object map[stri
 		"RegionId":       s.client.RegionId,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, nil, request, true)
@@ -100,10 +97,7 @@ func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string) (object map[stri
 
 func (s *DdosbgpService) DescribeDdosbgpIp(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdosbgpClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribePackIpList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -117,11 +111,9 @@ func (s *DdosbgpService) DescribeDdosbgpIp(id string) (object map[string]interfa
 		"PageNo":     "1",
 		"PageSize":   PageSizeSmall,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

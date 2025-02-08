@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -304,19 +303,14 @@ func resourceAliCloudDdosBgpPolicyCreate(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["Name"] = d.Get("policy_name")
 	request["Type"] = d.Get("type")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -510,10 +504,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]interface{}
 	update := false
 	action := "ModifyPolicyContent"
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = d.Id()
@@ -686,11 +677,9 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 	}
 	request["Name"] = d.Get("policy_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -716,18 +705,13 @@ func resourceAliCloudDdosBgpPolicyDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDdosbgpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["Id"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

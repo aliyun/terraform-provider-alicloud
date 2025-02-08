@@ -502,6 +502,8 @@ func valueConvert(indentation int, val reflect.Value) interface{} {
 		return val.Bool()
 	case reflect.Int:
 		return val.Int()
+	case reflect.Int64:
+		return val.Int()
 	default:
 		log.Panicf("invalid attribute value type: %#v", val)
 	}
