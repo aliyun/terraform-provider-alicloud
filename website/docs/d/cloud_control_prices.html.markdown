@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cloud_control_prices
 
-This data source provides Cloud Control Price available to the user.[What is Price](https://www.alibabacloud.com/help/en/)
+This data source provides Cloud Control Price available to the user.[What is Price](https://next.api.aliyun.com/document/cloudcontrol/2022-08-30/GetPrice)
 
 -> **NOTE:** Available since v1.241.0.
 

@@ -12,7 +12,7 @@ Provides a Vpc Ipam Service resource.
 
 Ipam service, used to support automatic provisioning of Terraform.
 
-For information about Vpc Ipam Service and how to use it, see [What is Service](https://www.alibabacloud.com/help/en/).
+For information about Vpc Ipam Service and how to use it, see [What is Service](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/OpenVpcIpamService).
 
 -> **NOTE:** Available since v1.242.0.
 

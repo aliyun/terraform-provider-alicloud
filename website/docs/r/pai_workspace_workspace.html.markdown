@@ -12,7 +12,7 @@ Provides a PAI Workspace Workspace resource.
 
 
 
-For information about PAI Workspace Workspace and how to use it, see [What is Workspace](https://www.alibabacloud.com/help/en/).
+For information about PAI Workspace Workspace and how to use it, see [What is Workspace](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateWorkspace).
 
 -> **NOTE:** Available since v1.233.0.
 

@@ -12,19 +12,13 @@ Provides a Aligreen Biz Type resource.
 
 
 
-For information about Aligreen Biz Type and how to use it, see [What is Biz Type](https://www.alibabacloud.com/help/en/).
+For information about Aligreen Biz Type and how to use it, see [What is Biz Type](https://next.api.alibabacloud.com/document/Green/2017-08-23/CreateBizType).
 
 -> **NOTE:** Available since v1.228.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_aligreen_biz_type&exampleId=92992bff-4b12-f3a8-0a00-e0f4187b741f9da10dc5&activeTab=example&spm=docs.r.aligreen_biz_type.0.92992bff4b&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {

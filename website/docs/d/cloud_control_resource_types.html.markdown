@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cloud_control_resource_types
 
-This data source provides Cloud Control Resource Type available to the user.[What is Resource Type](https://www.alibabacloud.com/help/en/)
+This data source provides Cloud Control Resource Type available to the user.[What is Resource Type](https://next.api.aliyun.com/document/cloudcontrol/2022-08-30/GetResourceType)
 
 -> **NOTE:** Available since v1.241.0.
 

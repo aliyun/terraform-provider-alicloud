@@ -12,7 +12,7 @@ Provides a GPDB Streaming Data Service resource.
 
 
 
-For information about GPDB Streaming Data Service and how to use it, see [What is Streaming Data Service](https://www.alibabacloud.com/help/en/).
+For information about GPDB Streaming Data Service and how to use it, see [What is Streaming Data Service](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createstreamingdataservice).
 
 -> **NOTE:** Available since v1.227.0.
 
