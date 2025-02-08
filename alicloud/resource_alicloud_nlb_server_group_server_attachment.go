@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -84,10 +83,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ServerGroupId"] = d.Get("server_group_id")
 	request["Servers.1.Port"] = d.Get("port")
@@ -105,11 +101,9 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -179,10 +173,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateServerGroupServersAttribute"
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = parts[0]
@@ -207,11 +198,9 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -245,10 +234,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ServerGroupId"] = parts[0]
 	request["Servers.1.Port"] = parts[3]
@@ -261,11 +247,9 @@ func resourceAliCloudNlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
