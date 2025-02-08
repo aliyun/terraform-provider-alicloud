@@ -12,19 +12,13 @@ Provides a Vpc Ipam Ipam Pool Allocation resource.
 
 Allocates or reserves a CIDR from an IPAM address pool.
 
-For information about Vpc Ipam Ipam Pool Allocation and how to use it, see [What is Ipam Pool Allocation](https://www.alibabacloud.com/help/en/).
+For information about Vpc Ipam Ipam Pool Allocation and how to use it, see [What is Ipam Pool Allocation](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/CreateIpamPoolAllocation).
 
 -> **NOTE:** Available since v1.238.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_ipam_ipam_pool_allocation&exampleId=2d463a79-b344-7e64-8af1-0600b4e9e2a48c0f69d0&activeTab=example&spm=docs.r.vpc_ipam_ipam_pool_allocation.0.2d463a79b3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -67,11 +61,9 @@ The following arguments are supported:
 -> **NOTE:**  Enter at least one of `Cidr` or **CidrMask.
 
 * `ipam_pool_allocation_description` - (Optional) The description of the ipam pool alloctaion.
-
-  It must be 1 to 256 characters in length and must start with an English letter or Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
+It must be 1 to 256 characters in length and must start with an English letter or Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
 * `ipam_pool_allocation_name` - (Optional) The name of the ipam pool allocation.
-
-  It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
+It must be 1 to 128 characters in length and cannot start with 'http:// 'or 'https.
 * `ipam_pool_id` - (Required, ForceNew) The ID of the IPAM Pool.
 
 ## Attributes Reference
@@ -80,8 +72,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Instance creation time.
 * `region_id` - When the IPAM Pool to which CIDR is allocated has the region attribute, this attribute is the IPAM Pool region.
-
-  When the IPAM Pool to which CIDR is allocated does not have the region attribute, this attribute is the IPAM region.
+When the IPAM Pool to which CIDR is allocated does not have the region attribute, this attribute is the IPAM region.
 * `status` - The status of the instance. Value:
 
 ## Timeouts

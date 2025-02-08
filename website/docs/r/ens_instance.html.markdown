@@ -11,7 +11,7 @@ description: |-
 Provides a Ens Instance resource.
 
 
-For information about ENS Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/).
+For information about ENS Instance and how to use it, see [What is Instance](https://next.api.alibabacloud.com/document/Ens/2017-11-10/RunInstances).
 
 -> **NOTE:** Available since v1.216.0.
 

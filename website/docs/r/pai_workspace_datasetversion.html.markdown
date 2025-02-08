@@ -12,8 +12,7 @@ Provides a PAI Workspace Datasetversion resource.
 
 
 
-For information about PAI Workspace Datasetversion and how to use it, see [What is Datasetversion](https://www.alibabacloud.com/help/en/).
-
+For information about PAI Workspace Dataset Version and how to use it, see [What is Dataset Version](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateDatasetVersion).
 -> **NOTE:** Available since v1.236.0.
 
 ## Example Usage

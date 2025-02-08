@@ -12,19 +12,13 @@ Provides a Vpc Ipam Ipam resource.
 
 IP Address Management.
 
-For information about Vpc Ipam Ipam and how to use it, see [What is Ipam](https://www.alibabacloud.com/help/en/).
+For information about Vpc Ipam Ipam and how to use it, see [What is Ipam](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/CreateIpam).
 
 -> **NOTE:** Available since v1.234.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_ipam_ipam&exampleId=b459cbe2-7f5c-1a5b-7669-f4ec31cc9b1a233f7262&activeTab=example&spm=docs.r.vpc_ipam_ipam.0.b459cbe27f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -49,8 +43,7 @@ resource "alicloud_vpc_ipam_ipam" "default" {
 
 The following arguments are supported:
 * `ipam_description` - (Optional) The description of IPAM.
-
-  It must be 2 to 256 characters in length and must start with an uppercase letter or a Chinese character, but cannot start with 'http: // 'or 'https. If the description is not filled in, it is blank. The default value is blank.
+It must be 2 to 256 characters in length and must start with an uppercase letter or a Chinese character, but cannot start with 'http: // 'or 'https. If the description is not filled in, it is blank. The default value is blank.
 * `ipam_name` - (Optional) The name of the resource.
 * `operating_region_list` - (Required, Set) List of IPAM effective regions.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.

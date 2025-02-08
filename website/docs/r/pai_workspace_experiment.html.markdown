@@ -12,7 +12,7 @@ Provides a PAI Workspace Experiment resource.
 
 
 
-For information about PAI Workspace Experiment and how to use it, see [What is Experiment](https://www.alibabacloud.com/help/en/).
+For information about PAI Workspace Experiment and how to use it, see [What is Experiment](https://next.api.alibabacloud.com/document/AIWorkSpace/2021-02-04/CreateExperiment).
 
 -> **NOTE:** Available since v1.236.0.
 

@@ -3,28 +3,22 @@ subcategory: "ENS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ens_nat_gateway"
 description: |-
-  Provides a Alicloud Ens Nat Gateway resource.
+  Provides a Alicloud ENS Nat Gateway resource.
 ---
 
 # alicloud_ens_nat_gateway
 
-Provides a Ens Nat Gateway resource.
+Provides a ENS Nat Gateway resource.
 
 Nat gateway of ENS.
 
-For information about Ens Nat Gateway and how to use it, see [What is Nat Gateway](https://www.alibabacloud.com/help/en/).
+For information about ENS Nat Gateway and how to use it, see [What is Nat Gateway](https://next.api.alibabacloud.com/document/Ens/2017-11-10/CreateNatGateway).
 
 -> **NOTE:** Available since v1.227.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_nat_gateway&exampleId=43c8bcc1-e0c4-65db-947f-404db031e6947b77c185&activeTab=example&spm=docs.r.ens_nat_gateway.0.43c8bcc1e0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -86,7 +80,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Ens Nat Gateway can be imported using the id, e.g.
+ENS Nat Gateway can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ens_nat_gateway.example <id>

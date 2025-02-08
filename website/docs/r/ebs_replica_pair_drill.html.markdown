@@ -10,7 +10,7 @@ description: |-
 
 Provides a EBS Replica Pair Drill resource. 
 
-For information about EBS Replica Pair Drill and how to use it, see [What is Replica Pair Drill](https://www.alibabacloud.com/help/en/).
+For information about Elastic Block Storage(EBS) Replica Pair Drill and how to use it, see [What is Replica Pair Drill](https://next.api.alibabacloud.com/document/ebs/2021-07-30/StartPairDrill).
 
 -> **NOTE:** Available since v1.215.0.
 

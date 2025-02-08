@@ -12,19 +12,13 @@ Provides a Aligreen Image Lib resource.
 
 Image library for image detection.
 
-For information about Aligreen Image Lib and how to use it, see [What is Image Lib](https://www.alibabacloud.com/help/en/).
+For information about Aligreen Image Lib and how to use it, see [What is Image Lib](https://next.api.alibabacloud.com/document/Green/2017-08-23/CreateImageLib).
 
 -> **NOTE:** Available since v1.228.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_aligreen_image_lib&exampleId=0fb744f2-779a-1078-0bfc-b16647566ab5eac5cc1b&activeTab=example&spm=docs.r.aligreen_image_lib.0.0fb744f277&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -52,7 +46,7 @@ resource "alicloud_aligreen_image_lib" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `biz_types` - (Optional) List of business scenarios. For example: ["bizTypeA", "bizTypeB", "bizTypeC"]
+* `biz_types` - (Optional, List) List of business scenarios. For example: ["bizTypeA", "bizTypeB", "bizTypeC"]
 * `category` - (Required, ForceNew) The category of the image library. Valid values: BLACK: a blacklist, WHITE: a whitelist, REVIEW: a review list
 * `enable` - (Optional, Computed) Specifies whether to enable the image library. Valid values: true: Enable the image library. This is the default value. false: Disable the image library.
 * `image_lib_name` - (Required) The name of the image library defined by the customer. It can contain no more than 20 characters in Chinese, English, and underscore (_).
