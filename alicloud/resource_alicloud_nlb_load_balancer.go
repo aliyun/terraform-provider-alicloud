@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -247,10 +246,7 @@ func resourceAliCloudNlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -331,11 +327,9 @@ func resourceAliCloudNlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -480,10 +474,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	update := false
 	d.Partial(true)
 	action := "UpdateLoadBalancerAddressTypeConfig"
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -494,11 +485,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	request["AddressType"] = d.Get("address_type")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -523,10 +512,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerAttribute"
-	conn, err = client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -547,11 +532,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -577,10 +560,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerZones"
-	conn, err = client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -606,11 +585,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -634,10 +611,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "UpdateLoadBalancerProtection"
-	conn, err = client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
@@ -704,11 +677,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -731,10 +702,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = "MoveResourceGroup"
-	conn, err = client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -747,11 +714,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 	request["ResourceType"] = "loadbalancer"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -782,20 +747,14 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if object["Ipv6AddressType"].(string) != target {
 			if target == "Intranet" {
 				action = "DisableLoadBalancerIpv6Internet"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -815,20 +774,14 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			if target == "Internet" {
 				action = "EnableLoadBalancerIpv6Internet"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -860,20 +813,14 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if object["$.ZoneMappings[0].Status"].(string) != target {
 			if target == "Active" {
 				action = "CancelShiftLoadBalancerZones"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -893,20 +840,14 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 			if target == "Shifted" {
 				action = "StartShiftLoadBalancerZones"
-				conn, err = client.NewNlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+					response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -939,11 +880,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				"BandwidthPackageId": oldBandwidthPackageId,
 			}
 			action := "DetachCommonBandwidthPackageFromLoadBalancer"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -972,11 +911,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				"BandwidthPackageId": newBandwidthPackageId,
 			}
 			action := "AttachCommonBandwidthPackageToLoadBalancer"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1017,10 +954,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		if removed.Len() > 0 {
 			action := "LoadBalancerLeaveSecurityGroup"
-			conn, err := client.NewNlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["LoadBalancerId"] = d.Id()
@@ -1030,11 +963,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			securityGroupIdsMaps := localData
 			request["SecurityGroupIds"] = securityGroupIdsMaps
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -1060,10 +991,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		if added.Len() > 0 {
 			action := "LoadBalancerJoinSecurityGroup"
-			conn, err := client.NewNlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["LoadBalancerId"] = d.Id()
@@ -1073,11 +1000,9 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			securityGroupIdsMaps := localData
 			request["SecurityGroupIds"] = securityGroupIdsMaps
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -1113,21 +1038,16 @@ func resourceAliCloudNlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewNlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
