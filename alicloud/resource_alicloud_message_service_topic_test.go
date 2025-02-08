@@ -38,11 +38,6 @@ func testSweepMessageServiceTopic(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	conn, err := client.NewMnsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -54,11 +49,9 @@ func testSweepMessageServiceTopic(region string) error {
 	var response map[string]interface{}
 	MessageServiceTopicIds := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Mns-open", "2022-01-19", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -112,7 +105,7 @@ func testSweepMessageServiceTopic(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(deleteAction), nil, StringPointer("POST"), StringPointer("2022-01-19"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Mns-open", "2022-01-19", deleteAction, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
