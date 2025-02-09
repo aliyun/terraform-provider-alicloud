@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -16,19 +15,14 @@ type BpStudioService struct {
 
 func (s *BpStudioService) DescribeBpStudioApplication(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewBpstudioClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "GetApplication"
 	request := map[string]interface{}{
 		"ApplicationId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("BPStudio", "2021-09-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -40,12 +34,13 @@ func (s *BpStudioService) DescribeBpStudioApplication(id string) (object map[str
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"8004"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BPStudio:Application", id)), NotFoundMsg, ProviderERROR)
+		}
+
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	if fmt.Sprint(response["Code"]) == "8004" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BPStudio:Application", id)), NotFoundMsg, ProviderERROR)
-	}
 	v, err := jsonpath.Get("$.Data", response)
 
 	if err != nil {

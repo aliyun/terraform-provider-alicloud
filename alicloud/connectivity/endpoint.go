@@ -466,6 +466,7 @@ var regularProductEndpoint = map[string]string{
 	"cloudsso":             "cloudsso.%s.aliyuncs.com",
 	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
+	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
@@ -481,6 +482,7 @@ var regularProductEndpointForIntlRegion = map[string]string{
 	"sddp":        "sddp.ap-southeast-1.aliyuncs.com",
 	"governance":  "governance.ap-southeast-1.aliyuncs.com",
 	"waf_openapi": "wafopenapi.ap-southeast-1.aliyuncs.com",
+	"bpstudio":    "bpstudio.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
