@@ -3517,6 +3517,11 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["apigateway_endpoint"],
 				},
+				"apig": {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
 				"datahub": {
 					Type:        schema.TypeString,
 					Optional:    true,

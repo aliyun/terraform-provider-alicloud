@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,10 +59,7 @@ func resourceAliCloudApigEnvironmentCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewApigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["name"] = d.Get("environment_name")
@@ -75,11 +71,9 @@ func resourceAliCloudApigEnvironmentCreate(d *schema.ResourceData, meta interfac
 		request["resourceGroupId"] = v
 	}
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2024-03-27"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("APIG", "2024-03-27", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -95,7 +89,7 @@ func resourceAliCloudApigEnvironmentCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apig_environment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	id, _ := jsonpath.Get("$.body.data.environmentId", response)
+	id, _ := jsonpath.Get("$.data.environmentId", response)
 	d.SetId(fmt.Sprint(id))
 
 	return resourceAliCloudApigEnvironmentRead(d, meta)
@@ -148,10 +142,7 @@ func resourceAliCloudApigEnvironmentUpdate(d *schema.ResourceData, meta interfac
 
 	environmentId := d.Id()
 	action := fmt.Sprintf("/v1/environments/%s", environmentId)
-	conn, err := client.NewApigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -165,11 +156,9 @@ func resourceAliCloudApigEnvironmentUpdate(d *schema.ResourceData, meta interfac
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2024-03-27"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("APIG", "2024-03-27", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -186,10 +175,6 @@ func resourceAliCloudApigEnvironmentUpdate(d *schema.ResourceData, meta interfac
 	}
 	update = false
 	action = fmt.Sprintf("/move-resource-group")
-	conn, err = client.NewApigClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -205,11 +190,9 @@ func resourceAliCloudApigEnvironmentUpdate(d *schema.ResourceData, meta interfac
 	query["ResourceType"] = StringPointer("Environment")
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2024-03-27"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("APIG", "2024-03-27", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -237,18 +220,13 @@ func resourceAliCloudApigEnvironmentDelete(d *schema.ResourceData, meta interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewApigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["environmentId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2024-03-27"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
