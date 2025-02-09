@@ -9,8 +9,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -34,11 +32,6 @@ func testSweepBpStudioApplication(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	bpStudioService := BpStudioService{client}
-	conn, err := client.NewBpstudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -50,11 +43,9 @@ func testSweepBpStudioApplication(region string) error {
 	var response map[string]interface{}
 	BpStudioApplicationIds := make([]string, 0)
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("BPStudio", "2021-09-31", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -114,7 +105,7 @@ func testSweepBpStudioApplication(region string) error {
 
 		if fmt.Sprint(object["Status"]) == "Deployed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDeployedSuccess" || fmt.Sprint(object["Status"]) == "Deployed_Success" || fmt.Sprint(object["Status"]) == "Destroyed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDestroyedSuccess" {
 			err = resource.Retry(120*time.Minute, func() *resource.RetryError {
-				_, err = conn.DoRequest(StringPointer(releaseAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				_, err = client.RpcPost("BPStudio", "2021-09-31", releaseAction, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -131,7 +122,7 @@ func testSweepBpStudioApplication(region string) error {
 		}
 
 		err = resource.Retry(120*time.Minute, func() *resource.RetryError {
-			_, err = conn.DoRequest(StringPointer(deleteAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("BPStudio", "2021-09-31", deleteAction, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

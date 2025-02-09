@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -94,11 +93,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	action := "CreateApplication"
 	var response map[string]interface{}
 	request := make(map[string]interface{})
-	conn, err := client.NewBpstudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	request["Name"] = d.Get("application_name")
 	request["TemplateId"] = d.Get("template_id")
 	request["ClientToken"] = buildClientToken("CreateApplication")
@@ -157,11 +152,9 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 		request["Variables"] = variablesJson
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("BPStudio", "2021-09-31", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -194,7 +187,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	}
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		validateApplicationResponse, err = conn.DoRequest(StringPointer(validateApplicationAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, deployReq, &util.RuntimeOptions{})
+		validateApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", validateApplicationAction, nil, deployReq, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -219,7 +212,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	valuateApplicationResponse := make(map[string]interface{})
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		valuateApplicationResponse, err = conn.DoRequest(StringPointer(valuateApplicationAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, deployReq, &util.RuntimeOptions{})
+		valuateApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", valuateApplicationAction, nil, deployReq, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -244,7 +237,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	deployApplicationResponse := make(map[string]interface{})
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		deployApplicationResponse, err = conn.DoRequest(StringPointer(deployApplicationAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, deployReq, &util.RuntimeOptions{})
+		deployApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", deployApplicationAction, nil, deployReq, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -291,10 +284,7 @@ func resourceAlicloudBpStudioApplicationRead(d *schema.ResourceData, meta interf
 func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	bpStudioService := BpStudioService{client}
-	conn, err := client.NewBpstudioClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := make(map[string]interface{})
 	request["ApplicationId"] = d.Id()
@@ -316,7 +306,7 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 		releaseApplicationResponse := make(map[string]interface{})
 
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			releaseApplicationResponse, err = conn.DoRequest(StringPointer(releaseApplicationAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			releaseApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", releaseApplicationAction, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -342,7 +332,7 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 	deleteApplicationResponse := make(map[string]interface{})
 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		deleteApplicationResponse, err = conn.DoRequest(StringPointer(deleteApplicationAction), nil, StringPointer("POST"), StringPointer("2021-09-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		deleteApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", deleteApplicationAction, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
