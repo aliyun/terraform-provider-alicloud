@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -23,19 +22,13 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProduct(id string) (obje
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetProductAsAdmin"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ProductId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -99,19 +92,13 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductPortfolioAssociat
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListProductsAsAdmin"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["PortfolioId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -180,19 +167,13 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductVersion(id string
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetProductVersion"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ProductVersionId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -256,19 +237,13 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPrincipalPortfolioAssoci
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "ListPrincipals"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["PortfolioId"] = parts[2]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -340,19 +315,13 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPortfolio(id string) (ob
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetPortfolio"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["PortfolioId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
