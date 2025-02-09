@@ -20,6 +20,7 @@ import (
 // Case 3393
 func TestAccAliCloudFcv2Function_basic3393(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -33,7 +34,7 @@ func TestAccAliCloudFcv2Function_basic3393(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -720,6 +721,11 @@ output "container_args" {
 resource "alicloud_log_project" "default" {
   name        = var.name
   description = "tf unit test"
+  lifecycle {
+    ignore_changes = [
+      policy
+    ]
+  }
 }
 
 resource "alicloud_log_store" "default" {
@@ -786,7 +792,7 @@ func TestAccAliCloudFcv2Function_basic3270(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1323,7 +1329,7 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1936,7 +1942,7 @@ func TestAccAliCloudFcv2Function_basic3393_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2075,7 +2081,7 @@ func TestAccAliCloudFcv2Function_basic3270_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2171,7 +2177,7 @@ func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

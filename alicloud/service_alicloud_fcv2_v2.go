@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -29,16 +28,12 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 	functionName := parts[1]
 	serviceName := parts[0]
 	action := fmt.Sprintf("/2021-04-06/services/%s/functions/%s", serviceName, functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaGet("FC-Open", "2021-04-06", action, query, nil, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -57,7 +52,7 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv2ServiceV2) Fcv2FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

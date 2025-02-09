@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -315,10 +314,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	objectDataLocalMap := make(map[string]interface{})
@@ -514,7 +510,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	headerParams["content-md5"] = tea.String(MD5(b))
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, headerParams, body, &util.RuntimeOptions{})
+		response, err = client.RoaPost("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
@@ -731,10 +727,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	serviceName := parts[0]
 	functionName := parts[1]
 	action := fmt.Sprintf("/2021-04-06/services/%s/functions/%s", serviceName, functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -989,7 +982,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, headerParams, body, &util.RuntimeOptions{})
+			response, err = client.RoaPut("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
@@ -1019,15 +1012,12 @@ func resourceAliCloudFcv2FunctionDelete(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("FC-Open", "2021-04-06", action, query, nil, nil, false)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {

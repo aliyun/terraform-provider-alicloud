@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	roa "github.com/alibabacloud-go/tea-roa/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,21 +23,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]*string
 	functionName := id
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
 
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -57,7 +49,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -102,19 +93,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 	var query map[string]*string
 	domainName := id
 	action := fmt.Sprintf("/2023-03-30/custom-domains/%s", domainName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["domainName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -132,7 +117,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -174,19 +158,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 	}
 	functionName := parts[0]
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["qualifier"] = StringPointer(parts[1])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -204,7 +182,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -247,18 +224,12 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 	aliasName := parts[1]
 	functionName := parts[0]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/aliases/%s", functionName, aliasName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -276,7 +247,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -314,19 +284,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 	var query map[string]*string
 	functionName := id
 	action := fmt.Sprintf("/2023-03-30/functions/%s/async-invoke-config", functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -344,7 +308,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -382,19 +345,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 	var query map[string]*string
 	functionName := id
 	action := fmt.Sprintf("/2023-03-30/functions/%s/concurrency", functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -412,7 +369,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -455,18 +411,12 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 	functionName := parts[0]
 	triggerName := parts[1]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -484,7 +434,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -529,19 +478,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 	var query map[string]*string
 	functionName := id
 	action := fmt.Sprintf("/2023-03-30/functions/%s/provision-config", functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["functionName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -556,7 +499,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	currentStatus := response["target"]
 	if currentStatus == "0" {
@@ -604,18 +546,12 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 	layerName := parts[0]
 	version := parts[1]
 	action := fmt.Sprintf("/2023-03-30/layers/%s/versions/%s", layerName, version)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -633,7 +569,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -674,18 +609,12 @@ func (s *Fcv3ServiceV2) DescribeFcv3VpcBinding(id string) (object map[string]int
 	}
 	functionName := parts[0]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/vpc-bindings", functionName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -701,7 +630,6 @@ func (s *Fcv3ServiceV2) DescribeFcv3VpcBinding(id string) (object map[string]int
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.vpcIds", response)
 	if err != nil {
@@ -747,7 +675,6 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *roa.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -765,10 +692,6 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		}
 		if len(removedTagKeys) > 0 {
 			action = fmt.Sprintf("/2023-03-30/tags-v2")
-			conn, err = client.NewFcv2Client()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -777,11 +700,9 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			query["ResourceId"] = StringPointer(convertListToJsonString(expandSingletonToList(objectRaw["functionArn"])))
 			query["ResourceType"] = StringPointer(resourceType)
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -800,10 +721,6 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 		if len(added) > 0 {
 			action = fmt.Sprintf("/2023-03-30/tags-v2")
-			conn, err = client.NewFcv2Client()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -821,11 +738,9 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request["ResourceId"] = expandSingletonToList(objectRaw["functionArn"])
 			request["ResourceType"] = resourceType
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

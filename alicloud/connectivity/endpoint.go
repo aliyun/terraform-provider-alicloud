@@ -586,6 +586,13 @@ func (config *Config) loadEndpointFromLocal() error {
 	return nil
 }
 
+func FormatEndpointWithAccountID(productCode string, endpoint string, accountId string) string {
+	switch productCode {
+	case "fc_open", "fc":
+		return fmt.Sprintf("%s.%s", accountId, endpoint)
+	}
+	return endpoint
+}
 func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
 	retryCount := 1
 	return func() {

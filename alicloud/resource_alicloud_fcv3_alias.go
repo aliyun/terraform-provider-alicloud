@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -75,10 +73,7 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["aliasName"] = d.Get("alias_name")
 
@@ -92,11 +87,9 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 		request["additionalVersionWeight"] = v
 	}
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,9 +104,7 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_alias", action, AlibabaCloudSdkGoERROR)
 	}
-
-	aliasNameVar, _ := jsonpath.Get("$.body.aliasName", response)
-	d.SetId(fmt.Sprintf("%v:%v", functionName, aliasNameVar))
+	d.SetId(fmt.Sprintf("%v:%v", functionName, response["aliasName"]))
 
 	return resourceAliCloudFcv3AliasRead(d, meta)
 }
@@ -168,10 +159,7 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 	functionName := parts[0]
 	aliasName := parts[1]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/aliases/%s", functionName, aliasName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -193,11 +181,9 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -226,17 +212,12 @@ func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
