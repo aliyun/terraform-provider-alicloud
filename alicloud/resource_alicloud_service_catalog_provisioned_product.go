@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -151,10 +150,7 @@ func resourceAlicloudServiceCatalogProvisionedProductCreate(d *schema.ResourceDa
 	client := meta.(*connectivity.AliyunClient)
 	servicecatalogService := ServicecatalogService{client}
 	request := make(map[string]interface{})
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("portfolio_id"); ok {
 		request["PortfolioId"] = v
@@ -191,7 +187,7 @@ func resourceAlicloudServiceCatalogProvisionedProductCreate(d *schema.ResourceDa
 	action := "LaunchProduct"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("servicecatalog", "2021-09-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"undefined"}) {
 				wait()
@@ -284,10 +280,7 @@ func resourceAlicloudServiceCatalogProvisionedProductUpdate(d *schema.ResourceDa
 	client := meta.(*connectivity.AliyunClient)
 
 	servicecatalogService := ServicecatalogService{client}
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"ProvisionedProductId": d.Id(),
@@ -330,7 +323,7 @@ func resourceAlicloudServiceCatalogProvisionedProductUpdate(d *schema.ResourceDa
 		action := "UpdateProvisionedProduct"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("servicecatalog", "2021-09-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -356,10 +349,7 @@ func resourceAlicloudServiceCatalogProvisionedProductUpdate(d *schema.ResourceDa
 func resourceAlicloudServiceCatalogProvisionedProductDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicecatalogService := ServicecatalogService{client}
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"ProvisionedProductId": d.Id(),
@@ -368,7 +358,7 @@ func resourceAlicloudServiceCatalogProvisionedProductDelete(d *schema.ResourceDa
 	action := "TerminateProvisionedProduct"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("servicecatalog", "2021-09-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

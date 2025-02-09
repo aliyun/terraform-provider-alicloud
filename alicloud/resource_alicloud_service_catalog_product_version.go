@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -78,10 +77,7 @@ func resourceAliCloudServiceCatalogProductVersionCreate(d *schema.ResourceData, 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("active"); ok {
@@ -97,11 +93,9 @@ func resourceAliCloudServiceCatalogProductVersionCreate(d *schema.ResourceData, 
 	request["ProductVersionName"] = d.Get("product_version_name")
 	request["TemplateType"] = d.Get("template_type")
 	request["TemplateUrl"] = d.Get("template_url")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -171,10 +165,7 @@ func resourceAliCloudServiceCatalogProductVersionUpdate(d *schema.ResourceData, 
 	var query map[string]interface{}
 	update := false
 	action := "UpdateProductVersion"
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ProductVersionId"] = d.Id()
@@ -199,11 +190,9 @@ func resourceAliCloudServiceCatalogProductVersionUpdate(d *schema.ResourceData, 
 	}
 	request["ProductVersionName"] = d.Get("product_version_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -229,19 +218,14 @@ func resourceAliCloudServiceCatalogProductVersionDelete(d *schema.ResourceData, 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewSrvcatalogClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ProductVersionId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-09-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
