@@ -2000,7 +2000,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 					val = endpoints[v]
 				}
 			}
-			endpointInit.Store(key, val)
+			endpointInit.Store(key, connectivity.FormatEndpointWithAccountID(key, val.(string), config.AccountId))
 		}
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))

@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -88,11 +86,6 @@ func resourceAlicloudFcLayerVersion() *schema.Resource {
 
 func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewFcClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	layerName := d.Get("layer_name")
 	action := fmt.Sprintf("/2021-04-06/layers/%s/versions", layerName)
 
@@ -120,9 +113,10 @@ func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface
 	body["Code"] = codeMaps
 
 	var response map[string]interface{}
+	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), nil, nil, body, &util.RuntimeOptions{})
+		response, err = client.RoaPost("FC-Open", "2021-04-06", action, nil, nil, body, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -137,12 +131,7 @@ func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_layer_version", action, AlibabaCloudSdkGoERROR)
 	}
 
-	layerNameVersion, err := jsonpath.Get("$.body.version", response)
-	if err != nil || layerNameVersion == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_fc_layer_version")
-	}
-
-	d.SetId(fmt.Sprint(layerName, ":", layerNameVersion))
+	d.SetId(fmt.Sprint(layerName, ":", response["version"]))
 
 	return resourceAlicloudFcLayerVersionRead(d, meta)
 }
@@ -186,11 +175,6 @@ func resourceAlicloudFcLayerVersionDelete(d *schema.ResourceData, meta interface
 		log.Printf("[INFO] Setting `skip_destroy` to `true` means that the Alicloud Provider will not destroy any layer version, even when running `terraform destroy`. Layer versions are thus intentional dangling resources that are not managed by Terraform and may incur extra expense in your Alicloud account.")
 		return nil
 	}
-
-	conn, err := client.NewFcClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -198,11 +182,9 @@ func resourceAlicloudFcLayerVersionDelete(d *schema.ResourceData, meta interface
 
 	var response map[string]interface{}
 	action := fmt.Sprintf("/2021-04-06/layers/%s/versions/%s", parts[0], parts[1])
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), nil, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDelete("FC-Open", "2021-04-06", action, nil, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

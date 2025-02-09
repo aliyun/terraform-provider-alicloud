@@ -423,7 +423,7 @@ func TestAccAliCloudFcv3Trigger_basic6981_raw(t *testing.T) {
 }
 
 // Case TestTrigger_Log 6983  raw
-func SkipTestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
+func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6983)

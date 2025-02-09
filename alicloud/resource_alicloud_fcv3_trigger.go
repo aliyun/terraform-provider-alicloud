@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -123,10 +121,7 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["triggerName"] = d.Get("trigger_name")
 
@@ -143,11 +138,9 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["qualifier"] = d.Get("qualifier")
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -163,8 +156,7 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_trigger", action, AlibabaCloudSdkGoERROR)
 	}
 
-	triggerNameVar, _ := jsonpath.Get("$.body.triggerName", response)
-	d.SetId(fmt.Sprintf("%v:%v", functionName, triggerNameVar))
+	d.SetId(fmt.Sprintf("%v:%v", functionName, response["triggerName"]))
 
 	return resourceAliCloudFcv3TriggerRead(d, meta)
 }
@@ -256,10 +248,7 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 	functionName := parts[0]
 	triggerName := parts[1]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -281,11 +270,9 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -314,17 +301,12 @@ func resourceAliCloudFcv3TriggerDelete(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewFcv2Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
