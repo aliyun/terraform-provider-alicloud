@@ -181,6 +181,7 @@ var productCodeToLocationCode = map[string]string{
 	"fc_open":              "fc",      // FC, FCV2
 	"fc":                   "fc",      // FCV3
 	"cloudapi":             "apigateway",
+	"apig":                 "nativeapigw",     // APIG
 	"datahub":              "datahub",         // DataHub
 	"mns_open":             "mns",             // MessageService
 	"elasticsearch":        "elasticsearch",   // Elasticsearch
@@ -466,6 +467,7 @@ var regularProductEndpoint = map[string]string{
 	"cloudsso":             "cloudsso.%s.aliyuncs.com",
 	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
+	"apig":                 "apig.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be

@@ -2850,9 +2850,14 @@ func formatError(response map[string]interface{}, err error) error {
 		code, ok1 = response["code"]
 	}
 	if ok1 && !isInteger(code) && !isString(code) {
-		return nil
+		return err
 	}
-	if ok1 && (strings.ToLower(fmt.Sprint(code)) == "success" || fmt.Sprint(code) == "200") {
+	// There is a design in some product api that the request is success but its message is empty and the code is 0 or other string
+	// like ENS, elfo, apig and so on.
+	if ok1 && (strings.ToLower(fmt.Sprint(code)) == "success" ||
+		strings.ToLower(fmt.Sprint(code)) == "ok" ||
+		fmt.Sprint(code) == "200" ||
+		fmt.Sprint(code) == "0") {
 		return err
 	}
 	success, ok2 := response["Success"]
@@ -2862,13 +2867,11 @@ func formatError(response map[string]interface{}, err error) error {
 	if ok2 && fmt.Sprint(success) == "true" {
 		return err
 	}
-	// There is a bug in some product api that the request is success but its message is empty and the code is 0
-	// like ENS API
 	message, ok3 := response["Message"]
 	if !ok3 {
 		message, ok3 = response["message"]
 	}
-	if fmt.Sprint(code) == "0" && (!ok3 || message == nil || fmt.Sprint(message) == "") {
+	if ok3 && (message == nil || fmt.Sprint(message) == "") {
 		return err
 	}
 	if ok1 || ok2 {
