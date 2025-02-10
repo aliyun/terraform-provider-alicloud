@@ -167,10 +167,11 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = id
+
+	action := "GetLoadBalancerAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -261,8 +262,8 @@ func (s *AlbServiceV2) DescribeAsyncAlbLoadBalancerStateRefreshFunc(d *schema.Re
 // SetResourceTags <<< Encapsulated tag function for Alb.
 func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -288,9 +289,9 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, false)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "OperationFailed.ResourceGroupStatusCheckFail"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -321,9 +322,9 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, false)
+				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "OperationFailed.ResourceGroupStatusCheckFail"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -569,39 +570,6 @@ func (s *AlbServiceV2) AlbLoadBalancerAccessLogConfigAttachmentStateRefreshFunc(
 		}
 		return object, currentStatus, nil
 	}
-}
-
-func (s *AlbServiceV2) DescribeAsyncListAsynJobs(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
-	client := s.client
-	id := d.Id()
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "ListAsynJobs"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["JobIds.1"], err = jsonpath.Get("$.JobId", res)
-	request["RegionId"] = client.RegionId
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	return response, nil
 }
 
 func (s *AlbServiceV2) DescribeAsyncAlbLoadBalancerAccessLogConfigAttachmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
@@ -935,3 +903,39 @@ func (s *AlbServiceV2) AlbLoadBalancerZoneShiftedAttachmentStateRefreshFunc(id s
 }
 
 // DescribeAlbLoadBalancerZoneShiftedAttachment >>> Encapsulated.
+
+// Async Api <<< Encapsulated for Alb.
+func (s *AlbServiceV2) DescribeAsyncListAsynJobs(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["JobIds.1"], err = jsonpath.Get("$.JobId", res)
+
+	action := "ListAsynJobs"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// Async Api >>> Encapsulated.

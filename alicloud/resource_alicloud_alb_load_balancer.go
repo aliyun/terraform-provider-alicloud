@@ -3,10 +3,12 @@ package alicloud
 
 import (
 	"fmt"
+	"hash/crc32"
 	"log"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -76,7 +78,6 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -167,28 +168,72 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				ForceNew: true,
 			},
 			"zone_mappings": {
+				Set: func(v interface{}) int {
+					return int(crc32.ChecksumIEEE([]byte(v.(map[string]interface{})["zone_id"].(string))))
+				},
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"intranet_address": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"zone_id": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"vswitch_id": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"allocation_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"eip_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 						"load_balancer_addresses": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									"ipv6_local_addresses": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"intranet_address": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"intranet_address_hc_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 									"address": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"ipv4_local_addresses": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
 									"allocation_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ipv6_address_hc_status": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -202,6 +247,10 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 									},
 								},
 							},
+						},
+						"ipv6_address": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 					},
 				},
@@ -231,68 +280,71 @@ func resourceAliCloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("deletion_protection_enabled"); ok {
 		request["DeletionProtectionEnabled"] = v
 	}
-	request["VpcId"] = d.Get("vpc_id")
-	request["AddressType"] = d.Get("address_type")
-	if v, ok := d.GetOk("load_balancer_name"); ok {
-		request["LoadBalancerName"] = v
-	}
-	if v, ok := d.GetOk("address_allocated_mode"); ok {
-		request["AddressAllocatedMode"] = v
-	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
-	}
-	request["LoadBalancerEdition"] = d.Get("load_balancer_edition")
-	if v, ok := d.GetOk("zone_mappings"); ok {
-		zoneMappingsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.(*schema.Set).List() {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
-			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
-			zoneMappingsMapsArray = append(zoneMappingsMapsArray, dataLoopMap)
-		}
-		request["ZoneMappings"] = zoneMappingsMapsArray
-	}
-
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v, ok := d.GetOk("load_balancer_billing_config"); ok {
-		payType1, _ := jsonpath.Get("$[0].pay_type", v)
-		if payType1 != nil && payType1 != "" {
-			objectDataLocalMap["PayType"] = convertAlbLoadBalancerBillingConfigPayTypeRequest(payType1)
-		}
-	}
-
-	if v, ok := d.GetOk("bandwidth_package_id"); ok {
-		objectDataLocalMap["BandwidthPackageId"] = v
-	}
-
-	request["LoadBalancerBillingConfig"] = objectDataLocalMap
-
-	objectDataLocalMap1 := make(map[string]interface{})
-
-	if v := d.Get("modification_protection_config"); !IsNil(v) {
-		reason1, _ := jsonpath.Get("$[0].reason", v)
-		if reason1 != nil && reason1 != "" {
-			objectDataLocalMap1["Reason"] = reason1
-		}
-		status1, _ := jsonpath.Get("$[0].status", v)
-		if status1 != nil && status1 != "" {
-			objectDataLocalMap1["Status"] = status1
-		}
-
-		request["ModificationProtectionConfig"] = objectDataLocalMap1
-	}
-
-	if v, ok := d.GetOk("address_ip_version"); ok {
-		request["AddressIpVersion"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
+	if v, ok := d.GetOk("zone_mappings"); ok {
+		zoneMappingsMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range v.(*schema.Set).List() {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
+			dataLoop1Map["AllocationId"] = dataLoop1Tmp["allocation_id"]
+			dataLoop1Map["EipType"] = dataLoop1Tmp["eip_type"]
+			dataLoop1Map["VSwitchId"] = dataLoop1Tmp["vswitch_id"]
+			dataLoop1Map["IntranetAddress"] = dataLoop1Tmp["intranet_address"]
+			zoneMappingsMapsArray = append(zoneMappingsMapsArray, dataLoop1Map)
+		}
+		request["ZoneMappings"] = zoneMappingsMapsArray
+	}
+
+	request["AddressType"] = d.Get("address_type")
+	if v, ok := d.GetOk("load_balancer_name"); ok {
+		request["LoadBalancerName"] = v
+	}
+	if v, ok := d.GetOk("address_ip_version"); ok {
+		request["AddressIpVersion"] = v
+	}
+	request["LoadBalancerEdition"] = d.Get("load_balancer_edition")
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("modification_protection_config"); !IsNil(v) {
+		status1, _ := jsonpath.Get("$[0].status", v)
+		if status1 != nil && status1 != "" {
+			objectDataLocalMap["Status"] = status1
+		}
+		reason1, _ := jsonpath.Get("$[0].reason", v)
+		if reason1 != nil && reason1 != "" {
+			objectDataLocalMap["Reason"] = reason1
+		}
+
+		request["ModificationProtectionConfig"] = objectDataLocalMap
+	}
+
+	objectDataLocalMap1 := make(map[string]interface{})
+
+	if v, ok := d.GetOk("bandwidth_package_id"); ok {
+		objectDataLocalMap1["BandwidthPackageId"] = v
+	}
+
+	if v, ok := d.GetOk("load_balancer_billing_config"); ok {
+		payType1, _ := jsonpath.Get("$[0].pay_type", v)
+		if payType1 != nil && payType1 != "" {
+			objectDataLocalMap1["PayType"] = convertAlbLoadBalancerBillingConfigPayTypeRequest(payType1)
+		}
+	}
+
+	request["LoadBalancerBillingConfig"] = objectDataLocalMap1
+
+	if v, ok := d.GetOk("address_allocated_mode"); ok {
+		request["AddressAllocatedMode"] = v
+	}
+	request["VpcId"] = d.Get("vpc_id")
 	if v, ok := d.GetOk("deletion_protection_config"); ok {
 		jsonPathResult7, err := jsonpath.Get("$[0].enabled", v)
 		if err == nil && jsonPathResult7 != "" {
@@ -343,135 +395,133 @@ func resourceAliCloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if objectRaw["AddressAllocatedMode"] != nil {
-		d.Set("address_allocated_mode", objectRaw["AddressAllocatedMode"])
-	}
-	if objectRaw["AddressIpVersion"] != nil {
-		d.Set("address_ip_version", convertAlbLoadBalancerAddressIpVersionResponse(objectRaw["AddressIpVersion"]))
-	}
-	if objectRaw["AddressType"] != nil {
-		d.Set("address_type", objectRaw["AddressType"])
-	}
-	if objectRaw["BandwidthPackageId"] != nil {
-		d.Set("bandwidth_package_id", objectRaw["BandwidthPackageId"])
-	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["DNSName"] != nil {
-		d.Set("dns_name", objectRaw["DNSName"])
-	}
-	if objectRaw["Ipv6AddressType"] != nil {
-		d.Set("ipv6_address_type", objectRaw["Ipv6AddressType"])
-	}
-	if objectRaw["LoadBalancerEdition"] != nil {
-		d.Set("load_balancer_edition", objectRaw["LoadBalancerEdition"])
-	}
-	if objectRaw["LoadBalancerName"] != nil {
-		d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", convertAlbLoadBalancerRegionIdResponse(objectRaw["RegionId"]))
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["LoadBalancerStatus"] != nil {
-		d.Set("status", objectRaw["LoadBalancerStatus"])
-	}
-	if objectRaw["VpcId"] != nil {
-		d.Set("vpc_id", objectRaw["VpcId"])
-	}
+	d.Set("address_allocated_mode", objectRaw["AddressAllocatedMode"])
+	d.Set("address_ip_version", convertAlbLoadBalancerAddressIpVersionResponse(objectRaw["AddressIpVersion"]))
+	d.Set("address_type", objectRaw["AddressType"])
+	d.Set("bandwidth_package_id", objectRaw["BandwidthPackageId"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("dns_name", objectRaw["DNSName"])
+	d.Set("ipv6_address_type", objectRaw["Ipv6AddressType"])
+	d.Set("load_balancer_edition", objectRaw["LoadBalancerEdition"])
+	d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
+	d.Set("region_id", convertAlbLoadBalancerRegionIdResponse(objectRaw["RegionId"]))
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["LoadBalancerStatus"])
+	d.Set("vpc_id", objectRaw["VpcId"])
 
 	accessLogConfigMaps := make([]map[string]interface{}, 0)
 	accessLogConfigMap := make(map[string]interface{})
-	accessLogConfig1Raw := make(map[string]interface{})
+	accessLogConfigRaw := make(map[string]interface{})
 	if objectRaw["AccessLogConfig"] != nil {
-		accessLogConfig1Raw = objectRaw["AccessLogConfig"].(map[string]interface{})
+		accessLogConfigRaw = objectRaw["AccessLogConfig"].(map[string]interface{})
 	}
-	if len(accessLogConfig1Raw) > 0 {
-		accessLogConfigMap["log_project"] = accessLogConfig1Raw["LogProject"]
-		accessLogConfigMap["log_store"] = accessLogConfig1Raw["LogStore"]
+	if len(accessLogConfigRaw) > 0 {
+		accessLogConfigMap["log_project"] = accessLogConfigRaw["LogProject"]
+		accessLogConfigMap["log_store"] = accessLogConfigRaw["LogStore"]
 
 		accessLogConfigMaps = append(accessLogConfigMaps, accessLogConfigMap)
 	}
 	if err := d.Set("access_log_config", accessLogConfigMaps); err != nil {
 		return err
 	}
-
 	deletionProtectionConfigMaps := make([]map[string]interface{}, 0)
 	deletionProtectionConfigMap := make(map[string]interface{})
-	deletionProtectionConfig1Raw := make(map[string]interface{})
+	deletionProtectionConfigRaw := make(map[string]interface{})
 	if objectRaw["DeletionProtectionConfig"] != nil {
-		deletionProtectionConfig1Raw = objectRaw["DeletionProtectionConfig"].(map[string]interface{})
+		deletionProtectionConfigRaw = objectRaw["DeletionProtectionConfig"].(map[string]interface{})
 	}
-	if len(deletionProtectionConfig1Raw) > 0 {
-		d.Set("deletion_protection_enabled", deletionProtectionConfig1Raw["Enabled"])
-		deletionProtectionConfigMap["enabled"] = deletionProtectionConfig1Raw["Enabled"]
-		deletionProtectionConfigMap["enabled_time"] = deletionProtectionConfig1Raw["EnabledTime"]
+	if len(deletionProtectionConfigRaw) > 0 {
+		d.Set("deletion_protection_enabled", deletionProtectionConfigRaw["Enabled"])
+		deletionProtectionConfigMap["enabled"] = deletionProtectionConfigRaw["Enabled"]
+		deletionProtectionConfigMap["enabled_time"] = deletionProtectionConfigRaw["EnabledTime"]
 
 		deletionProtectionConfigMaps = append(deletionProtectionConfigMaps, deletionProtectionConfigMap)
 	}
-	if objectRaw["DeletionProtectionConfig"] != nil {
-		if err := d.Set("deletion_protection_config", deletionProtectionConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("deletion_protection_config", deletionProtectionConfigMaps); err != nil {
+		return err
 	}
 	loadBalancerBillingConfigMaps := make([]map[string]interface{}, 0)
 	loadBalancerBillingConfigMap := make(map[string]interface{})
-	loadBalancerBillingConfig1Raw := make(map[string]interface{})
+	loadBalancerBillingConfigRaw := make(map[string]interface{})
 	if objectRaw["LoadBalancerBillingConfig"] != nil {
-		loadBalancerBillingConfig1Raw = objectRaw["LoadBalancerBillingConfig"].(map[string]interface{})
+		loadBalancerBillingConfigRaw = objectRaw["LoadBalancerBillingConfig"].(map[string]interface{})
 	}
-	if len(loadBalancerBillingConfig1Raw) > 0 {
-		loadBalancerBillingConfigMap["pay_type"] = convertAlbLoadBalancerLoadBalancerBillingConfigPayTypeResponse(loadBalancerBillingConfig1Raw["PayType"])
+	if len(loadBalancerBillingConfigRaw) > 0 {
+		loadBalancerBillingConfigMap["pay_type"] = convertAlbLoadBalancerLoadBalancerBillingConfigPayTypeResponse(loadBalancerBillingConfigRaw["PayType"])
 
 		loadBalancerBillingConfigMaps = append(loadBalancerBillingConfigMaps, loadBalancerBillingConfigMap)
 	}
-	if objectRaw["LoadBalancerBillingConfig"] != nil {
-		if err := d.Set("load_balancer_billing_config", loadBalancerBillingConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("load_balancer_billing_config", loadBalancerBillingConfigMaps); err != nil {
+		return err
 	}
 	modificationProtectionConfigMaps := make([]map[string]interface{}, 0)
 	modificationProtectionConfigMap := make(map[string]interface{})
-	modificationProtectionConfig1Raw := make(map[string]interface{})
+	modificationProtectionConfigRaw := make(map[string]interface{})
 	if objectRaw["ModificationProtectionConfig"] != nil {
-		modificationProtectionConfig1Raw = objectRaw["ModificationProtectionConfig"].(map[string]interface{})
+		modificationProtectionConfigRaw = objectRaw["ModificationProtectionConfig"].(map[string]interface{})
 	}
-	if len(modificationProtectionConfig1Raw) > 0 {
-		modificationProtectionConfigMap["reason"] = modificationProtectionConfig1Raw["Reason"]
-		modificationProtectionConfigMap["status"] = modificationProtectionConfig1Raw["Status"]
+	if len(modificationProtectionConfigRaw) > 0 {
+		modificationProtectionConfigMap["reason"] = modificationProtectionConfigRaw["Reason"]
+		modificationProtectionConfigMap["status"] = modificationProtectionConfigRaw["Status"]
 
 		modificationProtectionConfigMaps = append(modificationProtectionConfigMaps, modificationProtectionConfigMap)
 	}
-	if objectRaw["ModificationProtectionConfig"] != nil {
-		if err := d.Set("modification_protection_config", modificationProtectionConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("modification_protection_config", modificationProtectionConfigMaps); err != nil {
+		return err
 	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
-	zoneMappings1Raw := objectRaw["ZoneMappings"]
+	zoneMappingsRaw := objectRaw["ZoneMappings"]
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
-	if zoneMappings1Raw != nil {
-		for _, zoneMappingsChild1Raw := range zoneMappings1Raw.([]interface{}) {
+	if zoneMappingsRaw != nil {
+		for _, zoneMappingsChildRaw := range zoneMappingsRaw.([]interface{}) {
 			zoneMappingsMap := make(map[string]interface{})
-			zoneMappingsChild1Raw := zoneMappingsChild1Raw.(map[string]interface{})
-			zoneMappingsMap["vswitch_id"] = zoneMappingsChild1Raw["VSwitchId"]
-			zoneMappingsMap["zone_id"] = zoneMappingsChild1Raw["ZoneId"]
+			zoneMappingsChildRaw := zoneMappingsChildRaw.(map[string]interface{})
+			zoneMappingsMap["vswitch_id"] = zoneMappingsChildRaw["VSwitchId"]
+			zoneMappingsMap["zone_id"] = zoneMappingsChildRaw["ZoneId"]
 
-			loadBalancerAddresses1Raw := zoneMappingsChild1Raw["LoadBalancerAddresses"]
+			loadBalancerAddressesChildRawArrayObj, _ := jsonpath.Get("$.LoadBalancerAddresses[*]", zoneMappingsChildRaw)
+			loadBalancerAddressesChildRawArray := make([]interface{}, 0)
+			if loadBalancerAddressesChildRawArrayObj != nil {
+				loadBalancerAddressesChildRawArray = loadBalancerAddressesChildRawArrayObj.([]interface{})
+			}
+			loadBalancerAddressesChildRaw := make(map[string]interface{})
+			if len(loadBalancerAddressesChildRawArray) > 0 {
+				loadBalancerAddressesChildRaw = loadBalancerAddressesChildRawArray[0].(map[string]interface{})
+			}
+
+			zoneMappingsMap["address"] = loadBalancerAddressesChildRaw["Address"]
+			zoneMappingsMap["allocation_id"] = loadBalancerAddressesChildRaw["AllocationId"]
+			zoneMappingsMap["eip_type"] = loadBalancerAddressesChildRaw["EipType"]
+			zoneMappingsMap["intranet_address"] = loadBalancerAddressesChildRaw["IntranetAddress"]
+			zoneMappingsMap["ipv6_address"] = loadBalancerAddressesChildRaw["Ipv6Address"]
+
+			loadBalancerAddressesRaw := zoneMappingsChildRaw["LoadBalancerAddresses"]
 			loadBalancerAddressesMaps := make([]map[string]interface{}, 0)
-			if loadBalancerAddresses1Raw != nil {
-				for _, loadBalancerAddressesChild1Raw := range loadBalancerAddresses1Raw.([]interface{}) {
+			if loadBalancerAddressesRaw != nil {
+				for _, loadBalancerAddressesChildRaw := range loadBalancerAddressesRaw.([]interface{}) {
 					loadBalancerAddressesMap := make(map[string]interface{})
-					loadBalancerAddressesChild1Raw := loadBalancerAddressesChild1Raw.(map[string]interface{})
-					loadBalancerAddressesMap["address"] = loadBalancerAddressesChild1Raw["Address"]
-					loadBalancerAddressesMap["allocation_id"] = loadBalancerAddressesChild1Raw["AllocationId"]
-					loadBalancerAddressesMap["eip_type"] = loadBalancerAddressesChild1Raw["EipType"]
-					loadBalancerAddressesMap["ipv6_address"] = loadBalancerAddressesChild1Raw["Ipv6Address"]
+					loadBalancerAddressesChildRaw := loadBalancerAddressesChildRaw.(map[string]interface{})
+					loadBalancerAddressesMap["address"] = loadBalancerAddressesChildRaw["Address"]
+					loadBalancerAddressesMap["allocation_id"] = loadBalancerAddressesChildRaw["AllocationId"]
+					loadBalancerAddressesMap["eip_type"] = loadBalancerAddressesChildRaw["EipType"]
+					loadBalancerAddressesMap["intranet_address"] = loadBalancerAddressesChildRaw["IntranetAddress"]
+					loadBalancerAddressesMap["intranet_address_hc_status"] = loadBalancerAddressesChildRaw["IntranetAddressHcStatus"]
+					loadBalancerAddressesMap["ipv6_address"] = loadBalancerAddressesChildRaw["Ipv6Address"]
+					loadBalancerAddressesMap["ipv6_address_hc_status"] = loadBalancerAddressesChildRaw["Ipv6AddressHcStatus"]
 
+					ipv4LocalAddressesRaw := make([]interface{}, 0)
+					if loadBalancerAddressesChildRaw["Ipv4LocalAddresses"] != nil {
+						ipv4LocalAddressesRaw = loadBalancerAddressesChildRaw["Ipv4LocalAddresses"].([]interface{})
+					}
+
+					loadBalancerAddressesMap["ipv4_local_addresses"] = ipv4LocalAddressesRaw
+					ipv6LocalAddressesRaw := make([]interface{}, 0)
+					if loadBalancerAddressesChildRaw["Ipv6LocalAddresses"] != nil {
+						ipv6LocalAddressesRaw = loadBalancerAddressesChildRaw["Ipv6LocalAddresses"].([]interface{})
+					}
+
+					loadBalancerAddressesMap["ipv6_local_addresses"] = ipv6LocalAddressesRaw
 					loadBalancerAddressesMaps = append(loadBalancerAddressesMaps, loadBalancerAddressesMap)
 				}
 			}
@@ -479,10 +529,8 @@ func resourceAliCloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 			zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
 		}
 	}
-	if objectRaw["ZoneMappings"] != nil {
-		if err := d.Set("zone_mappings", zoneMappingsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("zone_mappings", zoneMappingsMaps); err != nil {
+		return err
 	}
 
 	return nil
@@ -510,18 +558,19 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		currentValue, err := jsonpath.Get("$.DeletionProtectionConfig.Enabled", object)
 		if currentValue != nil && currentValue.(bool) != target {
-			if target == true {
-				action := "EnableDeletionProtection"
+			if target == false {
+				action := "DisableDeletionProtection"
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ResourceId"] = d.Id()
 
 				request["ClientToken"] = buildClientToken(action)
+
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -540,19 +589,19 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				}
 
 			}
-			if target == false {
-				action := "DisableDeletionProtection"
+			if target == true {
+				action := "EnableDeletionProtection"
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ResourceId"] = d.Id()
-				request["RegionId"] = client.RegionId
+
 				request["ClientToken"] = buildClientToken(action)
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing", "undefined"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -653,38 +702,37 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	action := "UpdateLoadBalancerAttribute"
 	var err error
+	action := "UpdateLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("load_balancer_name") {
-		update = true
-		request["LoadBalancerName"] = d.Get("load_balancer_name")
-	}
-
 	if !d.IsNewResource() && d.HasChange("modification_protection_config") {
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
 
 		if v := d.Get("modification_protection_config"); v != nil {
-			reason1, _ := jsonpath.Get("$[0].reason", v)
-			if reason1 != nil && (d.HasChange("modification_protection_config.0.reason") || reason1 != "") {
-				objectDataLocalMap["Reason"] = reason1
-			}
 			status1, _ := jsonpath.Get("$[0].status", v)
 			if status1 != nil && (d.HasChange("modification_protection_config.0.status") || status1 != "") {
 				objectDataLocalMap["Status"] = status1
+			}
+			reason1, _ := jsonpath.Get("$[0].reason", v)
+			if reason1 != nil && (d.HasChange("modification_protection_config.0.reason") || reason1 != "") {
+				objectDataLocalMap["Reason"] = reason1
 			}
 
 			request["ModificationProtectionConfig"] = objectDataLocalMap
 		}
 	}
 
-	if v, ok := d.GetOkExists("dry_run"); ok {
+	if v, ok := d.GetOk("dry_run"); ok {
 		request["DryRun"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("load_balancer_name") {
+		update = true
+		request["LoadBalancerName"] = d.Get("load_balancer_name")
 	}
 
 	if update {
@@ -692,7 +740,7 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer", "SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "ResourceNotFound.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -717,20 +765,20 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["LoadBalancerId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
+	if v, ok := d.GetOk("dry_run"); ok {
+		request["DryRun"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("load_balancer_edition") {
 		update = true
 	}
 	request["LoadBalancerEdition"] = d.Get("load_balancer_edition")
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"SystemBusy", "IdempotenceProcessing", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -765,7 +813,7 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"undefined", "IncorrectStatus.LoadBalancer"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.LoadBalancer", "undefined"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -799,6 +847,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
+			dataLoopMap["IntranetAddress"] = dataLoopTmp["intranet_address"]
+			dataLoopMap["AllocationId"] = dataLoopTmp["allocation_id"]
+			dataLoopMap["EipType"] = dataLoopTmp["eip_type"]
 			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
 			zoneMappingsMapsArray = append(zoneMappingsMapsArray, dataLoopMap)
 		}
@@ -886,6 +937,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 
 			action := "DisableLoadBalancerAccessLog"
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
@@ -931,6 +985,9 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 
 			action := "EnableLoadBalancerAccessLog"
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
@@ -982,7 +1039,7 @@ func resourceAliCloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer", "SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"SystemBusy", "ResourceNotFound.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1040,6 +1097,14 @@ func modificationProtectionConfigDiffSuppressFunc(k, old, new string, d *schema.
 	return true
 }
 
+func convertAlbLoadBalancerAddressIpVersionResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "Ipv4":
+		return "IPv4"
+	}
+	return source
+}
 func convertAlbLoadBalancerLoadBalancerBillingConfigPayTypeResponse(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {
@@ -1056,12 +1121,11 @@ func convertAlbLoadBalancerRegionIdResponse(source interface{}) interface{} {
 	}
 	return source
 }
-
-func convertAlbLoadBalancerAddressIpVersionResponse(source interface{}) interface{} {
+func convertAlbLoadBalancerLoadBalancerBillingConfigPayTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
-	case "Ipv4":
-		return "IPv4"
+	case "PayAsYouGo":
+		return "PostPay"
 	}
-
 	return source
 }

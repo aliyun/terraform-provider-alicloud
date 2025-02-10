@@ -479,8 +479,11 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 					},
 					"zone_mappings": []map[string]interface{}{
 						{
-							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
-							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_a.id}",
+							"intranet_address": "192.168.10.1",
 						},
 						{
 							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
@@ -516,6 +519,31 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_a.id}",
+							"intranet_address": "192.168.10.1",
+						},
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_c.id}",
+							"zone_id":          "${alicloud_vswitch.zone_c.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_b.id}",
+							"intranet_address": "192.168.192.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "2",
 					}),
 				),
 			},
@@ -665,25 +693,6 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
-							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
-						},
-						{
-							"vswitch_id": "${alicloud_vswitch.zone_c.id}",
-							"zone_id":    "${alicloud_vswitch.zone_c.zone_id}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_mappings.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "LoadBalancer",
@@ -757,8 +766,11 @@ func TestAccAliCloudAlbLoadBalancer_basic1_twin(t *testing.T) {
 					},
 					"zone_mappings": []map[string]interface{}{
 						{
-							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
-							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_a.id}",
+							"intranet_address": "192.168.10.1",
 						},
 						{
 							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
@@ -899,6 +911,23 @@ func AliCloudAlbLoadBalancerBasicDependence1(name string) string {
   		enable_ipv6 = "true"
 	}
 
+	resource "alicloud_eip" "zone_a" {
+	  bandwidth            = "10"
+	  internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_eip" "zone_b" {
+	  bandwidth            = "10"
+	  internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_eipanycast_anycast_eip_address" "zone_c" {
+	  bandwidth                = 200
+	  service_location         = "international"
+	  internet_charge_type     = "PayByTraffic"
+	  payment_type             = "PayAsYouGo"
+	}
+
 	resource "alicloud_vswitch" "zone_a" {
   		vswitch_name         = var.name
   		vpc_id               = alicloud_vpc.default.id
@@ -918,7 +947,7 @@ func AliCloudAlbLoadBalancerBasicDependence1(name string) string {
 	resource "alicloud_vswitch" "zone_c" {
   		vswitch_name         = var.name
   		vpc_id               = alicloud_vpc.default.id
-  		cidr_block           = "192.168.192.0/18"
+  		cidr_block           = "192.168.192.0/24"
   		zone_id              = data.alicloud_alb_zones.default.zones.2.id
   		ipv6_cidr_block_mask = "18"
 	}
