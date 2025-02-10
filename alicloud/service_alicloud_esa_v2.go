@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -389,20 +388,14 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetRecord"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RecordId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -463,21 +456,15 @@ func (s *EsaServiceV2) DescribeEsaList(id string) (object map[string]interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Id"] = id
 	request["RegionId"] = client.RegionId
 	action := "GetList"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -538,21 +525,15 @@ func (s *EsaServiceV2) DescribeEsaPage(id string) (object map[string]interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Id"] = id
 	request["RegionId"] = client.RegionId
 	action := "GetPage"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -617,10 +598,6 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
@@ -628,11 +605,9 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 
 	action := "GetHttpRequestHeaderModificationRule"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -693,10 +668,6 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
@@ -704,11 +675,9 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 
 	action := "GetRewriteUrlRule"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalException"}) || NeedRetry(err) {
@@ -773,10 +742,6 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
@@ -784,11 +749,9 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 
 	action := "GetRedirectRule"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -849,10 +812,6 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
@@ -860,11 +819,9 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 
 	action := "GetHttpResponseHeaderModificationRule"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -925,10 +882,6 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
@@ -936,11 +889,9 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	query["RegionId"] = client.RegionId
 	action := "GetHttpsBasicConfiguration"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2024-09-10"), StringPointer("AK"), query, nil, &runtime)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
