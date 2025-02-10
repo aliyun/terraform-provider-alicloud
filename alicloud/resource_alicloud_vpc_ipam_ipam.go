@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -74,10 +73,7 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcipamClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -101,11 +97,9 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -183,10 +177,7 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	d.Partial(true)
 
 	action := "UpdateIpam"
-	conn, err := client.NewVpcipamClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["IpamId"] = d.Id()
@@ -203,11 +194,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -224,10 +213,6 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewVpcipamClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -238,11 +223,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "IPAM"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -267,10 +250,6 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 
 		if removed.Len() > 0 {
 			action := "UpdateIpam"
-			conn, err := client.NewVpcipamClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
@@ -280,11 +259,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			removeOperatingRegionMapsArray := localData
 			request["RemoveOperatingRegion"] = removeOperatingRegionMapsArray
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -303,10 +280,6 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 
 		if added.Len() > 0 {
 			action := "UpdateIpam"
-			conn, err := client.NewVpcipamClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
@@ -316,11 +289,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			addOperatingRegionMapsArray := localData
 			request["AddOperatingRegion"] = addOperatingRegionMapsArray
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -355,20 +326,15 @@ func resourceAliCloudVpcIpamIpamDelete(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewVpcipamClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["IpamId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
