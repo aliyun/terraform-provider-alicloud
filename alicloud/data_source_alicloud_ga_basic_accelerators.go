@@ -12,9 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudGaBasicAccelerators() *schema.Resource {
+func dataSourceAliCloudGaBasicAccelerators() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudGaBasicAcceleratorsRead,
+		Read: dataSourceAliCloudGaBasicAcceleratorsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -34,11 +34,17 @@ func dataSourceAlicloudGaBasicAccelerators() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"bandwidth_billing_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT", "CDT95"}, false),
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"init", "active", "configuring", "binding", "unbinding", "deleting", "finacialLocked"}, false),
+				ValidateFunc: StringInSlice([]string{"init", "active", "configuring", "binding", "unbinding", "deleting", "finacialLocked"}, false),
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
@@ -154,7 +160,7 @@ func dataSourceAlicloudGaBasicAccelerators() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListBasicAccelerators"
@@ -170,16 +176,9 @@ func dataSourceAlicloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 		request["State"] = v
 	}
 
-	var objects []map[string]interface{}
-	var basicAcceleratorNameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return WrapError(err)
-		}
-		basicAcceleratorNameRegex = r
-	}
+	bandwidthBillingType, bandwidthBillingTypeOk := d.GetOk("bandwidth_billing_type")
 
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -188,6 +187,15 @@ func dataSourceAlicloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 			}
 			idsMap[vv.(string)] = vv.(string)
 		}
+	}
+
+	var basicAcceleratorNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		basicAcceleratorNameRegex = r
 	}
 
 	var response map[string]interface{}
@@ -206,29 +214,40 @@ func dataSourceAlicloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ga_basic_accelerators", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Accelerators", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Accelerators", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if basicAcceleratorNameRegex != nil && !basicAcceleratorNameRegex.MatchString(fmt.Sprint(item["Name"])) {
-				continue
-			}
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["AcceleratorId"])]; !ok {
 					continue
 				}
 			}
+
+			if basicAcceleratorNameRegex != nil && !basicAcceleratorNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+
+			if bandwidthBillingTypeOk && bandwidthBillingType.(string) != "" && bandwidthBillingType.(string) != fmt.Sprint(item["BandwidthBillingType"]) {
+				continue
+			}
+
 			objects = append(objects, item)
 		}
+
 		if len(result) < request["PageSize"].(int) {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
@@ -295,6 +314,7 @@ func dataSourceAlicloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
