@@ -231,6 +231,9 @@ The following arguments are supported:
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
+* `ip_stack` - (Optional, ForceNew, Available since v1.243.0) The IP address family that the cluster network uses. Valid values:
+  * `ipv4`: IPv4 stack.
+  * `dual`: IPv4/IPv6 dual stack. IPv4 addresses are used for communication between worker nodes and the control plane. The VPC used by the cluster must support IPv4 and IPv6 dual-stack. This feature is only supported for Kubernetes version 1.22 and later, and you must select `Terway` as CNI network plugin. If you use the shared ENI mode of `Terway`, the ECS instance type must support IPv6 addresses and the number of IPv4 addresses supported by the ECS instance type must be the same as the number of IPv6 addresses, for more information about ECS instance types, see [Overview of instance families](https://www.alibabacloud.com/help/zh/ecs/user-guide/overview-of-instance-families#concept-sx4-lxv-tdb). Dual stack is not supported if you want to use [Elastic Remote Direct Memory Access (eRDMA)](https://www.alibabacloud.com/help/zh/ack/ack-managed-and-ack-dedicated/user-guide/use-erdma-in-ack-clusters) in the cluster.
 
 -> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
 If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.

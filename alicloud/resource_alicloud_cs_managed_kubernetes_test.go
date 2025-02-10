@@ -367,6 +367,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					"node_cidr_mask":               "26",
 					"service_cidr":                 "172.23.0.0/16",
 					"proxy_mode":                   "ipvs",
+					"ip_stack":                     "ipv4",
 					"vswitch_ids":                  []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
 					"pod_vswitch_ids":              []string{"${local.vswitch_id}"},
 					"control_plane_log_ttl":        "30",
@@ -384,6 +385,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"nat_gateway_id":                 CHECKSET,
 						"service_cidr":                   "172.23.0.0/16",
 						"proxy_mode":                     "ipvs",
+						"ip_stack":                       "ipv4",
 						"vswitch_ids.#":                  "2",
 						"control_plane_log_ttl":          "30",
 						"control_plane_log_components.0": "apiserver",
@@ -485,6 +487,14 @@ resource "alicloud_vswitch" "vswitch" {
   vswitch_name = var.name
 }
 
+resource "alicloud_vswitch" "vswitch_1" {
+  count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 9)
+  zone_id      = length(data.alicloud_zones.default.zones) > 0 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
 resource "alicloud_log_project" "log" {
   name        = var.name
   description = "created by terraform for managedkubernetes cluster"
@@ -497,7 +507,7 @@ resource "alicloud_log_project" "log" {
 
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
 }
 `, name)
 }
