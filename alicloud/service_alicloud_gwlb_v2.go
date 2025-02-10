@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -24,20 +22,14 @@ func (s *GwlbServiceV2) DescribeGwlbLoadBalancer(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetLoadBalancerAttribute"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -88,7 +80,6 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -103,10 +94,6 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewGwlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -120,11 +107,9 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -143,10 +128,6 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewGwlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -163,11 +144,9 @@ func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -198,20 +177,14 @@ func (s *GwlbServiceV2) DescribeGwlbListener(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetListenerAttribute"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ListenerId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -265,20 +238,14 @@ func (s *GwlbServiceV2) DescribeGwlbServerGroup(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListServerGroups"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupIds.1"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -316,20 +283,14 @@ func (s *GwlbServiceV2) DescribeListServerGroupServers(id string) (object map[st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListServerGroupServers"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -377,20 +338,14 @@ func (s *GwlbServiceV2) DescribeAsyncServerGroupListServerGroupServers(d *schema
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListServerGroupServers"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
