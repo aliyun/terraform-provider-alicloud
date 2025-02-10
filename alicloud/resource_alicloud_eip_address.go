@@ -64,6 +64,7 @@ func resourceAliCloudEipAddress() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"high_definition_monitor_log_status": {
 				Type:         schema.TypeString,
