@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -182,10 +181,7 @@ func resourceAliCloudEsaRecordCreate(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -308,11 +304,9 @@ func resourceAliCloudEsaRecordCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("source_type"); ok {
 		request["SourceType"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -449,10 +443,7 @@ func resourceAliCloudEsaRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	update := false
 
 	action := "UpdateRecord"
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RecordId"] = d.Id()
@@ -592,11 +583,9 @@ func resourceAliCloudEsaRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Record.ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -622,19 +611,14 @@ func resourceAliCloudEsaRecordDelete(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEsaClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RecordId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-09-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Record.ServiceBusy"}) || NeedRetry(err) {
