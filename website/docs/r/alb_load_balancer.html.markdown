@@ -20,12 +20,6 @@ For information about Application Load Balancer (ALB) Load Balancer and how to u
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_load_balancer&exampleId=69375c6d-bff4-e697-2696-1baac7f74f3a4c97779e&activeTab=example&spm=docs.r.alb_load_balancer.0.69375c6dbf&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -86,13 +80,11 @@ The following arguments are supported:
   - `DualStack`: the dual-stack type.
 * `address_type` - (Required) The type of IP address that the SLB instance uses to provide services.
 * `bandwidth_package_id` - (Optional, ForceNew, Available since v1.211.2) The ID of the EIP bandwidth plan which is associated with an ALB instance that uses a public IP address.
-* `deletion_protection_config` - (Optional, ForceNew, Computed, List, Available since v1.242.0) Remove the Protection Configuration See [`deletion_protection_config`](#deletion_protection_config) below.
+* `deletion_protection_config` - (Optional, Computed, List, Available since v1.242.0) The Protection Configuration See [`deletion_protection_config`](#deletion_protection_config) below.
 * `dry_run` - (Optional) Whether to PreCheck only this request, value:
-
-  true: sends a check request and does not create a resource. Check items include whether required parameters are filled in, request format, and business restrictions. If the check fails, the corresponding error is returned. If the check passes, the error code DryRunOperation is returned.
-
-  false (default): Sends a normal request, returns the HTTP_2xx status code after the check, and directly performs the operation.
-* `ipv6_address_type` - (Optional, Available since v1.211.2) The address type of Ipv6
+  - `true`: sends a check request and does not create a resource. Check items include whether required parameters are filled in, request format, and business restrictions. If the check fails, the corresponding error is returned. If the check passes, the error code DryRunOperation is returned.
+  - `false` (default): Sends a normal request, returns the HTTP_2xx status code after the check, and directly performs the operation.
+* `ipv6_address_type` - (Optional, Computed, Available since v1.211.2) The address type of Ipv6
 * `load_balancer_billing_config` - (Required, ForceNew, List) The configuration of the billing method. See [`load_balancer_billing_config`](#load_balancer_billing_config) below.
 * `load_balancer_edition` - (Required) The edition of the ALB instance.
 * `load_balancer_name` - (Optional) The name of the resource
@@ -116,7 +108,7 @@ The access_log_config supports the following:
 ### `deletion_protection_config`
 
 The deletion_protection_config supports the following:
-* `enabled` - (Optional, Available since v1.242.0) Remove the Protection Status
+* `enabled` - (Optional) Remove the Protection Status
 
 ### `load_balancer_billing_config`
 
@@ -132,6 +124,9 @@ The modification_protection_config supports the following:
 ### `zone_mappings`
 
 The zone_mappings supports the following:
+* `allocation_id` - (Optional, Computed, Available since v1.243.0) The ID of the EIP instance.
+* `eip_type` - (Optional, Computed, Available since v1.243.0) The type of the EIP instance.
+* `intranet_address` - (Optional, Computed, Available since v1.243.0) IPv4 private network address.
 * `vswitch_id` - (Required) The ID of the vSwitch that corresponds to the zone. Each zone can use only one vSwitch and subnet.
 * `zone_id` - (Required) The ID of the zone to which the SLB instance belongs.
 
@@ -146,11 +141,18 @@ The following attributes are exported:
 * `region_id` - The region ID of the resource
 * `status` - Server Load Balancer Instance Status:, indicating that the instance listener will no longer forward traffic.(default).
 * `zone_mappings` - The zones and vSwitches. You must specify at least two zones.
-  * `load_balancer_addresses` - The SLB Instance Address
-    * `address` - IP Address. The Public IP Address, and Private IP Address from the Address Type
-    * `allocation_id` - The ID of the EIP instance.
-    * `eip_type` - The type of the EIP instance.
-    * `ipv6_address` - Ipv6 address
+  * `address` - IP Address. The Public IP Address, and Private IP Address from the Address Type
+  * `ipv6_address` - Ipv6 address
+  * `load_balancer_addresses` - The instance address.
+    * `address` - An IP address of the IPv4 type.
+    * `allocation_id` - The elastic IP identifier.
+    * `eip_type` - The type of the public EIP. Value:
+    * `intranet_address` - IPv4 private network address.
+    * `intranet_address_hc_status` - The private network IPv4 address detection status of the application-oriented load balancing instance.
+    * `ipv4_local_addresses` - IPv4 Local address list. The list of addresses used by ALB to interact with the backend service.
+    * `ipv6_address` - An IP address of the IPv6 type.
+    * `ipv6_address_hc_status` - The IPv6 address detection status of the application-based load balancing instance.
+    * `ipv6_local_addresses` - IPv6 Local address list. The list of addresses used by ALB to interact with the backend service.
 
 ## Timeouts
 
