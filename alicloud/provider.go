@@ -1574,7 +1574,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_firewall_instance":                               resourceAliCloudCloudFirewallInstance(),
 			"alicloud_cr_endpoint_acl_policy":                                resourceAlicloudCrEndpointAclPolicy(),
 			"alicloud_actiontrail_history_delivery_job":                      resourceAlicloudActiontrailHistoryDeliveryJob(),
-			"alicloud_ecs_deployment_set":                                    resourceAlicloudEcsDeploymentSet(),
+			"alicloud_ecs_deployment_set":                                    resourceAliCloudEcsDeploymentSet(),
 			"alicloud_cloud_sso_user":                                        resourceAlicloudCloudSsoUser(),
 			"alicloud_cloud_sso_access_configuration":                        resourceAliCloudCloudSsoAccessConfiguration(),
 			"alicloud_dfs_file_system":                                       resourceAliCloudDfsFileSystem(),

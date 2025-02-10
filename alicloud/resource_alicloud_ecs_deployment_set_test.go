@@ -38,7 +38,7 @@ func testSweepEcsDeploymentSet(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -120,10 +120,10 @@ func testSweepEcsDeploymentSet(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECSDeploymentSet_basic0(t *testing.T) {
+func TestAccAliCloudECSDeploymentSet_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_deployment_set.default"
-	ra := resourceAttrInit(resourceId, AlicloudECSDeploymentSetMap0)
+	ra := resourceAttrInit(resourceId, AliCloudECSDeploymentSetMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDeploymentSet")
@@ -131,7 +131,7 @@ func TestAccAlicloudECSDeploymentSet_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdeploymentset%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSDeploymentSetBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSDeploymentSetBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -141,68 +141,45 @@ func TestAccAlicloudECSDeploymentSet_basic0(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"strategy":            "Availability",
-					"domain":              "Default",
-					"granularity":         "Host",
-					"deployment_set_name": name,
-					"description":         name,
-				}),
+				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"strategy":            "Availability",
-						"domain":              "Default",
-						"granularity":         "Host",
-						"deployment_set_name": name,
-						"description":         name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"deployment_set_name": name + "Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deployment_set_name": name + "Update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "Update",
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deployment_set_name": name,
-					"description":         name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deployment_set_name": name,
-						"description":         name,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECSDeploymentSet_basic1(t *testing.T) {
+func TestAccAliCloudECSDeploymentSet_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_deployment_set.default"
-	ra := resourceAttrInit(resourceId, AlicloudECSDeploymentSetMap0)
+	ra := resourceAttrInit(resourceId, AliCloudECSDeploymentSetMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDeploymentSet")
@@ -210,7 +187,7 @@ func TestAccAlicloudECSDeploymentSet_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdeploymentset%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSDeploymentSetBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSDeploymentSetBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -221,16 +198,61 @@ func TestAccAlicloudECSDeploymentSet_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"strategy":                              "Availability",
-					"domain":                                "Default",
-					"granularity":                           "Host",
+					"strategy":                              "AvailabilityGroup",
 					"deployment_set_name":                   name,
 					"description":                           name,
 					"on_unable_to_redeploy_failed_instance": "CancelMembershipAndStart",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"strategy":            "Availability",
+						"strategy":            "AvailabilityGroup",
+						"deployment_set_name": name,
+						"description":         name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSDeploymentSet_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_deployment_set.default"
+	ra := resourceAttrInit(resourceId, AliCloudECSDeploymentSetMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDeploymentSet")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsdeploymentset%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSDeploymentSetBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"strategy":                              "AvailabilityGroup",
+					"deployment_set_name":                   name,
+					"description":                           name,
+					"on_unable_to_redeploy_failed_instance": "CancelMembershipAndStart",
+					"domain":                                "Default",
+					"granularity":                           "Host",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"strategy":            "AvailabilityGroup",
 						"domain":              "Default",
 						"granularity":         "Host",
 						"deployment_set_name": name,
@@ -239,25 +261,30 @@ func TestAccAlicloudECSDeploymentSet_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
 			},
 		},
 	})
 }
 
-var AlicloudECSDeploymentSetMap0 = map[string]string{}
-
-func AlicloudECSDeploymentSetBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+var AliCloudECSDeploymentSetMap0 = map[string]string{
+	"strategy":    CHECKSET,
+	"domain":      CHECKSET,
+	"granularity": CHECKSET,
 }
+
+func AliCloudECSDeploymentSetBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
+func TestUnitAliCloudECSDeploymentSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_deployment_set"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_deployment_set"].Schema).Data(nil, nil)
@@ -353,7 +380,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsDeploymentSetCreate(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -370,7 +397,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetCreate(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -387,7 +414,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsDeploymentSetCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -405,7 +432,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsDeploymentSetCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -423,7 +450,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudEcsDeploymentSetUpdate(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -455,7 +482,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsDeploymentSetUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -487,7 +514,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsDeploymentSetUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -502,7 +529,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsDeploymentSetDelete(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -519,7 +546,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetDelete(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -536,7 +563,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetDelete(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -553,7 +580,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetRead(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -569,7 +596,7 @@ func TestUnitAlicloudECSDeploymentSet(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsDeploymentSetRead(d, rawClient)
+		err := resourceAliCloudEcsDeploymentSetRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
