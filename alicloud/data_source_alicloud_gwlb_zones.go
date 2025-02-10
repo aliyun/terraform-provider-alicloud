@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,21 +62,16 @@ func dataSourceAliCloudGwlbZoneRead(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeZones"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

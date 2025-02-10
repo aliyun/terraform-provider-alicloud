@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -65,10 +64,7 @@ func resourceAliCloudGwlbListenerCreate(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -86,11 +82,9 @@ func resourceAliCloudGwlbListenerCreate(d *schema.ResourceData, meta interface{}
 		request["ListenerDescription"] = v
 	}
 	request["ServerGroupId"] = d.Get("server_group_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -160,10 +154,7 @@ func resourceAliCloudGwlbListenerUpdate(d *schema.ResourceData, meta interface{}
 	var query map[string]interface{}
 	update := false
 	action := "UpdateListenerAttribute"
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
@@ -182,11 +173,9 @@ func resourceAliCloudGwlbListenerUpdate(d *schema.ResourceData, meta interface{}
 	}
 	request["ServerGroupId"] = d.Get("server_group_id")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -223,10 +212,7 @@ func resourceAliCloudGwlbListenerDelete(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewGwlbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -236,11 +222,9 @@ func resourceAliCloudGwlbListenerDelete(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2024-04-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
