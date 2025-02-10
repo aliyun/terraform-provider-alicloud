@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -156,10 +155,7 @@ func dataSourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListIpams"
-	conn, err := client.NewVpcipamClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
@@ -177,13 +173,11 @@ func dataSourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{})
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["MaxResults"] = PageSizeLarge
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2023-02-28"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
