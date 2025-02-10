@@ -14,7 +14,7 @@ import (
 func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_vsc_mount_point.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsVscMountPointMap5268)
+	ra := resourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDfsVscMountPoint")
@@ -22,12 +22,11 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdfsvscmountpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsVscMountPointBasicDependence5268)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -36,11 +35,20 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"file_system_id": "${alicloud_dfs_file_system.DefaultFsForRMCVscMp.id}",
-					"alias_prefix":   "VscMpRMCTestAlias656",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"file_system_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alias_prefix": "VscMpRMCTestAlias656",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alias_prefix": "VscMpRMCTestAlias656",
 					}),
 				),
 			},
@@ -55,59 +63,33 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "VscMpRMCTestAliasUpdate",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "VscMpRMCTestAliasUpdate",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"file_system_id": "${alicloud_dfs_file_system.DefaultFsForRMCVscMp.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"file_system_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"alias_prefix"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudDfsVscMountPointMap5268 = map[string]string{
+var AliCloudDfsVscMountPointMap5268 = map[string]string{
 	"mount_point_id": CHECKSET,
 }
 
-func AlicloudDfsVscMountPointBasicDependence5268(name string) string {
+func AliCloudDfsVscMountPointBasicDependence5268(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_dfs_zones" "default" {}
-
-resource "alicloud_dfs_file_system" "DefaultFsForRMCVscMp" {
-  space_capacity       = "1024"
-  description          = "for vsc mountpoint RMC test"
-  storage_type         = "STANDARD"
-  zone_id              = data.alicloud_dfs_zones.default.zones.0.zone_id
-  protocol_type        = "HDFS"
-  data_redundancy_type = "LRS"
-  file_system_name     = var.name
-
-}
-
-
+	resource "alicloud_dfs_file_system" "DefaultFsForRMCVscMp" {
+  		space_capacity       = "1024"
+  		description          = "for vsc mountpoint RMC test"
+  		storage_type         = "PERFORMANCE"
+  		zone_id              = "cn-hangzhou-b"
+  		protocol_type        = "PANGU"
+  		data_redundancy_type = "LRS"
+  		file_system_name     = var.name
+	}
 `, name)
 }
 
@@ -115,7 +97,7 @@ resource "alicloud_dfs_file_system" "DefaultFsForRMCVscMp" {
 func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_vsc_mount_point.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsVscMountPointMap5268)
+	ra := resourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDfsVscMountPoint")
@@ -123,12 +105,11 @@ func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdfsvscmountpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsVscMountPointBasicDependence5268)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -138,19 +119,20 @@ func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"file_system_id": "${alicloud_dfs_file_system.DefaultFsForRMCVscMp.id}",
 					"alias_prefix":   "VscMpRMCTestAlias656",
+					"description":    "VscMpRMCTestAlias656",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"file_system_id": CHECKSET,
-						"alias_prefix":   CHECKSET,
+						"alias_prefix":   "VscMpRMCTestAlias656",
+						"description":    "VscMpRMCTestAlias656",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"alias_prefix"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
