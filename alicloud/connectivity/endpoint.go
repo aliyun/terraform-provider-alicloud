@@ -306,6 +306,7 @@ var productCodeToLocationCode = map[string]string{
 	"gwlb":                 "gwlb",            // GWLB
 	"esa":                  "dcdnservices",    // ESA
 	"live":                 "live",            // Live
+	"eds_aic":              "wycloudphone",    // CloudPhone
 }
 
 // irregularProductEndpoint specially records those product codes that
@@ -328,6 +329,7 @@ var irregularProductEndpoint = map[string]string{
 	"cas":              "cas.aliyuncs.com",
 	"sas":              "tds.aliyuncs.com",
 	"ros":              "ros.aliyuncs.com",
+	"eds_aic":          "eds-aic.cn-shanghai.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -351,6 +353,7 @@ var irregularProductEndpointForIntlAccount = map[string]string{
 	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
 	"bssopenapi":     BssOpenAPIEndpointInternational,
 	"esa":            "esa.ap-southeast-1.aliyuncs.com",
+	"eds_aic":        "eds-aic.ap-southeast-1.aliyuncs.com",
 	"ros":            "ros-intl.aliyuncs.com",
 }
 
