@@ -66,10 +66,7 @@ func resourceAliCloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "CreateCen"
 	request := make(map[string]interface{})
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ClientToken"] = buildClientToken("CreateCen")
 
@@ -96,7 +93,7 @@ func resourceAliCloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -157,6 +154,7 @@ func resourceAliCloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -196,16 +194,9 @@ func resourceAliCloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		action := "ModifyCenAttribute"
-		conn, err := client.NewCbnClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -248,16 +239,9 @@ func resourceAliCloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		action := "MoveResourceGroup"
-		conn, err := client.NewCbnClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, moveResourceGroupReq, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, moveResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -295,10 +279,7 @@ func resourceAliCloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	action := "DeleteCen"
 	var response map[string]interface{}
 
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"CenId": d.Id(),
@@ -308,7 +289,7 @@ func resourceAliCloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) || NeedRetry(err) {
 				wait()

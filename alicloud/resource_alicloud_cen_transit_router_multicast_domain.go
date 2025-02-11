@@ -266,7 +266,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainDelete(d *schema.ResourceDat
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.MulticastDomain", "InvalidOperation.MulticastGroupExist"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -2029,36 +2029,35 @@ func (client *AliyunClient) NewCbnClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
-	if client.cbnConn == nil {
-		endpoint := client.config.CbnEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
-			// compatible with cen
-			if endpoint == "" {
-				endpoint = "cbn.aliyuncs.com"
-			}
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CbnCode), endpoint)
-		}
+	product := "cbn"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
 
+	if client.cbnConn == nil {
 		cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
 		}
-		cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		cbnConn.SourceIp = client.config.SourceIp
-		cbnConn.SecureTransport = client.config.SecureTransport
-		cbnConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		cbnConn.AppendUserAgent(Provider, providerVersion)
-		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		cbnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cbnConn = cbnConn
+	} else {
+		err := client.cbnConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the %s client: %#v", product, err)
+		}
 	}
+	client.cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.cbnConn.SourceIp = client.config.SourceIp
+	client.cbnConn.SecureTransport = client.config.SecureTransport
+	client.cbnConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
+	client.cbnConn.AppendUserAgent(Provider, providerVersion)
+	client.cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+	client.cbnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 	return do(client.cbnConn)
 }
 

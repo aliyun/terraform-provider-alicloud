@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -62,10 +61,7 @@ func resourceAlicloudCenTransitRouterGrantAttachmentCreate(d *schema.ResourceDat
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("cen_id"); ok {
 		request["CenId"] = v
@@ -87,7 +83,7 @@ func resourceAlicloudCenTransitRouterGrantAttachmentCreate(d *schema.ResourceDat
 	action := "GrantInstanceToTransitRouter"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.TaskConflict"}) || NeedRetry(err) {
 				wait()
@@ -136,10 +132,7 @@ func resourceAlicloudCenTransitRouterGrantAttachmentRead(d *schema.ResourceData,
 
 func resourceAlicloudCenTransitRouterGrantAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
@@ -156,7 +149,7 @@ func resourceAlicloudCenTransitRouterGrantAttachmentDelete(d *schema.ResourceDat
 	action := "RevokeInstanceFromTransitRouter"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
