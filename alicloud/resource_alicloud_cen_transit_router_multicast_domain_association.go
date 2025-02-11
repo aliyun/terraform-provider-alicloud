@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -52,10 +51,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.
 	var response map[string]interface{}
 	action := "AssociateTransitRouterMulticastDomain"
 	request := make(map[string]interface{})
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ClientToken"] = buildClientToken("AssociateTransitRouterMulticastDomain")
 	request["TransitRouterMulticastDomainId"] = d.Get("transit_router_multicast_domain_id")
@@ -64,11 +60,9 @@ func resourceAliCloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.
 	vSwitchId := d.Get("vswitch_id").(string)
 	request["VSwitchIds"] = []string{vSwitchId}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -121,10 +115,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainAssociationDelete(d *schema.
 	action := "DisassociateTransitRouterMulticastDomain"
 	var response map[string]interface{}
 
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -138,11 +129,9 @@ func resourceAliCloudCenTransitRouterMulticastDomainAssociationDelete(d *schema.
 		"VSwitchIds":                     []string{parts[2]},
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.MulticastGroupExist", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 				wait()

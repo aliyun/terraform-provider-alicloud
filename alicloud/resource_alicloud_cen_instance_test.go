@@ -137,16 +137,10 @@ func testSweepCenInstances(region string) error {
 		request["PageSize"] = PageSizeLarge
 		request["PageNumber"] = 1
 		var response map[string]interface{}
-		conn, err := client.NewCbnClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -178,7 +172,7 @@ func testSweepCenInstances(region string) error {
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.ChildInstanceStatus"}) || NeedRetry(err) {
 							wait()
@@ -210,7 +204,7 @@ func testSweepCenInstances(region string) error {
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -242,7 +236,7 @@ func testSweepCenInstances(region string) error {
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
 							wait()
@@ -274,7 +268,7 @@ func testSweepCenInstances(region string) error {
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -306,7 +300,7 @@ func testSweepCenInstances(region string) error {
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
 							wait()
@@ -358,7 +352,7 @@ func testSweepCenInstances(region string) error {
 		for {
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] %s failed: %v", action, err)
 				break
@@ -378,14 +372,8 @@ func testSweepCenInstances(region string) error {
 				request["PageSize"] = PageSizeLarge
 				request["PageNumber"] = 1
 				var response map[string]interface{}
-				conn, err := client.NewCbnClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				for {
-					runtime := util.RuntimeOptions{}
-					runtime.SetAutoretry(true)
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 					if err != nil {
 						log.Printf("[ERROR] %s failed: %v", action, err)
 						break
@@ -404,7 +392,7 @@ func testSweepCenInstances(region string) error {
 						request := map[string]interface{}{
 							"TransitRouterRouteTableId": id,
 						}
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+						response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 						if err != nil {
 							log.Printf("[ERROR] %s failed %v", action, err)
 						}
@@ -423,7 +411,7 @@ func testSweepCenInstances(region string) error {
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 							wait()

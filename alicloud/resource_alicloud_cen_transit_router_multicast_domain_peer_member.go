@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,10 +55,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.R
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	request := make(map[string]interface{})
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("dry_run"); ok {
 		request["DryRun"] = v
@@ -77,11 +73,9 @@ func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberCreate(d *schema.R
 	request["ClientToken"] = buildClientToken("RegisterTransitRouterMulticastGroupMembers")
 	var response map[string]interface{}
 	action := "RegisterTransitRouterMulticastGroupMembers"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -137,10 +131,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberRead(d *schema.Res
 func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	conn, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
@@ -156,11 +147,9 @@ func resourceAliCloudCenTransitRouterMulticastDomainPeerMemberDelete(d *schema.R
 
 	request["ClientToken"] = buildClientToken("DeregisterTransitRouterMulticastGroupMembers")
 	action := "DeregisterTransitRouterMulticastGroupMembers"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
