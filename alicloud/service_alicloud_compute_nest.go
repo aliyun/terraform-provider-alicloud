@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -19,22 +18,15 @@ type ComputeNestService struct {
 func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetServiceInstance"
-
-	conn, err := s.client.NewComputenestClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"RegionId":          s.client.RegionId,
 		"ServiceInstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -85,10 +77,7 @@ func (s *ComputeNestService) ComputeNestServiceInstanceStateRefreshFunc(id strin
 }
 
 func (s *ComputeNestService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewComputenestClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 
 	request := map[string]interface{}{
@@ -113,11 +102,9 @@ func (s *ComputeNestService) ListTagResources(id string, resourceType string) (o
 	var response map[string]interface{}
 
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -156,10 +143,7 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewComputenestClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -190,11 +174,9 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -235,11 +217,9 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err := client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
