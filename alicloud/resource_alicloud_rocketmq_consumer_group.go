@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -90,10 +89,7 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("remark"); ok {
@@ -116,11 +112,9 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 	request["consumeRetryPolicy"] = objectDataLocalMap
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -195,10 +189,7 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 	instanceId := parts[0]
 	consumerGroupId := parts[1]
 	action := fmt.Sprintf("/instances/%s/consumerGroups/%s", instanceId, consumerGroupId)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -230,11 +221,9 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("PATCH"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -270,18 +259,13 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {

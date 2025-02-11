@@ -5,10 +5,7 @@ import (
 	"strings"
 	"time"
 
-	roa "github.com/alibabacloud-go/tea-roa/client"
-
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,19 +67,13 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 	var query map[string]*string
 	instanceId := id
 	action := fmt.Sprintf("/instances/%s/account", instanceId)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -98,7 +89,6 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
@@ -137,7 +127,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *roa.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -153,10 +142,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 		}
 		if len(removedTagKeys) > 0 {
 			action = fmt.Sprintf("/resourceTag/delete")
-			conn, err = client.NewRocketmqClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -167,11 +152,9 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 			query["resourceType"] = StringPointer("instance")
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -190,10 +173,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 		if len(added) > 0 {
 			action = fmt.Sprintf("/resourceTag/create")
-			conn, err = client.NewRocketmqClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -214,11 +193,9 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			query["tag"] = StringPointer(tagsString)
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -256,20 +233,14 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 	consumerGroupId := parts[1]
 	instanceId := parts[0]
 	action := fmt.Sprintf("/instances/%s/consumerGroups/%s", instanceId, consumerGroupId)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	body = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, body)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -289,7 +260,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.body.data", response)
+	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
 	}
@@ -335,20 +306,14 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 	instanceId := parts[0]
 	topicName := parts[1]
 	action := fmt.Sprintf("/instances/%s/topics/%s", instanceId, topicName)
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	body = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, body)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -368,7 +333,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.body.data", response)
+	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
 	}

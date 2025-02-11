@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -35,17 +34,11 @@ func testSweepRocketMq(region string) error {
 	query["pageNumber"] = tea.String("1")
 	query["pageSize"] = tea.String("200")
 	var response map[string]interface{}
-	conn, err := client.NewRocketmqClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+	response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
 	}
-	resp, err := jsonpath.Get("$.body.data.list", response)
+	resp, err := jsonpath.Get("$.data.list", response)
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.data.list", response)
 	}
@@ -68,11 +61,6 @@ func testSweepRocketMq(region string) error {
 			}
 		}
 		log.Printf("[INFO] delete rocketmq instance: %s ", name)
-
-		conn, err := client.NewRocketmqClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		action = fmt.Sprintf("/instances/%s", item["instanceId"])
 		query := make(map[string]*string)
 		body := make(map[string]interface{})
@@ -83,9 +71,7 @@ func testSweepRocketMq(region string) error {
 		request["instanceId"] = item["instanceId"]
 
 		body = request
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete rocketmq instance (%s): %s", name, err)
 		}
