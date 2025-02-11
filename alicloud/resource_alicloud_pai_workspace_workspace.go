@@ -6,8 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,10 +66,7 @@ func resourceAliCloudPaiWorkspaceWorkspaceCreate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["WorkspaceName"] = d.Get("workspace_name")
@@ -85,11 +80,9 @@ func resourceAliCloudPaiWorkspaceWorkspaceCreate(d *schema.ResourceData, meta in
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -105,8 +98,7 @@ func resourceAliCloudPaiWorkspaceWorkspaceCreate(d *schema.ResourceData, meta in
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pai_workspace_workspace", action, AlibabaCloudSdkGoERROR)
 	}
 
-	id, _ := jsonpath.Get("$.body.WorkspaceId", response)
-	d.SetId(fmt.Sprint(id))
+	d.SetId(fmt.Sprint(response["WorkspaceId"]))
 
 	paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"ENABLED"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, paiWorkspaceServiceV2.PaiWorkspaceWorkspaceStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -166,10 +158,7 @@ func resourceAliCloudPaiWorkspaceWorkspaceUpdate(d *schema.ResourceData, meta in
 	update := false
 	WorkspaceId := d.Id()
 	action := fmt.Sprintf("/api/v1/workspaces/%s", WorkspaceId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -187,11 +176,9 @@ func resourceAliCloudPaiWorkspaceWorkspaceUpdate(d *schema.ResourceData, meta in
 	request["Description"] = d.Get("description")
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -218,18 +205,13 @@ func resourceAliCloudPaiWorkspaceWorkspaceDelete(d *schema.ResourceData, meta in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["WorkspaceId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {

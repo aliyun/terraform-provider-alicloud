@@ -2812,32 +2812,6 @@ func formatError(response map[string]interface{}, err error) error {
 	}
 	return err
 }
-func (client *AliyunClient) NewPaiworkspaceClient() (*roa.Client, error) {
-	productCode := "paiworkspace"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("aiworkspace.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaRoaSdkConfig
-	sdkConfig.SetEndpoint(fmt.Sprintf("%s", endpoint))
-
-	conn, err := roa.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
 
 type ossCredentials struct {
 	client *AliyunClient
@@ -2897,32 +2871,6 @@ func (client *AliyunClient) GenRoaParam(action, method, version, path string) *o
 		ReqBodyType: tea.String("formData"),
 		BodyType:    tea.String("json"),
 	}
-}
-func (client *AliyunClient) NewPaiClient() (*roa.Client, error) {
-	productCode := "eas"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("pai-eas.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaRoaSdkConfig
-	sdkConfig.SetEndpoint(fmt.Sprintf("%s", endpoint))
-
-	conn, err := roa.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
 }
 func (client *AliyunClient) NewCloudcontrolClient() (*roa.Client, error) {
 	productCode := "CloudControl"

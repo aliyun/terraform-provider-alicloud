@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -117,10 +115,7 @@ func resourceAliCloudPaiWorkspaceDatasetversionCreate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["DataSourceType"] = d.Get("data_source_type")
@@ -157,11 +152,9 @@ func resourceAliCloudPaiWorkspaceDatasetversionCreate(d *schema.ResourceData, me
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -177,8 +170,7 @@ func resourceAliCloudPaiWorkspaceDatasetversionCreate(d *schema.ResourceData, me
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pai_workspace_datasetversion", action, AlibabaCloudSdkGoERROR)
 	}
 
-	VersionNameVar, _ := jsonpath.Get("$.body.VersionName", response)
-	d.SetId(fmt.Sprintf("%v:%v", DatasetId, VersionNameVar))
+	d.SetId(fmt.Sprintf("%v:%v", DatasetId, response["VersionName"]))
 
 	return resourceAliCloudPaiWorkspaceDatasetversionRead(d, meta)
 }
@@ -267,10 +259,7 @@ func resourceAliCloudPaiWorkspaceDatasetversionUpdate(d *schema.ResourceData, me
 	DatasetId := parts[0]
 	VersionName := parts[1]
 	action := fmt.Sprintf("/api/v1/datasets/%s/versions/%s", DatasetId, VersionName)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -301,11 +290,9 @@ func resourceAliCloudPaiWorkspaceDatasetversionUpdate(d *schema.ResourceData, me
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -334,17 +321,12 @@ func resourceAliCloudPaiWorkspaceDatasetversionDelete(d *schema.ResourceData, me
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {

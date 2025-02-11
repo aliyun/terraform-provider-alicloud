@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -24,7 +22,7 @@ func resourceAliCloudPaiService() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(15 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(15 * time.Minute),
 			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
@@ -80,10 +78,7 @@ func resourceAliCloudPaiServiceCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewPaiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["body"] = convertJsonStringToObject(d.Get("service_config"))
@@ -100,11 +95,9 @@ func resourceAliCloudPaiServiceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	body = request["body"].(map[string]interface{})
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("EAS", "2021-07-01", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,8 +113,7 @@ func resourceAliCloudPaiServiceCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pai_service", action, AlibabaCloudSdkGoERROR)
 	}
 
-	id, _ := jsonpath.Get("$.body.ServiceName", response)
-	d.SetId(fmt.Sprint(id))
+	d.SetId(fmt.Sprint(response["ServiceName"]))
 
 	paiServiceV2 := PaiServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, paiServiceV2.PaiServiceStateRefreshFunc(d.Id(), "Status", []string{"Failed"}))
@@ -190,21 +182,15 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 				ServiceName := d.Id()
 				ClusterId := client.RegionId
 				action := fmt.Sprintf("/api/v2/services/%s/%s/start", ClusterId, ServiceName)
-				conn, err := client.NewPaiClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				request["ServiceName"] = d.Id()
 				query["ClusterId"] = StringPointer(client.RegionId)
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+					response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -229,21 +215,15 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 				ServiceName := d.Id()
 				ClusterId := client.RegionId
 				action := fmt.Sprintf("/api/v2/services/%s/%s/stop", ClusterId, ServiceName)
-				conn, err := client.NewPaiClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				request["ServiceName"] = d.Id()
 				query["ClusterId"] = StringPointer(client.RegionId)
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+					response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -270,10 +250,7 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 	ServiceName := d.Id()
 	ClusterId := client.RegionId
 	action := fmt.Sprintf("/api/v2/services/%s/%s", ClusterId, ServiceName)
-	conn, err := client.NewPaiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -285,11 +262,9 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 	request["body"] = convertJsonStringToObject(d.Get("service_config"))
 	body = request["body"].(map[string]interface{})
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -319,10 +294,6 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 			ServiceName := d.Id()
 			ClusterId := client.RegionId
 			action := fmt.Sprintf("/api/v2/services/%s/%s/label", ClusterId, ServiceName)
-			conn, err := client.NewPaiClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -339,11 +310,9 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 			query["Keys"] = StringPointer(convertListToJsonString(removedLabels))
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaDelete("EAS", "2021-07-01", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -364,10 +333,6 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 			ServiceName := d.Id()
 			ClusterId := client.RegionId
 			action := fmt.Sprintf("/api/v2/services/%s/%s/label", ClusterId, ServiceName)
-			conn, err := client.NewPaiClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -376,11 +341,9 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 			request["Labels"] = added
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -409,19 +372,14 @@ func resourceAliCloudPaiServiceDelete(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewPaiClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ServiceName"] = d.Id()
 	query["ClusterId"] = StringPointer(client.RegionId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("EAS", "2021-07-01", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {

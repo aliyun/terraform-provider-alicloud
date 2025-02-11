@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -26,20 +25,14 @@ func (s *PaiServiceV2) DescribePaiService(id string) (object map[string]interfac
 	ServiceName := id
 	ClusterId := client.RegionId
 	action := fmt.Sprintf("/api/v2/services/%s/%s", ClusterId, ServiceName)
-	conn, err := client.NewPaiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["ServiceName"] = id
 	query["ClusterId"] = StringPointer(client.RegionId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-07-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("EAS", "2021-07-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -57,8 +50,6 @@ func (s *PaiServiceV2) DescribePaiService(id string) (object map[string]interfac
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
@@ -112,19 +103,13 @@ func (s *PaiServiceV2) DescribePaiTrainingJob(id string) (object map[string]inte
 	var query map[string]*string
 	TrainingJobId := id
 	action := fmt.Sprintf("/api/v1/trainingjobs/%s", TrainingJobId)
-	conn, err := client.NewPaiClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["TrainingJobId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-01-12"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("EAS", "2022-01-12", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -142,8 +127,6 @@ func (s *PaiServiceV2) DescribePaiTrainingJob(id string) (object map[string]inte
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
