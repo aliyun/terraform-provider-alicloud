@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -86,10 +85,7 @@ func resourceAlicloudEfloSubnetCreate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	request := make(map[string]interface{})
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("vpd_id"); ok {
 		request["VpdId"] = v
@@ -108,7 +104,7 @@ func resourceAlicloudEfloSubnetCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateSubnet"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -171,10 +167,7 @@ func resourceAlicloudEfloSubnetRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudEfloSubnetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -196,7 +189,7 @@ func resourceAlicloudEfloSubnetUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateSubnet"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -219,10 +212,7 @@ func resourceAlicloudEfloSubnetDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	var response map[string]interface{}
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -237,7 +227,7 @@ func resourceAlicloudEfloSubnetDelete(d *schema.ResourceData, meta interface{}) 
 	action := "DeleteSubnet"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eflo", "2022-05-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -249,13 +239,10 @@ func resourceAlicloudEfloSubnetDelete(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"1003"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) == "1003" {
-		return nil
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloService.EfloSubnetStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
