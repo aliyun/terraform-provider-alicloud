@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -145,10 +144,7 @@ func resourceAlicloudComputeNestServiceInstanceCreate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	action := "CreateServiceInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewComputenestClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateServiceInstance")
@@ -238,11 +234,9 @@ func resourceAlicloudComputeNestServiceInstanceCreate(d *schema.ResourceData, me
 		request["Commodity"] = commodityMap
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -350,6 +344,7 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 	client := meta.(*connectivity.AliyunClient)
 	computeNestService := ComputeNestService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -375,16 +370,9 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 
 	if update {
 		action := "ChangeResourceGroup"
-		conn, err := client.NewComputenestClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, changeResourceGroupReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -414,10 +402,7 @@ func resourceAlicloudComputeNestServiceInstanceDelete(d *schema.ResourceData, me
 	action := "DeleteServiceInstances"
 	var response map[string]interface{}
 
-	conn, err := client.NewComputenestClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RegionId":          client.RegionId,
@@ -425,11 +410,9 @@ func resourceAlicloudComputeNestServiceInstanceDelete(d *schema.ResourceData, me
 		"ServiceInstanceId": []string{d.Id()},
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
