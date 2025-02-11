@@ -309,40 +309,58 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request.AdjustmentType = d.Get("adjustment_type").(string)
 		}
 		if d.HasChange("min_adjustment_magnitude") {
-			request.MinAdjustmentMagnitude = requests.NewInteger(d.Get("min_adjustment_magnitude").(int))
+			if v, ok := d.GetOkExists("min_adjustment_magnitude"); ok {
+				request.MinAdjustmentMagnitude = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("adjustment_value") {
-			request.AdjustmentValue = requests.NewInteger(d.Get("adjustment_value").(int))
+			if v, ok := d.GetOkExists("adjustment_value"); ok {
+				request.AdjustmentValue = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("cooldown") {
-			request.Cooldown = requests.NewInteger(d.Get("cooldown").(int))
+			if v, ok := d.GetOkExists("cooldown"); ok {
+				request.Cooldown = requests.NewInteger(v.(int))
+			}
 		}
 	case string(TargetTrackingScalingRule):
 		if d.HasChange("metric_name") {
 			request.MetricName = d.Get("metric_name").(string)
 		}
 		if d.HasChange("scale_in_evaluation_count") {
-			request.ScaleInEvaluationCount = requests.NewInteger(d.Get("scale_in_evaluation_count").(int))
+			if v, ok := d.GetOkExists("scale_in_evaluation_count"); ok {
+				request.ScaleInEvaluationCount = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("scale_out_evaluation_count") {
-			request.ScaleOutEvaluationCount = requests.NewInteger(d.Get("scale_out_evaluation_count").(int))
+			if v, ok := d.GetOkExists("scale_out_evaluation_count"); ok {
+				request.ScaleOutEvaluationCount = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("disable_scale_in") {
-			request.DisableScaleIn = requests.NewBoolean(d.Get("disable_scale_in").(bool))
+			if v, ok := d.GetOkExists("disable_scale_in"); ok {
+				request.DisableScaleIn = requests.NewBoolean(v.(bool))
+			}
 		}
 		if d.HasChange("estimated_instance_warmup") {
-			request.EstimatedInstanceWarmup = requests.NewInteger(d.Get("estimated_instance_warmup").(int))
+			if v, ok := d.GetOkExists("estimated_instance_warmup"); ok {
+				request.EstimatedInstanceWarmup = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("target_value") {
-			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(d.Get("target_value").(float64), 'f', 3, 64), 64)
-			if err != nil {
-				return WrapError(err)
+			if v, ok := d.GetOkExists("target_value"); ok {
+				targetValue, err := strconv.ParseFloat(strconv.FormatFloat(v.(float64), 'f', 3, 64), 64)
+				if err != nil {
+					return WrapError(err)
+				}
+				request.TargetValue = requests.NewFloat(targetValue)
 			}
-			request.TargetValue = requests.NewFloat(targetValue)
 		}
 	case string(StepScalingRule):
 		if d.HasChange("min_adjustment_magnitude") {
-			request.MinAdjustmentMagnitude = requests.NewInteger(d.Get("min_adjustment_magnitude").(int))
+			if v, ok := d.GetOkExists("min_adjustment_magnitude"); ok {
+				request.MinAdjustmentMagnitude = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("step_adjustment") {
 			steps := make([]ess.ModifyScalingRuleStepAdjustment, 0)
@@ -374,20 +392,28 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request.MetricName = d.Get("metric_name").(string)
 		}
 		if d.HasChange("target_value") {
-			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(d.Get("target_value").(float64), 'f', 3, 64), 64)
-			if err != nil {
-				return WrapError(err)
+			if v, ok := d.GetOkExists("target_value"); ok {
+				targetValue, err := strconv.ParseFloat(strconv.FormatFloat(v.(float64), 'f', 3, 64), 64)
+				if err != nil {
+					return WrapError(err)
+				}
+				request.TargetValue = requests.NewFloat(targetValue)
 			}
-			request.TargetValue = requests.NewFloat(targetValue)
 		}
 		if d.HasChange("initial_max_size") {
-			request.InitialMaxSize = requests.NewInteger(d.Get("initial_max_size").(int))
+			if v, ok := d.GetOkExists("initial_max_size"); ok {
+				request.InitialMaxSize = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("predictive_value_buffer") {
-			request.PredictiveValueBuffer = requests.NewInteger(d.Get("predictive_value_buffer").(int))
+			if v, ok := d.GetOkExists("predictive_value_buffer"); ok {
+				request.PredictiveValueBuffer = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("predictive_task_buffer_time") {
-			request.PredictiveTaskBufferTime = requests.NewInteger(d.Get("predictive_task_buffer_time").(int))
+			if v, ok := d.GetOkExists("predictive_task_buffer_time"); ok {
+				request.PredictiveTaskBufferTime = requests.NewInteger(v.(int))
+			}
 		}
 		if d.HasChange("predictive_scaling_mode") {
 			request.PredictiveScalingMode = d.Get("predictive_scaling_mode").(string)
@@ -428,30 +454,30 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOkExists("adjustment_value"); ok {
 			request.AdjustmentValue = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOk("cooldown"); ok {
+		if v, ok := d.GetOkExists("cooldown"); ok {
 			request.Cooldown = requests.NewInteger(v.(int))
 		}
 	case string(TargetTrackingScalingRule):
-		if v, ok := d.GetOk("estimated_instance_warmup"); ok {
+		if v, ok := d.GetOkExists("estimated_instance_warmup"); ok {
 			request.EstimatedInstanceWarmup = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOk("scale_in_evaluation_count"); ok {
+		if v, ok := d.GetOkExists("scale_in_evaluation_count"); ok {
 			request.ScaleInEvaluationCount = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOk("scale_out_evaluation_count"); ok {
+		if v, ok := d.GetOkExists("scale_out_evaluation_count"); ok {
 			request.ScaleOutEvaluationCount = requests.NewInteger(v.(int))
 		}
 		if v, ok := d.GetOk("metric_name"); ok && v.(string) != "" {
 			request.MetricName = v.(string)
 		}
-		if v, ok := d.GetOk("target_value"); ok {
+		if v, ok := d.GetOkExists("target_value"); ok {
 			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(v.(float64), 'f', 3, 64), 64)
 			if err != nil {
 				return nil, WrapError(err)
 			}
 			request.TargetValue = requests.NewFloat(targetValue)
 		}
-		if v, ok := d.GetOk("disable_scale_in"); ok {
+		if v, ok := d.GetOkExists("disable_scale_in"); ok {
 			request.DisableScaleIn = requests.NewBoolean(v.(bool))
 		}
 		v, ok := d.GetOk("alarm_dimension")
@@ -475,7 +501,7 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOkExists("min_adjustment_magnitude"); ok {
 			request.MinAdjustmentMagnitude = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOk("estimated_instance_warmup"); ok {
+		if v, ok := d.GetOkExists("estimated_instance_warmup"); ok {
 			request.EstimatedInstanceWarmup = requests.NewInteger(v.(int))
 		}
 		if ok {
@@ -507,7 +533,7 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOk("metric_name"); ok && v.(string) != "" {
 			request.MetricName = v.(string)
 		}
-		if v, ok := d.GetOk("target_value"); ok {
+		if v, ok := d.GetOkExists("target_value"); ok {
 			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(v.(float64), 'f', 3, 64), 64)
 			if err != nil {
 				return nil, WrapError(err)
