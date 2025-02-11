@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -24,19 +23,13 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceWorkspace(id string) (object
 	var query map[string]*string
 	WorkspaceId := id
 	action := fmt.Sprintf("/api/v1/workspaces/%s", WorkspaceId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["WorkspaceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -54,8 +47,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceWorkspace(id string) (object
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
@@ -91,19 +82,13 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object m
 	var query map[string]*string
 	DatasetId := id
 	action := fmt.Sprintf("/api/v1/datasets/%s", DatasetId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["DatasetId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -121,8 +106,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object m
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
@@ -165,19 +148,13 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceExperiment(id string) (objec
 	var query map[string]*string
 	ExperimentId := id
 	action := fmt.Sprintf("/api/v1/experiments/%s", ExperimentId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["ExperimentId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotFoundErrorProblem"}) || NeedRetry(err) {
@@ -195,8 +172,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceExperiment(id string) (objec
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
@@ -244,18 +219,12 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDatasetversion(id string) (o
 	DatasetId := parts[0]
 	VersionName := parts[1]
 	action := fmt.Sprintf("/api/v1/datasets/%s/versions/%s", DatasetId, VersionName)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -273,8 +242,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDatasetversion(id string) (o
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 
@@ -317,19 +284,13 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceRun(id string) (object map[s
 	var query map[string]*string
 	RunId := id
 	action := fmt.Sprintf("/api/v1/runs/%s", RunId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["RunId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -344,8 +305,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceRun(id string) (object map[s
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	currentStatus := response["Name"]
 	if currentStatus == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("Run", id)), NotFoundMsg, response)
@@ -394,19 +353,13 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceCodeSource(id string) (objec
 	var query map[string]*string
 	CodeSourceId := id
 	action := fmt.Sprintf("/api/v1/codesources/%s", CodeSourceId)
-	conn, err := client.NewPaiworkspaceClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["CodeSourceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-02-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"201400004"}) || NeedRetry(err) {
@@ -424,8 +377,6 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceCodeSource(id string) (objec
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 

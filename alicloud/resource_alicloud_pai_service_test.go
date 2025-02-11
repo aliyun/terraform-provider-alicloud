@@ -123,7 +123,7 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 	}, "DescribePaiService")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%spaiservice%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiServiceBasicDependence3213)
 	resource.Test(t, resource.TestCase{
@@ -141,7 +141,7 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 						"\"0\"": "{\\\"LabelKey\\\":\\\"testkey\\\",\\\"LabelValue\\\":\\\"testvalue\\\"}",
 					},
 					"develop":        "false",
-					"service_config": "{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000}},\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
+					"service_config": fmt.Sprintf("{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc%d\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000}},\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
