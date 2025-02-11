@@ -2,16 +2,17 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_flow_log"
-sidebar_current: "docs-alicloud-resource-vpc-flow-log"
 description: |-
-  Provides a Alicloud Vpc Flow Log resource.
+  Provides a Alicloud VPC Flow Log resource.
 ---
 
 # alicloud_vpc_flow_log
 
-Provides a Vpc Flow Log resource. While it uses alicloud_vpc_flow_log to build a vpc flow log resource, it will be active by default.
+Provides a VPC Flow Log resource.
 
-For information about Vpc Flow Log and how to use it, see [What is Flow Log](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/flow-logs-overview).
+While it uses alicloud_vpc_flow_log to build a vpc flow log resource, it will be active by default.
+
+For information about VPC Flow Log and how to use it, see [What is Flow Log](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/flow-logs-overview).
 
 -> **NOTE:** Available since v1.117.0.
 
@@ -69,28 +70,36 @@ resource "alicloud_vpc_flow_log" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `aggregation_interval` - (Optional, Available since v1.205.0) Data aggregation interval.
+* `aggregation_interval` - (Optional, Available since v1.205.0) Data aggregation interval
 * `description` - (Optional) The Description of the VPC Flow Log.
 * `flow_log_name` - (Optional) The Name of the VPC Flow Log.
+* `ip_version` - (Optional, Available since v1.243.0) The IP address type of the collected traffic.
 * `log_store_name` - (Required, ForceNew) The name of the logstore.
 * `project_name` - (Required, ForceNew) The name of the project.
 * `resource_group_id` - (Optional, Available since v1.205.0) The ID of the resource group.
 * `resource_id` - (Required, ForceNew) The ID of the resource.
-* `resource_type` - (Required, ForceNew) The resource type of the traffic captured by the flow log:-**NetworkInterface**: ENI.-**VSwitch**: All ENIs in the VSwitch.-**VPC**: All ENIs in the VPC.
-* `status` - (Optional) The status of the VPC Flow Log. Valid values: **Active** and **Inactive**.
+* `resource_type` - (Required, ForceNew) The resource type of the traffic captured by the flow log:
+  - `NetworkInterface`: ENI.
+  - `VSwitch`: All ENIs in the VSwitch.
+  - `VPC`: All ENIs in the VPC.
+* `status` - (Optional) The status of the VPC Flow Log. Valid values: `Active` and `Inactive`.
 * `tags` - (Optional, Map, Available since v1.205.0) The tag of the current instance resource.
-* `traffic_path` - (Optional, ForceNew, Available since v1.205.0) The collected flow path. Value:**all**: indicates full acquisition.**internetGateway**: indicates public network traffic collection.
-* `traffic_type` - (Required, ForceNew) The type of traffic collected. Valid values:**All**: All traffic.**Allow**: Access control allowedtraffic.**Drop**: Access control denied traffic.
-
-
+* `traffic_path` - (Optional, ForceNew, List, Available since v1.205.0) The collected flow path. Value:
+  - *all**: indicates full acquisition.
+  - *internetGateway**: indicates public network traffic collection.
+* `traffic_type` - (Required, ForceNew) The type of traffic collected. Valid values:
+  - *All**: All traffic.
+  - *Allow**: Access control allowedtraffic.
+  - *Drop**: Access control denied traffic.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `business_status` - Business status.
-* `create_time` - Creation time.
+* `business_status` - Business status
+* `create_time` - Creation time
 * `flow_log_id` - The flow log ID.
+* `region_id` - (Available since v1.243.0) The region ID.
 
 ## Timeouts
 
@@ -101,7 +110,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Vpc Flow Log can be imported using the id, e.g.
+VPC Flow Log can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_flow_log.example <id>
