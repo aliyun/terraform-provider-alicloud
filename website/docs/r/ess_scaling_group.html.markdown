@@ -71,8 +71,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = local.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = local.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -140,6 +140,11 @@ The following arguments are supported:
 * `spot_allocation_strategy` - (Optional, Available since v1.225.1) The allocation policy of preemptible instances. You can use this parameter to individually specify the allocation policy for preemptible instances. This parameter takes effect only if you set MultiAZPolicy to COMPOSABLE.
 * `allocation_strategy` - (Optional, Available since v1.225.1) The allocation policy of instances. Auto Scaling selects instance types based on the allocation policy to create instances. The policy can be applied to pay-as-you-go instances and preemptible instances. This parameter takes effect only if you set MultiAZPolicy to COMPOSABLE.
 * `on_demand_base_capacity` - (Optional, Available since v1.54.0) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
+* `compensate_with_on_demand` - (Optional, Available since v1.245.0) Specifies whether to automatically create pay-as-you-go instances to meet the requirement on the number of ECS instances when the expected capacity of preemptible instances cannot be provided due to reasons such as cost-related issues and insufficient resources. This parameter is supported only if you set 'multi_az_policy' to COST_OPTIMIZED. Valid values: true, false.
+* `capacity_options_on_demand_base_capacity` - (Optional, Available since v1.245.0) The minimum number of pay-as-you-go instances that must be contained in the scaling group. When the actual number of pay-as-you-go instances in the scaling group drops below the value of this parameter, Auto Scaling preferentially creates pay-as-you-go instances. Valid values: 0 to 1000. If you set 'multi_az_policy' to COMPOSABLE, the default value of this parameter is 0.
+* `capacity_options_on_demand_percentage_above_base_capacity` - (Optional, Available since v1.245.0) The percentage of pay-as-you-go instances in the excess instances when the minimum number of pay-as-you-go instances is reached. 'on_demand_base_capacity' specifies the minimum number of pay-as-you-go instances that must be contained in the scaling group. Valid values: 0 to 100. If you set 'multi_az_policy' to COMPOSABLE, the default value of this parameter is 100.
+* `capacity_options_compensate_with_on_demand` - (Optional, Available since v1.245.0) Specifies whether to automatically create pay-as-you-go instances to meet the requirement on the number of ECS instances when the expected capacity of preemptible instances cannot be provided due to reasons such as cost-related issues and insufficient resources. This parameter is supported only if you set 'multi_az_policy' to COST_OPTIMIZED. Valid values: true, false.
+* `capacity_options_spot_auto_replace_on_demand` - (Optional, Available since v1.245.0) Specifies whether to replace pay-as-you-go instances with preemptible instances. If you specify 'compensate_with_on_demand', it may result in a higher percentage of pay-as-you-go instances compared to the value of 'on_demand_percentage_above_base_capacity'. If you specify this parameter, Auto Scaling preferentially deploys preemptible instances to replace the surplus pay-as-you-go instances when preemptible instance types are available. If you specify 'compensate_with_on_demand', Auto Scaling creates pay-as-you-go instances when preemptible instance types are insufficient. To avoid retaining these pay-as-you-go instances for extended periods, Auto Scaling attempts to replace them with preemptible instances when sufficient preemptible instance types become available. Valid values: true, false.
 * `on_demand_percentage_above_base_capacity` - (Optional, Available since v1.54.0) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
 * `spot_instance_pools` - (Optional, Available since v1.54.0) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
 * `spot_instance_remedy` - (Optional, Available since v1.54.0) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
