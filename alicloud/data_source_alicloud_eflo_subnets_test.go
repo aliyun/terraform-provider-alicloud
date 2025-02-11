@@ -112,17 +112,18 @@ func TestAccAlicloudEfloSubnetDataSource(t *testing.T) {
 			"resource_group_id": `"${alicloud_eflo_vpd.default.resource_group_id}"`,
 			"name_regex":        `"${alicloud_eflo_subnet.default.subnet_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEfloSubnetSourceConfig(rand, map[string]string{
-			"ids":               `["${alicloud_eflo_subnet.default.id}_fake"]`,
-			"vpd_id":            `"${alicloud_eflo_vpd.default.id}_fake"`,
-			"subnet_name":       `"${alicloud_eflo_subnet.default.subnet_name}_fake"`,
-			"zone_id":           `"${alicloud_eflo_subnet.default.zone_id}_fake"`,
-			"subnet_id":         `"${alicloud_eflo_subnet.default.subnet_id}_fake"`,
-			"status":            `"Executing"`,
-			"type":              `"OOB"`,
-			"resource_group_id": `"${alicloud_eflo_vpd.default.resource_group_id}_fake"`,
-			"name_regex":        `"${alicloud_eflo_subnet.default.subnet_name}_fake"`,
-		}),
+		// There is a api bug, and product will fix it in the next three weeks. Please open it after next submit
+		//fakeConfig: testAccCheckAlicloudEfloSubnetSourceConfig(rand, map[string]string{
+		//	"ids":               `["${alicloud_eflo_subnet.default.id}_fake"]`,
+		//	"vpd_id":            `"${alicloud_eflo_vpd.default.id}_fake"`,
+		//	"subnet_name":       `"${alicloud_eflo_subnet.default.subnet_name}_fake"`,
+		//	"zone_id":           `"${alicloud_eflo_subnet.default.zone_id}_fake"`,
+		//	"subnet_id":         `"${alicloud_eflo_subnet.default.subnet_id}_fake"`,
+		//	"status":            `"Executing"`,
+		//	"type":              `"OOB"`,
+		//	"resource_group_id": `"${alicloud_eflo_vpd.default.resource_group_id}_fake"`,
+		//	"name_regex":        `"${alicloud_eflo_subnet.default.subnet_name}_fake"`,
+		//}),
 	}
 
 	EfloSubnetCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, VpdIdConf, resourceGroupIdConf, statusConf, SubnetIdConf, typeConf, SubnetNameConf, ZoneIdConf, allConf)

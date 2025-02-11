@@ -2324,33 +2324,6 @@ func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
-func (client *AliyunClient) NewEfloClient() (*rpc.Client, error) {
-	productCode := "eflo"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("eflo.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
 func (client *AliyunClient) NewAckoneClient() (*rpc.Client, error) {
 	productCode := "adcp"
 	endpoint := ""
@@ -2744,11 +2717,12 @@ func formatError(response map[string]interface{}, err error) error {
 	if !ok1 {
 		code, ok1 = response["code"]
 	}
-	if ok1 && !isInteger(code) && !isString(code) {
+	// There is a design in some product api that the response has code with a map type, like FC
+	if ok1 && !(isString(code) || isInteger(code)) {
 		return err
 	}
 	// There is a design in some product api that the request is success but its message is empty and the code is 0 or other string
-	// like ENS, elfo, apig and so on.
+	// like ENS, eflo, apig and so on.
 	if ok1 && (strings.ToLower(fmt.Sprint(code)) == "success" ||
 		strings.ToLower(fmt.Sprint(code)) == "ok" ||
 		fmt.Sprint(code) == "200" ||

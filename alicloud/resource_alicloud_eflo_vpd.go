@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -61,10 +60,7 @@ func resourceAlicloudEfloVpdCreate(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	request := make(map[string]interface{})
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["ClientToken"] = buildClientToken("CreateVpd")
 	request["VpdName"] = d.Get("vpd_name")
@@ -74,11 +70,9 @@ func resourceAlicloudEfloVpdCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	var response map[string]interface{}
 	action := "CreateVpd"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,10 +127,7 @@ func resourceAlicloudEfloVpdRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudEfloVpdUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"VpdId":    d.Id(),
@@ -152,11 +143,9 @@ func resourceAlicloudEfloVpdUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if update {
 		action := "UpdateVpd"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := client.RpcPost("eflo", "2022-05-30", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -179,10 +168,7 @@ func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	var response map[string]interface{}
-	conn, err := client.NewEfloClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 
@@ -192,7 +178,7 @@ func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) err
 	action := "DeleteVpd"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eflo", "2022-05-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -204,13 +190,10 @@ func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"1003"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Code"]) == "1003" {
-		return nil
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloService.EfloVpdStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
