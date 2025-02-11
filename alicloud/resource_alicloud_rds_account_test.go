@@ -29,7 +29,7 @@ func TestAccAliCloudRdsAccount_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%srdsaccount%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-Testacc%srdsaccount%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
