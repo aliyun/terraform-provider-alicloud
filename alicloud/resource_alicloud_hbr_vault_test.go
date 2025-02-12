@@ -19,179 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudHBRVault_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_hbr_vault.default"
-	ra := resourceAttrInit(resourceId, AliCloudHBRVaultMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeHbrVault")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHBRVaultBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vault_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vault_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vault_type":          "STANDARD",
-					"vault_storage_class": "STANDARD",
-					"vault_name":          name + "1",
-					"description":         "接入测试描述",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vault_type":          "STANDARD",
-						"vault_storage_class": "STANDARD",
-						"vault_name":          name + "1",
-						"description":         "接入测试描述",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vault_name": name + "_update1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vault_name": name + "_update1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "接入测试描述1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "接入测试描述1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vault_name":  name + "_update2",
-					"description": "接入测试描述2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vault_name":  name + "_update2",
-						"description": "接入测试描述2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encrypt_type": "HBR_PRIVATE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encrypt_type": "HBR_PRIVATE",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccAliCloudHBRVault_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_hbr_vault.default"
-	ra := resourceAttrInit(resourceId, AliCloudHBRVaultMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeHbrVault")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHBRVaultBasicDependence1)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vault_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vault_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encrypt_type": "KMS",
-					"kms_key_id":   "${alicloud_kms_key.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encrypt_type": "KMS",
-						"kms_key_id":   CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AliCloudHBRVaultMap0 = map[string]string{
-	"status":     CHECKSET,
-	"vault_name": CHECKSET,
-}
-
-func AliCloudHBRVaultBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-`, name)
-}
-
-func AliCloudHBRVaultBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-resource "alicloud_kms_key" "default" {
-  pending_window_in_days  = "7"
-  status                  = "Enabled"
-}
-`, name)
-}
-
 func TestUnitAliCloudHBRVault(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_vault"].Schema).Data(nil, nil)
@@ -456,3 +283,229 @@ func TestUnitAliCloudHBRVault(t *testing.T) {
 	}
 
 }
+
+// Test Hbr Vault. >>> Resource test cases, automatically generated.
+// Case Vault备份库_副本 7218
+func TestAccAliCloudHbrVault_basic7218(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_vault.default"
+	ra := resourceAttrInit(resourceId, AliCloudHbrVaultMap7218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrVault")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrVaultBasicDependence7218)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"worm_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"worm_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudHbrVaultMap7218 = map[string]string{
+	"create_time":         CHECKSET,
+	"encrypt_type":        CHECKSET,
+	"region_id":           CHECKSET,
+	"resource_group_id":   CHECKSET,
+	"status":              CHECKSET,
+	"vault_storage_class": CHECKSET,
+	"vault_type":          CHECKSET,
+}
+
+func AliCloudHbrVaultBasicDependence7218(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+`, name)
+}
+
+func TestAccAliCloudHbrVault_basic7218_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_vault.default"
+	ra := resourceAttrInit(resourceId, AliCloudHbrVaultMap7218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrVault")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrVaultBasicDependence7218Twin)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_name":          name,
+					"description":         name,
+					"encrypt_type":        "KMS",
+					"kms_key_id":          "${alicloud_kms_key.default.id}",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"vault_storage_class": "STANDARD",
+					"vault_type":          "STANDARD",
+					"worm_enabled":        "true",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_name":          name,
+						"description":         name,
+						"encrypt_type":        "KMS",
+						"kms_key_id":          CHECKSET,
+						"resource_group_id":   CHECKSET,
+						"vault_storage_class": "STANDARD",
+						"vault_type":          "STANDARD",
+						"worm_enabled":        "true",
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func AliCloudHbrVaultBasicDependence7218Twin(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		pending_window_in_days  = "7"
+  		status                  = "Enabled"
+	}
+`, name)
+}
+
+// Test Hbr Vault. <<< Resource test cases, automatically generated.
