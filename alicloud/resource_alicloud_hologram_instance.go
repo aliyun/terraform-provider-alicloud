@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -164,10 +163,7 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["instanceName"] = d.Get("instance_name")
@@ -216,11 +212,9 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 		request["initialDatabases"] = v
 	}
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -237,12 +231,12 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hologram_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	code, _ := jsonpath.Get("$.body.Data.Success", response)
+	code, _ := jsonpath.Get("$.Data.Success", response)
 	if fmt.Sprint(code) != "true" {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hologram_instance", action, AlibabaCloudSdkGoERROR, response)
 	}
 
-	id, _ := jsonpath.Get("$.body.Data.InstanceId", response)
+	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
 	hologramServiceV2 := HologramServiceV2{client}
@@ -313,10 +307,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	d.Partial(true)
 	instanceId := d.Id()
 	action := fmt.Sprintf("/api/v1/instances/%s/instanceName", instanceId)
-	conn, err := client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -327,11 +318,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	request["instanceName"] = d.Get("instance_name")
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -356,10 +345,6 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	update = false
 	instanceId = d.Id()
 	action = fmt.Sprintf("/api/v1/instances/%s/scale", instanceId)
-	conn, err = client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -384,11 +369,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -414,10 +397,6 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	update = false
 	action = fmt.Sprintf("/api/v1/tag/changeResourceGroup")
-	conn, err = client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -429,11 +408,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -458,10 +435,6 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	update = false
 	instanceId = d.Id()
 	action = fmt.Sprintf("/api/v1/instances/%s/updateGatewayCount", instanceId)
-	conn, err = client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -474,11 +447,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -503,10 +474,6 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	update = false
 	instanceId = d.Id()
 	action = fmt.Sprintf("/api/v1/instances/%s/network", instanceId)
-	conn, err = client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -537,11 +504,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -579,20 +544,14 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			if target == "Suspended" {
 				instanceId = d.Id()
 				action = fmt.Sprintf("/api/v1/instances/%s/stop", instanceId)
-				conn, err = client.NewHologramClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				request["instanceId"] = d.Id()
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -617,20 +576,14 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			if target == "Running" {
 				instanceId = d.Id()
 				action = fmt.Sprintf("/api/v1/instances/%s/resume", instanceId)
-				conn, err = client.NewHologramClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				request["instanceId"] = d.Id()
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -681,20 +634,15 @@ func resourceAliCloudHologramInstanceDelete(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewHologramClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 		if err != nil {
 			if NeedRetry(err) {
