@@ -67,8 +67,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = local.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = local.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -141,8 +141,9 @@ The following arguments are supported:
 * `predictive_value_behavior` - (Optional, Available since v1.222.0) The action on the predicted maximum value. Valid values: MaxOverridePredictiveValue, PredictiveValueOverrideMax, PredictiveValueOverrideMaxWithBuffer.
 * `predictive_value_buffer` - (Optional, Available since v1.222.0) The ratio based on which the predicted value is increased if you set PredictiveValueBehavior to PredictiveValueOverrideMaxWithBuffer. If the predicted value increased by this ratio is greater than the initial maximum capacity, the increased value is used as the maximum value for prediction tasks. Valid values: 0 to 100.
 * `predictive_task_buffer_time` - (Optional, Available since v1.222.0) The amount of buffer time before the prediction task runs. By default, all prediction tasks that are automatically created by a predictive scaling rule run on the hour. You can specify a buffer time to run prediction tasks and prepare resources in advance. Valid values: 0 to 60. Unit: minutes.
-
-
+* `hybrid_monitor_namespace` - (Optional, Available since v1.245.0) The ID of the Hybrid Cloud Monitoring metric repository.
+* `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
+* `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
 
 
 ### `step_adjustment`
@@ -152,6 +153,25 @@ The stepAdjustment mapping supports the following:
 * `metric_interval_lower_bound` - (Optional) The lower bound of step.
 * `metric_interval_upper_bound` - (Optional) The upper bound of step.
 * `scaling_adjustment` - (Optional) The adjust value of step.
+
+### `hybrid_metrics`
+
+The HybridMetrics mapping supports the following:
+
+* `id` - (Optional) The reference ID of the metric in the metric expression.
+* `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
+* `statistic` - (Optional) The statistical method of the metric value. Valid values: Average, Minimum, Maximum.
+* `expression` - (Optional) The metric expression that consists of multiple Hybrid Cloud Monitoring metrics. It calculates a result used to trigger scaling events. The expression must comply with the Reverse Polish Notation (RPN) specification, and the operators can only be + - × /.
+* `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
+* `dimensions` - (Optional) The structure of volumeMounts.
+  See [`dimensions`](#hybrid_metrics-dimensions) below for details.
+
+### `hybrid_metrics-dimensions`
+
+The dimensions supports the following:
+
+* `dimension_key` - (Optional) The key of the metric dimension.
+* `dimension_value` - (Optional) The value of the metric dimension.
 
 ### `alarm_dimension`
 
