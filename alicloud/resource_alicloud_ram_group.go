@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -40,21 +42,20 @@ func resourceAlicloudRamGroup() *schema.Resource {
 func resourceAlicloudRamGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramSercvice := RamService{client}
-
-	request := ram.CreateCreateGroupRequest()
-	request.RegionId = client.RegionId
-	request.GroupName = d.Get("name").(string)
+	request := map[string]interface{}{
+		"RegionId":  client.RegionId,
+		"GroupName": d.Get("name").(string),
+	}
 	if v, ok := d.GetOk("comments"); ok {
-		request.Comments = v.(string)
+		request["Comments"] = v.(string)
 	}
 
-	var raw interface{}
+	action := "CreateGroup"
+	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.CreateGroup(request)
-		})
+		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -62,15 +63,15 @@ func resourceAlicloudRamGroupCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_group", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ram.CreateGroupResponse)
-	d.SetId(response.Group.GroupName)
+
+	groupName, _ := jsonpath.Get("$.Group.GroupName", response)
+	d.SetId(fmt.Sprint(groupName))
 	err = ramSercvice.WaitForRamGroup(d.Id(), Normal, DefaultTimeout)
 	if err != nil {
 		return WrapError(err)

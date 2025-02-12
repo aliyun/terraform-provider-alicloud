@@ -262,7 +262,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -335,7 +335,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
 	}
 
 	return v.(map[string]interface{}), nil

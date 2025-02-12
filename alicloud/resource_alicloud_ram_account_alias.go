@@ -1,9 +1,10 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,17 +30,17 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 
 func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"AccountAlias": d.Get("account_alias").(string),
+	}
 
-	request := ram.CreateSetAccountAliasRequest()
-	request.RegionId = client.RegionId
-	request.AccountAlias = d.Get("account_alias").(string)
-
+	action := "SetAccountAlias"
+	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.SetAccountAlias(request)
-		})
+		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -47,15 +48,14 @@ func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_alias", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_account_alias", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(request.AccountAlias)
+	d.SetId(fmt.Sprint(request["AccountAlias"]))
 	return resourceAlicloudRamAccountAliasRead(d, meta)
 }
 
@@ -65,26 +65,28 @@ func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{
 
 	object, err := ramService.DescribeRamAccountAlias(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_account_alias ramService.DescribeRamAccountAlias Failed!!! %s", err)
+			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
 	}
-	d.Set("account_alias", object.AccountAlias)
+	d.Set("account_alias", object["AccountAlias"])
 	return nil
 }
 
 func resourceAlicloudRamAccountAliasDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ram.CreateClearAccountAliasRequest()
-	request.RegionId = client.RegionId
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
 
+	action := "ClearAccountAlias"
+	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ClearAccountAlias(request)
-		})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -92,12 +94,12 @@ func resourceAlicloudRamAccountAliasDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

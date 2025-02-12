@@ -455,21 +455,33 @@ func (s *RamService) WaitForRamGroupPolicyAttachment(id string, status Status, t
 	}
 }
 
-func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
-	response := &ram.GetAccountAliasResponse{}
-	request := ram.CreateGetAccountAliasRequest()
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetAccountAlias(request)
+func (s *RamService) DescribeRamAccountAlias(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+
+	action := "GetAccountAlias"
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(5*time.Minute), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response = raw.(*ram.GetAccountAliasResponse)
 
 	return response, nil
 }
