@@ -75,9 +75,6 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_contact", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 
 	d.SetId(fmt.Sprint(formatInt(response["ContactId"])))
 
@@ -141,9 +138,6 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 	return resourceAlicloudMscSubContactRead(d, meta)
 }
@@ -174,9 +168,6 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }

@@ -98,9 +98,6 @@ func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_subscription", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	responseSubscriptionItem := make(map[string]interface{}, 0)
 	if v, ok := response["SubscriptionItem"].(map[string]interface{}); ok {
 		responseSubscriptionItem = v
@@ -223,9 +220,6 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
