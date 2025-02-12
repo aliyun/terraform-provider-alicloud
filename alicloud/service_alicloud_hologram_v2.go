@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	roa "github.com/alibabacloud-go/tea-roa/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -26,21 +24,15 @@ func (s *HologramServiceV2) DescribeHologramInstance(id string) (object map[stri
 	var body map[string]interface{}
 	instanceId := id
 	action := fmt.Sprintf("/api/v1/instances/%s", instanceId)
-	conn, err := client.NewHologramClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaGet("Hologram", "2022-06-01", action, query, nil, body)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -60,7 +52,7 @@ func (s *HologramServiceV2) DescribeHologramInstance(id string) (object map[stri
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.body.Instance", response)
+	v, err := jsonpath.Get("$.Instance", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.Instance", response)
 	}
@@ -96,7 +88,6 @@ func (s *HologramServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *roa.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -112,10 +103,6 @@ func (s *HologramServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 		}
 		if len(removedTagKeys) > 0 {
 			action = fmt.Sprintf("/api/v1/tag/unTag")
-			conn, err = client.NewHologramClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -123,11 +110,9 @@ func (s *HologramServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			request["tagKeys"] = convertListStringToListInterface(removedTagKeys)
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -147,10 +132,6 @@ func (s *HologramServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 
 		if len(added) > 0 {
 			action = fmt.Sprintf("/api/v1/tag")
-			conn, err = client.NewHologramClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -167,11 +148,9 @@ func (s *HologramServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			request["tags"] = tagsMaps
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer("2022-06-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+				response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 				if err != nil {
 					if NeedRetry(err) {
