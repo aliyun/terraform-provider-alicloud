@@ -336,19 +336,8 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			"vpc_id":                  fmt.Sprint(object["VpcId"]),
 			"vpc_name":                object["VpcName"],
 		}
-
-		tags := make(map[string]interface{})
-		t, _ := jsonpath.Get("$.Tags.Tag", object)
-		if t != nil {
-			for _, t := range t.([]interface{}) {
-				key := t.(map[string]interface{})["Key"].(string)
-				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
-				}
-			}
-		}
-		mapping["tags"] = tags
+		tagsMaps, _ := jsonpath.Get("$.Tags.Tag", object)
+		mapping["tags"] = tagsToMap(tagsMaps)
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["VpcId"]))
 			names = append(names, object["VpcName"])

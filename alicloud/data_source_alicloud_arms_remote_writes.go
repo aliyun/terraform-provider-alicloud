@@ -120,10 +120,6 @@ func dataSourceAlicloudArmsRemoteWritesRead(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_remote_writes", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
 	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)

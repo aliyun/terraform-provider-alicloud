@@ -77,10 +77,6 @@ func resourceAlicloudArmsIntegrationExporterCreate(d *schema.ResourceData, meta 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_integration_exporter", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if fmt.Sprint(response["Code"]) != "200" {
-		return WrapErrorf(Error(GetCreateFailedMessage("Arms:IntegrationExporter")), NotFoundWithResponse, response)
-	}
-
 	if resp, err := jsonpath.Get("$.Data", response); err != nil || resp == nil {
 		return WrapErrorf(err, IdMsg, "alicloud_arms_integration_exporter")
 	} else {
