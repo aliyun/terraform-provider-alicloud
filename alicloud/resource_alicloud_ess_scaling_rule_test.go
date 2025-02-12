@@ -53,11 +53,6 @@ func TestAccAliCloudEssScalingRule_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
 					"adjustment_type":  "PercentChangeInCapacity",
@@ -121,6 +116,11 @@ func TestAccAliCloudEssScalingRule_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(basicMap),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -246,6 +246,78 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(basicMap),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingRule_target_tracking_rule_cloudMonitor(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":          CHECKSET,
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"target_value":              "20.1",
+		"disable_scale_in":          "false",
+		"estimated_instance_warmup": "200",
+		"metric_name":               "CpuUtilization",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"metric_name":               "CpuUtilization",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":          CHECKSET,
+						"scaling_rule_type":         "TargetTrackingScalingRule",
+						"target_value":              "20.1",
+						"disable_scale_in":          "false",
+						"estimated_instance_warmup": "200",
+						"metric_name":               "CpuUtilization",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"metric_name":               "CpuUtilization",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -430,6 +502,228 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_dimension(t *testi
 	})
 }
 
+func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_hybrid_metrics_update(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":          CHECKSET,
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"metric_name":               "CpuUtilization",
+		"target_value":              "20.1",
+		"metric_type":               "system",
+		"disable_scale_in":          "false",
+		"estimated_instance_warmup": "200",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleAlarmDimension-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleWithHybridMetrics)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"metric_type":               "system",
+					"estimated_instance_warmup": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":        "TargetTrackingScalingRule",
+					"target_value":             "20.1",
+					"hybrid_monitor_namespace": "${alicloud_cms_namespace.default.id}",
+					"metric_type":              "hybrid",
+					"hybrid_metrics": []map[string]interface{}{
+						{
+							"id":          "a",
+							"metric_name": "AliyunEcs_CPUUtilization",
+							"statistic":   "Average",
+							"dimensions": []map[string]interface{}{
+								{
+									"dimension_key":   "rmgroup_id",
+									"dimension_value": "rg-acfmzzcoi46voaq",
+								},
+								{
+									"dimension_key":   "tag_ESS",
+									"dimension_value": "ESS",
+								},
+								{
+									"dimension_key":   "regionId",
+									"dimension_value": "cn-beijing",
+								},
+							},
+						},
+						{
+							"id":         "Expression",
+							"expression": "a*2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_type":              "hybrid",
+						"hybrid_monitor_namespace": CHECKSET,
+						"hybrid_metrics.#":         "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":        "TargetTrackingScalingRule",
+					"target_value":             "20.1",
+					"metric_type":              "hybrid",
+					"hybrid_monitor_namespace": "${alicloud_cms_namespace.default1.id}",
+					"hybrid_metrics": []map[string]interface{}{
+						{
+							"id":          "a",
+							"metric_name": "AliyunEcs_CPUUtilization",
+							"statistic":   "Average",
+							"dimensions": []map[string]interface{}{
+								{
+									"dimension_key":   "rmgroup_id",
+									"dimension_value": "rg-acfmzzcoi46voaq",
+								},
+								{
+									"dimension_key":   "tag_ESS",
+									"dimension_value": "ESS",
+								},
+								{
+									"dimension_key":   "regionId",
+									"dimension_value": "cn-beijing",
+								},
+							},
+						},
+						{
+							"id":          "b",
+							"metric_name": "AliyunEcs_DiskReadBPS",
+							"statistic":   "Average",
+							"dimensions": []map[string]interface{}{
+								{
+									"dimension_key":   "regionId",
+									"dimension_value": "cn-hongkong",
+								},
+								{
+									"dimension_key":   "rmgroup_name",
+									"dimension_value": "ESS",
+								},
+								{
+									"dimension_key":   "tag_ESS",
+									"dimension_value": "cn-beijing",
+								},
+							},
+						},
+						{
+							"id":         "Expression",
+							"expression": "(a+b)*2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_type":              "hybrid",
+						"hybrid_monitor_namespace": CHECKSET,
+						"hybrid_metrics.#":         "3",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_hybrid_metrics_create(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":         CHECKSET,
+		"scaling_rule_type":        "TargetTrackingScalingRule",
+		"target_value":             "20.1",
+		"disable_scale_in":         "false",
+		"hybrid_monitor_namespace": CHECKSET,
+		"metric_type":              "hybrid",
+		"hybrid_metrics.#":         "2",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleAlarmDimension-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleWithHybridMetrics)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":        "TargetTrackingScalingRule",
+					"target_value":             "20.1",
+					"hybrid_monitor_namespace": "${alicloud_cms_namespace.default.id}",
+					"metric_type":              "hybrid",
+					"hybrid_metrics": []map[string]interface{}{
+						{
+							"id":          "a",
+							"metric_name": "AliyunEcs_CPUUtilization",
+							"statistic":   "Average",
+							"dimensions": []map[string]interface{}{
+								{
+									"dimension_key":   "rmgroup_id",
+									"dimension_value": "rg-acfmzzcoi46voaq1",
+								},
+								{
+									"dimension_key":   "tag_ESS1",
+									"dimension_value": "ESS",
+								},
+								{
+									"dimension_key":   "regionId1",
+									"dimension_value": "cn-beijing",
+								},
+							},
+						},
+						{
+							"id":         "Expression",
+							"expression": "a*2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssScalingRule_step_rule_basic(t *testing.T) {
 	var v ess.ScalingRule
 	rand := acctest.RandIntRange(1000, 999999)
@@ -458,26 +752,6 @@ func TestAccAliCloudEssScalingRule_step_rule_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				//	resource "alicloud_ess_scaling_rule" "default" {
-				//	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-				//	scaling_rule_type = "StepScalingRule"
-				//	adjustment_type = "TotalCapacity"
-				//	estimated_instance_warmup = 200
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "5.32"
-				//	metric_interval_upper_bound = "20.1"
-				//	scaling_adjustment = 1
-				//}
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "20.1"
-				//	metric_interval_upper_bound = "22.1"
-				//	scaling_adjustment = 2
-				//}
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "22.1"
-				//	scaling_adjustment = 3
-				//}
-				//}
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
 					"scaling_rule_type":         "StepScalingRule",
@@ -962,6 +1236,14 @@ func testAccEssTargetTrackingScalingRuleWithAlarmDimension(name string) string {
 		health_check_config {
 		  health_check_enabled = "false"
 		}
+		slow_start_config {
+		  slow_start_duration = 30
+		  slow_start_enabled  = "true"
+	    }
+       connection_drain_config {
+		  connection_drain_enabled = "true"
+		  connection_drain_timeout = 300
+       }
 		sticky_session_config {
 		  sticky_session_enabled = true
 		  cookie                 = "tf-testAcc"
@@ -975,12 +1257,73 @@ func testAccEssTargetTrackingScalingRuleWithAlarmDimension(name string) string {
 		health_check_config {
 		  health_check_enabled = "false"
 		}
+		slow_start_config {
+		  slow_start_duration = 30
+		  slow_start_enabled  = "true"
+	    }
+       connection_drain_config {
+		  connection_drain_enabled = "true"
+		  connection_drain_timeout = 300
+       }
 		sticky_session_config {
 		  sticky_session_enabled = true
 		  cookie                 = "tf-testAcc"
 		  sticky_session_type    = "Server"
 	  }
 	}
+	`, EcsInstanceCommonTestCase, name)
+}
+
+func testAccEssTargetTrackingScalingRuleWithHybridMetrics(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+    data "alicloud_account" "default" {}
+
+	resource "alicloud_cms_namespace" "default" {
+	  description   = "ttt"
+	  namespace     = "ttt"
+	  specification = "cms.s1.large"
+	}
+	resource "alicloud_cms_namespace" "default1" {
+	  description   = "ttt1"
+	  namespace     = "ttt1"
+	  specification = "cms.s1.large"
+	}
+	
+resource "alicloud_cms_hybrid_monitor_fc_task" "default" {
+  namespace      = alicloud_cms_namespace.default.id
+  yarm_config    = <<EOF
+---
+products:
+- namespace: "acs_ecs_dashboard"
+  metric_info:
+  - metric_list:
+    - "CPUUtilization"
+    - "DiskReadBPS"
+    - "InternetOut"
+    - "IntranetOut"
+    - "cpu_idle"
+    - "cpu_system"
+    - "cpu_total"
+    - "diskusage_utilization"
+- namespace: "acs_rds_dashboard"
+  metric_info:
+  - metric_list:
+    - "MySQL_QPS"
+    - "MySQL_TPS"
+EOF
+  target_user_id = data.alicloud_account.default.id
+}
 	`, EcsInstanceCommonTestCase, name)
 }
 
