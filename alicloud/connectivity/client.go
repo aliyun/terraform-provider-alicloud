@@ -658,40 +658,35 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 }
 
 func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the RAM client if necessary
-	if client.ramconn == nil {
-		endpoint := client.config.RamEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, RAMCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(RAMCode), endpoint)
-		}
+	product := "ram"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
 
+	if client.ramconn == nil {
 		ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
-		ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		ramconn.SourceIp = client.config.SourceIp
-		ramconn.SecureTransport = client.config.SecureTransport
-		ramconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		ramconn.AppendUserAgent(Provider, providerVersion)
-		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ramconn = ramconn
 	} else {
 		err := client.ramconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
-
 	}
-
+	client.ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.ramconn.SourceIp = client.config.SourceIp
+	client.ramconn.SecureTransport = client.config.SecureTransport
+	client.ramconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
+	client.ramconn.AppendUserAgent(Provider, providerVersion)
+	client.ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+	client.ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 	return do(client.ramconn)
 }
 

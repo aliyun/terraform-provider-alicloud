@@ -40,7 +40,7 @@ func testSweepRocketMq(region string) error {
 	}
 	resp, err := jsonpath.Get("$.data.list", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.data.list", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data.list", response)
 	}
 
 	result, _ := resp.([]interface{})
