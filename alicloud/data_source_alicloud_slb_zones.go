@@ -15,7 +15,6 @@ import (
 func dataSourceAlicloudSlbZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSlbZonesRead,
-
 		Schema: map[string]*schema.Schema{
 			"available_slb_address_type": {
 				Type:         schema.TypeString,

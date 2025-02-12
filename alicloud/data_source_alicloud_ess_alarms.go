@@ -131,8 +131,8 @@ func dataSourceAlicloudEssAlarmsRead(d *schema.ResourceData, meta interface{}) e
 	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
 		request.ScalingGroupId = scalingGroupId.(string)
 	}
-	if metric_type, ok := d.GetOk("metric_type"); ok && metric_type.(string) != "" {
-		request.MetricType = metric_type.(string)
+	if metricType, ok := d.GetOk("metric_type"); ok && metricType.(string) != "" {
+		request.MetricType = metricType.(string)
 	}
 	var allAlarms []ess.Alarm
 	for {

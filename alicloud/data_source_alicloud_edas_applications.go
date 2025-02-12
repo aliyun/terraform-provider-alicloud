@@ -12,7 +12,6 @@ import (
 func dataSourceAlicloudEdasApplications() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEdasApplicationsRead,
-
 		Schema: map[string]*schema.Schema{
 			"output_file": {
 				Type:     schema.TypeString,
