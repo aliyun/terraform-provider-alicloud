@@ -347,7 +347,7 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 // DescribeAlbLoadBalancerSecurityGroupAttachment <<< Encapsulated get interface for Alb LoadBalancerSecurityGroupAttachment.
 
-func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string) (object map[string]interface{}, err error) {
+func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string) (object interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -356,10 +356,11 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string)
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "GetLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["LoadBalancerId"] = parts[0]
+	request["LoadBalancerId"] = parts[0]
+
+	action := "GetLoadBalancerAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -372,30 +373,33 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$", response)
-	instanceIds, err := jsonpath.Get("$.SecurityGroupIds[*]", v)
+	v, err := jsonpath.Get("$.SecurityGroupIds[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityGroupIds[*]", v)
-	}
-	found := false
-	for _, vv := range instanceIds.([]interface{}) {
-		if vv.(string) == parts[1] {
-			found = true
-			break
-		}
-	}
-	if found {
-		return v.(map[string]interface{}), nil
+		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
 	}
 
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		securityGroupId, err := jsonpath.Get("$", v)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", v)
+		}
+		if securityGroupId != parts[1] {
+			continue
+		}
+		return v, nil
+	}
 	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
 }
 
@@ -404,7 +408,7 @@ func (s *AlbServiceV2) AlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id
 		object, err := s.DescribeAlbLoadBalancerSecurityGroupAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
@@ -412,14 +416,46 @@ func (s *AlbServiceV2) AlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
-		if field == "#ID" {
-			if currentStatus != "" {
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
 				currentStatus = "#CHECKSET"
 			}
 		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *AlbServiceV2) DescribeAsyncAlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAsyncListAsynJobs(d, res)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
@@ -904,13 +940,17 @@ func (s *AlbServiceV2) AlbLoadBalancerZoneShiftedAttachmentStateRefreshFunc(id s
 
 // DescribeAlbLoadBalancerZoneShiftedAttachment >>> Encapsulated.
 
-// Async Api <<< Encapsulated for Alb.
+// DescribeAsyncListAsynJobs <<< Encapsulated for Alb.
 func (s *AlbServiceV2) DescribeAsyncListAsynJobs(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["JobIds.1"], err = jsonpath.Get("$.JobId", res)
@@ -938,4 +978,4 @@ func (s *AlbServiceV2) DescribeAsyncListAsynJobs(d *schema.ResourceData, res map
 	return response, nil
 }
 
-// Async Api >>> Encapsulated.
+// DescribeAsyncListAsynJobs >>> Encapsulated.
