@@ -13,7 +13,6 @@ import (
 func dataSourceAlicloudPolarDBZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudZonesPolarDBRead,
-
 		Schema: map[string]*schema.Schema{
 			"multi": {
 				Type:     schema.TypeBool,

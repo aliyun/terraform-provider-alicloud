@@ -246,16 +246,16 @@ func dataSourceAlicloudHBaseInstanceTypesRead(d *schema.ResourceData, meta inter
 func describeAvaiableResource(d *schema.ResourceData, meta interface{}) (result hbase.DescribeAvailableResourceResponse, err error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := hbase.CreateDescribeAvailableResourceRequest()
-	if charge_type, ok := d.GetOk("charge_type"); ok {
-		request.ChargeType = strings.TrimSpace(charge_type.(string))
+	if chargeType, ok := d.GetOk("charge_type"); ok {
+		request.ChargeType = strings.TrimSpace(chargeType.(string))
 	}
-	if region_id, ok := d.GetOk("region_id"); ok {
-		request.RegionId = strings.TrimSpace(region_id.(string))
+	if regionId, ok := d.GetOk("region_id"); ok {
+		request.RegionId = strings.TrimSpace(regionId.(string))
 	} else {
 		request.RegionId = string(client.Region)
 	}
-	if zone_id, ok := d.GetOk("zone_id"); ok {
-		request.ZoneId = strings.TrimSpace(zone_id.(string))
+	if zoneId, ok := d.GetOk("zone_id"); ok {
+		request.ZoneId = strings.TrimSpace(zoneId.(string))
 	}
 	if engine, ok := d.GetOk("engine"); ok {
 		request.Engine = strings.TrimSpace(engine.(string))

@@ -151,10 +151,10 @@ func dataSourceAlicloudDdosbgpInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	// describe instance spec filtered by instanceids
-	var nameMap map[string]string = make(map[string]string)
-	var instanceIds []string
-	var ipTypeMap map[string]string = make(map[string]string)
-	var instanceTypeMap map[string]string = make(map[string]string)
+	nameMap := make(map[string]string)
+	instanceIds := make([]string, 0)
+	ipTypeMap := make(map[string]string)
+	instanceTypeMap := make(map[string]string)
 	for _, instance := range instances {
 		instanceIds = append(instanceIds, instance.InstanceId)
 		nameMap[instance.InstanceId] = instance.Remark

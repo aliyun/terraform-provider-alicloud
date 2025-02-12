@@ -122,7 +122,6 @@ func instanceTypeFamiliesDescriptionAttributes(d *schema.ResourceData, typeFamil
 	var ids []string
 	var s []map[string]interface{}
 	for _, f := range typeFamilies {
-
 		mapping := map[string]interface{}{
 			"id":         f.InstanceTypeFamilyId,
 			"generation": f.Generation,

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -210,21 +209,6 @@ func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[strin
 	}
 
 	return object, nil
-}
-
-func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
-	request := ddoscoo.CreateModifyInstanceRemarkRequest()
-	request.InstanceId = instanceId
-	request.Remark = name
-
-	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.ModifyInstanceRemark(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
 }
 
 func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) (err error) {

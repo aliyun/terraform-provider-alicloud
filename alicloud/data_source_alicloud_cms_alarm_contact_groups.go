@@ -71,7 +71,6 @@ func dataSourceAlicloudCmsAlarmContactGroups() *schema.Resource {
 
 func dataSourceAlicloudCmsAlarmContactGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	request := cms.CreateDescribeContactGroupListRequest()
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)

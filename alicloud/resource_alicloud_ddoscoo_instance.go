@@ -319,14 +319,32 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
-
+	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("name") {
-		if err := ddoscooService.UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
+		action := "ModifyInstanceRemark"
+		request := map[string]interface{}{
+			"InstanceId": d.Id(),
+			"Remark":     d.Get("name"),
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("name")
 	}
 
 	if d.IsNewResource() {

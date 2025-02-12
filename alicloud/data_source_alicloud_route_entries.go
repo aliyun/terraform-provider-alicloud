@@ -98,13 +98,13 @@ func dataSourceAlicloudRouteEntriesRead(d *schema.ResourceData, meta interface{}
 		}
 
 		for _, entries := range response.RouteTables.RouteTable[0].RouteEntrys.RouteEntry {
-			if instance_id, ok := d.GetOk("instance_id"); ok && entries.InstanceId != instance_id.(string) {
+			if instanceId, ok := d.GetOk("instance_id"); ok && entries.InstanceId != instanceId.(string) {
 				continue
 			}
-			if route_entry_type, ok := d.GetOk("type"); ok && entries.Type != route_entry_type.(string) {
+			if routeEntryType, ok := d.GetOk("type"); ok && entries.Type != routeEntryType.(string) {
 				continue
 			}
-			if cidr_block, ok := d.GetOk("cidr_block"); ok && entries.DestinationCidrBlock != cidr_block.(string) {
+			if cidrBlock, ok := d.GetOk("cidr_block"); ok && entries.DestinationCidrBlock != cidrBlock.(string) {
 				continue
 			}
 			allRouteEntries = append(allRouteEntries, entries)

@@ -437,10 +437,8 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 			"progress":                image.Progress,
 			"usage":                   image.Usage,
 			"product_code":            image.ProductCode,
-
-			// Complex types get their own functions
-			"disk_device_mappings": imageDiskDeviceMappings(image.DiskDeviceMappings.DiskDeviceMapping),
-			"tags":                 imageTagsMappings(d, image.ImageId, meta),
+			"disk_device_mappings":    imageDiskDeviceMappings(image.DiskDeviceMappings.DiskDeviceMapping),
+			"tags":                    imageTagsMappings(d, image.ImageId, meta),
 		}
 
 		ids = append(ids, image.ImageId)
