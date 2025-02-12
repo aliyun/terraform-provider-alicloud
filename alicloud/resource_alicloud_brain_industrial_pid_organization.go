@@ -62,9 +62,6 @@ func resourceAlicloudBrainIndustrialPidOrganizationCreate(d *schema.ResourceData
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("CreatePidOrganization failed for " + response["Message"].(string)))
-	}
 
 	d.SetId(fmt.Sprint(response["OrganizationId"]))
 
@@ -111,9 +108,6 @@ func resourceAlicloudBrainIndustrialPidOrganizationUpdate(d *schema.ResourceData
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapError(Error("UpdatePidOrganization failed for " + response["Message"].(string)))
-		}
 	}
 	return resourceAlicloudBrainIndustrialPidOrganizationRead(d, meta)
 }
@@ -141,9 +135,6 @@ func resourceAlicloudBrainIndustrialPidOrganizationDelete(d *schema.ResourceData
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("DeletePidOrganization failed for " + response["Message"].(string)))
 	}
 	return nil
 }

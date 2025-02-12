@@ -66,10 +66,6 @@ func resourceAlicloudBrainIndustrialPidProjectCreate(d *schema.ResourceData, met
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_brain_industrial_pid_project", action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("CreatePidProject failed for " + response["Message"].(string)))
-	}
-
 	d.SetId(fmt.Sprint(response["PidProjectId"]))
 
 	return resourceAlicloudBrainIndustrialPidProjectRead(d, meta)
@@ -129,9 +125,6 @@ func resourceAlicloudBrainIndustrialPidProjectUpdate(d *schema.ResourceData, met
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapError(Error("UpdatePidProject failed for " + response["Message"].(string)))
-		}
 	}
 	return resourceAlicloudBrainIndustrialPidProjectRead(d, meta)
 }
@@ -159,9 +152,6 @@ func resourceAlicloudBrainIndustrialPidProjectDelete(d *schema.ResourceData, met
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("DeletePidProject failed for " + response["Message"].(string)))
 	}
 	return nil
 }
