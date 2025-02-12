@@ -689,10 +689,6 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		if fmt.Sprint(setRenewalResponse["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, setRenewalResponse))
-		}
-
 		d.SetPartial("renewal_status")
 		d.SetPartial("renew_period")
 		d.SetPartial("renewal_period_unit")

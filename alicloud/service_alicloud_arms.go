@@ -303,11 +303,10 @@ func (s *ArmsService) DescribeArmsPrometheus(id string) (object map[string]inter
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Code"]) == "404" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Arms:Prometheus", id)), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -514,11 +513,10 @@ func (s *ArmsService) DescribeArmsIntegrationExporter(id string) (object map[str
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Code"]) == "404" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Arms:IntegrationExporter", id)), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -563,15 +561,10 @@ func (s *ArmsService) DescribeArmsRemoteWrite(id string) (object map[string]inte
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-
-	if fmt.Sprint(response["Code"]) == "404" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Arms:RemoteWrite", id)), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)

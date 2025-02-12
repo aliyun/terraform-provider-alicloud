@@ -442,10 +442,6 @@ func (s *VpcService) DescribeRouteTable(id string) (object map[string]interface{
 		return
 	}
 	addDebug(action, response, request)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = WrapErrorf(err, ResponseCodeMsg, id, action, response)
-		return object, err
-	}
 	v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterTableList.RouterTableListType", response)
@@ -769,10 +765,6 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 		})
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Code"]) != "200" {
-			err = fmt.Errorf("DescribeRouteTableList failed, response: %v ", response)
-			return object, err
 		}
 		v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 		if err != nil {
