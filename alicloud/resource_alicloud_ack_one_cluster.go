@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -97,10 +96,7 @@ func resourceAliCloudAckOneClusterCreate(d *schema.ResourceData, meta interface{
 	action := "CreateHubCluster"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewAckoneClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
@@ -122,11 +118,9 @@ func resourceAliCloudAckOneClusterCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("cluster_name"); ok {
 		request["Name"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -249,10 +243,7 @@ func resourceAliCloudAckOneClusterUpdate(d *schema.ResourceData, meta interface{
 	action := "UpdateHubClusterFeature"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewAckoneClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ClusterId"] = d.Id()
 	if d.Get("profile") != "XFlow" {
@@ -263,11 +254,9 @@ func resourceAliCloudAckOneClusterUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -301,18 +290,13 @@ func resourceAliCloudAckOneClusterDelete(d *schema.ResourceData, meta interface{
 	action := "DeleteHubCluster"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewAckoneClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["ClusterId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adcp", "2022-01-01", action, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

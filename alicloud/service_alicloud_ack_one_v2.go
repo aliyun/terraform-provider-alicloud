@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -24,19 +23,13 @@ func (s *AckOneServiceV2) DescribeAckOneCluster(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeHubClusterDetails"
-	conn, err := client.NewAckoneClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ClusterId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adcp", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -92,21 +85,15 @@ func (s *AckOneServiceV2) DescribeAckOneMembershipAttachment(id string) (object 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeManagedClusters"
-	conn, err := client.NewAckoneClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	clusterId := strings.Split(id, ":")[0]
 	subClusterId := strings.Split(id, ":")[1]
 	query["ClusterId"] = clusterId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(15*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("adcp", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
