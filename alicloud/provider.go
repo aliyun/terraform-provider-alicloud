@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cloud_firewall_nat_firewalls":        dataSourceAliCloudCloudFirewallNatFirewalls(),
 			"alicloud_cloud_firewall_vpc_cen_tr_firewalls": dataSourceAliCloudCloudFirewallVpcCenTrFirewalls(),
 			"alicloud_kms_instances":                       dataSourceAliCloudKmsInstances(),
 			"alicloud_cloud_control_resource_types":        dataSourceAliCloudCloudControlResourceTypes(),
