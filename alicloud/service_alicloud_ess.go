@@ -517,54 +517,71 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 	return groups
 }
 
-func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
-	request := ess.CreateDescribeScalingRulesRequest()
-	request.ScalingRuleId = &[]string{id}
-	request.ShowAlarmRules = "false"
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingRules(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidScalingRuleId.NotFound"}) {
-			return rule, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ess.DescribeScalingRulesResponse)
-	for _, v := range response.ScalingRules.ScalingRule {
-		if v.ScalingRuleId == id {
-			return v, nil
-		}
+func (s *EssService) DescribeEssScalingRule(id string) (object map[string]interface{}, err error) {
+
+	var response map[string]interface{}
+	client := s.client
+	request := map[string]interface{}{
+		"ScalingRuleId.1": id,
+		"RegionId":        s.client.RegionId,
+		"ShowAlarmRules":  "false",
 	}
 
-	return rule, WrapErrorf(Error(GetNotFoundMessage("EssScalingRule", id)), NotFoundMsg, ProviderERROR)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScalingRules", nil, request, true)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidScalingRuleId.NotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingRules", AlibabaCloudSdkGoERROR)
+	}
+	addDebug("DescribeScalingRules", response, request)
+	get, err := jsonpath.Get("$.ScalingRules", response)
+	if err != nil || get == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+	}
+	v, err := jsonpath.Get("$.ScalingRules.ScalingRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingRules.ScalingRule", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *EssService) DescribeEssScalingRuleWithAlarm(id string) (rule ess.ScalingRule, err error) {
-	request := ess.CreateDescribeScalingRulesRequest()
-	request.ScalingRuleId = &[]string{id}
-	request.ShowAlarmRules = "true"
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingRules(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidScalingRuleId.NotFound"}) {
-			return rule, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ess.DescribeScalingRulesResponse)
-	for _, v := range response.ScalingRules.ScalingRule {
-		if v.ScalingRuleId == id {
-			return v, nil
-		}
+func (s *EssService) DescribeEssScalingRuleWithAlarm(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	request := map[string]interface{}{
+		"ScalingRuleId.1": id,
+		"RegionId":        s.client.RegionId,
+		"ShowAlarmRules":  "true",
 	}
 
-	return rule, WrapErrorf(Error(GetNotFoundMessage("EssScalingRule", id)), NotFoundMsg, ProviderERROR)
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeScalingRules", nil, request, true)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidScalingRuleId.NotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingRules", AlibabaCloudSdkGoERROR)
+	}
+	addDebug("DescribeScalingRules", response, request)
+	w, err := jsonpath.Get("$.ScalingRules", response)
+	if err != nil {
+		return object, WrapErrorf(err, NotFoundMsg, id, "$.ScalingRules", response)
+	}
+	v, err := jsonpath.Get("$.ScalingRule", w)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingRules.ScalingRule", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int) error {
@@ -581,11 +598,11 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 			return WrapError(err)
 		}
 
-		if object.ScalingRuleId == id && status != Deleted {
+		if object["ScalingRuleId"] == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ScalingRuleId, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ScalingRuleId"], id, ProviderERROR)
 		}
 	}
 }
