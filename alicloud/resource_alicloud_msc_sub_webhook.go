@@ -123,9 +123,6 @@ func resourceAlicloudMscSubWebhookUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 	}
 	return resourceAlicloudMscSubWebhookRead(d, meta)
 }
@@ -158,9 +155,6 @@ func resourceAlicloudMscSubWebhookDelete(d *schema.ResourceData, meta interface{
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }

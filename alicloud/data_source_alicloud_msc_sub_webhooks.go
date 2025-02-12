@@ -111,9 +111,6 @@ func dataSourceAlicloudMscSubWebhooksRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_msc_sub_webhooks", action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 		resp, err := jsonpath.Get("$.Webhooks", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Webhooks", response)

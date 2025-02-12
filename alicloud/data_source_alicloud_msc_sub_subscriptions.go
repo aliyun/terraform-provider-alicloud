@@ -112,9 +112,6 @@ func dataSourceAlicloudMscSubSubscriptionsRead(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_msc_sub_subscriptions", action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
 		resp, err := jsonpath.Get("$.SubscriptionItems", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SubscriptionItems", response)

@@ -40,9 +40,6 @@ func (s *MscOpenSubscriptionService) GetContact(id string) (object map[string]in
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("MscSub:Contact", id)), NotFoundMsg, ProviderERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	v, err := jsonpath.Get("$.Contact", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Contact", response)
@@ -78,9 +75,6 @@ func (s *MscOpenSubscriptionService) DescribeMscSubContact(id string) (object ma
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
 	v, err := jsonpath.Get("$.Contact", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Contact", response)
@@ -112,9 +106,6 @@ func (s *MscOpenSubscriptionService) DescribeMscSubSubscription(id string) (obje
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.SubscriptionItem", response)
 	if err != nil {
@@ -149,9 +140,6 @@ func (s *MscOpenSubscriptionService) DescribeMscSubWebhook(id string) (object ma
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	v, err := jsonpath.Get("$.Webhook", response)
 	if err != nil {

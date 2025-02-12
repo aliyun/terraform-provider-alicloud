@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -57,7 +56,7 @@ func dataSourceAlicloudMscSubContactVerificationMessageRead(d *schema.ResourceDa
 		return nil
 	})
 	addDebug(action, response, request)
-	if err != nil || fmt.Sprint(response["Success"]) == "false" {
+	if err != nil {
 		d.SetId("SendMscSubContactVerificationMessage")
 		d.Set("status", "Failed")
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_contact_verification_message", action, AlibabaCloudSdkGoERROR)
