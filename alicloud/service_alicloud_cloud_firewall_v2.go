@@ -165,36 +165,33 @@ func (s *CloudFirewallServiceV2) CloudFirewallNatFirewallStateRefreshFunc(id str
 
 func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcCenTrFirewall(id string) (object map[string]interface{}, err error) {
 	client := s.client
-	var endpoint string
-	var response map[string]interface{}
 	var request map[string]interface{}
+	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeTrFirewallsV2Detail"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FirewallId"] = id
+	request["FirewallId"] = id
+
+	action := "DescribeTrFirewallsV2Detail"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, true, endpoint)
+		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ErrorTrResourceNotReady"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
-			} else if IsExpectedErrors(err, []string{"not buy user"}) {
-				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorTrFirewallNotExist"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcCenTrFirewall", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -214,6 +211,13 @@ func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(i
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -222,8 +226,6 @@ func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(i
 		return object, currentStatus, nil
 	}
 }
-
-// DescribeCloudFirewallVpcCenTrFirewall >>> Encapsulated.
 
 // DescribeCloudFirewallVpcCenTrFirewall >>> Encapsulated.
 
@@ -300,3 +302,6 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallControlPolicy(id string) (
 }
 
 // DescribeCloudFirewallControlPolicy >>> Encapsulated.
+
+// Async Api <<< Encapsulated for CloudFirewall.
+// Async Api >>> Encapsulated.

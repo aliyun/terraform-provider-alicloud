@@ -127,7 +127,7 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
 // Case VpcCenTrFirewall全生命周期测试_副本1689148389922 3609  raw
 func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609_raw(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-shanghai"})
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_cloud_firewall_vpc_cen_tr_firewall.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallVpcCenTrFirewallMap3609)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -141,7 +141,6 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			//testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
