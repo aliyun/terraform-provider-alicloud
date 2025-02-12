@@ -40,7 +40,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.DescribeCenAttachedChildInstances(request)
 			})
 			if err != nil {
@@ -113,7 +113,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
@@ -212,7 +212,7 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 	request.OppositeRegionId = oppositeRegionId
 	request.BandwidthLimit = requests.NewInteger(bandwidthLimit)
 
-	raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 		return cbnClient.SetCenInterRegionBandwidthLimit(request)
 	})
 	if err != nil {
@@ -247,7 +247,7 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 				return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 			})
 			if err != nil {
@@ -348,7 +348,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 		if err != nil {

@@ -97,7 +97,7 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 
 	deadline := time.Now().Add(10 * time.Minute)
 	for {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {

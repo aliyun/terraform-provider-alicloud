@@ -483,40 +483,6 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
-func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the CEN client if necessary
-	if client.cenconn == nil {
-		endpoint := client.config.CenEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CbnCode), endpoint)
-		}
-		cenconn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
-		}
-
-		cenconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cenconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		cenconn.SourceIp = client.config.SourceIp
-		cenconn.SecureTransport = client.config.SecureTransport
-		cenconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		cenconn.AppendUserAgent(Provider, providerVersion)
-		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		cenconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
-		client.cenconn = cenconn
-	} else {
-		err := client.cenconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
-		}
-	}
-
-	return do(client.cenconn)
-}
-
 func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the ESS client if necessary
 	if client.essconn == nil {

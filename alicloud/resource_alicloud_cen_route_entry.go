@@ -59,7 +59,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 	request.DestinationCidrBlock = cidr
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.PublishRouteEntries(request)
 		})
 		if err != nil {
@@ -141,7 +141,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 	request.DestinationCidrBlock = cidr
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.WithdrawPublishedRouteEntries(request)
 		})
 		if err != nil {

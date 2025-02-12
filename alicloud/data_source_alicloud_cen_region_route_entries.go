@@ -72,7 +72,7 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 
 	var allCenRouteEntries []cbn.CenRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenRegionDomainRouteEntries(request)
 		})
 		if err != nil {
