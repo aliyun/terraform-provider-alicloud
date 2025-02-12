@@ -43,7 +43,7 @@ func testSweepCenBandwidthLimit(region string) error {
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	for {
-		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {

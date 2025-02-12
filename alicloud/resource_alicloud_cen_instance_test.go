@@ -59,7 +59,7 @@ func testSweepCenInstances(region string) error {
 	describeCensRequest.PageSize = requests.NewInteger(PageSizeLarge)
 	describeCensRequest.PageNumber = requests.NewInteger(1)
 	for {
-		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DescribeCens(describeCensRequest)
 		})
 		if err != nil {
@@ -102,7 +102,7 @@ func testSweepCenInstances(region string) error {
 		sweepCenInstanceIds = append(sweepCenInstanceIds, cenId)
 		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 		describeCenAttachedChildInstancesRequest.CenId = cenId
-		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DescribeCenAttachedChildInstances(describeCenAttachedChildInstancesRequest)
 		})
 		if err != nil {
@@ -117,7 +117,7 @@ func testSweepCenInstances(region string) error {
 			detachCenChildInstanceRequest.ChildInstanceId = instanceId
 			detachCenChildInstanceRequest.ChildInstanceType = childInstance.ChildInstanceType
 			detachCenChildInstanceRequest.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
-			_, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+			_, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
 				return cenClient.DetachCenChildInstance(detachCenChildInstanceRequest)
 			})
 			if err != nil {
@@ -437,7 +437,7 @@ func testSweepCenInstances(region string) error {
 		log.Printf("[INFO] Deleting CEN Instance: %s ", cenId)
 		deleteCenRequest := cbn.CreateDeleteCenRequest()
 		deleteCenRequest.CenId = cenId
-		_, err = client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+		_, err = client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DeleteCen(deleteCenRequest)
 		})
 		if err != nil {

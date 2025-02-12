@@ -127,7 +127,7 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	var allPublishedRouteEntries []cbn.PublishedRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
 		request.PageNumber = requests.NewInteger(pageNumber)
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 
