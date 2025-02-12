@@ -54,10 +54,9 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 	request := map[string]interface{}{}
 	var response map[string]interface{}
 	action := "ListPidOrganizations"
-	response, _ = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		log.Printf("%s failed: %v", action, response)
-		return nil
+	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
+	if err != nil {
+		return WrapError(err)
 	}
 	resp, err := jsonpath.Get("$.OrganizationList", response)
 	if err != nil {

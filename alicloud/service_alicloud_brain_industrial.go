@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -22,14 +20,9 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidOrganization(id stri
 	idExist := false
 	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("ListPidOrganizations failed for " + response["Message"].(string))
-		return object, err
-	}
 	v, err := jsonpath.Get("$.OrganizationList", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.OrganizationList", response)
@@ -64,14 +57,9 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (
 		runtime.SetAutoretry(true)
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
-			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-			return object, err
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			err = Error("ListPidProjects failed for " + response["Message"].(string))
-			return object, err
-		}
 		v, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PidProjectList", response)
@@ -106,18 +94,12 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidLoop(id string) (obj
 	}
 	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return
+		if IsExpectedErrors(err, []string{"-106"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"-106"}) {
-		err = WrapErrorf(Error(GetNotFoundMessage("BrainIndustrialPidLoop", id)), NotFoundMsg, ProviderERROR)
-		return object, err
-	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("GetLoop failed for " + response["Message"].(string))
-		return object, err
-	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
