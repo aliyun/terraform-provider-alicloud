@@ -12,7 +12,7 @@ Provides an Ack One Membership Attachment resource. Fleet Manager Membership Att
 
 For information about Ack One Membership Attachment and how to use it, see [How to attach cluster tp hub](https://www.alibabacloud.com/help/en/ack/distributed-cloud-container-platform-for-kubernetes/developer-reference/api-adcp-2022-01-01-attachclustertohub).
 
--> **NOTE:** Available since v1.242.0.
+-> **NOTE:** Available since v1.243.0.
 
 ## Example Usage
 
