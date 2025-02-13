@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -284,10 +282,7 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "CreateShardingDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -442,11 +437,9 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		request["ConfigServer"] = []map[string]interface{}{{"Class": "dds.cs.mid", "Storage": 20}}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -659,6 +652,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -673,16 +667,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "UpgradeDBInstanceEngineVersion"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, upgradeDBInstanceEngineVersionReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, upgradeDBInstanceEngineVersionReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -728,16 +715,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyDBInstanceDiskType"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceDiskTypeReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceDiskTypeReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -781,16 +761,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		action := "ModifySecurityGroupConfiguration"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifySecurityGroupConfigurationReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifySecurityGroupConfigurationReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InstanceStatusInvalid"}) || NeedRetry(err) {
 					wait()
@@ -823,16 +796,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyDBInstanceDescription"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceDescriptionReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceDescriptionReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -853,11 +819,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
 		action := "TransformToPrePaid"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		transformToPrePaidReq := map[string]interface{}{
 			"InstanceId": d.Id(),
 		}
@@ -869,11 +830,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			transformToPrePaidReq["AutoRenew"] = strconv.FormatBool(v.(bool))
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, transformToPrePaidReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, transformToPrePaidReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -957,16 +916,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		action := "ModifyResourceGroup"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyResourceGroupReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -997,11 +949,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.HasChange("tde_status") {
 		action := "ModifyDBInstanceTDE"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		modifyDBInstanceTDEReq := map[string]interface{}{
 			"DBInstanceId": d.Id(),
 		}
@@ -1010,11 +957,9 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			modifyDBInstanceTDEReq["TDEStatus"] = v
 		}
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceTDEReq, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceTDEReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1073,10 +1018,7 @@ func resourceAliCloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
 
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	object, err := ddsService.DescribeMongoDBShardingInstance(d.Id())
 	if err != nil {
@@ -1092,11 +1034,9 @@ func resourceAliCloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 		"DBInstanceId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

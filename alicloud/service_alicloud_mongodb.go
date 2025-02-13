@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -26,22 +25,15 @@ type MongoDBService struct {
 func (s *MongoDBService) DescribeMongoDBInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstanceAttribute"
-
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -162,19 +154,14 @@ func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []st
 
 func (s *MongoDBService) DescribeMongoDBShardingSecurityIps(instanceId string) (ips []string, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeSecurityIps"
 	request := map[string]interface{}{
 		"DBInstanceId": instanceId,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -223,21 +210,17 @@ func (s *MongoDBService) DescribeMongoDBShardingSecurityIps(instanceId string) (
 
 func (s *MongoDBService) ModifyMongoDBSecurityIps(d *schema.ResourceData, ips string) error {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 	action := "ModifySecurityIps"
 	request := make(map[string]interface{})
 	request["RegionId"] = s.client.RegionId
 	request["DBInstanceId"] = d.Id()
 	request["SecurityIps"] = ips
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -263,19 +246,14 @@ func (s *MongoDBService) ModifyMongoDBSecurityIps(d *schema.ResourceData, ips st
 
 func (s *MongoDBService) DescribeMongoDBSecurityGroupId(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeSecurityGroupConfiguration"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -303,19 +281,14 @@ func (s *MongoDBService) DescribeMongoDBSecurityGroupId(id string) (object []int
 
 func (s *MongoDBService) DescribeMongoDBShardingSecurityGroupId(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeSecurityGroupConfiguration"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -343,10 +316,8 @@ func (s *MongoDBService) DescribeMongoDBShardingSecurityGroupId(id string) (obje
 
 func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceData, nodeType MongoDBShardingNodeType, stateList, diffList []interface{}) error {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, s.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -377,11 +348,9 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 				request["NodeStorage"] = requests.NewInteger(node["node_storage"].(int))
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(2*time.Second, 3*time.Second)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 						wait()
@@ -416,11 +385,9 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 			request["NodeId"] = node["node_id"].(string)
 			request["ClientToken"] = buildClientToken(action)
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(2*time.Second, 3*time.Second)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 						wait()
@@ -468,12 +435,9 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 				request["NodeStorage"] = diff["node_storage"].(int)
 			}
 			request["NodeId"] = state["node_id"].(string)
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -501,20 +465,15 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 
 func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackupPolicy"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -542,19 +501,14 @@ func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (object map[stri
 
 func (s *MongoDBService) DescribeMongoDBShardingBackupPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeBackupPolicy"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -582,19 +536,14 @@ func (s *MongoDBService) DescribeMongoDBShardingBackupPolicy(id string) (object 
 
 func (s *MongoDBService) DescribeMongoDBTDEInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceTDEInfo"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -622,20 +571,15 @@ func (s *MongoDBService) DescribeMongoDBTDEInfo(id string) (object map[string]in
 
 func (s *MongoDBService) DescribeDBInstanceSSL(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceSSL"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -663,19 +607,14 @@ func (s *MongoDBService) DescribeDBInstanceSSL(id string) (object map[string]int
 
 func (s *MongoDBService) DescribeMongoDBShardingTDEInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceTDEInfo"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -710,10 +649,8 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	var response map[string]interface{}
 	action := "ModifyBackupPolicy"
 
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -751,11 +688,9 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["BackupInterval"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -782,10 +717,8 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 	var response map[string]interface{}
 	action := "ResetAccountPassword"
 
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -799,11 +732,9 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 		request["CharacterType"] = "cs"
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -947,19 +878,14 @@ func (s *MongoDBService) tagsFromMap(m map[string]interface{}) []dds.TagResource
 
 func (s *MongoDBService) DescribeMongodbAuditPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAuditPolicy"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -983,10 +909,7 @@ func (s *MongoDBService) DescribeMongodbAuditPolicy(id string) (object map[strin
 
 func (s *MongoDBService) DescribeMongodbAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAccounts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -997,11 +920,9 @@ func (s *MongoDBService) DescribeMongodbAccount(id string) (object map[string]in
 		"AccountName":  parts[1],
 		"DBInstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1052,19 +973,14 @@ func (s *MongoDBService) MongodbAccountStateRefreshFunc(id string, failStates []
 
 func (s *MongoDBService) DescribeSecurityIps(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeSecurityIps"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1088,19 +1004,14 @@ func (s *MongoDBService) DescribeSecurityIps(id string) (object map[string]inter
 
 func (s *MongoDBService) DescribeMongodbServerlessInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1155,11 +1066,7 @@ func (s *MongoDBService) MongodbServerlessInstanceStateRefreshFunc(id string, fa
 func (s *MongoDBService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
+		client := s.client
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -1178,7 +1085,7 @@ func (s *MongoDBService) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1210,7 +1117,7 @@ func (s *MongoDBService) SetResourceTags(d *schema.ResourceData, resourceType st
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1232,10 +1139,7 @@ func (s *MongoDBService) SetResourceTags(d *schema.ResourceData, resourceType st
 }
 
 func (s *MongoDBService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1248,7 +1152,7 @@ func (s *MongoDBService) ListTagResources(id string, resourceType string) (objec
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1281,10 +1185,7 @@ func (s *MongoDBService) ListTagResources(id string, resourceType string) (objec
 
 func (s *MongoDBService) DescribeMongodbShardingNetworkPublicAddress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeShardingNetworkAddress"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1295,11 +1196,9 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPublicAddress(id string) 
 		"DBInstanceId": parts[0],
 		"NodeId":       parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1342,10 +1241,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPublicAddress(id string) 
 
 func (s *MongoDBService) DescribeShardingNodeType(id string) (string, error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return "", WrapError(err)
-	}
+	client := s.client
 	action := "DescribeShardingNetworkAddress"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -1354,11 +1250,9 @@ func (s *MongoDBService) DescribeShardingNodeType(id string) (string, error) {
 	request := map[string]interface{}{
 		"DBInstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1450,12 +1344,7 @@ func (s *MongoDBService) MongodbShardingNetworkPublicAddressStateRefreshFunc(id,
 func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeShardingNetworkAddress"
-
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -1467,11 +1356,9 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1521,22 +1408,15 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 func (s *MongoDBService) DescribeMongoDBShardingInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstanceAttribute"
-
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1599,10 +1479,7 @@ func (s *MongoDBService) RdsMongodbDBShardingInstanceStateRefreshFunc(id string,
 }
 
 func (s *MongoDBService) ModifyParameters(d *schema.ResourceData, attribute string) error {
-	conn, err := s.client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	client := s.client
 	action := "ModifyParameters"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1620,7 +1497,7 @@ func (s *MongoDBService) ModifyParameters(d *schema.ResourceData, attribute stri
 		}
 		cfg, _ := json.Marshal(config)
 		request["Parameters"] = string(cfg)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1676,22 +1553,18 @@ func (s *MongoDBService) RefreshParameters(d *schema.ResourceData, attribute str
 }
 
 func (s *MongoDBService) DescribeParameters(id string) (map[string]interface{}, error) {
-	conn, err := s.client.NewDdsClient()
+	client := s.client
 	var response map[string]interface{}
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var err error
 	action := "DescribeParameters"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 		"ExtraParam":   "terraform",
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
