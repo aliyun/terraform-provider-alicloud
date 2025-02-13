@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -147,10 +146,7 @@ func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "AllocateDedicatedHosts"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("action_on_maintenance"); ok {
 		request["ActionOnMaintenance"] = v
 	}
@@ -234,7 +230,7 @@ func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -299,10 +295,7 @@ func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface
 func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -321,7 +314,7 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		action := "ModifyDedicatedHostAutoReleaseTime"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -351,7 +344,7 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		action := "JoinResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -388,7 +381,7 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		action := "RenewDedicatedHosts"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -431,7 +424,7 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		action := "ModifyDedicatedHostsChargeType"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDedicatedHostsChargeTypeReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, modifyDedicatedHostsChargeTypeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -499,7 +492,7 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		action := "ModifyDedicatedHostAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDedicatedHostAttributeReq, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, modifyDedicatedHostAttributeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -536,10 +529,7 @@ func resourceAlicloudEcsDedicatedHostDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "ReleaseDedicatedHost"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DedicatedHostId": d.Id(),
 	}
@@ -547,7 +537,7 @@ func resourceAlicloudEcsDedicatedHostDelete(d *schema.ResourceData, meta interfa
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectHostStatus.Initializing"}) || NeedRetry(err) {
 				wait()

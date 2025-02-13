@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -160,13 +158,7 @@ func testSweepFCServices(region string) error {
 			request["RegionId"] = client.RegionId
 			request["PageSize"] = PageSizeLarge
 			request["PageNumber"] = 1
-			conn, err := client.NewEcsClient()
-			if err != nil {
-				return WrapError(err)
-			}
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -186,7 +178,7 @@ func testSweepFCServices(region string) error {
 				request := make(map[string]interface{})
 				request["RegionId"] = client.RegionId
 				request["NetworkInterfaceId"] = fmt.Sprint(item["NetworkInterfaceId"])
-				_, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+				_, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 				if err != nil {
 					return WrapError(err)
 				}

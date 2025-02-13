@@ -373,6 +373,7 @@ var irregularProductEndpointForIntlAccountIntlRegion = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpoint = map[string]string{
+	"ecs":                  "ecs.%s.aliyuncs.com",
 	"mse":                  "mse.%s.aliyuncs.com",
 	"vpc":                  "vpc.%s.aliyuncs.com",
 	"oss":                  "oss-%s.aliyuncs.com",
@@ -627,11 +628,15 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 		args.Domain = "location.aliyuncs.com"
 	}
 
-	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 	if err != nil {
-		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
+		return "", fmt.Errorf("unable to initialize the location client: %#v", err)
 
 	}
+	locationClient.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	locationClient.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	locationClient.SourceIp = client.config.SourceIp
+	locationClient.SecureTransport = client.config.SecureTransport
 	defer locationClient.Shutdown()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var endpointResult string

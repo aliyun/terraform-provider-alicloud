@@ -278,7 +278,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
-		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
@@ -288,7 +288,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		ecs.SetEndpointDataToClient(ecsconn)
 		client.ecsconn = ecsconn
 	} else {
-		err := client.ecsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		err := client.ecsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
@@ -396,13 +396,13 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
-		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}
 		client.vpcconn = vpcconn
 	} else {
-		err := client.vpcconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		err := client.vpcconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}
@@ -413,35 +413,6 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 	client.vpcconn.SourceIp = client.config.SourceIp
 	client.vpcconn.SecureTransport = client.config.SecureTransport
 	return do(client.vpcconn)
-}
-
-func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
-	productCode := "ecs"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-		if endpoint == "ecs-cn-hangzhou.aliyuncs.com" {
-			endpoint = "ecs.aliyuncs.com"
-		}
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint).SetReadTimeout(60000)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
 }
 
 func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, error)) (interface{}, error) {
@@ -1461,6 +1432,7 @@ func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
 	if timeout == 0 {
 		timeout = time.Duration(30) * time.Second
 	}
+	// WithUserAgent will add a prefix Extra/ for user agent value
 	return sdk.NewConfig().
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(timeout).
@@ -1470,7 +1442,7 @@ func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
 		WithDebug(false).
 		WithHttpTransport(client.getTransport()).
 		WithScheme(client.config.Protocol).
-		WithUserAgent(client.getUserAgent())
+		WithUserAgent(fmt.Sprintf("Terraform %s", client.config.getUserAgent()))
 }
 
 func (client *AliyunClient) getUserAgent() string {
@@ -1827,13 +1799,13 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
-		edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
 		}
 		client.edasconn = edasconn
 	} else {
-		err := client.edasconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(60*time.Second), client.config.getAuthCredential(true))
+		err := client.edasconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
 		}
