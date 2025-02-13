@@ -440,8 +440,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"instance_charge_type":       inst.InstanceChargeType,
 			"internet_charge_type":       inst.InternetChargeType,
 			"internet_max_bandwidth_out": inst.InternetMaxBandwidthOut,
-			// Complex types get their own functions
-			"tags": ecsService.tagsToMap(inst.Tags.Tag),
+			"tags":                       ecsService.tagsToMap(inst.Tags.Tag),
 		}
 		if len(inst.InnerIpAddress.IpAddress) > 0 {
 			mapping["private_ip"] = inst.InnerIpAddress.IpAddress[0]
