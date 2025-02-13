@@ -156,7 +156,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -809,8 +809,9 @@ func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {
   		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 	}
 
-	data "alicloud_security_groups" "default" {
+	resource "alicloud_security_group" "default" {
   		vpc_id = data.alicloud_vpcs.default.ids.0
+        security_group_name = var.name
 	}
 `, name)
 }

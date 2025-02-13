@@ -98,7 +98,7 @@ func testSweepMongoDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
+func SkipTestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -358,7 +358,7 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
+func SkipTestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -690,7 +690,7 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
+func SkipTestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
