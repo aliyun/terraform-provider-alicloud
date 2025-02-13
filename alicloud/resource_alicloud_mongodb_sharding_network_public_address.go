@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -91,15 +90,12 @@ func resourceAlicloudMongodbShardingNetworkPublicAddressCreate(d *schema.Resourc
 	var response map[string]interface{}
 	action := "AllocatePublicNetworkAddress"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["NodeId"] = d.Get("node_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -173,17 +169,13 @@ func resourceAlicloudMongodbShardingNetworkPublicAddressDelete(d *schema.Resourc
 	}
 	action := "ReleasePublicNetworkAddress"
 	var response map[string]interface{}
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"DBInstanceId": parts[0],
 		"NodeId":       parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

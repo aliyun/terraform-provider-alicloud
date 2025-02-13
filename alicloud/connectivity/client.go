@@ -914,7 +914,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 	} else {
 		err := client.drdsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
 		}
 	}
 	client.drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -926,47 +926,31 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the DDS client if necessary
-	productCode := "dds"
-	endpoint := ""
-
 	if client.ddsconn == nil {
-		if endpoint == "" {
-			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-				if err := client.loadEndpoint(productCode); err != nil {
-					endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
-					client.config.Endpoints.Store(productCode, endpoint)
-					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-				}
-			}
-
-			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-				endpoint = v.(string)
-			}
+		product := "dds"
+		endpoint, err := client.loadApiEndpoint(product)
+		if err != nil {
+			return nil, err
 		}
-
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(DDSCode), endpoint)
-		} else {
-			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
 
 		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
 		}
-
-		ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		ddsconn.SourceIp = client.config.SourceIp
-		ddsconn.SecureTransport = client.config.SecureTransport
-		ddsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		ddsconn.AppendUserAgent(Provider, providerVersion)
-		ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		ddsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ddsconn = ddsconn
+	} else {
+		err := client.ddsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
+		}
 	}
-
+	client.ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.ddsconn.SourceIp = client.config.SourceIp
+	client.ddsconn.SecureTransport = client.config.SecureTransport
 	return do(client.ddsconn)
 }
 
@@ -2007,37 +1991,6 @@ func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
-func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
-	productCode := "dds"
-	endpoint := ""
-
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
-}
-
 func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
 	productCode := "bpstudio"
 	endpoint := ""

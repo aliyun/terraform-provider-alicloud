@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -42,17 +41,10 @@ func testSweepMongoDBShardingInstances(region string) error {
 	request["ChargeType"] = "PostPaid"
 
 	var response map[string]interface{}
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -94,7 +86,7 @@ func testSweepMongoDBShardingInstances(region string) error {
 				"DBInstanceId": item["DBInstanceId"],
 				"RegionId":     client.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Mongodb Sharding Instance (%s): %s", fmt.Sprint(item["DBInstanceDescription"]), err)
 			}
@@ -164,7 +156,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -817,8 +809,9 @@ func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {
   		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 	}
 
-	data "alicloud_security_groups" "default" {
+	resource "alicloud_security_group" "default" {
   		vpc_id = data.alicloud_vpcs.default.ids.0
+        security_group_name = var.name
 	}
 `, name)
 }

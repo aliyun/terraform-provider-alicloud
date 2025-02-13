@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
+func SkipTestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_account.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)

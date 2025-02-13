@@ -471,6 +471,7 @@ var regularProductEndpoint = map[string]string{
 	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
 	"apig":                 "apig.%s.aliyuncs.com",
+	"dds":                  "mongodb.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
