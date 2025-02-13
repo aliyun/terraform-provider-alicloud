@@ -294,7 +294,7 @@ resource "alicloud_security_group_rule" "rule_ingress" {
   port_range        = "5000/5001"
   security_group_id = "${alicloud_security_group.group.id}"
   cidr_ip           = "0.0.0.0/0"
-  nic_type          = "internet"
+  nic_type          = "intranet"
 }
 
 resource "alicloud_security_group_rule" "rule_egress" {

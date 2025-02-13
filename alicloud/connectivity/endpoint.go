@@ -627,16 +627,12 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 		args.Domain = "location.aliyuncs.com"
 	}
 
-	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
 
 	}
 	defer locationClient.Shutdown()
-	locationClient.AppendUserAgent(Terraform, client.config.TerraformVersion)
-	locationClient.AppendUserAgent(Provider, providerVersion)
-	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
-	locationClient.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var endpointResult string
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {

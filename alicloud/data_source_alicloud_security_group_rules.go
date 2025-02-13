@@ -143,16 +143,16 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 
 	if attr != nil {
 		for _, item := range attr.Permissions.Permission {
-			if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
+			if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(item.IpProtocol) != v.(string) {
 				continue
 			}
 
-			if v, ok := d.GetOk("policy"); ok && strings.ToLower(string(item.Policy)) != v.(string) {
+			if v, ok := d.GetOk("policy"); ok && strings.ToLower(item.Policy) != v.(string) {
 				continue
 			}
 
 			mapping := map[string]interface{}{
-				"ip_protocol":                strings.ToLower(string(item.IpProtocol)),
+				"ip_protocol":                strings.ToLower(item.IpProtocol),
 				"port_range":                 item.PortRange,
 				"source_cidr_ip":             item.SourceCidrIp,
 				"source_group_id":            item.SourceGroupId,
@@ -160,7 +160,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 				"dest_cidr_ip":               item.DestCidrIp,
 				"dest_group_id":              item.DestGroupId,
 				"dest_group_owner_account":   item.DestGroupOwnerAccount,
-				"policy":                     strings.ToLower(string(item.Policy)),
+				"policy":                     strings.ToLower(item.Policy),
 				"nic_type":                   item.NicType,
 				"direction":                  item.Direction,
 				"description":                item.Description,
