@@ -2,11 +2,11 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"encoding/json"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -38,6 +38,12 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 			"policy_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"policy_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"rules": {
 				Type:     schema.TypeList,
@@ -125,7 +131,7 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		request["PolicyDescription"] = v
 	}
 	if v, ok := d.GetOk("rules"); ok {
-		rulesMaps := make([]interface{}, 0)
+		rulesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
@@ -149,15 +155,18 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
 				dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
 			}
-			rulesMaps = append(rulesMaps, dataLoopMap)
+			rulesMapsArray = append(rulesMapsArray, dataLoopMap)
 		}
-		rulesMapsJson, err := json.Marshal(rulesMaps)
+		rulesMapsJson, err := json.Marshal(rulesMapsArray)
 		if err != nil {
 			return WrapError(err)
 		}
 		request["Rules"] = string(rulesMapsJson)
 	}
 
+	if v, ok := d.GetOk("policy_type"); ok {
+		request["PolicyType"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
@@ -168,9 +177,9 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hbr_policy", action, AlibabaCloudSdkGoERROR)
@@ -195,40 +204,35 @@ func resourceAliCloudHbrPolicyRead(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	if objectRaw["CreatedTime"] != nil {
-		d.Set("create_time", objectRaw["CreatedTime"])
-	}
-	if objectRaw["PolicyDescription"] != nil {
-		d.Set("policy_description", objectRaw["PolicyDescription"])
-	}
-	if objectRaw["PolicyName"] != nil {
-		d.Set("policy_name", objectRaw["PolicyName"])
-	}
+	d.Set("create_time", objectRaw["CreatedTime"])
+	d.Set("policy_description", objectRaw["PolicyDescription"])
+	d.Set("policy_name", objectRaw["PolicyName"])
+	d.Set("policy_type", objectRaw["PolicyType"])
 
-	rules1Raw := objectRaw["Rules"]
+	rulesRaw := objectRaw["Rules"]
 	rulesMaps := make([]map[string]interface{}, 0)
-	if rules1Raw != nil {
-		for _, rulesChild1Raw := range rules1Raw.([]interface{}) {
+	if rulesRaw != nil {
+		for _, rulesChildRaw := range rulesRaw.([]interface{}) {
 			rulesMap := make(map[string]interface{})
-			rulesChild1Raw := rulesChild1Raw.(map[string]interface{})
-			rulesMap["archive_days"] = rulesChild1Raw["ArchiveDays"]
-			rulesMap["backup_type"] = rulesChild1Raw["BackupType"]
-			rulesMap["keep_latest_snapshots"] = rulesChild1Raw["KeepLatestSnapshots"]
-			rulesMap["replication_region_id"] = rulesChild1Raw["ReplicationRegionId"]
-			rulesMap["retention"] = rulesChild1Raw["Retention"]
-			rulesMap["rule_id"] = rulesChild1Raw["RuleId"]
-			rulesMap["rule_type"] = rulesChild1Raw["RuleType"]
-			rulesMap["schedule"] = rulesChild1Raw["Schedule"]
-			rulesMap["vault_id"] = rulesChild1Raw["VaultId"]
+			rulesChildRawArg := rulesChildRaw.(map[string]interface{})
+			rulesMap["archive_days"] = rulesChildRawArg["ArchiveDays"]
+			rulesMap["backup_type"] = rulesChildRawArg["BackupType"]
+			rulesMap["keep_latest_snapshots"] = rulesChildRawArg["KeepLatestSnapshots"]
+			rulesMap["replication_region_id"] = rulesChildRawArg["ReplicationRegionId"]
+			rulesMap["retention"] = rulesChildRawArg["Retention"]
+			rulesMap["rule_id"] = rulesChildRawArg["RuleId"]
+			rulesMap["rule_type"] = rulesChildRawArg["RuleType"]
+			rulesMap["schedule"] = rulesChildRawArg["Schedule"]
+			rulesMap["vault_id"] = rulesChildRawArg["VaultId"]
 
-			retentionRules1Raw := rulesChild1Raw["RetentionRules"]
+			retentionRulesRaw := rulesChildRawArg["RetentionRules"]
 			retentionRulesMaps := make([]map[string]interface{}, 0)
-			if retentionRules1Raw != nil {
-				for _, retentionRulesChild1Raw := range retentionRules1Raw.([]interface{}) {
+			if retentionRulesRaw != nil {
+				for _, retentionRulesChildRaw := range retentionRulesRaw.([]interface{}) {
 					retentionRulesMap := make(map[string]interface{})
-					retentionRulesChild1Raw := retentionRulesChild1Raw.(map[string]interface{})
-					retentionRulesMap["advanced_retention_type"] = retentionRulesChild1Raw["AdvancedRetentionType"]
-					retentionRulesMap["retention"] = retentionRulesChild1Raw["Retention"]
+					retentionRulesChildRawArg := retentionRulesChildRaw.(map[string]interface{})
+					retentionRulesMap["advanced_retention_type"] = retentionRulesChildRawArg["AdvancedRetentionType"]
+					retentionRulesMap["retention"] = retentionRulesChildRawArg["Retention"]
 
 					retentionRulesMaps = append(retentionRulesMaps, retentionRulesMap)
 				}
@@ -237,10 +241,8 @@ func resourceAliCloudHbrPolicyRead(d *schema.ResourceData, meta interface{}) err
 			rulesMaps = append(rulesMaps, rulesMap)
 		}
 	}
-	if objectRaw["Rules"] != nil {
-		if err := d.Set("rules", rulesMaps); err != nil {
-			return err
-		}
+	if err := d.Set("rules", rulesMaps); err != nil {
+		return err
 	}
 
 	return nil
@@ -252,8 +254,9 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdatePolicyV2"
+
 	var err error
+	action := "UpdatePolicyV2"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = d.Id()
@@ -271,7 +274,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("rules") {
 		update = true
 		if v, ok := d.GetOk("rules"); ok {
-			rulesMaps := make([]interface{}, 0)
+			rulesMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range v.([]interface{}) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
@@ -295,9 +298,9 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
 					dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
 				}
-				rulesMaps = append(rulesMaps, dataLoopMap)
+				rulesMapsArray = append(rulesMapsArray, dataLoopMap)
 			}
-			rulesMapsJson, err := json.Marshal(rulesMaps)
+			rulesMapsJson, err := json.Marshal(rulesMapsArray)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -316,9 +319,9 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -349,11 +352,14 @@ func resourceAliCloudHbrPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
