@@ -2,16 +2,17 @@
 subcategory: "Hybrid Backup Recovery (HBR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_vault"
-sidebar_current: "docs-alicloud-resource-hbr-vault"
 description: |-
-  Provides a Alicloud Hybrid Backup Recovery (HBR) Backup vault resource.
+  Provides a Alicloud Hybrid Backup Recovery (HBR) Vault resource.
 ---
 
 # alicloud_hbr_vault
 
-Provides a HBR Backup vault resource.
+Provides a Hybrid Backup Recovery (HBR) Vault resource.
 
-For information about HBR Backup vault and how to use it, see [What is Backup vault](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-hbr-2017-09-08-createvault).
+Where backup or archived data is stored.
+
+For information about Hybrid Backup Recovery (HBR) Vault and how to use it, see [What is Vault](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-hbr-2017-09-08-createvault).
 
 -> **NOTE:** Available since v1.129.0.
 
@@ -38,15 +39,17 @@ resource "alicloud_hbr_vault" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `vault_name` - (Required) The name of Vault.
-* `vault_type` - (Optional, ForceNew) The type of Vault. Valid values: `STANDARD`, `OTS_BACKUP`.
-* `vault_storage_class` - (Optional, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
+* `description` - (Optional) The description of Vault. Defaults to an empty string.
 * `encrypt_type` - (Optional, ForceNew, Available since v1.173.0) Source Encryption Type，It is valid only when vault_type is `STANDARD` or `OTS_BACKUP`. Default value: `HBR_PRIVATE`. Valid values:
   - `HBR_PRIVATE`: HBR is fully hosted, uses the backup service's own encryption method.
   - `KMS`: Use Alibaba Cloud Kms to encryption.
 * `kms_key_id` - (Optional, ForceNew, Available since v1.173.0) The key id or alias name of Alibaba Cloud Kms. It is required and valid only when encrypt_type is `KMS`.
-* `description` - (Optional) The description of Vault. Defaults to an empty string.
+* `resource_group_id` - (Optional, Available since v1.243.0) The ID of the resource group.
+* `tags` - (Optional, Map, Available since v1.243.0) The tag of the resource.
+* `vault_name` - (Required) The name of Vault.
+* `vault_storage_class` - (Optional, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
+* `vault_type` - (Optional, ForceNew) The type of Vault. Valid values: `STANDARD`, `OTS_BACKUP`.
+* `worm_enabled` - (Optional, Bool, Available since v1.243.0) Indicates whether the immutable backup feature is enabled. Valid values: `true`, `false`.
 * `redundancy_type` - (Removed since v1.209.1) The redundancy type of the vault. **NOTE:** Field `redundancy_type` has been removed from provider version 1.209.1.
 
 ## Attributes Reference
@@ -55,18 +58,19 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Vault.
 * `status` - The status of the Vault.
+* `create_time` - (Available since v1.243.0) The time when the backup vault was created.
+* `region_id` - (Available since v1.243.0) The ID of the region in which the backup vault resides.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 min) Used when create the Vault.
-* `update` - (Defaults to 1 min) Used when update the Vault.
-* `delete` - (Defaults to 1 min) Used when delete the Vault.
+* `create` - (Defaults to 5 mins) Used when create the Vault.
+* `delete` - (Defaults to 10 mins) Used when delete the Vault.
+* `update` - (Defaults to 5 mins) Used when update the Vault.
 
 ## Import
 
-HBR Vault can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Vault can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_vault.example <id>
