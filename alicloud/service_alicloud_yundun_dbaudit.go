@@ -1,15 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
-	"regexp"
-	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -42,7 +39,6 @@ const (
 		],
 		"Version": "1"
 	}`
-	DBauditResourceType = "INSTANCE"
 )
 
 var policyRequired = []PolicyRequired{
@@ -56,120 +52,130 @@ var policyRequired = []PolicyRequired{
 	},
 }
 
-func (s *DbauditService) DescribeYundunDbauditInstance(id string) (v yundun_dbaudit.Instance, err error) {
-	request := yundun_dbaudit.CreateDescribeInstancesRequest()
-	var instanceIds []string
-	instanceIds = append(instanceIds, id)
-	request.InstanceId = &instanceIds
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.CurrentPage = requests.NewInteger(1)
-	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.DescribeInstances(request)
-	})
-	if err != nil {
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+func (s *DbauditService) DescribeYundunDbauditInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeInstanceAttribute"
+	request := map[string]interface{}{
+		"InstanceId": id,
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*yundun_dbaudit.DescribeInstancesResponse)
-
-	if len(response.Instances) == 0 || response.Instances[0].InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("Yundun_dbaudit Instance", id)), NotFoundMsg, ProviderERROR)
-	}
-	v = response.Instances[0]
-	return
-}
-
-func (s *DbauditService) DescribeDbauditInstanceAttribute(id string) (v yundun_dbaudit.InstanceAttribute, err error) {
-	request := yundun_dbaudit.CreateDescribeInstanceAttributeRequest()
-	request.InstanceId = id
-
-	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.DescribeInstanceAttribute(request)
-	})
-
-	if err != nil {
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*yundun_dbaudit.DescribeInstanceAttributeResponse)
-	if response.InstanceAttribute.InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("Yundun_dbaudit Instance", id)), NotFoundMsg, ProviderERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	v = response.InstanceAttribute
-	return v, WrapError(err)
-}
-
-func (s *DbauditService) StartDbauditInstance(instanceId string, vSwitchId string) error {
-	request := yundun_dbaudit.CreateStartInstanceRequest()
-	request.InstanceId = instanceId
-	request.VswitchId = vSwitchId
-	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.StartInstance(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *DbauditService) UpdateDbauditInstanceDescription(instanceId string, description string) error {
-	request := yundun_dbaudit.CreateModifyInstanceAttributeRequest()
-	request.InstanceId = instanceId
-	request.Description = description
-	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.ModifyInstanceAttribute(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	request.ProductCode = "dbaudit"
-	request.SubscriptionType = "Subscription"
-	// only support upgrade
-	request.ModifyType = "Upgrade"
-
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  specName,
-			Value: d.Get(schemaName).(string),
-		},
-	}
-
-	request.RegionId = string(connectivity.Hangzhou)
-	var response *bssopenapi.ModifyInstanceResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-			return bssopenapiClient.ModifyInstance(request)
-		})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+		request["ClientToken"] = buildClientToken(action)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request.RegionId = string(connectivity.APSouthEast1)
-				request.Domain = connectivity.BssOpenAPIEndpointInternational
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*bssopenapi.ModifyInstanceResponse)
+		addDebug(action, response, request)
 		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
+	return response["InstanceAttribute"].(map[string]interface{}), nil
+}
 
-	if !response.Success {
-		return WrapError(Error(response.Message))
+func (s *DbauditService) StartDbauditInstance(instanceId string, vSwitchId string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "StartInstance"
+	request := map[string]interface{}{
+		"InstanceId": instanceId,
+		"VswitchId":  vSwitchId,
 	}
-	return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	return WrapError(err)
+}
+
+func (s *DbauditService) UpdateDbauditInstanceDescription(instanceId string, description string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "ModifyInstanceAttribute"
+	request := map[string]interface{}{
+		"InstanceId":  instanceId,
+		"Description": description,
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	return WrapError(err)
+}
+
+func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData) error {
+	client := s.client
+	action := "ModifyInstance"
+	var response map[string]interface{}
+	var err error
+	var endpoint string
+	query := make(map[string]interface{})
+	request := map[string]interface{}{
+		"InstanceId":       d.Id(),
+		"ClientToken":      buildClientToken(action),
+		"ProductCode":      "dbaudit",
+		"SubscriptionType": "Subscription",
+		"ModifyType":       "Upgrade",
+	}
+	parameterMapList := []map[string]interface{}{
+		{
+			"Code":  "SeriesCode",
+			"Value": "alpha",
+		},
+		{
+			"Code":  "NetworkType",
+			"Value": "vpc",
+		},
+		{
+			"Code":  specName,
+			"Value": d.Get(schemaName),
+		},
+		{
+			"Code":  "RegionId",
+			"Value": client.RegionId,
+		},
+	}
+	request["Parameter"] = parameterMapList
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+		request["ClientToken"] = buildClientToken(action)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	return WrapError(err)
 }
 
 func (s *DbauditService) DbauditInstanceRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -182,14 +188,15 @@ func (s *DbauditService) DbauditInstanceRefreshFunc(id string, failStates []stri
 			}
 			return nil, "", WrapError(err)
 		}
+		currentStatus := object["InstanceStatus"].(string)
 
 		for _, failState := range failStates {
-			if object.InstanceStatus == failState {
-				return object, object.InstanceStatus, WrapError(Error(FailedToReachTargetStatus, object.InstanceStatus))
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 
-		return object, object.InstanceStatus, nil
+		return object, currentStatus, nil
 	}
 }
 
@@ -277,172 +284,152 @@ func (s *DbauditService) ProcessRolePolicy() error {
 	return nil
 }
 
-func (s *DbauditService) WaitForYundunDbauditInstance(instanceId string, status Status, timeoutSenconds time.Duration) error {
-	deadline := time.Now().Add(timeoutSenconds * time.Second)
+func (s *DbauditService) DescribeTags(id string, resourceType string) (object interface{}, err error) {
+	client := s.client
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceType": resourceType,
+		"ResourceId.1": id,
+	}
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
 	for {
-		_, err := s.DescribeYundunDbauditInstance(instanceId)
-
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
 				}
-			} else {
-				return WrapError(err)
+				return resource.NonRetryableError(err)
 			}
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeoutSenconds, "", "", ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
-func (s *DbauditService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []yundun_dbaudit.TagResource, err error) {
-	request := yundun_dbaudit.CreateListTagResourcesRequest()
-	request.RegionId = s.client.RegionId
-	request.ResourceType = strings.ToUpper(string(resourceType))
-	request.ResourceId = &[]string{resourceId}
-	if resourceTags != nil && len(resourceTags) > 0 {
-		var reqTags []yundun_dbaudit.ListTagResourcesTag
-		for key, value := range resourceTags {
-			reqTags = append(reqTags, yundun_dbaudit.ListTagResourcesTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &reqTags
-	}
-
-	var raw interface{}
-	raw, err = s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.ListTagResources(request)
-	})
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
-	}
-	response, _ := raw.(*yundun_dbaudit.ListTagResourcesResponse)
-
-	return response.TagResources, nil
-}
-
-func (s *DbauditService) tagsToMap(tags []yundun_dbaudit.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ignoreTag(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-	return result
-}
-
-func (s *DbauditService) ignoreTag(t yundun_dbaudit.TagResource) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
-	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
-
-		if len(remove) > 0 {
-			var tagKey []string
-			for _, v := range remove {
-				tagKey = append(tagKey, v.Key)
-			}
-			request := yundun_dbaudit.CreateUntagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = strings.ToUpper(string(resourceType))
-			request.TagKey = &tagKey
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithDbauditClient(func(client *yundun_dbaudit.Client) (interface{}, error) {
-				return client.UntagResources(request)
-			})
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources", response)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		}
-
-		if len(create) > 0 {
-			request := yundun_dbaudit.CreateTagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.Tag = &create
-			request.ResourceType = strings.ToUpper(string(resourceType))
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithDbauditClient(func(client *yundun_dbaudit.Client) (interface{}, error) {
-				return client.TagResources(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		}
-
-	}
-
-	return nil
-}
-
-func (s *DbauditService) diffTags(oldTags, newTags []yundun_dbaudit.TagResourcesTag) ([]yundun_dbaudit.TagResourcesTag, []yundun_dbaudit.TagResourcesTag) {
-	// First, we're creating everything we have
-	create := make(map[string]interface{})
-	for _, t := range newTags {
-		create[t.Key] = t.Value
-	}
-
-	// Build the list of what to remove
-	var remove []yundun_dbaudit.TagResourcesTag
-	for _, t := range oldTags {
-		old, ok := create[t.Key]
-		if !ok || old != t.Value {
-			// Delete it!
-			remove = append(remove, t)
-		}
-	}
-
-	return s.tagsFromMap(create), remove
-}
-
-func (s *DbauditService) tagsFromMap(m map[string]interface{}) []yundun_dbaudit.TagResourcesTag {
-	result := make([]yundun_dbaudit.TagResourcesTag, 0, len(m))
-	for k, v := range m {
-		result = append(result, yundun_dbaudit.TagResourcesTag{
-			Key:   k,
-			Value: v.(string),
+			return nil
 		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = response["NextToken"]
 	}
-
-	return result
+	return tags, nil
 }
 
-func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
-	request := yundun_dbaudit.CreateMoveResourceGroupRequest()
-	request.RegionId = s.client.RegionId
-	request.ResourceId = resourceId
-	request.ResourceType = DBauditResourceType
-	request.ResourceGroupId = resourceGroupId
-	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.MoveResourceGroup(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType string) (err error) {
+	if d.HasChange("tags") {
+		var err error
+		var action string
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UnTagResources"
+			request = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResources"
+			request = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	return nil
+}
+
+func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string) (err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "MoveResourceGroup"
+	request := map[string]interface{}{
+		"RegionId":        s.client.RegionId,
+		"ResourceId":      resourceId,
+		"ResourceGroupId": resourceGroupId,
+		"ResourceType":    "INSTANCE",
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	return err
 }
