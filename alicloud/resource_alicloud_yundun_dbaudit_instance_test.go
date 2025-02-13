@@ -190,16 +190,6 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"plan_code": "alpha.basic",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"plan_code": "alpha.basic",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -240,6 +230,16 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 						"tags.Created": REMOVEKEY,
 						"tags.For":     REMOVEKEY,
 						"tags.Updated": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_code": "alpha.basic",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_code": "alpha.basic",
 					}),
 				),
 			},
