@@ -22,12 +22,13 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribePoliciesV2"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = id
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	action := "DescribePoliciesV2"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 
@@ -38,11 +39,10 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -70,6 +70,13 @@ func (s *HbrServiceV2) HbrPolicyStateRefreshFunc(id string, field string, failSt
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

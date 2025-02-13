@@ -14,7 +14,7 @@ import (
 func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap6287)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap6287)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -22,7 +22,7 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence6287)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence6287)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -33,8 +33,7 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_name":        name,
-					"policy_description": "policy creation",
+					"policy_name": name,
 					"rules": []map[string]interface{}{
 						{
 							"rule_type":    "BACKUP",
@@ -60,8 +59,8 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy_name":        name,
-						"policy_description": "policy creation",
+						"policy_name": name,
+						"rules.#":     "3",
 					}),
 				),
 			},
@@ -96,8 +95,7 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"vault_id": "${alicloud_hbr_vault.defaulth4dKAG.id}",
+							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 						},
 						{
 							"rule_type":             "REPLICATION",
@@ -105,22 +103,12 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"replication_region_id": "cn-qingdao",
 							"archive_days":          "0",
 							"backup_type":           "COMPLETE",
-							//"retention_rules":       []map[string]interface{}{},
-						},
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "COMPLETE",
-							"schedule":     "I|1631685600|P1M",
-							"retention":    "7",
-							"vault_id":     "${alicloud_hbr_vault.defaulth4dKAG.id}",
-							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rules.#": "4",
+						"rules.#": "3",
 					}),
 				),
 			},
@@ -171,18 +159,17 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"rule_type":             "BACKUP",
 							"backup_type":           "COMPLETE",
 							"schedule":              "I|1631685600|P2D",
+							"retention":             "7",
 							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"keep_latest_snapshots": "1",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 						},
 						{
 							"rule_type":             "REPLICATION",
 							"retention":             "120",
 							"replication_region_id": "cn-zhangjiakou",
 							"archive_days":          "50",
-							//"retention_rules":       []map[string]interface{}{},
-							"backup_type": "COMPLETE",
+							"backup_type":           "COMPLETE",
 						},
 						{
 							"rule_type":    "BACKUP",
@@ -191,7 +178,6 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"retention":    "7",
 							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -219,15 +205,13 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"backup_type":  "COMPLETE",
 							"schedule":     "I|1631685600|P1D",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
-							"vault_id": "${alicloud_hbr_vault.defaultL7kwwD.id}",
+							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 						},
 						{
 							"rule_type":    "TRANSITION",
 							"retention":    "120",
 							"archive_days": "0",
 							"backup_type":  "COMPLETE",
-							//"retention_rules": []map[string]interface{}{},
 						},
 						{
 							"rule_type":             "REPLICATION",
@@ -235,7 +219,6 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"replication_region_id": "cn-chengdu",
 							"archive_days":          "0",
 							"backup_type":           "COMPLETE",
-							//"retention_rules":       []map[string]interface{}{},
 						},
 					},
 				}),
@@ -254,14 +237,12 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"schedule":     "I|1631685600|P1D",
 							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 						{
 							"rule_type":    "TRANSITION",
 							"retention":    "145",
 							"archive_days": "0",
 							"backup_type":  "COMPLETE",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -294,8 +275,7 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"vault_id": "${alicloud_hbr_vault.defaulth4dKAG.id}",
+							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 						},
 						{
 							"rule_type":             "REPLICATION",
@@ -303,16 +283,6 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 							"replication_region_id": "cn-qingdao",
 							"archive_days":          "0",
 							"backup_type":           "COMPLETE",
-							//"retention_rules":       []map[string]interface{}{},
-						},
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "COMPLETE",
-							"schedule":     "I|1631685600|P1M",
-							"retention":    "7",
-							"vault_id":     "${alicloud_hbr_vault.defaulth4dKAG.id}",
-							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -320,7 +290,7 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_description": "policy creation",
 						"policy_name":        name + "_update",
-						"rules.#":            "4",
+						"rules.#":            "3",
 					}),
 				),
 			},
@@ -334,31 +304,30 @@ func TestAccAliCloudHbrPolicy_basic6287(t *testing.T) {
 	})
 }
 
-var AlicloudHbrPolicyMap6287 = map[string]string{
+var AliCloudHbrPolicyMap6287 = map[string]string{
 	"create_time": CHECKSET,
+	"policy_type": CHECKSET,
 }
 
-func AlicloudHbrPolicyBasicDependence6287(name string) string {
+func AliCloudHbrPolicyBasicDependence6287(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_hbr_vault" "defaulth4dKAG" {
-  vault_type          = "STANDARD"
-  encrypt_type        = "HBR_PRIVATE"
-  vault_name          = var.name
-  vault_storage_class = "STANDARD"
-}
+	resource "alicloud_hbr_vault" "defaulth4dKAG" {
+  		vault_type          = "STANDARD"
+  		encrypt_type        = "HBR_PRIVATE"
+  		vault_name          = var.name
+  		vault_storage_class = "STANDARD"
+	}
 
-resource "alicloud_hbr_vault" "defaultL7kwwD" {
-  vault_type          = "STANDARD"
-  encrypt_type        = "HBR_PRIVATE"
-  vault_name          = join("-", [var.name, 1])
-  vault_storage_class = "STANDARD"
-}
-
-
+	resource "alicloud_hbr_vault" "defaultL7kwwD" {
+  		vault_type          = "STANDARD"
+  		encrypt_type        = "HBR_PRIVATE"
+  		vault_name          = join("-", [var.name, 1])
+  		vault_storage_class = "STANDARD"
+	}
 `, name)
 }
 
@@ -366,7 +335,7 @@ resource "alicloud_hbr_vault" "defaultL7kwwD" {
 func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap5320)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap5320)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -374,7 +343,7 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence5320)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence5320)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -406,7 +375,6 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 							"replication_region_id": "cn-beijing",
 						},
@@ -415,6 +383,7 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"policy_name": name,
+						"rules.#":     "2",
 					}),
 				),
 			},
@@ -479,7 +448,6 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"keep_latest_snapshots": "1",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 							"replication_region_id": "cn-shanghai",
 						},
 						{
@@ -487,8 +455,7 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 							"retention":             "8",
 							"replication_region_id": "cn-beijing",
 							"archive_days":          "50",
-							//"retention_rules":       []map[string]interface{}{},
-							"backup_type": "COMPLETE",
+							"backup_type":           "COMPLETE",
 						},
 					},
 				}),
@@ -498,35 +465,6 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"rules": []map[string]interface{}{
-			//			{
-			//				"rule_type":    "BACKUP",
-			//				"backup_type":  "COMPLETE",
-			//				"schedule":     "I|1631685600|P1D",
-			//				"retention":    "8",
-			//				"archive_days": "0",
-			//				//"retention_rules":       []map[string]interface{}{},
-			//				"replication_region_id": "cn-chengdu",
-			//			},
-			//			{
-			//				"rule_type":    "BACKUP",
-			//				"backup_type":  "INCREMENTAL",
-			//				"schedule":     "I|1631685600|P2D",
-			//				"retention":    "9",
-			//				"archive_days": "0",
-			//				//"retention_rules":       []map[string]interface{}{},
-			//				"replication_region_id": "cn-chengdu",
-			//			},
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"rules.#": "2",
-			//		}),
-			//	),
-			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"policy_description": "镇元Policy-创建",
@@ -551,7 +489,6 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 							"replication_region_id": "cn-beijing",
 						},
@@ -575,31 +512,30 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 	})
 }
 
-var AlicloudHbrPolicyMap5320 = map[string]string{
+var AliCloudHbrPolicyMap5320 = map[string]string{
 	"create_time": CHECKSET,
+	"policy_type": CHECKSET,
 }
 
-func AlicloudHbrPolicyBasicDependence5320(name string) string {
+func AliCloudHbrPolicyBasicDependence5320(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_hbr_vault" "defaulth4dKAG" {
-  vault_type          = "STANDARD"
-  encrypt_type        = "HBR_PRIVATE"
-  vault_name          = var.name
-  vault_storage_class = "STANDARD"
-}
+	resource "alicloud_hbr_vault" "defaulth4dKAG" {
+  		vault_type          = "STANDARD"
+  		encrypt_type        = "HBR_PRIVATE"
+  		vault_name          = var.name
+  		vault_storage_class = "STANDARD"
+	}
 
-resource "alicloud_hbr_vault" "defaultL7kwwD" {
-  vault_type          = "STANDARD"
-  encrypt_type        = "HBR_PRIVATE"
-  vault_name          = join("-", [var.name, 1])
-  vault_storage_class = "STANDARD"
-}
-
-
+	resource "alicloud_hbr_vault" "defaultL7kwwD" {
+  		vault_type          = "STANDARD"
+  		encrypt_type        = "HBR_PRIVATE"
+  		vault_name          = join("-", [var.name, 1])
+  		vault_storage_class = "STANDARD"
+	}
 `, name)
 }
 
@@ -607,7 +543,7 @@ resource "alicloud_hbr_vault" "defaultL7kwwD" {
 func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap6287)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap6287)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -615,7 +551,7 @@ func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence6287)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence6287)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -628,6 +564,7 @@ func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"policy_description": "policy update",
 					"policy_name":        name,
+					"policy_type":        "STANDARD",
 					"rules": []map[string]interface{}{
 						{
 							"rule_type":    "BACKUP",
@@ -657,26 +594,23 @@ func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 							"schedule":              "I|1631685600|P2D",
 							"keep_latest_snapshots": "1",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"vault_id":  "${alicloud_hbr_vault.defaultL7kwwD.id}",
-							"retention": "145",
+							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
+							"retention":             "145",
 						},
 						{
 							"rule_type":             "REPLICATION",
 							"retention":             "135",
 							"replication_region_id": "cn-chengdu",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"backup_type": "COMPLETE",
+							"backup_type":           "COMPLETE",
 						},
 						{
 							"rule_type":    "BACKUP",
 							"backup_type":  "INCREMENTAL",
 							"schedule":     "I|1631685600|PT1H",
-							"retention":    "7",
+							"retention":    "240",
 							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -684,6 +618,7 @@ func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_description": "policy update",
 						"policy_name":        name,
+						"policy_type":        "STANDARD",
 						"rules.#":            "4",
 					}),
 				),
@@ -702,7 +637,7 @@ func TestAccAliCloudHbrPolicy_basic6287_twin(t *testing.T) {
 func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap5320)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap5320)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -710,7 +645,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence5320)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence5320)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -723,6 +658,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"policy_description": "镇元-修改",
 					"policy_name":        name,
+					"policy_type":        "UDM_ECS_ONLY",
 					"rules": []map[string]interface{}{
 						{
 							"rule_type":    "BACKUP",
@@ -742,6 +678,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 									"retention":               "1200",
 								},
 							},
+							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"replication_region_id": "cn-chengdu",
 							"backup_type":           "COMPLETE",
 							"schedule":              "I|1631685600|P1D",
@@ -768,7 +705,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 							},
 							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"replication_region_id": "cn-chengdu",
-							"retention":             "9",
+							"retention":             "8",
 						},
 						{
 							"rule_type":             "REPLICATION",
@@ -797,6 +734,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_description": "镇元-修改",
 						"policy_name":        name,
+						"policy_type":        "UDM_ECS_ONLY",
 						"rules.#":            "3",
 					}),
 				),
@@ -817,7 +755,7 @@ func TestAccAliCloudHbrPolicy_basic5320_twin(t *testing.T) {
 func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap6287)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap6287)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -825,7 +763,7 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence6287)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence6287)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -857,24 +795,13 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"vault_id": "${alicloud_hbr_vault.defaulth4dKAG.id}",
+							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 						},
 						{
 							"rule_type":             "REPLICATION",
 							"retention":             "175",
 							"replication_region_id": "cn-qingdao",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
-						},
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "COMPLETE",
-							"schedule":     "I|1631685600|P1M",
-							"retention":    "7",
-							"vault_id":     "${alicloud_hbr_vault.defaulth4dKAG.id}",
-							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -882,7 +809,7 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_description": "policy creation",
 						"policy_name":        name,
-						"rules.#":            "4",
+						"rules.#":            "3",
 					}),
 				),
 			},
@@ -914,19 +841,18 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 						{
 							"rule_type":             "BACKUP",
 							"backup_type":           "COMPLETE",
+							"retention":             "7",
 							"schedule":              "I|1631685600|P2D",
 							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"keep_latest_snapshots": "1",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 						},
 						{
 							"rule_type":             "REPLICATION",
 							"retention":             "120",
 							"replication_region_id": "cn-zhangjiakou",
 							"archive_days":          "50",
-							//"retention_rules":       []map[string]interface{}{},
-							"backup_type": "COMPLETE",
+							"backup_type":           "COMPLETE",
 						},
 						{
 							"rule_type":    "BACKUP",
@@ -935,7 +861,6 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 							"retention":    "7",
 							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -956,21 +881,18 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 							"backup_type":  "COMPLETE",
 							"schedule":     "I|1631685600|P1D",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
-							"vault_id": "${alicloud_hbr_vault.defaultL7kwwD.id}",
+							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 						},
 						{
 							"rule_type":    "TRANSITION",
 							"retention":    "120",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 						{
 							"rule_type":             "REPLICATION",
 							"retention":             "135",
 							"replication_region_id": "cn-chengdu",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 						},
 					},
 				}),
@@ -990,13 +912,11 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 							"schedule":     "I|1631685600|P1D",
 							"vault_id":     "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 						{
 							"rule_type":    "TRANSITION",
 							"retention":    "145",
 							"archive_days": "0",
-							//"retention_rules": []map[string]interface{}{},
 						},
 					},
 				}),
@@ -1020,7 +940,7 @@ func TestAccAliCloudHbrPolicy_basic6287_raw(t *testing.T) {
 func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyMap5320)
+	ra := resourceAttrInit(resourceId, AliCloudHbrPolicyMap5320)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrPolicy")
@@ -1028,7 +948,7 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBasicDependence5320)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHbrPolicyBasicDependence5320)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1060,7 +980,6 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 							"schedule":              "I|1631685600|P1D",
 							"keep_latest_snapshots": "0",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 							"vault_id":              "${alicloud_hbr_vault.defaulth4dKAG.id}",
 							"replication_region_id": "cn-beijing",
 						},
@@ -1107,7 +1026,6 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 							"keep_latest_snapshots": "1",
 							"archive_days":          "0",
-							//"retention_rules":       []map[string]interface{}{},
 							"replication_region_id": "cn-shanghai",
 						},
 						{
@@ -1115,8 +1033,7 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 							"retention":             "8",
 							"replication_region_id": "cn-beijing",
 							"archive_days":          "50",
-							//"retention_rules":       []map[string]interface{}{},
-							"backup_type": "COMPLETE",
+							"backup_type":           "COMPLETE",
 						},
 					},
 				}),
@@ -1125,47 +1042,6 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 						"policy_description": "镇元-修改",
 						"policy_name":        name + "_update",
 						"rules.#":            "3",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rules": []map[string]interface{}{
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "COMPLETE",
-							"schedule":     "I|1631685600|P1D",
-							"retention":    "8",
-							"archive_days": "0",
-							"retention_rules": []map[string]interface{}{
-								{
-									"advanced_retention_type": "WEEKLY",
-									"retention":               "240",
-								},
-							},
-							"replication_region_id": "cn-chengdu",
-							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
-						},
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "INCREMENTAL",
-							"schedule":     "I|1631685600|P2D",
-							"retention":    "9",
-							"archive_days": "0",
-							"retention_rules": []map[string]interface{}{
-								{
-									"advanced_retention_type": "MONTHLY",
-									"retention":               "960",
-								},
-							},
-							"replication_region_id": "cn-chengdu",
-							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rules.#": "2",
 					}),
 				),
 			},

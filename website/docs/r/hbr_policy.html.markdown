@@ -3,14 +3,15 @@ subcategory: "Hybrid Backup Recovery (HBR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_policy"
 description: |-
-  Provides a Alicloud HBR Policy resource.
+  Provides a Alicloud Hybrid Backup Recovery (HBR) Policy resource.
 ---
 
 # alicloud_hbr_policy
 
-Provides a HBR Policy resource.
+Provides a Hybrid Backup Recovery (HBR) Policy resource.
 
-For information about HBR Policy and how to use it, see [What is Policy](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-createpolicyv2).
+
+For information about Hybrid Backup Recovery (HBR) Policy and how to use it, see [What is Policy](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-createpolicyv2).
 
 -> **NOTE:** Available since v1.221.0.
 
@@ -62,7 +63,10 @@ resource "alicloud_hbr_policy" "defaultoqWvHQ" {
 The following arguments are supported:
 * `policy_description` - (Optional) The policy description.
 * `policy_name` - (Optional) Policy Name
-* `rules` - (Optional, List) A list of policy rules See [`rules`](#rules) below.
+* `policy_type` - (Optional, ForceNew, Available since v1.243.0) The policy type. Valid values:
+  - `STANDARD`: The general backup policy. This type of policy applies to backups other than Elastic Compute Service (ECS) instance backup.
+  - `UDM_ECS_ONLY`: The ECS instance backup policy. This type of policy applies only to ECS instance backup.
+* `rules` - (Optional, Set) A list of policy rules See [`rules`](#rules) below.
 
 ### `rules`
 
@@ -102,7 +106,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-HBR Policy can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Policy can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_hbr_policy.example <id>
