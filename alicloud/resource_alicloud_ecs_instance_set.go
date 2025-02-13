@@ -12,8 +12,6 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -438,10 +436,7 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	action := "RunInstances"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err), nil
-	}
+	var err error
 	request["RegionId"] = client.RegionId
 	request["Amount"] = amount
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -601,11 +596,9 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	}
 
 	request["ClientToken"] = buildClientToken(action)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -886,10 +879,7 @@ func buildEcsInstanceSetDeleteInstancesRequest(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "DeleteInstances"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	for i, instanceId := range instanceIds {
 		request[fmt.Sprintf("InstanceId.%d", i+1)] = instanceId
@@ -898,11 +888,9 @@ func buildEcsInstanceSetDeleteInstancesRequest(d *schema.ResourceData, meta inte
 	request["Force"] = true
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = fmt.Sprint(strings.Trim(uuid.New().String(), "-"))[1:30]
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) || NeedRetry(err) {
 				wait()
@@ -928,19 +916,14 @@ func modifyEcsInstanceRequest(d *schema.ResourceData, meta interface{}, instance
 	var response map[string]interface{}
 	action := "ModifyInstanceAttribute"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["InstanceId"] = instanceId
 	request["InstanceName"] = instanceName
 	request["RegionId"] = client.RegionId
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

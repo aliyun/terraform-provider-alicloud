@@ -373,6 +373,7 @@ var irregularProductEndpointForIntlAccountIntlRegion = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpoint = map[string]string{
+	"ecs":                  "ecs.%s.aliyuncs.com",
 	"mse":                  "mse.%s.aliyuncs.com",
 	"vpc":                  "vpc.%s.aliyuncs.com",
 	"oss":                  "oss-%s.aliyuncs.com",

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -189,10 +188,7 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateNetworkInterface"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -269,7 +265,7 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectVSwitchStatus"}) {
 				wait()
@@ -357,10 +353,7 @@ func resourceAliCloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 
 func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	ecsService := EcsService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -407,7 +400,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		action := "ModifyNetworkInterfaceAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -448,7 +441,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			action := "UnassignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, unassignprivateipaddressesrequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
@@ -473,7 +466,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			action := "AssignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, assignprivateipaddressesrequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
@@ -509,7 +502,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			action := "UnassignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, unassignprivateipaddressesrequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
@@ -534,7 +527,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			action := "AssignPrivateIpAddresses"
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, assignprivateipaddressesrequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignprivateipaddressesrequest, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 						wait()
@@ -568,7 +561,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				action := "AssignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, assignPrivateIpsCountrequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignPrivateIpsCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
@@ -596,7 +589,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, unAssignPrivateIpsCountRequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unAssignPrivateIpsCountRequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
@@ -632,7 +625,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				action := "AssignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, assignSecondaryPrivateIpAddressCountrequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignSecondaryPrivateIpAddressCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
@@ -659,8 +652,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				action := "UnassignPrivateIpAddresses"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, unassignSecondaryPrivateIpAddressCountrequest, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignSecondaryPrivateIpAddressCountrequest, false)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 							wait()
@@ -698,7 +690,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
@@ -726,7 +718,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
@@ -766,7 +758,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
@@ -793,7 +785,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
@@ -832,7 +824,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
@@ -860,7 +852,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
@@ -900,7 +892,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
@@ -927,7 +919,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 						wait()
@@ -958,10 +950,7 @@ func resourceAliCloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 	ecsService := EcsService{client}
 	action := "DeleteNetworkInterface"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"NetworkInterfaceId": d.Id(),
 	}
@@ -969,7 +958,7 @@ func resourceAliCloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "InternalError", "InvalidOperation.InvalidEcsState", "InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEniType", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
