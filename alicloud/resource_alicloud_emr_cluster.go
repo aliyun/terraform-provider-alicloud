@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -370,10 +369,7 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	action := "CreateClusterV2"
 	request := make(map[string]interface{})
-	conn, err := client.NewEmrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
@@ -646,11 +642,9 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["BootstrapAction"] = bootstrapActions
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -731,10 +725,7 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEmrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	emrService := EmrService{client}
 	d.Partial(true)
@@ -755,7 +746,7 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "ModifyClusterName"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -808,11 +799,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 					"RegionId":      client.RegionId,
 				}
 				action := "ListClusterHostGroup"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, listHostGroupRequest, &runtime)
+					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, listHostGroupRequest, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -888,11 +877,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 					releaseRequest["ReleaseNumber"] = oldNodeCount - newNodeCount
 
 					action := "ReleaseClusterHostGroup"
-					runtime := util.RuntimeOptions{}
-					runtime.SetAutoretry(true)
 					wait := incrementalWait(3*time.Second, 5*time.Second)
 					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, releaseRequest, &runtime)
+						response, err = client.RpcPost("Emr", "2016-04-08", action, nil, releaseRequest, false)
 						if err != nil {
 							if NeedRetry(err) {
 								wait()
@@ -916,11 +903,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 
 				action := "CreateClusterHostGroup"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, clusterHostGroupRequest, &runtime)
+					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, clusterHostGroupRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -941,11 +926,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 					"RegionId":      client.RegionId,
 				}
 				action = "ListClusterHostGroup"
-				runtime = util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait = incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, listHostGroupRequest, &runtime)
+					response, err = client.RpcPost("Emr", "2016-04-08", action, nil, listHostGroupRequest, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -995,11 +978,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		if len(resizeHostGroups) != 0 {
 			resizeRequest["HostGroup"] = resizeHostGroups
 			action := "ResizeClusterV2"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, resizeRequest, &runtime)
+				response, err = client.RpcPost("Emr", "2016-04-08", action, nil, resizeRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1045,11 +1026,9 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 			}
 			modifyConfigRequest["RefreshHostConfig"] = modifyConfig["refresh_host_config"]
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, modifyConfigRequest, &runtime)
+				response, err = client.RpcPost("Emr", "2016-04-08", action, nil, modifyConfigRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1077,21 +1056,16 @@ func resourceAlicloudEmrClusterDelete(d *schema.ResourceData, meta interface{}) 
 	emrService := EmrService{client}
 	action := "ReleaseCluster"
 	var response map[string]interface{}
-	conn, err := client.NewEmrClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Id":           d.Id(),
 		"RegionId":     client.RegionId,
 		"ForceRelease": requests.NewBoolean(true),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

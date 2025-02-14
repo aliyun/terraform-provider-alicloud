@@ -1602,23 +1602,29 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 
 func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, error)) (interface{}, error) {
 	if client.emrconn == nil {
-		endpoint := client.config.EmrEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, EMRCode)
+		product := "emr"
+		endpoint, err := client.loadApiEndpoint(product)
+		if err != nil {
+			return nil, err
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(EMRCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
 		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
 		}
-		emrConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		emrConn.SourceIp = client.config.SourceIp
-		emrConn.SecureTransport = client.config.SecureTransport
 		client.emrconn = emrConn
+	} else {
+		err := client.emrconn.InitWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
+		}
 	}
+	client.emrconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.emrconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.emrconn.SourceIp = client.config.SourceIp
+	client.emrconn.SecureTransport = client.config.SecureTransport
 
 	return do(client.emrconn)
 }
@@ -1967,30 +1973,6 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	return result, nil
 }
 
-func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
-	productCode := "emr"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("emr.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
 func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
 	productCode := "bpstudio"
 	endpoint := ""
