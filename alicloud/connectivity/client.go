@@ -609,7 +609,7 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 	// Initialize the CS client if necessary
 	if client.csconn == nil {
 		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-		csconn.SetUserAgent(client.getUserAgent())
+		csconn.SetUserAgent(client.config.getUserAgent())
 		endpoint := client.config.CsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
@@ -644,7 +644,7 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 		AccessKeySecret:  tea.String(client.config.SecretKey),
 		SecurityToken:    tea.String(client.config.SecurityToken),
 		RegionId:         tea.String(client.config.RegionId),
-		UserAgent:        tea.String(client.getUserAgent()),
+		UserAgent:        tea.String(client.config.getUserAgent()),
 		Endpoint:         tea.String(endpoint),
 		ReadTimeout:      tea.Int(client.config.ClientReadTimeout),
 		ConnectTimeout:   tea.Int(client.config.ClientConnectTimeout),
@@ -1036,7 +1036,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 		}
 
-		fcconn.Config.UserAgent = client.getUserAgent()
+		fcconn.Config.UserAgent = client.config.getUserAgent()
 		fcconn.Config.SecurityToken = client.config.SecurityToken
 		client.fcconn = fcconn
 	} else {
@@ -1044,7 +1044,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 		}
-		fcconn.Config.UserAgent = client.getUserAgent()
+		fcconn.Config.UserAgent = client.config.getUserAgent()
 		fcconn.Config.SecurityToken = client.config.SecurityToken
 		client.fcconn = fcconn
 	}
@@ -1322,7 +1322,7 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 			return nil, fmt.Errorf("Getting Application Client failed by cluster id %s: %#v.", clusterCerts, err)
 		}
 		csProjectClient.SetDebug(false)
-		csProjectClient.SetUserAgent(client.getUserAgent())
+		csProjectClient.SetUserAgent(client.config.getUserAgent())
 		client.csprojectconnByKey[key] = csProjectClient
 	}
 
@@ -2045,30 +2045,6 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	openapiClient.Protocol = tea.String(client.config.Protocol)
 
 	return openapiClient, nil
-}
-func (client *AliyunClient) NewRealtimecomputeClient() (*rpc.Client, error) {
-	productCode := "foasconsole"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "foasconsole.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
 }
 func (client *AliyunClient) NewAckClient() (*roa.Client, error) {
 	productCode := "cs"

@@ -26,7 +26,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -45,7 +45,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 					},
 					"vvp_instance_name": name,
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-h",
+					"zone_id":           "cn-hangzhou-i",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type": "PayAsYouGo",
@@ -54,7 +54,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-hangzhou-i",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
@@ -153,7 +153,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-hangzhou-h"
+  zone_id = "cn-hangzhou-i"
 }
 
 resource "alicloud_oss_bucket" "defaultOSS" {
@@ -183,8 +183,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{14})
-			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -211,7 +210,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
-					"zone_id":       "cn-hangzhou-h",
+					"zone_id":       "cn-hangzhou-i",
 					"payment_type":  "Subscription",
 					"pricing_cycle": "Month",
 					"duration":      "1",
@@ -221,7 +220,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
 						"vswitch_ids.#":     "1",
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-hangzhou-i",
 						"payment_type":      "Subscription",
 						"pricing_cycle":     "Month",
 						"duration":          "1",
@@ -272,7 +271,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-hangzhou-h"
+  zone_id = "cn-hangzhou-i"
 }
 
 resource "alicloud_oss_bucket" "defaultOSS" {
@@ -299,7 +298,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ESSSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -318,7 +317,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 					},
 					"vvp_instance_name": name,
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-h",
+					"zone_id":           "cn-hangzhou-i",
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type": "PayAsYouGo",
@@ -327,7 +326,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-hangzhou-i",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
@@ -360,7 +359,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{14})
-			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -387,7 +386,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 							"memory_gb": "16",
 						},
 					},
-					"zone_id":       "cn-hangzhou-h",
+					"zone_id":       "cn-hangzhou-i",
 					"payment_type":  "Subscription",
 					"pricing_cycle": "Month",
 					"duration":      "1",
@@ -397,7 +396,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
 						"vswitch_ids.#":     "1",
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-hangzhou-i",
 						"payment_type":      "Subscription",
 						"pricing_cycle":     "Month",
 						"duration":          "1",
