@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -41,11 +40,7 @@ func testSweepEmrV2Cluster(region string) error {
 	}
 
 	for {
-		conn, err := client.NewEmrClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		listClustersResponse, err := conn.DoRequest(StringPointer(listClustersAction), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, listClustersRequest, &util.RuntimeOptions{})
+		listClustersResponse, err := client.RpcPost("Emr", "2021-03-20", listClustersAction, nil, listClustersRequest, true)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", listClustersAction, AlibabaCloudSdkGoERROR)
 		}
@@ -75,7 +70,7 @@ func testSweepEmrV2Cluster(region string) error {
 				"RegionId":  client.RegionId,
 				"ClusterId": cluster["ClusterId"].(string),
 			}
-			_, err = conn.DoRequest(StringPointer(deleteClusterAction), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, deleteClusterRequest, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Emr", "2021-03-20", deleteClusterAction, nil, deleteClusterRequest, true)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", deleteClusterAction, AlibabaCloudSdkGoERROR)
 			}
