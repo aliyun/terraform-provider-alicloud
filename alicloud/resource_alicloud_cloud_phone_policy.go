@@ -32,21 +32,25 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 			"camera_redirect": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"clipboard": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"read", "write", "readwrite", "off"}, false),
 			},
 			"lock_resolution": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"net_redirect_policy": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -62,6 +66,7 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 						"net_redirect": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 						},
 						"proxy_password": {
@@ -81,6 +86,7 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 						"custom_proxy": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 						},
 					},
@@ -94,11 +100,13 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 			"resolution_height": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntInSlice([]int{0, 640, 720, 940, 1280, 1920}),
 			},
 			"resolution_width": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntInSlice([]int{0, 480, 536, 720, 800, 1080}),
 			},
 		},
