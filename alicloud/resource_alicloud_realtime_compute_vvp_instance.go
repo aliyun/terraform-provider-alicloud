@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -135,10 +134,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewRealtimecomputeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["CreateInstanceRequest.VpcId"] = d.Get("vpc_id")
@@ -191,7 +187,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 		objectDataLocalMap["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
-		objectDataLocalMap["ChargeType"] = v
+		objectDataLocalMap["ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(v)
 	}
 	request["CreateInstanceRequest"] = objectDataLocalMap
 	request["CreateInstanceRequest.ZoneId"] = d.Get("zone_id")
@@ -206,14 +202,12 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 		request["CreateInstanceRequest.ResourceGroupId"] = v
 	}
 	request["CreateInstanceRequest.ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(d.Get("payment_type").(string))
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"998001", "Invoke ABM failed"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -314,10 +308,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	update := false
 	d.Partial(true)
 	action := "ModifyPrepayInstanceSpec"
-	conn, err := client.NewRealtimecomputeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ModifyPrepayInstanceSpecRequest.InstanceId"] = d.Id()
@@ -343,11 +334,9 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	objectDataLocalMap["Region"] = client.RegionId
 	request["ModifyPrepayInstanceSpecRequest"] = objectDataLocalMap
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -370,10 +359,6 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	}
 	update = false
 	action = "ChangeResourceGroup"
-	conn, err = client.NewRealtimecomputeClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -384,11 +369,9 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -435,19 +418,14 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewRealtimecomputeClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["DeleteInstanceRequest.InstanceId"] = d.Id()
 	request["DeleteInstanceRequest.Region"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -478,15 +456,6 @@ func convertRealtimeComputeInstancesChargeTypeResponse(source interface{}) inter
 		return "PayAsYouGo"
 	case "PRE":
 		return "Subscription"
-	}
-	return source
-}
-func convertRealtimeComputeDescribeInstancesRequestChargeTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "PayAsYouGo":
-		return "POST"
-	case "Subscription":
-		return "PRE"
 	}
 	return source
 }
