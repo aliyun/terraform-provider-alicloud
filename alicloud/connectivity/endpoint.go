@@ -508,6 +508,15 @@ var regularProductEndpointForIntlAccount = map[string]string{
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpointForIntlAccountIntlRegion = map[string]string{}
 
+// regularProductEndpointReplace specially records some endpoints need to be replaced results from different reasons.
+// Key: source endpoint
+// Value: replaced endpoint
+// The priority of this configuration is lower than other endpoints mapping rules, and as a backup endpoint
+var regularProductEndpointReplace = map[string]string{
+	// ecs, ecs.aliyuncs.com has more higher speed
+	"ecs-cn-hangzhou.aliyuncs.com": "ecs.aliyuncs.com",
+}
+
 // NOTE: The productCode must be lowed.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Firstly, load endpoint from environment variables
@@ -545,6 +554,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && client.IsInternationalAccount() {
 			endpoint = v
 		}
+		if v, ok := regularProductEndpointReplace[endpoint]; ok {
+			endpoint = v
+		}
 		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
 	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
 		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && client.isInternationalRegion() {
@@ -556,9 +568,11 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if v, ok := regularProductEndpointForIntlAccountIntlRegion[productCode]; ok && client.IsInternationalAccount() && client.isInternationalRegion() {
 			endpointFmt = v
 		}
-
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
+		}
+		if v, ok := regularProductEndpointReplace[endpointFmt]; ok {
+			endpointFmt = v
 		}
 		client.config.Endpoints.Store(productCode, endpointFmt)
 		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpointFmt)
