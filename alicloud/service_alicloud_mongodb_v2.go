@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -23,20 +22,14 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeAllNetworkAddress"
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -103,21 +96,15 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeAccounts"
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

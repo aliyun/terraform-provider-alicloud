@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -50,10 +49,7 @@ func resourceAlicloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "ModifyAuditPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["AuditStatus"] = d.Get("audit_status")
 	request["ServiceType"] = "Standard"
@@ -62,7 +58,7 @@ func resourceAlicloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				wait()
@@ -105,10 +101,7 @@ func resourceAlicloudMongodbAuditPolicyRead(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -126,7 +119,7 @@ func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 		action := "ModifyAuditPolicy"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 					wait()

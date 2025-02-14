@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -143,10 +142,7 @@ func resourceAlicloudMongodbServerlessInstanceCreate(d *schema.ResourceData, met
 	var response map[string]interface{}
 	action := "CreateServerlessDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AccountPassword"] = d.Get("account_password")
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenew"] = v
@@ -177,11 +173,9 @@ func resourceAlicloudMongodbServerlessInstanceCreate(d *schema.ResourceData, met
 	request["VSwitchId"] = d.Get("vswitch_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateServerlessDBInstance")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -264,10 +258,7 @@ func resourceAlicloudMongodbServerlessInstanceRead(d *schema.ResourceData, meta 
 }
 func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	MongoDBService := MongoDBService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -286,7 +277,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		action := "ModifyDBInstanceDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -311,7 +302,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		action := "ModifyDBInstanceMaintainTime"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -344,11 +335,9 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 				removeSecurityIpsReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifySecurityIps"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, removeSecurityIpsReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Dds", "2015-12-01", action, nil, removeSecurityIpsReq, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -376,11 +365,9 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 				createSecurityIpsReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifySecurityIps"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, createSecurityIpsReq, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Dds", "2015-12-01", action, nil, createSecurityIpsReq, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -411,7 +398,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		action := "ModifyDBInstanceSpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

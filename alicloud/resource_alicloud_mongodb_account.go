@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -64,15 +63,12 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	var err error
 	if v, ok := d.GetOk("character_type"); ok && InArray(fmt.Sprint(v), []string{"db"}) {
 		action := "CreateAccount"
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		if v, ok := d.GetOk("account_name"); ok {
 			request["AccountName"] = v
@@ -83,11 +79,9 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 		request["RegionId"] = client.RegionId
 
 		request["AccountPassword"] = d.Get("account_password")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -125,10 +119,6 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request = make(map[string]interface{})
 		if v, ok := d.GetOk("account_name"); ok {
 			request["AccountName"] = v
@@ -142,11 +132,9 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 		if v, ok := d.GetOk("character_type"); ok {
 			request["CharacterType"] = v
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -213,15 +201,12 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	var err error
 	update := false
 	d.Partial(true)
 
 	parts := strings.Split(d.Id(), ":")
 	action := "ResetAccountPassword"
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
@@ -237,11 +222,9 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -264,10 +247,6 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ModifyAccountDescription"
-	conn, err = client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
@@ -278,11 +257,9 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	}
 	request["AccountDescription"] = d.Get("account_description")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
