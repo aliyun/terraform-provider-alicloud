@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -105,10 +104,7 @@ func resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d *schema.Resour
 	var response map[string]interface{}
 	action := "AllocateNodePrivateNetworkAddress"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["NodeId"] = d.Get("node_id")
@@ -122,11 +118,9 @@ func resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d *schema.Resour
 		request["AccountPassword"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -244,10 +238,7 @@ func resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d *schema.Resour
 	action := "ReleaseNodePrivateNetworkAddress"
 	var response map[string]interface{}
 
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -259,11 +250,9 @@ func resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d *schema.Resour
 		"NodeId":       parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				wait()

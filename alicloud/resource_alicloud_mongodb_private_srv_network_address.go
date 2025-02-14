@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -45,11 +44,8 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressCreate(d *schema.ResourceDat
 	action := "AllocateDBInstanceSrvNetworkAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("db_instance_id"); ok {
 		request["DBInstanceId"] = v
@@ -58,11 +54,9 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressCreate(d *schema.ResourceDat
 
 	request["SrvConnectionType"] = "vpc"
 	request["NodeId"] = "ConnectionStringURI"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidStatus.NotFound"}) || NeedRetry(err) {
 				wait()
@@ -118,11 +112,8 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressDelete(d *schema.ResourceDat
 	action := "ReleaseNodePrivateNetworkAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -130,11 +121,9 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressDelete(d *schema.ResourceDat
 	request["NodeId"] = "ConnectionStringURI"
 	request["ConnectionType"] = "SRV"
 	request["NetworkType"] = "VPC"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
