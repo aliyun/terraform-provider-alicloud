@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list Container Service Kubernetes Clusters on Alibaba Cloud.
 
--> **NOTE:** Available since v1.34.0+.
+-> **NOTE:** Available since v1.34.0.
 
 -> **NOTE:** From version 1.177.0+, We supported batch export of clusters' kube config information by `kube_config_file_prefix`.
 
@@ -38,7 +38,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
-* `kube_config_file_prefix` - (Optional, Available in 1.177.0+) The path prefix of kube config. You could store kube config in a specified directory by specifying this field, like `~/.kube/k8s`, then it will be named with `~/.kube/k8s-clusterID-kubeconfig`. From version 1.187.0+, kube_config will not export kube_config if this field is not set.
+* `kube_config_file_prefix` - (Optional, Deprecated from v1.243.0) The path prefix of kube config. You could store kube config in a specified directory by specifying this field, like `~/.kube/k8s`, then it will be named with `~/.kube/k8s-clusterID-kubeconfig`. From version 1.243.0, kube_config will not export kube_config if this field is not set. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
 
 ## Attributes Reference
 
