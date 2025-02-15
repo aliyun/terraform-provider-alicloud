@@ -49,17 +49,10 @@ func testSweepEcsImageComponent(region string) error {
 	request["MaxResults"] = PageSizeLarge
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewEcsClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			response, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -99,7 +92,7 @@ func testSweepEcsImageComponent(region string) error {
 				"ImageComponentId": item["ImageComponentId"],
 				"RegionId":         aliyunClient.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ecs Image Component (%s): %s", item["Name"].(string), err)
 			}
@@ -473,7 +466,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 
 // Test Ecs ImageComponent. >>> Resource test cases, automatically generated.
 // Case imageComponent-test 8168
-func TestAccAliCloudEcsImageComponent_basic8168(t *testing.T) {
+func TestAccAliCloudECSImageComponent_basic8168(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap8168)
@@ -595,7 +588,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 }
 
 // Case imageComponent-version 8104
-func TestAccAliCloudEcsImageComponent_basic8104(t *testing.T) {
+func TestAccAliCloudECSImageComponent_basic8104(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap8104)
@@ -717,7 +710,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 }
 
 // Case ImageComponent-rmc 3892
-func TestAccAliCloudEcsImageComponent_basic3892(t *testing.T) {
+func TestAccAliCloudECSImageComponent_basic3892(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3892)
@@ -823,7 +816,7 @@ variable "name" {
 }
 
 // Case ImageComponent-tag 5173
-func TestAccAliCloudEcsImageComponent_basic5173(t *testing.T) {
+func TestAccAliCloudECSImageComponent_basic5173(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap5173)
@@ -947,7 +940,7 @@ variable "name" {
 }
 
 // Case ImageComponent-ResourceGroup 3962
-func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
+func TestAccAliCloudECSImageComponent_basic3962(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3962)

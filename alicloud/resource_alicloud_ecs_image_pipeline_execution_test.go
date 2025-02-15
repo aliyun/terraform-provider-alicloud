@@ -11,7 +11,7 @@ import (
 
 // Test Ecs ImagePipelineExecution. >>> Resource test cases, automatically generated.
 // Case ImagePipelineExecution-status 8237
-func TestAccAliCloudEcsImagePipelineExecution_basic8237(t *testing.T) {
+func TestAccAliCloudECSImagePipelineExecution_basic8237(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_pipeline_execution.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImagePipelineExecutionMap8237)
@@ -106,7 +106,7 @@ resource "alicloud_ecs_image_pipeline" "pipelineExection-pipeline" {
 }
 
 // Case ImagePipelineExecution-start 8232
-func TestAccAliCloudEcsImagePipelineExecution_basic8232(t *testing.T) {
+func TestAccAliCloudECSImagePipelineExecution_basic8232(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_pipeline_execution.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImagePipelineExecutionMap8232)

@@ -348,7 +348,7 @@ resource "alicloud_ecs_snapshot" "default" {
 `, name)
 }
 
-func TestAccAliCloudEcsImageBasic7009(t *testing.T) {
+func TestAccAliCloudECSImageBasic7009(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_image.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageMap7009)

@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -41,14 +39,8 @@ func testAliCloudEcsNetworkInterface(region string) error {
 	action := "DescribeNetworkInterfaces"
 
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Describe NetworkInterface failed, error: %s. Return!", err.Error())
 			return nil
@@ -95,9 +87,7 @@ func testAliCloudEcsNetworkInterface(region string) error {
 				}
 				actionDetach := "DetachNetworkInterface"
 
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				response, err = conn.DoRequest(StringPointer(actionDetach), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, requestDetach, &runtime)
+				response, err = client.RpcPost("Ecs", "2014-05-26", actionDetach, nil, requestDetach, true)
 				if err != nil {
 					log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
 					continue
@@ -113,7 +103,7 @@ func testAliCloudEcsNetworkInterface(region string) error {
 				"NetworkInterfaceId": item["NetworkInterfaceId"],
 				"RegionId":           client.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete NetworkInterface (%s): %s", item["NetworkInterfaceName"].(string), err)
 				continue

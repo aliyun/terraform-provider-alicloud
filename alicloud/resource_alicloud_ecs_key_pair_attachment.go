@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -59,10 +58,7 @@ func resourceAlicloudEcsKeyPairAttachmentCreate(d *schema.ResourceData, meta int
 	var response map[string]interface{}
 	action := "AttachKeyPair"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["InstanceIds"] = convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 	if v, ok := d.GetOk("key_pair_name"); ok {
 		request["KeyPairName"] = v
@@ -93,7 +89,7 @@ func resourceAlicloudEcsKeyPairAttachmentCreate(d *schema.ResourceData, meta int
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,7 +114,7 @@ func resourceAlicloudEcsKeyPairAttachmentCreate(d *schema.ResourceData, meta int
 		for _, id := range newIds {
 			requestReboot["InstanceId"] = id
 
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2014-05-26"), StringPointer("AK"), requestReboot, nil, &util.RuntimeOptions{})
+			response, err = client.RpcGet("Ecs", "2014-05-26", action, requestReboot, nil)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -154,10 +150,7 @@ func resourceAlicloudEcsKeyPairAttachmentDelete(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	action := "DetachKeyPair"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	separatorIndex := strings.LastIndexByte(d.Id(), ':')
 	KeyName := d.Id()[:separatorIndex]
 
@@ -170,7 +163,7 @@ func resourceAlicloudEcsKeyPairAttachmentDelete(d *schema.ResourceData, meta int
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		request["InstanceIds"] = InstanceIds
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

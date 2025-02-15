@@ -448,7 +448,7 @@ func TestUnitAliCloudECSKeyPair(t *testing.T) {
 
 // Test Ecs KeyPair. >>> Resource test cases, automatically generated.
 // Case 创建KeyPair生命周期 9172
-func TestAccAliCloudEcsKeyPair_basic9172(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic9172(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)
@@ -531,7 +531,7 @@ func TestAccAliCloudEcsKeyPair_basic9172(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPair_basic9172_twin(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic9172_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)
@@ -600,7 +600,7 @@ func AliCloudEcsKeyPairBasicDependence9172(name string) string {
 }
 
 // Case 适配字段key_name_prefix 9171
-func TestAccAliCloudEcsKeyPair_basic9171(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic9171(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)
@@ -683,7 +683,7 @@ func TestAccAliCloudEcsKeyPair_basic9171(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPair_basic9171_twin(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic9171_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)
@@ -734,7 +734,7 @@ func TestAccAliCloudEcsKeyPair_basic9171_twin(t *testing.T) {
 }
 
 // Case 适配废弃字段key_name 8639
-func TestAccAliCloudEcsKeyPair_basic8369(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic8369(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)
@@ -817,7 +817,7 @@ func TestAccAliCloudEcsKeyPair_basic8369(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPair_basic8639_twin(t *testing.T) {
+func TestAccAliCloudECSKeyPair_basic8639_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairMap9172)

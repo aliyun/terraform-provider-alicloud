@@ -46,15 +46,9 @@ func testAliCloudEcsDisk(region string) error {
 	}
 
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		action := "DescribeDisks"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %s", action, err)
 			return nil
@@ -84,7 +78,7 @@ func testAliCloudEcsDisk(region string) error {
 				"DiskId":   item["DiskId"],
 				"RegionId": client.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Disk (%s): %s", item["DiskName"].(string), err)
 			}
@@ -785,7 +779,7 @@ func TestUnitECSDisk(t *testing.T) {
 
 // Test Ecs Disk. >>> Resource test cases, automatically generated.
 // Case cloud_efficiency生命周期 8017
-func TestAccAliCloudEcsDisk_basic8017(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -960,7 +954,7 @@ func TestAccAliCloudEcsDisk_basic8017(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsDisk_basic8017_twin(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1110,7 +1104,7 @@ func AliCloudEcsDiskBasicDependence8017(name string) string {
 }
 
 // Case cloud_essd生命周期, 适配废弃字段availability_zone, name 8018
-func TestAccAliCloudEcsDisk_basic8018(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8018(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1277,7 +1271,7 @@ func TestAccAliCloudEcsDisk_basic8018(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsDisk_basic8018_twin(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8018_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1350,7 +1344,7 @@ func TestAccAliCloudEcsDisk_basic8018_twin(t *testing.T) {
 }
 
 // Case cloud_auto生命周期 8019
-func TestAccAliCloudEcsDisk_basic8019(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1527,7 +1521,7 @@ func TestAccAliCloudEcsDisk_basic8019(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsDisk_basic8019_twin(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1624,7 +1618,7 @@ func AliCloudEcsDiskBasicDependence8018(name string) string {
 }
 
 // Case 预付费生命周期 8020
-func TestAccAliCloudEcsDisk_basic8020(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8020(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
@@ -1801,7 +1795,7 @@ func TestAccAliCloudEcsDisk_basic8020(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsDisk_basic8020_twin(t *testing.T) {
+func TestAccAliCloudECSDisk_basic8020_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
