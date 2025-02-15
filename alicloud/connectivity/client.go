@@ -1149,50 +1149,30 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the Elasticsearch client if necessary
 	if client.elasticsearchconn == nil {
-		endpoint := client.config.ElasticsearchEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ELASTICSEARCHCode)
+		product := "elasticsearch"
+		endpoint, err := client.loadApiEndpoint(product)
+		if err != nil {
+			return nil, err
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ELASTICSEARCHCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
 		elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 		}
-		elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		elasticsearchconn.SourceIp = client.config.SourceIp
-		elasticsearchconn.SecureTransport = client.config.SecureTransport
 		client.elasticsearchconn = elasticsearchconn
-	}
-
-	return do(client.elasticsearchconn)
-}
-
-func (client *AliyunClient) NewElasticsearchClient() (*roa.Client, error) {
-	productCode := "elasticsearch"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
+	} else {
+		err := client.elasticsearchconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 		}
 	}
-
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] misssing the product %s endpoint.", productCode)
-	}
-	roaSdkConfig := client.teaRoaSdkConfig
-	roaSdkConfig.SetEndpoint(endpoint)
-
-	conn, err := roa.NewClient(&roaSdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, err
+	client.elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.elasticsearchconn.SourceIp = client.config.SourceIp
+	client.elasticsearchconn.SecureTransport = client.config.SecureTransport
+	return do(client.elasticsearchconn)
 }
 
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/denverdino/aliyungo/common"
@@ -364,13 +363,12 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{"TokenPreviousRequestProcessError"}
-	conn, err := elasticsearchService.client.NewElasticsearchClient()
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
 	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer("/openapi/instances"), requestQuery, nil, requestBody, &util.RuntimeOptions{})
+		response, err = client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, "/openapi/instances", requestQuery, nil, requestBody, false)
 		if err != nil {
 			if IsExpectedErrors(err, errorCodeList) || NeedRetry(err) {
 				wait()
@@ -387,9 +385,9 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	resp, err := jsonpath.Get("$.body.Result.instanceId", response)
+	resp, err := jsonpath.Get("$.Result.instanceId", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.Result.instanceId", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Result.instanceId", response)
 	}
 	d.SetId(resp.(string))
 
@@ -707,10 +705,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if d.HasChange("setting_config") {
-		conn, err := client.NewElasticsearchClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		action := "UpdateInstanceSettings"
 		content := make(map[string]interface{})
 		config := d.Get("setting_config").(map[string]interface{})
@@ -722,8 +716,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		// retry
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-				String(fmt.Sprintf("/openapi/instances/%s/instance-settings", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/instance-settings", d.Id()), requestQuery, nil, content, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 					wait()
@@ -884,17 +877,16 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 		return nil
 	}
 	var response map[string]interface{}
+	var err error
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
 	}
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{"InstanceActivating", "TokenPreviousRequestProcessError"}
-	conn, err := elasticsearchService.client.NewElasticsearchClient()
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("DELETE"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaDeleteWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, errorCodeList) || NeedRetry(err) {
 				wait()

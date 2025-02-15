@@ -11,8 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -26,14 +24,10 @@ type ElasticsearchService struct {
 
 func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewElasticsearchClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeInstance"
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("GET"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", id)), nil, nil, nil, &util.RuntimeOptions{})
+		response, err = client.RoaGetWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", id), nil, nil, nil)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -53,9 +47,9 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (object 
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.body.Result", response)
+	v, err := jsonpath.Get("$.Result", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.Result", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Result", response)
 	}
 	object = v.(map[string]interface{})
 	if (object["instanceId"].(string)) != id {
@@ -109,10 +103,8 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 
 func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
 	var response map[string]interface{}
-	conn, err := s.client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 	action := "TriggerNetwork"
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
@@ -121,8 +113,7 @@ func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content ma
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/actions/network-trigger", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/network-trigger", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InternalServerError"}) || NeedRetry(err) {
 				wait()
@@ -313,10 +304,8 @@ func (s *ElasticsearchService) disableKibanaPrivatePvlNetwork(d *schema.Resource
 
 func (s *ElasticsearchService) ModifyWhiteIps(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
 	var response map[string]interface{}
-	conn, err := s.client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	client := s.client
 	action := "ModifyWhiteIps"
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
@@ -325,8 +314,7 @@ func (s *ElasticsearchService) ModifyWhiteIps(d *schema.ResourceData, content ma
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/actions/modify-white-ips", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/modify-white-ips", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InternalServerError"}) || NeedRetry(err) {
 				wait()
@@ -420,11 +408,9 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
 	}
-	elasticsearchClient, err := client.NewElasticsearchClient()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := elasticsearchClient.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/description", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/description", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"GetCustomerLabelFail"}) || NeedRetry(err) {
 				wait()
@@ -513,7 +499,7 @@ func updateInstanceTags(d *schema.ResourceData, meta interface{}) error {
 
 func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	elasticsearchClient, err := client.NewElasticsearchClient()
+	var err error
 	action := "UpdateInstanceChargeType"
 
 	content := make(map[string]interface{})
@@ -533,8 +519,7 @@ func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
 	}
-	response, err := elasticsearchClient.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-		String(fmt.Sprintf("/openapi/instances/%s/actions/convert-pay-type", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+	response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/convert-pay-type", d.Id()), requestQuery, nil, content, false)
 
 	time.Sleep(10 * time.Second)
 
@@ -547,7 +532,7 @@ func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 
 func renewInstance(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	elasticsearchClient, err := client.NewElasticsearchClient()
+	var err error
 	action := "RenewInstance"
 
 	content := make(map[string]interface{})
@@ -561,8 +546,7 @@ func renewInstance(d *schema.ResourceData, meta interface{}) error {
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),
 	}
-	response, err := elasticsearchClient.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-		String(fmt.Sprintf("/openapi/instances/%s/actions/renew", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+	response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/renew", d.Id()), requestQuery, nil, content, false)
 
 	time.Sleep(10 * time.Second)
 
@@ -636,10 +620,7 @@ func setRenewalInstance(d *schema.ResourceData, meta interface{}) error {
 func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateInstance"
 
 	var response map[string]interface{}
@@ -652,8 +633,7 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -683,10 +663,7 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateInstance"
 
 	var response map[string]interface{}
@@ -707,8 +684,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -738,10 +714,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateInstance"
 
 	var response map[string]interface{}
@@ -771,8 +744,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -801,10 +773,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateAdminPassword"
 
 	var response map[string]interface{}
@@ -834,8 +803,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/admin-pwd", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/admin-pwd", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -882,10 +850,7 @@ func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
 func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateInstance"
 
 	var response map[string]interface{}
@@ -909,8 +874,7 @@ func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -989,10 +953,7 @@ func updateWarmNode(d *schema.ResourceData, meta interface{}) error {
 func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "UpdateInstance"
 
 	var response map[string]interface{}
@@ -1011,8 +972,7 @@ func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
 				wait()
@@ -1042,10 +1002,7 @@ func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
 func openHttps(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "OpenHttps"
 
 	var response map[string]interface{}
@@ -1056,8 +1013,7 @@ func openHttps(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/actions/open-https", d.Id())), requestQuery, nil, nil, &util.RuntimeOptions{})
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/open-https", d.Id()), requestQuery, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
 				wait()
@@ -1086,10 +1042,7 @@ func openHttps(d *schema.ResourceData, meta interface{}) error {
 func closeHttps(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
-	conn, err := client.NewElasticsearchClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "CloseHttps"
 
 	var response map[string]interface{}
@@ -1100,8 +1053,7 @@ func closeHttps(d *schema.ResourceData, meta interface{}) error {
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
-			String(fmt.Sprintf("/openapi/instances/%s/actions/close-https", d.Id())), requestQuery, nil, nil, &util.RuntimeOptions{})
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/close-https", d.Id()), requestQuery, nil, nil, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
 				wait()
