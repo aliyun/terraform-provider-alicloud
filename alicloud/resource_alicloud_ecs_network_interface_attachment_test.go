@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudEcsNetworkInterfaceAttachment_basic0(t *testing.T) {
+func TestAccAliCloudECSNetworkInterfaceAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsNetworkInterfaceAttachmentMap0)
@@ -61,7 +61,7 @@ func TestAccAliCloudEcsNetworkInterfaceAttachment_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsNetworkInterfaceAttachment_basic0_twin(t *testing.T) {
+func TestAccAliCloudECSNetworkInterfaceAttachment_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsNetworkInterfaceAttachmentMap0)
@@ -106,7 +106,7 @@ func TestAccAliCloudEcsNetworkInterfaceAttachment_basic0_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsNetworkInterfaceAttachment_basic1_twin(t *testing.T) {
+func TestAccAliCloudECSNetworkInterfaceAttachment_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_ecs_network_interface_attachment.default"

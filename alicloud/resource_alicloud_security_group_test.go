@@ -103,7 +103,7 @@ func testSweepSecurityGroups(region string) error {
 
 // Test Ecs SecurityGroup. >>> Resource test cases, automatically generated.
 // Case 全生命周期 8588
-func TestAccAliCloudEcsSecurityGroup_basic8588(t *testing.T) {
+func TestAccAliCloudECSSecurityGroup_basic8588(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSecurityGroupMap8588)
@@ -240,7 +240,7 @@ func TestAccAliCloudEcsSecurityGroup_basic8588(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSecurityGroup_basic8588_twin(t *testing.T) {
+func TestAccAliCloudECSSecurityGroup_basic8588_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSecurityGroupMap8588)
@@ -297,7 +297,7 @@ func TestAccAliCloudEcsSecurityGroup_basic8588_twin(t *testing.T) {
 }
 
 // Case 全生命周期, 适配废弃字段name, inner_access 8600
-func TestAccAliCloudEcsSecurityGroup_basic8600(t *testing.T) {
+func TestAccAliCloudECSSecurityGroup_basic8600(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSecurityGroupMap8588)
@@ -424,7 +424,7 @@ func TestAccAliCloudEcsSecurityGroup_basic8600(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSecurityGroup_basic8600_twin(t *testing.T) {
+func TestAccAliCloudECSSecurityGroup_basic8600_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSecurityGroupMap8588)
@@ -480,7 +480,7 @@ func TestAccAliCloudEcsSecurityGroup_basic8600_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSecurityGroup_Multi(t *testing.T) {
+func TestAccAliCloudECSSecurityGroup_Multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_group.default.5"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSecurityGroupMap8588)

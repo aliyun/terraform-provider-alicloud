@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,10 +58,7 @@ func resourceAliCloudEcsNetworkInterfaceAttachmentCreate(d *schema.ResourceData,
 	var response map[string]interface{}
 	action := "AttachNetworkInterface"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["NetworkInterfaceId"] = d.Get("network_interface_id")
@@ -80,11 +76,9 @@ func resourceAliCloudEcsNetworkInterfaceAttachmentCreate(d *schema.ResourceData,
 		request["WaitForNetworkConfigurationReady"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) || NeedRetry(err) {
 				wait()
@@ -159,10 +153,7 @@ func resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d *schema.ResourceData,
 	action := "DetachNetworkInterface"
 	var response map[string]interface{}
 
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -179,11 +170,9 @@ func resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d *schema.ResourceData,
 		request["TrunkNetworkInstanceId"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) || NeedRetry(err) {
 				wait()

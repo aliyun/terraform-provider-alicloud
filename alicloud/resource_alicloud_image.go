@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -201,10 +200,7 @@ func resourceAliCloudEcsImageCreate(d *schema.ResourceData, meta interface{}) er
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -265,11 +261,9 @@ func resourceAliCloudEcsImageCreate(d *schema.ResourceData, meta interface{}) er
 		request["DiskDeviceMapping"] = diskDeviceMappingMaps
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
 				wait()
@@ -390,10 +384,7 @@ func resourceAliCloudEcsImageUpdate(d *schema.ResourceData, meta interface{}) er
 	update := false
 	d.Partial(true)
 	action := "ModifyImageAttribute"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ImageId"] = d.Id()
@@ -433,11 +424,9 @@ func resourceAliCloudEcsImageUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -454,10 +443,6 @@ func resourceAliCloudEcsImageUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	update = false
 	action = "JoinResourceGroup"
-	conn, err = client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
@@ -469,11 +454,9 @@ func resourceAliCloudEcsImageUpdate(d *schema.ResourceData, meta interface{}) er
 
 	request["ResourceType"] = "image"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -520,10 +503,6 @@ func resourceAliCloudEcsImageDelete(d *schema.ResourceData, meta interface{}) er
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["ImageId"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -531,11 +510,9 @@ func resourceAliCloudEcsImageDelete(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOkExists("force"); ok {
 		request["Force"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

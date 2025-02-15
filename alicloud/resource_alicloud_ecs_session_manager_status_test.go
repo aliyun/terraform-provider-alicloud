@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudEcsSessionManagerStatus_basic0(t *testing.T) {
+func TestAccAliCloudECSSessionManagerStatus_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_session_manager_status.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSessionManagerStatusMap0)
@@ -71,7 +71,7 @@ func TestAccAliCloudEcsSessionManagerStatus_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSessionManagerStatus_basic0_twin(t *testing.T) {
+func TestAccAliCloudECSSessionManagerStatus_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_session_manager_status.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSessionManagerStatusMap0)

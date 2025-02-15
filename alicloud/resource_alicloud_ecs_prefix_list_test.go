@@ -46,14 +46,7 @@ func testAlicloudEcsPrefixList(region string) error {
 	request["MaxResults"] = PageSizeXLarge
 
 	action := "DescribePrefixLists"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 	if err != nil {
 		log.Printf("[ERROR] %s get an error: %#v", action, err)
 		return nil
@@ -89,7 +82,7 @@ func testAlicloudEcsPrefixList(region string) error {
 			"PrefixListId": item["PrefixListId"],
 		}
 		request["RegionId"] = client.RegionId
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ecs PrefixList (%s (%v)): %s", item["Description"].(string), item["Id"].(float64), err)
 		}
@@ -102,7 +95,7 @@ func testAlicloudEcsPrefixList(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECSPrefixList_basic0(t *testing.T) {
+func TestAccAliCloudECSPrefixList_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudECSPrefixListMap0)

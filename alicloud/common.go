@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -1818,4 +1819,26 @@ func bytesToTB(bytes int64) float64 {
 		TiB = GiB * KiB
 	)
 	return float64(bytes) / float64(TiB)
+}
+
+func compressIPv6OrCIDR(input string) (string, error) {
+	if input == "" {
+		return input, nil
+	}
+	if strings.Contains(input, "/") {
+		ip, _, err := net.ParseCIDR(input)
+		if err != nil {
+			return "", err
+		}
+		if ip == nil {
+			return input, nil
+		}
+		mask := strings.SplitN(input, "/", 2)[1]
+		return fmt.Sprintf("%s/%s", ip.String(), mask), nil
+	}
+	ip := net.ParseIP(input)
+	if ip == nil {
+		return input, nil
+	}
+	return ip.String(), nil
 }

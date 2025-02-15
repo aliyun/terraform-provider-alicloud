@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudFCServicesDataSource(t *testing.T) {
+func TestAccAliCloudFCServicesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_fc_services.default"
 	name := fmt.Sprintf("tf-testacc-fc-service-ds-basic-%d", rand)

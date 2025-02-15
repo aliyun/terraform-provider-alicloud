@@ -305,7 +305,7 @@ func TestAccAliCloudECSSecurityGroupEgressRuleOtherIpv6(t *testing.T) {
 				Config: testAccSecurityGroupEgressRuleOtherIpv6,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipv6_cidr_ip": "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b/0",
+						"ipv6_cidr_ip": "2001:db8:3c4d:15::1a2f:1a2b/0",
 						"description":  "SHDRP-7513",
 					}),
 				),
@@ -343,7 +343,7 @@ func TestAccAliCloudECSSecurityGroupIngressRuleOtherIpv6(t *testing.T) {
 				Config: testAccSecurityGroupIngressRuleOtherIpv6,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipv6_cidr_ip": "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b/0",
+						"ipv6_cidr_ip": "2001:db8:3c4d:15::1a2f:1a2b/0",
 					}),
 				),
 			},

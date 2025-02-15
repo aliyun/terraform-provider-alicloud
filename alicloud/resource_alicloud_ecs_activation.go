@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,10 +67,7 @@ func resourceAlicloudEcsActivationCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateActivation"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -90,7 +86,7 @@ func resourceAlicloudEcsActivationCreate(d *schema.ResourceData, meta interface{
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -135,10 +131,7 @@ func resourceAlicloudEcsActivationDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteActivation"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ActivationId": d.Id(),
 	}
@@ -146,7 +139,7 @@ func resourceAlicloudEcsActivationDelete(d *schema.ResourceData, meta interface{
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

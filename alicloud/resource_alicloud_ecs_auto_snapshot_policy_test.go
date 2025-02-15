@@ -44,18 +44,12 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	}
 	request := make(map[string]interface{})
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	request["RegionId"] = client.RegionId
 	for {
 		action := "DescribeAutoSnapshotPolicyEx"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_auto_snapshot_policy", action, AlibabaCloudSdkGoERROR)
 		}
@@ -81,7 +75,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 				"autoSnapshotPolicyId": item["AutoSnapshotPolicyId"],
 				"regionId":             client.RegionId,
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ecs SnapShot Policy (%s (%s)): %s", item["AutoSnapshotPolicyName"], item["InstanceId"], err)
 				continue
@@ -440,7 +434,7 @@ func TestUnitAliCloudECSAutoSnapshotPolicy(t *testing.T) {
 
 // Test Ecs AutoSnapshotPolicy. >>> Resource test cases, automatically generated.
 // Case 自动快照策略 7893
-func TestAccAliCloudEcsAutoSnapshotPolicy_basic7893(t *testing.T) {
+func TestAccAliCloudECSAutoSnapshotPolicy_basic7893(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
@@ -613,7 +607,7 @@ func TestAccAliCloudEcsAutoSnapshotPolicy_basic7893(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsAutoSnapshotPolicy_basic7893_twin(t *testing.T) {
+func TestAccAliCloudECSAutoSnapshotPolicy_basic7893_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
@@ -706,7 +700,7 @@ func AliCloudEcsAutoSnapshotPolicyBasicDependence7893(name string) string {
 }
 
 // Case 适配废弃字段name 8035
-func TestAccAliCloudEcsAutoSnapshotPolicy_basic8035(t *testing.T) {
+func TestAccAliCloudECSAutoSnapshotPolicy_basic8035(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)
@@ -879,7 +873,7 @@ func TestAccAliCloudEcsAutoSnapshotPolicy_basic8035(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsAutoSnapshotPolicy_basic8035_twin(t *testing.T) {
+func TestAccAliCloudECSAutoSnapshotPolicy_basic8035_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyMap7893)

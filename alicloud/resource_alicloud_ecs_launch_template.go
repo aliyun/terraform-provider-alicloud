@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -435,10 +434,7 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "CreateLaunchTemplate"
 	request := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("auto_release_time"); ok {
 		request["AutoReleaseTime"] = v
 	}
@@ -723,7 +719,7 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1245,13 +1241,9 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "CreateLaunchTemplateVersion"
-		conn, err := client.NewEcsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1306,10 +1298,7 @@ func resourceAliCloudEcsLaunchTemplateDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLaunchTemplate"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LaunchTemplateId": d.Id(),
 	}
@@ -1320,7 +1309,7 @@ func resourceAliCloudEcsLaunchTemplateDelete(d *schema.ResourceData, meta interf
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1341,19 +1330,14 @@ func getLaunchTemplateVersions(id string, meta interface{}) ([]interface{}, erro
 	client := meta.(*connectivity.AliyunClient)
 	action := "DescribeLaunchTemplateVersions"
 	var response map[string]interface{}
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LaunchTemplateId": id,
 	}
 	request["PageSize"] = requests.NewInteger(50)
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return nil, WrapError(err)
@@ -1375,17 +1359,14 @@ func getLaunchTemplateVersions(id string, meta interface{}) ([]interface{}, erro
 func deleteLaunchTemplateVersion(id string, version int, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLaunchTemplateVersion"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"LaunchTemplateId": id,
 	}
 	request["DeleteVersion"] = &[]string{strconv.FormatInt(int64(version), 10)}
 	request["RegionId"] = client.RegionId
 
-	_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

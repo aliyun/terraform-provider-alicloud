@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,20 +23,14 @@ func (s *EcsServiceV2) DescribeEcsImageComponent(id string) (object map[string]i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeImageComponents"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ImageComponentId.1"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -95,7 +87,6 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -110,10 +101,6 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UntagResources"
-			conn, err = client.NewEcsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -123,11 +110,9 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -146,10 +131,6 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewEcsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -162,11 +143,9 @@ func (s *EcsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -197,20 +176,14 @@ func (s *EcsServiceV2) DescribeEcsImage(id string) (object map[string]interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeImages"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["ImageId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -274,20 +247,14 @@ func (s *EcsServiceV2) DescribeEcsAutoSnapshotPolicy(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeAutoSnapshotPolicyEx"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AutoSnapshotPolicyId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -330,20 +297,14 @@ func (s *EcsServiceV2) DescribeEcsImagePipelineExecution(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeImagePipelineExecutions"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ExecutionId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -410,20 +371,14 @@ func (s *EcsServiceV2) DescribeEcsKeyPair(id string) (object map[string]interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeKeyPairs"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["KeyPairName"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -466,20 +421,14 @@ func (s *EcsServiceV2) DescribeEcsDisk(id string) (object map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDisks"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DiskIds"] = convertListToJsonString([]interface{}{id})
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
@@ -551,20 +500,14 @@ func (s *EcsServiceV2) DescribeEcsSecurityGroup(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSecurityGroups"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SecurityGroupId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -603,20 +546,14 @@ func (s *EcsServiceV2) DescribeSecurityGroupDescribeSecurityGroupAttribute(id st
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSecurityGroupAttribute"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SecurityGroupId"] = id
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -648,20 +585,14 @@ func (s *EcsServiceV2) DescribeEcsSnapshot(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeSnapshots"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SnapshotIds"] = convertListToJsonString([]interface{}{id})
 	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

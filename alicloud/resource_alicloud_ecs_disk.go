@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -199,10 +198,7 @@ func resourceAliCloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -274,11 +270,9 @@ func resourceAliCloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("dedicated_block_storage_cluster_id"); ok {
 		request["DedicatedBlockStorageClusterId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceUnavailable", "UnknownError", "LastTokenProcessing"}) || NeedRetry(err) {
 				wait()
@@ -410,10 +404,7 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	d.Partial(true)
 
 	action := "ModifyDiskAttribute"
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DiskId"] = d.Id()
@@ -459,11 +450,9 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -481,10 +470,6 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 
 	update = false
 	action = "ResizeDisk"
-	conn, err = client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DiskId"] = d.Id()
@@ -498,11 +483,9 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		request["Type"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 					wait()
@@ -519,10 +502,6 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	action = "JoinResourceGroup"
-	conn, err = client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
@@ -536,11 +515,9 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 
 	request["ResourceType"] = "disk"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 					wait()
@@ -557,10 +534,6 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	action = "ModifyDiskSpec"
-	conn, err = client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DiskId"] = d.Id()
@@ -584,11 +557,9 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
 		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling.ConcurrentLimitExceeded"}) || NeedRetry(err) {
 					wait()
@@ -610,10 +581,6 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	action = "ModifyDiskChargeType"
-	conn, err = client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DiskIds"] = convertListToJsonString([]interface{}{d.Id()})
@@ -626,11 +593,9 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		request["DiskChargeType"] = convertEcsDiskPaymentTypeRequest(d.Get("payment_type").(string))
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -683,18 +648,12 @@ func resourceAliCloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) err
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["DiskId"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectDiskStatus.Initializing"}) || NeedRetry(err) {

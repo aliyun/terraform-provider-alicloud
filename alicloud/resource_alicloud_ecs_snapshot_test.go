@@ -37,8 +37,6 @@ func testSweepEcsSnapshots(region string) error {
 		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	conn, err := client.NewEcsClient()
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -54,10 +52,7 @@ func testSweepEcsSnapshots(region string) error {
 	var response map[string]interface{}
 
 	for {
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_snapshot", action, AlibabaCloudSdkGoERROR)
 		}
@@ -92,7 +87,7 @@ func testSweepEcsSnapshots(region string) error {
 				"SnapshotId": item["SnapshotId"],
 			}
 
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete snapshot(%s (%s)): %s", name, id, err)
@@ -109,7 +104,7 @@ func testSweepEcsSnapshots(region string) error {
 	return nil
 }
 
-func TestAccAliCloudEcsSnapshot_basic0(t *testing.T) {
+func TestAccAliCloudECSSnapshot_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSnapshotMap0)
@@ -194,7 +189,7 @@ func TestAccAliCloudEcsSnapshot_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSnapshot_basic0_twin(t *testing.T) {
+func TestAccAliCloudECSSnapshot_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSnapshotMap0)
@@ -252,7 +247,7 @@ func TestAccAliCloudEcsSnapshot_basic0_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSnapshot_basic1(t *testing.T) {
+func TestAccAliCloudECSSnapshot_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSnapshotMap0)
@@ -349,7 +344,7 @@ func TestAccAliCloudEcsSnapshot_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsSnapshot_basic1_twin(t *testing.T) {
+func TestAccAliCloudECSSnapshot_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsSnapshotMap0)

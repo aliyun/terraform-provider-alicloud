@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudEcsKeyPairAttachment_basic0(t *testing.T) {
+func TestAccAliCloudECSKeyPairAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairAttachmentMap0)
@@ -46,7 +46,7 @@ func TestAccAliCloudEcsKeyPairAttachment_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPairAttachment_basic0_twin(t *testing.T) {
+func TestAccAliCloudECSKeyPairAttachment_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairAttachmentMap0)
@@ -83,7 +83,7 @@ func TestAccAliCloudEcsKeyPairAttachment_basic0_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPairAttachment_basic1(t *testing.T) {
+func TestAccAliCloudECSKeyPairAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairAttachmentMap0)
@@ -119,7 +119,7 @@ func TestAccAliCloudEcsKeyPairAttachment_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEcsKeyPairAttachment_basic1_twin(t *testing.T) {
+func TestAccAliCloudECSKeyPairAttachment_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudEcsKeyPairAttachmentMap0)
