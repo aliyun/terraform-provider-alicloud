@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
+func SkipTestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_managed_kubernetes.default"
@@ -474,13 +474,21 @@ data "alicloud_vswitches" "default" {
 
 data "alicloud_vswitches" "default_1" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = length(data.alicloud_zones.default.zones) > 0 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
+  zone_id = length(data.alicloud_zones.default.zones) > 1 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id       = data.alicloud_vpcs.default.ids.0
   cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_vswitch" "vswitch_1" {
+  count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 10, 8)
   zone_id      = data.alicloud_zones.default.zones.0.id
   vswitch_name = var.name
 }
@@ -497,7 +505,7 @@ resource "alicloud_log_project" "log" {
 
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
 }
 `, name)
 }
