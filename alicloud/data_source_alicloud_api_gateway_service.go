@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -35,12 +34,8 @@ func dataSourceAlicloudApigatewayServiceRead(d *schema.ResourceData, meta interf
 		return nil
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenApiGatewayService)
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer("OpenApiGatewayService"), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-
+	client := meta.(*connectivity.AliyunClient)
+	response, err := client.RpcPostWithEndpoint("CloudAPI", "2016-07-14", "OpenApiGatewayService", nil, nil, false, connectivity.OpenApiGatewayService)
 	addDebug("OpenApiGatewayService", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {

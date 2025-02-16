@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -36,12 +35,9 @@ func dataSourceAlicloudCloudStorageGatewayServiceRead(d *schema.ResourceData, me
 		return nil
 	}
 	action := "OpenSgwService"
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenCloudStorageGatewayService)
-	if err != nil {
-		return WrapError(err)
-	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+	client := meta.(*connectivity.AliyunClient)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RpcPostWithEndpoint("sgw", "2018-05-11", action, nil, nil, false, connectivity.OpenCloudStorageGatewayService)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)

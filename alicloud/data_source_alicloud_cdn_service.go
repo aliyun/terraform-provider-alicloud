@@ -57,11 +57,8 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		enable = v.(string)
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenCdnService)
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+	client := meta.(*connectivity.AliyunClient)
+	response, err := client.RpcPost("Cdn", "2018-05-10", "DescribeCdnService", nil, nil, false)
 	addDebug("DescribeCdnService", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OperationDenied", "CdnServiceNotFound"}) {
@@ -84,15 +81,14 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		requestBody := map[string]interface{}{"InternetChargeType": chargeType}
 		if opened && chargeType != response["ChangingChargeType"].(string) {
-			resp, err := conn.DoRequest(StringPointer("ModifyCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-
+			resp, err := client.RpcPost("Cdn", "2018-05-10", "ModifyCdnService", nil, requestBody, false)
 			addDebug("ModifyCdnService", resp, nil)
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "ModifyCdnService", AlibabaCloudSdkGoERROR)
 			}
 		}
 		if !opened {
-			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
+			resp, err := client.RpcPost("Cdn", "2018-05-10", "OpenCdnService", nil, requestBody, false)
 			addDebug("OpenCdnService", resp, nil)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"CdnService.HasOpened"}) {
@@ -111,7 +107,7 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(4*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &runtime)
+			response, err = client.RpcPost("Cdn", "2018-05-10", "DescribeCdnService", nil, nil, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"CdnServiceNotFound"}) {
 					wait()

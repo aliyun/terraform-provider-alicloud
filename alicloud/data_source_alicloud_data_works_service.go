@@ -3,7 +3,6 @@ package alicloud
 import (
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,12 +38,9 @@ func dataSourceAlicloudDataWorksServiceRead(d *schema.ResourceData, meta interfa
 	request := map[string]interface{}{
 		"Region": meta.(*connectivity.AliyunClient).RegionId,
 	}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.DataWorksService)
-	if err != nil {
-		return WrapError(err)
-	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	client := meta.(*connectivity.AliyunClient)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RpcPostWithEndpoint("dataworks-public", "2018-06-01", action, nil, request, false, connectivity.DataWorksService)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
