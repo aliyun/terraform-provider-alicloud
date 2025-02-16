@@ -301,29 +301,30 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
-	// Initialize the CS client if necessary
 	if client.officalCSConn == nil {
-		endpoint := client.config.CsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
+		product := "cs"
+		endpoint, err := client.loadApiEndpoint(product)
+		if err != nil {
+			return nil, err
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CONTAINCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
 		csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
 		}
-
-		csconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		csconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		csconn.SourceIp = client.config.SourceIp
-		csconn.SecureTransport = client.config.SecureTransport
 		client.officalCSConn = csconn
+	} else {
+		err := client.officalCSConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
+		}
 	}
+	client.officalCSConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.officalCSConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.officalCSConn.SourceIp = client.config.SourceIp
+	client.officalCSConn.SecureTransport = client.config.SecureTransport
 
 	return do(client.officalCSConn)
 }
@@ -574,35 +575,40 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
-	// Initialize the CS client if necessary
-	if client.csconn == nil {
-		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-		csconn.SetUserAgent(client.config.getUserAgent())
-		endpoint := client.config.CsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
-		}
-		if endpoint != "" {
-			if !strings.HasPrefix(endpoint, "http") {
-				endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
-			}
-			csconn.SetEndpoint(endpoint)
-		}
-		csconn.SetSourceIp(client.config.SourceIp)
-		csconn.SetSecureTransport(client.config.SecureTransport)
-		client.csconn = csconn
+	product := "cs"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
 	}
-
+	endpoint = fmt.Sprintf("https://%s", endpoint)
+	accessKey, secretKey, stsToken := client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		log.Printf("[WARN] get credential failed. Error: %#v", err)
+	} else {
+		accessKey, secretKey, stsToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
+	}
+	csconn := cs.NewClientForAussumeRole(accessKey, secretKey, stsToken)
+	csconn.SetUserAgent(client.config.getUserAgent())
+	csconn.SetEndpoint(endpoint)
+	csconn.SetSourceIp(client.config.SourceIp)
+	csconn.SetSecureTransport(client.config.SecureTransport)
+	client.csconn = csconn
 	return do(client.csconn)
 }
 
 func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
-	endpoint := client.config.CsEndpoint
-	if endpoint == "" {
-		endpoint = OpenAckService
+	product := "cs"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	accessKey, secretKey, stsToken := client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		log.Printf("[WARN] get credential failed. Error: %#v", err)
+	} else {
+		accessKey, secretKey, stsToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	}
 	header := map[string]*string{
 		"x-acs-source-ip":        tea.String(client.config.SourceIp),
@@ -611,9 +617,9 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 	param := &openapi.GlobalParameters{Headers: header}
 	// Initialize the CS client if necessary
 	roaCSConn, err := roaCS.NewClient(&openapi.Config{
-		AccessKeyId:      tea.String(client.config.AccessKey),
-		AccessKeySecret:  tea.String(client.config.SecretKey),
-		SecurityToken:    tea.String(client.config.SecurityToken),
+		AccessKeyId:      tea.String(accessKey),
+		AccessKeySecret:  tea.String(secretKey),
+		SecurityToken:    tea.String(stsToken),
 		RegionId:         tea.String(client.config.RegionId),
 		UserAgent:        tea.String(client.config.getUserAgent()),
 		Endpoint:         tea.String(endpoint),
@@ -1978,31 +1984,6 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	openapiClient.Protocol = tea.String(client.config.Protocol)
 
 	return openapiClient, nil
-}
-func (client *AliyunClient) NewAckClient() (*roa.Client, error) {
-	productCode := "cs"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("cs.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaRoaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := roa.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
 }
 
 func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {

@@ -1456,13 +1456,8 @@ resource "alicloud_ecs_deployment_set" "default" {
   deployment_set_name = var.name
 }
 
-data "alicloud_ecs_capacity_reservations" "default" {
-  instance_type = data.alicloud_instance_types.cloud_essd.instance_types.0.id
-  platform      = "linux"
-}
-
 resource "alicloud_ecs_capacity_reservation" "default" {
-  count = length(data.alicloud_ecs_capacity_reservations.default.ids) >= 2 ? 0 : 2
+  count = 2
   description               = "terraform-example"
   platform                  = "linux"
   capacity_reservation_name = "terraform-example"
@@ -1483,7 +1478,7 @@ locals {
   vsw1                 = length(data.alicloud_vswitches.vsw1.ids) > 0 ? data.alicloud_vswitches.vsw1.ids[0] : concat(alicloud_vswitch.vsw1.*.id, [""])[0]
   vsw2                 = length(data.alicloud_vswitches.vsw2.ids) > 0 ? data.alicloud_vswitches.vsw2.ids[0] : concat(alicloud_vswitch.vsw2.*.id, [""])[0]
   vsw3                 = length(data.alicloud_vswitches.vsw3.ids) > 0 ? data.alicloud_vswitches.vsw3.ids[0] : concat(alicloud_vswitch.vsw3.*.id, [""])[0]
-  capacity_reservations = length(data.alicloud_ecs_capacity_reservations.default.ids) >= 2 ? data.alicloud_ecs_capacity_reservations.default.ids : alicloud_ecs_capacity_reservation.default.*.id
+  capacity_reservations = alicloud_ecs_capacity_reservation.default.*.id
 }
 `, name)
 }

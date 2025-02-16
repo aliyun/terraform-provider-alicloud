@@ -255,7 +255,6 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 
 	var allClusterTypes []cs.ClusterType
-
 	var requestInfo *cs.Client
 	invoker := NewInvoker()
 	var response interface{}
