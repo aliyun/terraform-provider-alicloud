@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -95,10 +94,7 @@ func dataSourceAliCloudGpdbLogbackupRead(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeLogBackups"
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	var objects []map[string]interface{}
 	for {
@@ -117,11 +113,9 @@ func dataSourceAliCloudGpdbLogbackupRead(d *schema.ResourceData, meta interface{
 		request["DBInstanceId"] = d.Get("db_instance_id")
 		request["EndTime"] = d.Get("end_time")
 		request["StartTime"] = d.Get("start_time")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {

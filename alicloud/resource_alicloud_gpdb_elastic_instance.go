@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -163,10 +162,7 @@ func resourceAlicloudGpdbElasticInstanceCreate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	action := "CreateECSDBInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Engine"] = d.Get("engine")
 	request["EngineVersion"] = d.Get("engine_version")
@@ -209,10 +205,8 @@ func resourceAlicloudGpdbElasticInstanceCreate(d *schema.ResourceData, meta inte
 	}
 	request["ClientToken"] = buildClientToken("CreateECSDBInstance")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -282,10 +276,7 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
 	d.Partial(true)
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if d.HasChange("tags") {
 		if err := gpdbService.SetResourceTags(d, "ALIYUN::GPDB::INSTANCE"); err != nil {
 			return WrapError(err)
@@ -302,7 +293,7 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -338,17 +329,14 @@ func resourceAlicloudGpdbElasticInstanceDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBState"}) {
 				wait()
