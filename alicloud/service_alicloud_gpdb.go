@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -60,19 +59,14 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 
 func (s *GpdbService) DescribeDBInstanceAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -104,11 +98,8 @@ func (s *GpdbService) DescribeDBInstanceAttribute(id string) (object map[string]
 	return object, nil
 }
 
-func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interface{}, error) {
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+func (s *GpdbService) DescribeGpdbElasticInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	action := "DescribeDBInstanceOnECSAttribute"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -116,11 +107,9 @@ func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interfa
 		"SourceIp":     s.client.SourceIp,
 	}
 	var response map[string]interface{}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -372,10 +361,7 @@ func (s *GpdbService) ignoreTag(t gpdb.Tag) bool {
 
 func (s *GpdbService) DescribeGpdbAccount(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeAccounts"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -386,12 +372,10 @@ func (s *GpdbService) DescribeGpdbAccount(id string) (object map[string]interfac
 		"AccountName":  parts[1],
 		"DBInstanceId": parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 
 			if NeedRetry(err) {
@@ -446,10 +430,7 @@ func (s *GpdbService) GpdbAccountStateRefreshFunc(id string, failStates []string
 }
 
 func (s *GpdbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -462,7 +443,7 @@ func (s *GpdbService) ListTagResources(id string, resourceType string) (object i
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling}) {
 					wait()
@@ -497,10 +478,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewGpdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
@@ -520,7 +498,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -552,7 +530,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -575,19 +553,14 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 
 func (s *GpdbService) DescribeDBInstanceIPArrayList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceIPArrayList"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -619,15 +592,10 @@ func (s *GpdbService) DescribeDBInstanceSSL(id string) (object map[string]interf
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 	}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -659,15 +627,10 @@ func (s *GpdbService) DescribeDBResourceManagementMode(id string) (object map[st
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
 	}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -698,15 +661,10 @@ func (s *GpdbService) DescribeParameters(id string) (object map[string]interface
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	client := s.client
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -755,19 +713,14 @@ func (s *GpdbService) DBInstanceSSLStateRefreshFunc(d *schema.ResourceData, fail
 
 func (s *GpdbService) DescribeGpdbDbInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
 		"DBInstanceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -822,12 +775,7 @@ func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, field string, fa
 func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstancePlans"
-
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -839,11 +787,9 @@ func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]i
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -906,10 +852,7 @@ func (s *GpdbService) DescribeGpdbDbInstanceDataShareStatus(id string) (object m
 	var response map[string]interface{}
 	action := "DescribeDataShareInstances"
 
-	conn, err := s.client.NewGpdbClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
@@ -919,11 +862,9 @@ func (s *GpdbService) DescribeGpdbDbInstanceDataShareStatus(id string) (object m
 	}
 
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

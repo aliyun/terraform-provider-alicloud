@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -70,20 +69,15 @@ func resourceAliCloudGpdbDbResourceGroupCreate(d *schema.ResourceData, meta inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["DBInstanceId"] = d.Get("db_instance_id")
 	query["ResourceGroupName"] = d.Get("resource_group_name")
 
 	request["ResourceGroupConfig"] = d.Get("resource_group_config")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -143,10 +137,7 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyDBResourceGroup"
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DBInstanceId"] = parts[0]
@@ -162,11 +153,9 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 		update = true
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -198,21 +187,14 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 		if removed.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "UnbindDBResourceGroupWithRole"
-			conn, err := client.NewGpdbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["DBInstanceId"] = parts[0]
 			query["ResourceGroupName"] = parts[1]
 			query["RoleList"] = convertListToCommaSeparate(removed.List())
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -232,21 +214,15 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 		if added.Len() > 0 {
 			parts := strings.Split(d.Id(), ":")
 			action := "BindDBResourceGroupWithRole"
-			conn, err := client.NewGpdbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			query["DBInstanceId"] = parts[0]
 			query["ResourceGroupName"] = parts[1]
 			query["RoleList"] = convertListToCommaSeparate(added.List())
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -275,19 +251,14 @@ func resourceAliCloudGpdbDbResourceGroupDelete(d *schema.ResourceData, meta inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["DBInstanceId"] = parts[0]
 	query["ResourceGroupName"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

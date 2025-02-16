@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -236,10 +235,7 @@ func resourceAliCloudGpdbDbInstancePlanCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateDBInstancePlan"
 	request := make(map[string]interface{})
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["PlanName"] = d.Get("db_instance_plan_name")
@@ -389,11 +385,9 @@ func resourceAliCloudGpdbDbInstancePlanCreate(d *schema.ResourceData, meta inter
 
 	request["PlanConfig"] = planConfigJson
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -787,16 +781,9 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "UpdateDBInstancePlan"
-		conn, err := client.NewGpdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, updateDBInstancePlanReq, &runtime)
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, updateDBInstancePlanReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -833,11 +820,6 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 		target := d.Get("status").(string)
 		if object["PlanStatus"].(string) != target {
 			action := "SetDBInstancePlanStatus"
-			conn, err := client.NewGpdbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-
 			request := map[string]interface{}{
 				"DBInstanceId": parts[0],
 				"PlanId":       parts[1],
@@ -849,12 +831,9 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 			case "cancel":
 				request["PlanStatus"] = "disable"
 			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -890,10 +869,7 @@ func resourceAliCloudGpdbDbInstancePlanDelete(d *schema.ResourceData, meta inter
 	action := "DeleteDBInstancePlan"
 	var response map[string]interface{}
 
-	conn, err := client.NewGpdbClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -905,11 +881,9 @@ func resourceAliCloudGpdbDbInstancePlanDelete(d *schema.ResourceData, meta inter
 		"PlanId":       parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

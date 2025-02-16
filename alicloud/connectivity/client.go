@@ -934,51 +934,31 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the GPDB client if necessary
 	if client.gpdbconn == nil {
-		endpoint := client.config.GpdbEnpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, GPDBCode)
+		product := "gpdb"
+		endpoint, err := client.loadApiEndpoint(product)
+		if err != nil {
+			return nil, err
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(GPDBCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 		}
+
 		gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 		}
-		gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		gpdbconn.SourceIp = client.config.SourceIp
-		gpdbconn.SecureTransport = client.config.SecureTransport
 		client.gpdbconn = gpdbconn
-	}
-
-	return do(client.gpdbconn)
-}
-
-func (client *AliyunClient) NewGpdbClient() (*rpc.Client, error) {
-	productCode := "gpdb"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
+	} else {
+		err := client.gpdbconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 		}
 	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-
-	return conn, nil
+	client.gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	client.gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	client.gpdbconn.SourceIp = client.config.SourceIp
+	client.gpdbconn.SecureTransport = client.config.SecureTransport
+	return do(client.gpdbconn)
 }
 
 func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error)) (interface{}, error) {
