@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,20 +28,14 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	}
 	ClusterId := parts[0]
 	NodepoolId := parts[1]
-	conn, err := client.NewAckClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("CS", "2015-12-15", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -60,7 +53,6 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -104,21 +96,13 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	conn, err := client.NewAckClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	task_id, err := jsonpath.Get("$.body.task_id", res)
+	action := fmt.Sprintf("/tasks/%s", res["task_id"])
 
-	action := fmt.Sprintf("/tasks/%s", task_id)
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("CS", "2015-12-15", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -133,8 +117,6 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	if err != nil {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
-
 	return response, nil
 }
 

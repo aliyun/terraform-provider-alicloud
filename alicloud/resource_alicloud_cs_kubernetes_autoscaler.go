@@ -188,7 +188,6 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		}
 
 		for _, pool := range nodePools {
-
 			poolBytes, err := json.Marshal(pool)
 			if err != nil {
 				return WrapError(fmt.Errorf("failed to marshal pool,because of %v", err))

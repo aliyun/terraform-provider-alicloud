@@ -80,7 +80,6 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 	var ids, names []string
 
 	clusterId := d.Get("cluster_id").(string)
-
 	addons, err := describeAvailableAddons(d, meta)
 	for _, addon := range addons {
 		if nameRegex, ok := d.GetOk("name_regex"); ok {

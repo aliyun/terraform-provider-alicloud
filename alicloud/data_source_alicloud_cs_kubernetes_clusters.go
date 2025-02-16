@@ -411,7 +411,6 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			s = append(s, mapping)
 			continue
 		}
-
 		mapping["vpc_id"] = ct.VPCID
 		mapping["security_group_id"] = ct.SecurityGroupID
 		mapping["availability_zone"] = ct.ZoneId

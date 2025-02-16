@@ -1015,7 +1015,8 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 
 	object, err := csClient.DescribeClusterDetail(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cs_managed_kubernetes DescribeClusterDetail Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
