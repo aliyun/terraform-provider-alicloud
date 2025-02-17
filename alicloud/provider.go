@@ -670,6 +670,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_consumer_channels":                            dataSourceAlicloudDtsConsumerChannels(),
 			"alicloud_emr_clusters":                                     dataSourceAlicloudEmrClusters(),
 			"alicloud_emrv2_clusters":                                   dataSourceAlicloudEmrV2Clusters(),
+			"alicloud_emrv2_cluster_instances":                          dataSourceAlicloudEmrV2ClusterInstances(),
 			"alicloud_ecd_images":                                       dataSourceAlicloudEcdImages(),
 			"alicloud_oos_patch_baselines":                              dataSourceAlicloudOosPatchBaselines(),
 			"alicloud_ecd_commands":                                     dataSourceAlicloudEcdCommands(),

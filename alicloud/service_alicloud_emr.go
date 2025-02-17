@@ -91,8 +91,10 @@ func (s *EmrService) ListEmrV2NodeGroups(clusterId string, nodeGroupIds []string
 	client := s.client
 	action := "ListNodeGroups"
 	request := map[string]interface{}{
-		"RegionId":  s.client.RegionId,
-		"ClusterId": clusterId,
+		"RegionId":        s.client.RegionId,
+		"ClusterId":       clusterId,
+		"NodeGroupStates": []string{"RUNNING"},
+		"MaxResults":      PageSizeXLarge,
 	}
 	if nodeGroupIds != nil && len(nodeGroupIds) > 0 {
 		request["NodeGroupIds"] = nodeGroupIds
