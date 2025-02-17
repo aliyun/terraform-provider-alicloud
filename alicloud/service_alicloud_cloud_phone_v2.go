@@ -98,6 +98,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceGroupIds.1"] = id
+	request["BizRegionId"] = s.client.RegionId
 
 	action := "DescribeAndroidInstanceGroups"
 

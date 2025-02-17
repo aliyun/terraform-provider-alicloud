@@ -33,7 +33,6 @@ resource "alicloud_cloud_phone_policy" "defaultjZ1gi0" {
 }
 
 resource "alicloud_cloud_phone_instance_group" "defaultYHMlTO" {
-  biz_region_id       = "cn-hangzhou"
   instance_group_spec = "acp.basic.small"
   policy_group_id     = alicloud_cloud_phone_policy.defaultjZ1gi0.id
   instance_group_name = "AutoCreateGroupName"
