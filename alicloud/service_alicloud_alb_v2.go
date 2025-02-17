@@ -291,7 +291,7 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "OperationFailed.ResourceGroupStatusCheckFail", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -324,7 +324,7 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.LoadBalancer", "IdempotenceProcessing"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"SystemBusy", "OperationFailed.ResourceGroupStatusCheckFail", "IdempotenceProcessing"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
