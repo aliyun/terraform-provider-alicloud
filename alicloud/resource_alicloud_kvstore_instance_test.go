@@ -1260,25 +1260,26 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"timeouts": []map[string]interface{}{
-						{
-							"update": "1h",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_id":           CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"secondary_zone_id": CHECKSET,
-					}),
-				),
-			},
+			// There is an OpenAPI bug,
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
+			//		"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+			//		"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
+			//		"timeouts": []map[string]interface{}{
+			//			{
+			//				"update": "1h",
+			//			},
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"zone_id":           CHECKSET,
+			//			"vswitch_id":        CHECKSET,
+			//			"secondary_zone_id": CHECKSET,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"maintain_start_time": "02:00Z",
