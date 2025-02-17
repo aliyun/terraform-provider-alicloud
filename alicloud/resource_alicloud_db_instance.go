@@ -1005,136 +1005,6 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("sql_collector_config_value")
 	}
 
-	if d.HasChanges("ssl_action", "ssl_connection_string") {
-		action := "ModifyDBInstanceSSL"
-		request := map[string]interface{}{
-			"DBInstanceId": d.Id(),
-			"RegionId":     client.RegionId,
-			"SourceIp":     client.SourceIp,
-		}
-		sslAction := d.Get("ssl_action").(string)
-		if sslAction == "Close" {
-			request["SSLEnabled"] = 0
-		}
-		if sslAction == "Open" {
-			request["SSLEnabled"] = 1
-		}
-		if sslAction == "Update" {
-			request["SSLEnabled"] = 2
-		}
-
-		if sslAction == "Update" && (d.Get("engine").(string) == "PostgreSQL" || d.Get("engine").(string) == "MySQL") {
-			request["SSLEnabled"] = 1
-		}
-
-		instance, err := rdsService.DescribeDBInstance(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
-		if d.Get("engine").(string) == "PostgreSQL" {
-			if d.HasChange("ca_type") {
-				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
-					request["CAType"] = v.(string)
-				}
-			}
-			if d.HasChange("server_cert") {
-				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
-					request["ServerCert"] = v.(string)
-				}
-			}
-			if d.HasChange("server_key") {
-				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
-					request["ServerKey"] = v.(string)
-				}
-			}
-			if d.HasChange("client_ca_enabled") {
-				if v, ok := d.GetOk("client_ca_enabled"); ok {
-					request["ClientCAEnabled"] = v.(int)
-				}
-			}
-			if d.HasChange("client_ca_cert") {
-				if v, ok := d.GetOk("client_ca_cert"); ok && v.(string) != "" {
-					request["ClientCACert"] = v.(string)
-				}
-			}
-			if d.HasChange("client_crl_enabled") {
-				if v, ok := d.GetOk("client_crl_enabled"); ok {
-					request["ClientCrlEnabled"] = v.(int)
-				}
-			}
-			if d.HasChange("client_cert_revocation_list") {
-				if v, ok := d.GetOk("client_cert_revocation_list"); ok && v.(string) != "" {
-					request["ClientCertRevocationList"] = v.(string)
-				}
-			}
-			if d.HasChange("acl") {
-				if v, ok := d.GetOk("acl"); ok && v.(string) != "" {
-					request["ACL"] = v.(string)
-				}
-			}
-			if d.HasChange("replication_acl") {
-				if v, ok := d.GetOk("replication_acl"); ok && v.(string) != "" {
-					request["ReplicationACL"] = v.(string)
-				}
-			}
-		}
-
-		if d.Get("engine").(string) == "MySQL" {
-			if d.HasChange("ca_type") {
-				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
-					request["CAType"] = v.(string)
-				}
-			}
-			if d.HasChange("server_cert") {
-				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
-					request["ServerCert"] = v.(string)
-				}
-			}
-			if d.HasChange("server_key") {
-				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
-					request["ServerKey"] = v.(string)
-				}
-			}
-		}
-
-		request["ConnectionString"] = instance["ConnectionString"]
-		if d.HasChange("ssl_connection_string") {
-			if v, ok := d.GetOk("ssl_connection_string"); ok && v.(string) != "" {
-				request["ConnectionString"] = v.(string)
-			}
-		}
-
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("ssl_action")
-		d.SetPartial("ssl_connection_string")
-		// wait instance status is running after modifying
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-	}
-
 	if d.HasChange("tde_status") {
 		action := "ModifyDBInstanceTDE"
 		request := map[string]interface{}{
@@ -1317,6 +1187,136 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
+		}
+	}
+
+	if d.HasChanges("ssl_action", "ssl_connection_string") {
+		action := "ModifyDBInstanceSSL"
+		request := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+			"RegionId":     client.RegionId,
+			"SourceIp":     client.SourceIp,
+		}
+		sslAction := d.Get("ssl_action").(string)
+		if sslAction == "Close" {
+			request["SSLEnabled"] = 0
+		}
+		if sslAction == "Open" {
+			request["SSLEnabled"] = 1
+		}
+		if sslAction == "Update" {
+			request["SSLEnabled"] = 2
+		}
+
+		if sslAction == "Update" && (d.Get("engine").(string) == "PostgreSQL" || d.Get("engine").(string) == "MySQL") {
+			request["SSLEnabled"] = 1
+		}
+
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if d.Get("engine").(string) == "PostgreSQL" {
+			if d.HasChange("ca_type") {
+				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
+					request["CAType"] = v.(string)
+				}
+			}
+			if d.HasChange("server_cert") {
+				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
+					request["ServerCert"] = v.(string)
+				}
+			}
+			if d.HasChange("server_key") {
+				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
+					request["ServerKey"] = v.(string)
+				}
+			}
+			if d.HasChange("client_ca_enabled") {
+				if v, ok := d.GetOk("client_ca_enabled"); ok {
+					request["ClientCAEnabled"] = v.(int)
+				}
+			}
+			if d.HasChange("client_ca_cert") {
+				if v, ok := d.GetOk("client_ca_cert"); ok && v.(string) != "" {
+					request["ClientCACert"] = v.(string)
+				}
+			}
+			if d.HasChange("client_crl_enabled") {
+				if v, ok := d.GetOk("client_crl_enabled"); ok {
+					request["ClientCrlEnabled"] = v.(int)
+				}
+			}
+			if d.HasChange("client_cert_revocation_list") {
+				if v, ok := d.GetOk("client_cert_revocation_list"); ok && v.(string) != "" {
+					request["ClientCertRevocationList"] = v.(string)
+				}
+			}
+			if d.HasChange("acl") {
+				if v, ok := d.GetOk("acl"); ok && v.(string) != "" {
+					request["ACL"] = v.(string)
+				}
+			}
+			if d.HasChange("replication_acl") {
+				if v, ok := d.GetOk("replication_acl"); ok && v.(string) != "" {
+					request["ReplicationACL"] = v.(string)
+				}
+			}
+		}
+
+		if d.Get("engine").(string) == "MySQL" {
+			if d.HasChange("ca_type") {
+				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
+					request["CAType"] = v.(string)
+				}
+			}
+			if d.HasChange("server_cert") {
+				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
+					request["ServerCert"] = v.(string)
+				}
+			}
+			if d.HasChange("server_key") {
+				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
+					request["ServerKey"] = v.(string)
+				}
+			}
+		}
+
+		request["ConnectionString"] = instance["ConnectionString"]
+		if d.HasChange("ssl_connection_string") {
+			if v, ok := d.GetOk("ssl_connection_string"); ok && v.(string) != "" {
+				request["ConnectionString"] = v.(string)
+			}
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("ssl_action")
+		d.SetPartial("ssl_connection_string")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
