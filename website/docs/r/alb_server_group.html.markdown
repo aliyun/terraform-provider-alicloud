@@ -20,12 +20,6 @@ For information about Application Load Balancer (ALB) Server Group and how to us
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_server_group&exampleId=b90e8c32-455e-254a-a908-adb3d68538ff301b884c&activeTab=example&spm=docs.r.alb_server_group.0.b90e8c3245&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -119,10 +113,8 @@ resource "alicloud_alb_server_group" "example" {
 The following arguments are supported:
 * `connection_drain_config` - (Optional, List, Available since v1.242.0) Elegant interrupt configuration. See [`connection_drain_config`](#connection_drain_config) below.
 * `cross_zone_enabled` - (Optional, Computed, Available since v1.242.0) Indicates whether cross-zone load balancing is enabled for the server group. Valid values:
-
-  *   `true` (default)
-
-  *   `false`
+  - `true` (default)
+  - `false`
 
 -> **NOTE:**  
 
@@ -131,8 +123,15 @@ The following arguments are supported:
   *   Cross-zone load balancing can be disabled for server groups of the server and IP type, but not for server groups of the Function Compute type.
 
   *   When cross-zone load balancing is disabled, session persistence cannot be enabled.
+* `dry_run` - (Optional, Available since v1.243.0) Whether to PreCheck only this request. Value:
+true: Send a check request,
+false (default): Send a normal request.
 * `health_check_config` - (Required, List) The configuration of health checks See [`health_check_config`](#health_check_config) below.
-* `health_check_template_id` - (Optional, Available since v1.242.0) The template ID.
+* `health_check_template_id` - (Optional, Available since v1.242.0) The ID of the resource group to which you want to transfer the cloud resource.
+
+-> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+
+* `ipv6_enabled` - (Optional, ForceNew, Available since v1.243.0) Enable Ipv6
 * `protocol` - (Optional, ForceNew, Computed) The backend protocol. Valid values:
 
   *   `HTTP`: allows you to associate an HTTPS, HTTP, or QUIC listener with the server group. This is the default value.
@@ -143,10 +142,7 @@ The following arguments are supported:
 
 -> **NOTE:**   You do not need to specify a backend protocol if you set `ServerGroupType` to `Fc`.
 
-* `resource_group_id` - (Optional, Computed) The ID of the resource group to which you want to transfer the cloud resource.
-
--> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
-
+* `resource_group_id` - (Optional, Computed) Elegant interrupt configuration.
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values:
 
   *   `Wrr` (default): The weighted round-robin algorithm is used. Backend servers that have higher weights receive more requests than those that have lower weights.
@@ -164,9 +160,10 @@ The following arguments are supported:
   - `Ip`: allows you to add servers by specifying IP addresses.
   - `Fc`: allows you to add servers by specifying functions of Function Compute.
 * `servers` - (Optional, Set) List of servers. See [`servers`](#servers) below.
+* `service_name` - (Optional, Available since v1.243.0) Only applicable to the ALB Ingress scenario, indicating the K8s Service name corresponding to the server group.
 * `slow_start_config` - (Optional, List, Available since v1.242.0) Slow start configuration. See [`slow_start_config`](#slow_start_config) below.
-* `sticky_session_config` - (Optional, List) The configuration of the sticky session See [`sticky_session_config`](#sticky_session_config) below.
-* `tags` - (Optional, Map) The tag of the resource
+* `sticky_session_config` - (Optional, List) The configuration of health checks See [`sticky_session_config`](#sticky_session_config) below.
+* `tags` - (Optional, Map) The creation time of the resource
 * `uch_config` - (Optional, List, Available since v1.242.0) Url consistency hash parameter configuration See [`uch_config`](#uch_config) below.
 * `upstream_keepalive_enabled` - (Optional, Available since v1.242.0) Specifies whether to enable persistent TCP connections.
 * `vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC). You can add only servers that are deployed in the specified VPC to the server group.
@@ -191,7 +188,7 @@ The connection_drain_config supports the following:
 
 The health_check_config supports the following:
 * `health_check_codes` - (Optional, Computed, List) The status code for a successful health check
-* `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks.
+* `health_check_connect_port` - (Optional, Computed, Int) The backend port that is used for health checks.
 
   Valid values: `0` to `65535`.
 
@@ -379,10 +376,6 @@ The following attributes are exported:
 * `servers` - List of servers.
   * `server_group_id` - The ID of the server group.
   * `status` - The addition status of the backend server. Value:
-  - `Adding`: Adding.
-  - `Available`: normal availability.
-  - `Configuring`: The configuration is under configuration.
-  - `Removing`: Removing.
 * `status` - The status of the resource
 
 ## Timeouts
