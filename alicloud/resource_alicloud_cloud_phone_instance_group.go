@@ -39,10 +39,6 @@ func resourceAliCloudCloudPhoneInstanceGroup() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"biz_region_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -123,7 +119,6 @@ func resourceAliCloudCloudPhoneInstanceGroupCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["AutoPay"] = v
 	}
-	request["BizRegionId"] = d.Get("biz_region_id")
 	request["ImageId"] = d.Get("image_id")
 	if v, ok := d.GetOkExists("number_of_instances"); ok {
 		request["NumberOfInstances"] = v
@@ -131,6 +126,7 @@ func resourceAliCloudCloudPhoneInstanceGroupCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOkExists("amount"); ok {
 		request["Amount"] = v
 	}
+	request["BizRegionId"] = client.RegionId
 	if v, ok := d.GetOk("charge_type"); ok {
 		request["ChargeType"] = v
 	}

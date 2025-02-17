@@ -87,6 +87,7 @@ func (s *CloudPhoneServiceV2) CloudPhonePolicyStateRefreshFunc(id string, field 
 }
 
 // DescribeCloudPhonePolicy >>> Encapsulated.
+
 // DescribeCloudPhoneInstanceGroup <<< Encapsulated get interface for CloudPhone InstanceGroup.
 
 func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object map[string]interface{}, err error) {

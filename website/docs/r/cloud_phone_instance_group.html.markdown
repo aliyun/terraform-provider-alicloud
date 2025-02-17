@@ -53,7 +53,6 @@ resource "alicloud_ecd_simple_office_site" "defaultH2a5KS" {
 
 
 resource "alicloud_cloud_phone_instance_group" "default" {
-  biz_region_id       = var.region_id
   instance_group_spec = "acp.basic.small"
   instance_group_name = "AutoCreateGroupName"
   period              = "1"
@@ -76,7 +75,6 @@ The following arguments are supported:
 * `amount` - (Optional, Int) The number of instance groups. The default value is 1 and the maximum value is 100.
 * `auto_pay` - (Optional) Whether to pay automatically. The default is false.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. The default is false.
-* `biz_region_id` - (Required) The region ID. 
 * `charge_type` - (Optional, ForceNew) The billing type.
 * `gpu_acceleration` - (Optional) Whether to enable GPU acceleration. The default value is false.
   - true: On.
