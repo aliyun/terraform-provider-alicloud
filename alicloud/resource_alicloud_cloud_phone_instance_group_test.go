@@ -34,7 +34,6 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"biz_region_id":       "${var.region_id}",
 					"instance_group_spec": "acp.basic.small",
 					"instance_group_name": name,
 					"period":              "1",
@@ -51,7 +50,6 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"biz_region_id":       CHECKSET,
 						"instance_group_spec": "acp.basic.small",
 						"instance_group_name": name,
 						"period":              "1",
@@ -82,7 +80,7 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_pay", "auto_renew", "biz_region_id", "gpu_acceleration", "office_site_id", "period", "period_unit", "policy_group_id"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_pay", "auto_renew", "gpu_acceleration", "office_site_id", "period", "period_unit", "policy_group_id"},
 			},
 		},
 	})
