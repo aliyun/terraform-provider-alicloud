@@ -555,13 +555,15 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					"applications":         []string{"HADOOP-COMMON", "HDFS", "YARN"},
 					"node_attributes": []map[string]interface{}{
 						{
-							"vpc_id":               "${alicloud_vpc.default.id}",
-							"ram_role":             "${alicloud_ram_role.default.name}",
-							"security_group_id":    "${alicloud_security_group.default.id}",
-							"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
-							"key_pair_name":        "${alicloud_ecs_key_pair.default.id}",
-							"data_disk_encrypted":  "true",
-							"data_disk_kms_key_id": "${data.alicloud_kms_keys.default.ids.0}",
+							"vpc_id":                 "${alicloud_vpc.default.id}",
+							"ram_role":               "${alicloud_ram_role.default.name}",
+							"security_group_id":      "${alicloud_security_group.default.id}",
+							"zone_id":                "${data.alicloud_zones.default.zones.0.id}",
+							"key_pair_name":          "${alicloud_ecs_key_pair.default.id}",
+							"data_disk_encrypted":    "true",
+							"data_disk_kms_key_id":   "${data.alicloud_kms_keys.default.ids.0}",
+							"system_disk_encrypted":  "true",
+							"system_disk_kms_key_id": "${data.alicloud_kms_keys.default.ids.0}",
 						},
 					},
 					"bootstrap_scripts": []map[string]interface{}{
