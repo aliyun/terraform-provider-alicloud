@@ -891,6 +891,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_ipam_ipam_resource_discovery":                     resourceAliCloudVpcIpamIpamResourceDiscovery(),
 			"alicloud_cloud_phone_image":                                    resourceAliCloudCloudPhoneImage(),
 			"alicloud_cloud_phone_key_pair":                                 resourceAliCloudCloudPhoneKeyPair(),
 			"alicloud_cloud_phone_instance":                                 resourceAliCloudCloudPhoneInstance(),

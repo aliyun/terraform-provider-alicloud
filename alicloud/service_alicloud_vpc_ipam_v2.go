@@ -97,8 +97,8 @@ func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFunc(id string, field string, 
 // SetResourceTags <<< Encapsulated tag function for VpcIpam.
 func (s *VpcIpamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -550,3 +550,82 @@ func (s *VpcIpamServiceV2) VpcIpamServiceStateRefreshFunc(id string, field strin
 }
 
 // DescribeVpcIpamService >>> Encapsulated.
+
+// DescribeVpcIpamIpamResourceDiscovery <<< Encapsulated get interface for VpcIpam IpamResourceDiscovery.
+
+func (s *VpcIpamServiceV2) DescribeVpcIpamIpamResourceDiscovery(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["IpamResourceDiscoveryIds.1"] = id
+	request["RegionId"] = client.RegionId
+	action := "ListIpamResourceDiscoveries"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.IpamResourceDiscoveries[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["IpamResourceDiscoveryId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *VpcIpamServiceV2) VpcIpamIpamResourceDiscoveryStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcIpamIpamResourceDiscovery(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcIpamIpamResourceDiscovery >>> Encapsulated.
