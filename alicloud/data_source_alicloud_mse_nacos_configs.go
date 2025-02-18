@@ -208,7 +208,10 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 				if namespaceId == nil {
 					namespaceId = ""
 				}
-				if _, ok := idsMap[fmt.Sprint(request["InstanceId"], ":", namespaceId, ":", item["DataId"], ":", item["Group"])]; !ok {
+				instanceId := request["InstanceId"].(string)
+				dataId := item["DataId"].(string)
+				group := item["Group"].(string)
+				if _, ok := idsMap[fmt.Sprint(EscapeColons(instanceId), ":", EscapeColons(namespaceId.(string)), ":", EscapeColons(dataId), ":", EscapeColons(group))]; !ok {
 					continue
 				}
 			}
@@ -234,7 +237,10 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 			namespaceId = ""
 		}
 
-		id := fmt.Sprint(request["InstanceId"], ":", namespaceId, ":", object["DataId"], ":", object["Group"])
+		instanceId := request["InstanceId"].(string)
+		dataId := object["DataId"].(string)
+		group := object["Group"].(string)
+		id := fmt.Sprint(EscapeColons(instanceId), ":", EscapeColons(namespaceId.(string)), ":", EscapeColons(dataId), ":", EscapeColons(group))
 		mapping["id"] = id
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
