@@ -376,8 +376,8 @@ func (s *NlbServiceV2) NlbSecurityPolicyStateRefreshFunc(id string, field string
 // SetResourceTags <<< Encapsulated tag function for Nlb.
 func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -397,11 +397,11 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
-			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
@@ -468,11 +468,11 @@ func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListServerGroups"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupIds.1"] = id
-	query["RegionId"] = client.RegionId
+	request["RegionId"] = client.RegionId
+	action := "ListServerGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -485,11 +485,10 @@ func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -518,6 +517,13 @@ func (s *NlbServiceV2) NlbServerGroupStateRefreshFunc(id string, field string, f
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -534,14 +540,23 @@ func (s *NlbServiceV2) DescribeAsyncNlbServerGroupStateRefreshFunc(d *schema.Res
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
@@ -864,7 +879,7 @@ func (s *NlbServiceV2) DescribeAsyncNlbLoadBalancerStateRefreshFunc(d *schema.Re
 
 // DescribeNlbLoadBalancer >>> Encapsulated.
 
-// Async Api <<< Encapsulated for Nlb.
+// DescribeAsyncGetJobStatus <<< Encapsulated for Nlb.
 func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
@@ -900,4 +915,4 @@ func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map
 	return response, nil
 }
 
-// Async Api >>> Encapsulated.
+// DescribeAsyncGetJobStatus >>> Encapsulated.
