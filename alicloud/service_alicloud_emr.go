@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -81,6 +82,39 @@ func (s *EmrService) GetEmrV2Cluster(id string) (object map[string]interface{}, 
 	}
 	if v.(map[string]interface{})["ClusterState"] == "TERMINATED" {
 		return object, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundWithResponse, response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *EmrService) GetEmrV2Operation(id string, operationID string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetOperation"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"ClusterId":   id,
+		"OperationId": operationID,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Emr", "2021-03-20", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Operation", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Operation", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -207,6 +241,30 @@ func (s *EmrService) WaitForEmrV2Cluster(id string, status Status, timeout int) 
 		}
 	}
 	return nil
+}
+
+func (s *EmrService) WaitForEmrV2Operation(id string, nodeGroupId string, operationID string, timeout int, wg *sync.WaitGroup, cm *sync.Map) {
+	defer wg.Done()
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, _ := s.GetEmrV2Operation(id, operationID)
+		if object != nil {
+			if object["OperationState"].(string) == "COMPLETED" || object["OperationState"].(string) == "PARTIAL_COMPLETED" {
+				cm.Store(nodeGroupId, true)
+				return
+			}
+
+			if object["OperationState"].(string) == "FAILED" || object["OperationState"].(string) == "TERMINATED" {
+				cm.Store(nodeGroupId, false)
+				return
+			}
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+		if time.Now().After(deadline) {
+			cm.Store(nodeGroupId, false)
+			return
+		}
+	}
 }
 
 func (s *EmrService) EmrClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
