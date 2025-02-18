@@ -21,6 +21,10 @@ For information about ESA Http Response Header Modification Rule and how to use 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }

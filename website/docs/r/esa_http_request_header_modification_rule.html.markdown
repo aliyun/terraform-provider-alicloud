@@ -27,6 +27,10 @@ Basic Usage
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }
