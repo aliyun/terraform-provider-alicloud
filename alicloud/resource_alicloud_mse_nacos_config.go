@@ -146,7 +146,11 @@ func resourceAlicloudMseNacosConfigCreate(d *schema.ResourceData, meta interface
 		namespaceId = ""
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", namespaceId, ":", request["DataId"], ":", request["Group"]))
+	dataId := request["DataId"].(string)
+	group := request["Group"].(string)
+	instanceId := request["InstanceId"].(string)
+
+	d.SetId(fmt.Sprint(EscapeColons(instanceId), ":", EscapeColons(namespaceId.(string)), ":", EscapeColons(dataId), ":", EscapeColons(group)))
 
 	return resourceAlicloudMseNacosConfigRead(d, meta)
 }
@@ -165,7 +169,7 @@ func resourceAlicloudMseNacosConfigRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceIdWithEscaped(d.Id(), 4)
 
 	err = d.Set("instance_id", parts[0])
 	if err != nil {
@@ -188,7 +192,7 @@ func resourceAlicloudMseNacosConfigUpdate(d *schema.ResourceData, meta interface
 	var err error
 	var response map[string]interface{}
 	update := false
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceIdWithEscaped(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -239,7 +243,7 @@ func resourceAlicloudMseNacosConfigDelete(d *schema.ResourceData, meta interface
 	action := "DeleteNacosConfig"
 	var response map[string]interface{}
 	var err error
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceIdWithEscaped(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}

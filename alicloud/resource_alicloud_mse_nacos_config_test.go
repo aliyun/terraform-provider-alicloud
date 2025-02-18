@@ -34,8 +34,8 @@ func TestAccAliCloudMseNacosConfig_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":     "${alicloud_mse_cluster.example.id}",
-					"data_id":         "${var.name}",
-					"group":           "${var.name}",
+					"data_id":         "${var.name}:dataId",
+					"group":           "${var.name}:group",
 					"namespace_id":    "${alicloud_mse_engine_namespace.example.namespace_id}",
 					"content":         "test",
 					"app_name":        "test",
@@ -47,8 +47,8 @@ func TestAccAliCloudMseNacosConfig_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_id":  name,
-						"group":    name,
+						"data_id":  name + ":dataId",
+						"group":    name + ":group",
 						"content":  "test",
 						"app_name": "test",
 					}),

@@ -317,7 +317,7 @@ func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{},
 func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceIdWithEscaped(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
 	}
