@@ -114,7 +114,7 @@ var DdoscooSupportedRegions = []Region{Hangzhou, APSouthEast1}
 var DdoscooInstanceSupportedRegions = []Region{Hangzhou}
 var DdoscooInstanceIntlSupportedRegions = []Region{APSouthEast1}
 var DdosbgpSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, Qingdao, Shanghai, Zhangjiakou, Huhehaote}
-var TagPolicySupportRegions = []Region{Shanghai}
+var TagPolicySupportRegions = []Region{Shanghai, APSouthEast1}
 var MetaTagSupportRegions = []Region{Hangzhou}
 
 // var NetworkAclSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Hongkong, APSouthEast5, APSouth1}
