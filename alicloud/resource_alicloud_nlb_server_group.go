@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -32,7 +31,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"DualStack", "Ipv4"}, true),
+				ValidateFunc: StringInSlice([]string{"DualStack", "Ipv4"}, false),
 			},
 			"any_port_enabled": {
 				Type:     schema.TypeBool,
@@ -43,8 +42,8 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 			"connection_drain_enabled": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"connection_drain"},
+				Computed:      true,
 			},
 			"connection_drain_timeout": {
 				Type:         schema.TypeInt,
@@ -56,7 +55,6 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -65,12 +63,6 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ValidateFunc: IntBetween(0, 50),
-						},
-						"health_check_connect_port": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: IntBetween(0, 65535),
 						},
 						"health_check_url": {
 							Type:     schema.TypeString,
@@ -83,6 +75,27 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: IntBetween(2, 10),
 						},
+						"health_check_connect_timeout": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(0, 300),
+						},
+						"health_check_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"health_check_connect_port": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(0, 65535),
+						},
+						"health_check_req": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"healthy_threshold": {
 							Type:         schema.TypeInt,
 							Optional:     true,
@@ -92,21 +105,14 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 						"http_check_method": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"GET", "HEAD"}, true),
+							ValidateFunc: StringInSlice([]string{"GET", "HEAD"}, false),
 						},
-						"health_check_connect_timeout": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: IntBetween(0, 300),
+						"health_check_exp": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"health_check_domain": {
 							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
-						},
-						"health_check_enabled": {
-							Type:     schema.TypeBool,
 							Optional: true,
 							Computed: true,
 						},
@@ -120,7 +126,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"TCP", "HTTP"}, true),
+							ValidateFunc: StringInSlice([]string{"TCP", "HTTP", "UDP"}, false),
 						},
 					},
 				},
@@ -135,7 +141,11 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, true),
+				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, false),
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -146,7 +156,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Wrr", "Rr", "Qch", "Tch", "Sch", "Wlc"}, true),
+				ValidateFunc: StringInSlice([]string{"Wrr", "Rr", "Qch", "Tch", "Sch", "Wlc"}, false),
 			},
 			"server_group_name": {
 				Type:     schema.TypeString,
@@ -157,7 +167,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Instance", "Ip"}, true),
+				ValidateFunc: StringInSlice([]string{"Instance", "Ip"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -203,14 +213,14 @@ func resourceAliCloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOkExists("any_port_enabled"); ok {
 		request["AnyPortEnabled"] = v
 	}
-	if v, ok := d.GetOkExists("connection_drain"); ok {
+	if v, ok := d.GetOkExists("connection_drain"); ok || d.HasChange("connection_drain") {
 		request["ConnectionDrainEnabled"] = v
 	}
 
 	if v, ok := d.GetOkExists("connection_drain_enabled"); ok {
 		request["ConnectionDrainEnabled"] = v
 	}
-	if v, ok := d.GetOk("connection_drain_timeout"); ok {
+	if v, ok := d.GetOkExists("connection_drain_timeout"); ok && v.(int) > 0 {
 		request["ConnectionDrainTimeout"] = v
 	}
 	if v, ok := d.GetOk("scheduler"); ok {
@@ -226,61 +236,71 @@ func resourceAliCloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 		request["AddressIPVersion"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
+
 	if v := d.Get("health_check"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].health_check_enabled", v)
-		if nodeNative != "" {
-			objectDataLocalMap["HealthCheckEnabled"] = nodeNative
+		healthCheckEnabled1, _ := jsonpath.Get("$[0].health_check_enabled", v)
+		if healthCheckEnabled1 != nil && healthCheckEnabled1 != "" {
+			objectDataLocalMap["HealthCheckEnabled"] = healthCheckEnabled1
 		}
-		if objectDataLocalMap["HealthCheckEnabled"] == true {
-			nodeNative1, _ := jsonpath.Get("$[0].health_check_type", v)
-			if nodeNative1 != "" {
-				objectDataLocalMap["HealthCheckType"] = nodeNative1
-			}
-			nodeNative2, _ := jsonpath.Get("$[0].health_check_connect_port", v)
-			if nodeNative2 != "" {
-				objectDataLocalMap["HealthCheckConnectPort"] = nodeNative2
-			}
-			nodeNative3, _ := jsonpath.Get("$[0].healthy_threshold", v)
-			if nodeNative3 != "" {
-				objectDataLocalMap["HealthyThreshold"] = nodeNative3
-			}
-			nodeNative4, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
-			if nodeNative4 != "" {
-				objectDataLocalMap["UnhealthyThreshold"] = nodeNative4
-			}
-			nodeNative5, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
-			if nodeNative5 != "" {
-				objectDataLocalMap["HealthCheckConnectTimeout"] = nodeNative5
-			}
-			nodeNative6, _ := jsonpath.Get("$[0].health_check_interval", v)
-			if nodeNative6 != "" {
-				objectDataLocalMap["HealthCheckInterval"] = nodeNative6
-			}
-			nodeNative7, _ := jsonpath.Get("$[0].health_check_domain", v)
-			if nodeNative7 != "" {
-				objectDataLocalMap["HealthCheckDomain"] = nodeNative7
-			}
-			nodeNative8, _ := jsonpath.Get("$[0].health_check_url", v)
-			if nodeNative8 != "" {
-				objectDataLocalMap["HealthCheckUrl"] = nodeNative8
-			}
-			nodeNative9, _ := jsonpath.Get("$[0].http_check_method", v)
-			if nodeNative9 != "" {
-				objectDataLocalMap["HttpCheckMethod"] = nodeNative9
-			}
-			nodeNative10, _ := jsonpath.Get("$[0].health_check_http_code", v)
-			if nodeNative10 != "" {
-				objectDataLocalMap["HealthCheckHttpCode"] = nodeNative10
-			}
+		healthCheckType1, _ := jsonpath.Get("$[0].health_check_type", v)
+		if healthCheckType1 != nil && healthCheckType1 != "" {
+			objectDataLocalMap["HealthCheckType"] = healthCheckType1
 		}
+		healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", v)
+		if healthCheckConnectPort1 != nil && healthCheckConnectPort1 != "" {
+			objectDataLocalMap["HealthCheckConnectPort"] = healthCheckConnectPort1
+		}
+		healthyThreshold1, _ := jsonpath.Get("$[0].healthy_threshold", v)
+		if healthyThreshold1 != nil && healthyThreshold1 != "" && healthyThreshold1.(int) > 0 {
+			objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
+		}
+		unhealthyThreshold1, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
+		if unhealthyThreshold1 != nil && unhealthyThreshold1 != "" && unhealthyThreshold1.(int) > 0 {
+			objectDataLocalMap["UnhealthyThreshold"] = unhealthyThreshold1
+		}
+		healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
+		if healthCheckConnectTimeout1 != nil && healthCheckConnectTimeout1 != "" && healthCheckConnectTimeout1.(int) > 0 {
+			objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
+		}
+		healthCheckInterval1, _ := jsonpath.Get("$[0].health_check_interval", v)
+		if healthCheckInterval1 != nil && healthCheckInterval1 != "" && healthCheckInterval1.(int) > 0 {
+			objectDataLocalMap["HealthCheckInterval"] = healthCheckInterval1
+		}
+		healthCheckDomain1, _ := jsonpath.Get("$[0].health_check_domain", v)
+		if healthCheckDomain1 != nil && healthCheckDomain1 != "" {
+			objectDataLocalMap["HealthCheckDomain"] = healthCheckDomain1
+		}
+		healthCheckUrl1, _ := jsonpath.Get("$[0].health_check_url", v)
+		if healthCheckUrl1 != nil && healthCheckUrl1 != "" {
+			objectDataLocalMap["HealthCheckUrl"] = healthCheckUrl1
+		}
+		httpCheckMethod1, _ := jsonpath.Get("$[0].http_check_method", v)
+		if httpCheckMethod1 != nil && httpCheckMethod1 != "" {
+			objectDataLocalMap["HttpCheckMethod"] = httpCheckMethod1
+		}
+		healthCheckHttpCode1, _ := jsonpath.Get("$[0].health_check_http_code", v)
+		if healthCheckHttpCode1 != nil && healthCheckHttpCode1 != "" {
+			objectDataLocalMap["HealthCheckHttpCode"] = healthCheckHttpCode1
+		}
+		healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
+		if healthCheckReq1 != nil && healthCheckReq1 != "" {
+			objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
+		}
+		healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
+		if healthCheckExp1 != nil && healthCheckExp1 != "" {
+			objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
+		}
+
+		request["HealthCheckConfig"] = objectDataLocalMap
 	}
-	request["HealthCheckConfig"] = objectDataLocalMap
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -288,9 +308,9 @@ func resourceAliCloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nlb_server_group", action, AlibabaCloudSdkGoERROR)
@@ -304,7 +324,7 @@ func resourceAliCloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudNlbServerGroupUpdate(d, meta)
+	return resourceAliCloudNlbServerGroupRead(d, meta)
 }
 
 func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -327,6 +347,7 @@ func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("connection_drain_timeout", objectRaw["ConnectionDrainTimeout"])
 	d.Set("preserve_client_ip_enabled", objectRaw["PreserveClientIpEnabled"])
 	d.Set("protocol", objectRaw["Protocol"])
+	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("scheduler", objectRaw["Scheduler"])
 	d.Set("server_group_name", objectRaw["ServerGroupName"])
@@ -336,31 +357,35 @@ func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}
 
 	healthCheckMaps := make([]map[string]interface{}, 0)
 	healthCheckMap := make(map[string]interface{})
-	healthCheck1Raw := make(map[string]interface{})
+	healthCheckRaw := make(map[string]interface{})
 	if objectRaw["HealthCheck"] != nil {
-		healthCheck1Raw = objectRaw["HealthCheck"].(map[string]interface{})
+		healthCheckRaw = objectRaw["HealthCheck"].(map[string]interface{})
 	}
-	if len(healthCheck1Raw) > 0 {
-		healthCheckMap["health_check_connect_port"] = healthCheck1Raw["HealthCheckConnectPort"]
-		healthCheckMap["health_check_connect_timeout"] = healthCheck1Raw["HealthCheckConnectTimeout"]
-		healthCheckMap["health_check_domain"] = healthCheck1Raw["HealthCheckDomain"]
-		healthCheckMap["health_check_enabled"] = healthCheck1Raw["HealthCheckEnabled"]
-		healthCheckMap["health_check_interval"] = healthCheck1Raw["HealthCheckInterval"]
-		healthCheckMap["health_check_type"] = healthCheck1Raw["HealthCheckType"]
-		healthCheckMap["health_check_url"] = healthCheck1Raw["HealthCheckUrl"]
-		healthCheckMap["healthy_threshold"] = healthCheck1Raw["HealthyThreshold"]
-		healthCheckMap["http_check_method"] = healthCheck1Raw["HttpCheckMethod"]
-		healthCheckMap["unhealthy_threshold"] = healthCheck1Raw["UnhealthyThreshold"]
+	if len(healthCheckRaw) > 0 {
+		healthCheckMap["health_check_connect_port"] = healthCheckRaw["HealthCheckConnectPort"]
+		healthCheckMap["health_check_connect_timeout"] = healthCheckRaw["HealthCheckConnectTimeout"]
+		healthCheckMap["health_check_domain"] = healthCheckRaw["HealthCheckDomain"]
+		healthCheckMap["health_check_enabled"] = healthCheckRaw["HealthCheckEnabled"]
+		healthCheckMap["health_check_exp"] = healthCheckRaw["HealthCheckExp"]
+		healthCheckMap["health_check_interval"] = healthCheckRaw["HealthCheckInterval"]
+		healthCheckMap["health_check_req"] = healthCheckRaw["HealthCheckReq"]
+		healthCheckMap["health_check_type"] = healthCheckRaw["HealthCheckType"]
+		healthCheckMap["health_check_url"] = healthCheckRaw["HealthCheckUrl"]
+		healthCheckMap["healthy_threshold"] = healthCheckRaw["HealthyThreshold"]
+		healthCheckMap["http_check_method"] = healthCheckRaw["HttpCheckMethod"]
+		healthCheckMap["unhealthy_threshold"] = healthCheckRaw["UnhealthyThreshold"]
 
-		healthCheckHttpCode1Raw := make([]interface{}, 0)
-		if healthCheck1Raw["HealthCheckHttpCode"] != nil {
-			healthCheckHttpCode1Raw = healthCheck1Raw["HealthCheckHttpCode"].([]interface{})
+		healthCheckHttpCodeRaw := make([]interface{}, 0)
+		if healthCheckRaw["HealthCheckHttpCode"] != nil {
+			healthCheckHttpCodeRaw = healthCheckRaw["HealthCheckHttpCode"].([]interface{})
 		}
 
-		healthCheckMap["health_check_http_code"] = healthCheckHttpCode1Raw
+		healthCheckMap["health_check_http_code"] = healthCheckHttpCodeRaw
 		healthCheckMaps = append(healthCheckMaps, healthCheckMap)
 	}
-	d.Set("health_check", healthCheckMaps)
+	if err := d.Set("health_check", healthCheckMaps); err != nil {
+		return err
+	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -375,126 +400,102 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "UpdateServerGroupAttribute"
+
 	var err error
+	action := "UpdateServerGroupAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("connection_drain") {
+	if d.HasChange("connection_drain") {
 		update = true
 		request["ConnectionDrainEnabled"] = d.Get("connection_drain")
 	}
 
-	if !d.IsNewResource() && d.HasChange("connection_drain_enabled") {
+	if d.HasChange("connection_drain_enabled") {
 		update = true
 		request["ConnectionDrainEnabled"] = d.Get("connection_drain_enabled")
 	}
 
-	if !d.IsNewResource() && d.HasChange("connection_drain_timeout") {
+	if d.HasChange("connection_drain_timeout") {
 		update = true
 		request["ConnectionDrainTimeout"] = d.Get("connection_drain_timeout")
 	}
 
-	if !d.IsNewResource() && d.HasChange("scheduler") {
+	if d.HasChange("scheduler") {
 		update = true
 		request["Scheduler"] = d.Get("scheduler")
 	}
 
-	if !d.IsNewResource() && d.HasChange("preserve_client_ip_enabled") {
+	if d.HasChange("preserve_client_ip_enabled") {
 		update = true
 		request["PreserveClientIpEnabled"] = d.Get("preserve_client_ip_enabled")
 	}
 
-	if !d.IsNewResource() && d.HasChange("health_check") {
+	if d.HasChange("health_check") {
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
-		if v := d.Get("health_check"); !IsNil(v) {
-			nodeNative, _ := jsonpath.Get("$[0].health_check_enabled", v)
-			if nodeNative != "" {
-				objectDataLocalMap["HealthCheckEnabled"] = nodeNative
-			}
-			if objectDataLocalMap["HealthCheckEnabled"] == true {
 
-				nodeNative1, _ := jsonpath.Get("$[0].health_check_type", v)
-				if nodeNative1 != "" {
-					objectDataLocalMap["HealthCheckType"] = nodeNative1
-				}
-				nodeNative2, _ := jsonpath.Get("$[0].health_check_connect_port", v)
-				if nodeNative2 != "" {
-					objectDataLocalMap["HealthCheckConnectPort"] = nodeNative2
-				}
-				nodeNative3, _ := jsonpath.Get("$[0].healthy_threshold", v)
-				if nodeNative3 != "" {
-					objectDataLocalMap["HealthyThreshold"] = nodeNative3
-				}
-				nodeNative4, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
-				if nodeNative4 != "" {
-					objectDataLocalMap["UnhealthyThreshold"] = nodeNative4
-				}
-				nodeNative5, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
-				if nodeNative5 != "" {
-					objectDataLocalMap["HealthCheckConnectTimeout"] = nodeNative5
-				}
-				nodeNative6, _ := jsonpath.Get("$[0].health_check_interval", v)
-				if nodeNative6 != "" {
-					objectDataLocalMap["HealthCheckInterval"] = nodeNative6
-				}
-				nodeNative7, _ := jsonpath.Get("$[0].health_check_domain", v)
-				if nodeNative7 != "" {
-					objectDataLocalMap["HealthCheckDomain"] = nodeNative7
-				}
-				nodeNative8, _ := jsonpath.Get("$[0].health_check_url", v)
-				if nodeNative8 != "" {
-					objectDataLocalMap["HealthCheckUrl"] = nodeNative8
-				}
-				nodeNative9, _ := jsonpath.Get("$[0].http_check_method", v)
-				if nodeNative9 != "" {
-					objectDataLocalMap["HttpCheckMethod"] = nodeNative9
-				}
-				nodeNative10, _ := jsonpath.Get("$[0].health_check_http_code", v)
-				if nodeNative10 != "" {
-					objectDataLocalMap["HealthCheckHttpCode"] = nodeNative10
-				}
+		if v := d.Get("health_check"); v != nil {
+			healthCheckEnabled1, _ := jsonpath.Get("$[0].health_check_enabled", v)
+			if healthCheckEnabled1 != nil && (d.HasChange("health_check.0.health_check_enabled") || healthCheckEnabled1 != "") {
+				objectDataLocalMap["HealthCheckEnabled"] = healthCheckEnabled1
 			}
-		}
-		request["HealthCheckConfig"] = objectDataLocalMap
-	}
-
-	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+			healthCheckType1, _ := jsonpath.Get("$[0].health_check_type", v)
+			if healthCheckType1 != nil && (d.HasChange("health_check.0.health_check_type") || healthCheckType1 != "") {
+				objectDataLocalMap["HealthCheckType"] = healthCheckType1
 			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		nlbServiceV2 := NlbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", v)
+			if healthCheckConnectPort1 != nil && (d.HasChange("health_check.0.health_check_connect_port") || healthCheckConnectPort1 != "") {
+				objectDataLocalMap["HealthCheckConnectPort"] = healthCheckConnectPort1
+			}
+			healthyThreshold1, _ := jsonpath.Get("$[0].healthy_threshold", v)
+			if healthyThreshold1 != nil && (d.HasChange("health_check.0.healthy_threshold") || healthyThreshold1 != "") && healthyThreshold1.(int) > 0 {
+				objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
+			}
+			unhealthyThreshold1, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
+			if unhealthyThreshold1 != nil && (d.HasChange("health_check.0.unhealthy_threshold") || unhealthyThreshold1 != "") && unhealthyThreshold1.(int) > 0 {
+				objectDataLocalMap["UnhealthyThreshold"] = unhealthyThreshold1
+			}
+			healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
+			if healthCheckConnectTimeout1 != nil && (d.HasChange("health_check.0.health_check_connect_timeout") || healthCheckConnectTimeout1 != "") && healthCheckConnectTimeout1.(int) > 0 {
+				objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
+			}
+			healthCheckInterval1, _ := jsonpath.Get("$[0].health_check_interval", v)
+			if healthCheckInterval1 != nil && (d.HasChange("health_check.0.health_check_interval") || healthCheckInterval1 != "") && healthCheckInterval1.(int) > 0 {
+				objectDataLocalMap["HealthCheckInterval"] = healthCheckInterval1
+			}
+			healthCheckDomain1, _ := jsonpath.Get("$[0].health_check_domain", v)
+			if healthCheckDomain1 != nil && (d.HasChange("health_check.0.health_check_domain") || healthCheckDomain1 != "") {
+				objectDataLocalMap["HealthCheckDomain"] = healthCheckDomain1
+			}
+			healthCheckUrl1, _ := jsonpath.Get("$[0].health_check_url", v)
+			if healthCheckUrl1 != nil && (d.HasChange("health_check.0.health_check_url") || healthCheckUrl1 != "") {
+				objectDataLocalMap["HealthCheckUrl"] = healthCheckUrl1
+			}
+			httpCheckMethod1, _ := jsonpath.Get("$[0].http_check_method", v)
+			if httpCheckMethod1 != nil && (d.HasChange("health_check.0.http_check_method") || httpCheckMethod1 != "") {
+				objectDataLocalMap["HttpCheckMethod"] = httpCheckMethod1
+			}
+			healthCheckHttpCode1, _ := jsonpath.Get("$[0].health_check_http_code", d.Get("health_check"))
+			if healthCheckHttpCode1 != nil && (d.HasChange("health_check.0.health_check_http_code") || healthCheckHttpCode1 != "") {
+				objectDataLocalMap["HealthCheckHttpCode"] = healthCheckHttpCode1
+			}
+			healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
+			if healthCheckReq1 != nil && (d.HasChange("health_check.0.health_check_req") || healthCheckReq1 != "") {
+				objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
+			}
+			healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
+			if healthCheckExp1 != nil && (d.HasChange("health_check.0.health_check_exp") || healthCheckExp1 != "") {
+				objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
+			}
+
+			request["HealthCheckConfig"] = objectDataLocalMap
 		}
 	}
-	update = false
-	action = "UpdateServerGroupAttribute"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["ServerGroupId"] = d.Id()
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("server_group_name") {
+
+	if d.HasChange("server_group_name") {
 		update = true
 	}
 	request["ServerGroupName"] = d.Get("server_group_name")
@@ -502,8 +503,6 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -511,9 +510,9 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -530,18 +529,15 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
-		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
-
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "servergroup"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -549,9 +545,9 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -578,7 +574,6 @@ func resourceAliCloudNlbServerGroupDelete(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -593,18 +588,22 @@ func resourceAliCloudNlbServerGroupDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	nlbServiceV2 := NlbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbServerGroupStateRefreshFunc(d, response, "$.Status", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nlbServiceV2.DescribeAsyncNlbServerGroupStateRefreshFunc(d, response, "$.Status", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
+
 	return nil
 }

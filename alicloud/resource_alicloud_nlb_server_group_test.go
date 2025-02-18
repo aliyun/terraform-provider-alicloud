@@ -2370,14 +2370,14 @@ func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"connection_drain_enabled": "true",
 					"any_port_enabled":         "true",
-					"protocol":                 "TCP",
+					"protocol":                 "UDP",
 					"server_group_type":        "Ip",
 					"server_group_name":        name,
 					"vpc_id":                   "${alicloud_vpc.sgtestnlb.id}",
 					"health_check": []map[string]interface{}{
 						{
 							"health_check_enabled":         "true",
-							"health_check_type":            "HTTP",
+							"health_check_type":            "UDP",
 							"health_check_connect_port":    "1",
 							"healthy_threshold":            "2",
 							"unhealthy_threshold":          "2",
@@ -2388,6 +2388,8 @@ func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 							"health_check_http_code": []string{
 								"http_2xx"},
 							"http_check_method": "HEAD",
+							"health_check_req":  "example",
+							"health_check_exp":  "example",
 						},
 					},
 					"connection_drain_timeout": "10",
@@ -2401,7 +2403,7 @@ func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"connection_drain_enabled": "true",
 						"any_port_enabled":         "true",
-						"protocol":                 "TCP",
+						"protocol":                 "UDP",
 						"server_group_type":        "Ip",
 						"server_group_name":        name,
 						"vpc_id":                   CHECKSET,
@@ -2411,6 +2413,31 @@ func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 						"tags.Created":             "TF",
 						"tags.For":                 "Test",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled":         "true",
+							"health_check_type":            "UDP",
+							"health_check_connect_port":    "1",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+							"health_check_connect_timeout": "1",
+							"health_check_interval":        "5",
+							"health_check_domain":          "$SERVER_IP",
+							"health_check_url":             "/rdktest",
+							"health_check_http_code": []string{
+								"http_2xx"},
+							"http_check_method": "HEAD",
+							"health_check_req":  "example-change",
+							"health_check_exp":  "example-change",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
