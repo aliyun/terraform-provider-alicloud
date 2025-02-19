@@ -391,8 +391,14 @@ The following arguments are supported:
   - `SpotWithPriceLimit` : Set the upper limit of the preemptible instance price.
   - `SpotAsPriceGo` : The system automatically bids, following the actual price of the current market.
 * `system_disk_bursting_enabled` - (Optional) Specifies whether to enable the burst feature for system disks. Valid values:`true`: enables the burst feature. `false`: disables the burst feature. This parameter is supported only when `system_disk_category` is set to `cloud_auto`.
-* `system_disk_categories` - (Optional, Computed, List) The multi-disk categories of the system disk. When a high-priority disk type cannot be used, Auto Scaling automatically tries to create a system disk with the next priority disk category. Valid values: `cloud`: cloud disk. `cloud_efficiency`: a high-efficiency cloud disk. `cloud_ssd`:SSD cloud disk. `cloud_essd`: ESSD cloud disk.
-* `system_disk_category` - (Optional, Computed) The system disk category of worker node. Its valid value are `cloud_ssd`, `cloud_efficiency`, `cloud_essd` and `cloud_auto`. 
+* `system_disk_categories` - (Optional, Computed, List) The multi-disk categories of the system disk. When a high-priority disk type cannot be used, Auto Scaling automatically tries to create a system disk with the next priority disk category. Valid values see `system_disk_category`.
+* `system_disk_category` - (Optional, Computed) The category of the system disk for nodes. Default value: `cloud_efficiency`. Valid values:
+  - `cloud`: basic disk.
+  - `cloud_efficiency`: ultra disk.
+  - `cloud_ssd`: standard SSD.
+  - `cloud_essd`: ESSD.
+  - `cloud_auto`: ESSD AutoPL disk.
+  - `cloud_essd_entry`: ESSD Entry disk.
 * `system_disk_encrypt_algorithm` - (Optional) The encryption algorithm used by the system disk. Value range: aes-256.
 * `system_disk_encrypted` - (Optional) Whether to encrypt the system disk. Value range: `true`: encryption. `false`: Do not encrypt.
 * `system_disk_kms_key` - (Optional) The ID of the KMS key used by the system disk.
@@ -402,7 +408,11 @@ The following arguments are supported:
   - `PL2`: highest random read/write IOPS 100000 for a single disk.
   - `PL3`: maximum random read/write IOPS 1 million for a single disk.
 * `system_disk_provisioned_iops` - (Optional, Int) The predefined IOPS of a system disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}. This parameter is supported only when `system_disk_category` is set to `cloud_auto`.
-* `system_disk_size` - (Optional, Int) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
+* `system_disk_size` - (Optional, Int) The size of the system disk. Unit: GiB. The value of this parameter must be at least 1 and greater than or equal to the image size. Default value: 40 or the size of the image, whichever is larger.
+  - Basic disk: 20 to 500.
+  - ESSD (cloud_essd): The valid values vary based on the performance level of the ESSD. PL0 ESSD: 1 to 2048. PL1 ESSD: 20 to 2048. PL2 ESSD: 461 to 2048. PL3 ESSD: 1261 to 2048.
+  - ESSD AutoPL disk (cloud_auto): 1 to 2048.
+  - Other disk categories: 20 to 2048.
 * `system_disk_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy used by the system disk.
 * `tags` - (Optional, Map) Add tags only for ECS instances. The maximum length of the tag key is 128 characters. The tag key and value cannot start with aliyun or acs:, or contain https:// or http://.
 * `taints` - (Optional, List) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
@@ -429,12 +439,20 @@ The data_disks supports the following:
 * `auto_format` - (Optional, Available since v1.229.0) Whether to automatically mount the data disk. Valid values: true and false.
 * `auto_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy that you want to apply to the system disk.
 * `bursting_enabled` - (Optional) Whether the data disk is enabled with Burst (performance Burst). This is configured when the disk type is cloud_auto.
-* `category` - (Optional) The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`.
+* `category` - (Optional) The type of data disk. Default value: `cloud_efficiency`. Valid values:
+  - `cloud`: basic disk.
+  - `cloud_efficiency`: ultra disk.
+  - `cloud_ssd`: standard SSD.
+  - `cloud_essd`: Enterprise SSD (ESSD).
+  - `cloud_auto`: ESSD AutoPL disk.
+  - `cloud_essd_entry`: ESSD Entry disk.
+  - `elastic_ephemeral_disk_premium`: premium elastic ephemeral disk.
+  - `elastic_ephemeral_disk_standard`: standard elastic ephemeral disk.
 * `device` - (Optional) The mount target of data disk N. Valid values of N: 1 to 16. If you do not specify this parameter, the system automatically assigns a mount target when Auto Scaling creates ECS instances. The name of the mount target ranges from /dev/xvdb to /dev/xvdz.
 * `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-* `file_system` - (Optional, Available since v1.229.0) The Mount path. Works when auto_format is true.
+* `file_system` - (Optional, Available since v1.229.0) The type of the mounted file system. Works when auto_format is true. Optional value: `ext4`, `xfs`.
 * `kms_key_id` - (Optional) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
-* `mount_target` - (Optional, Available since v1.229.0) The type of the mounted file system. Works when auto_format is true. Optional value: `ext4`, `xfs`.
+* `mount_target` - (Optional, Available since v1.229.0) The Mount path. Works when auto_format is true.
 * `name` - (Optional, Computed) The length is 2~128 English or Chinese characters. It must start with an uppercase or lowr letter or a Chinese character and cannot start with http:// or https. Can contain numbers, colons (:), underscores (_), or dashes (-). It will be overwritten if auto_format is set.
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `provisioned_iops` - (Optional, Int) The read/write IOPS preconfigured for the data disk, which is configured when the disk type is cloud_auto.

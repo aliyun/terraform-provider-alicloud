@@ -80,7 +80,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto", "cloud", "cloud_essd_xc0", "cloud_essd_xc1", "all", "ephemeral_ssd", "local_disk"}, false),
+							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto", "cloud", "cloud_essd_xc0", "cloud_essd_xc1", "all", "ephemeral_ssd", "local_disk", "cloud_essd_entry", "elastic_ephemeral_disk_premium", "elastic_ephemeral_disk_standard"}, false),
 						},
 						"kms_key_id": {
 							Type:     schema.TypeString,
@@ -714,7 +714,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto", "cloud_essd_entry", "cloud"}, false),
 			},
 			"system_disk_encrypt_algorithm": {
 				Type:         schema.TypeString,
@@ -739,9 +739,8 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Optional: true,
 			},
 			"system_disk_size": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntBetween(20, 500),
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"system_disk_snapshot_policy_id": {
 				Type:     schema.TypeString,
