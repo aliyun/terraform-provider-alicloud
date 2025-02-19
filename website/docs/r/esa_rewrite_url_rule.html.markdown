@@ -12,7 +12,7 @@ Provides a ESA Rewrite Url Rule resource.
 
 
 
-For information about ESA Rewrite Url Rule and how to use it, see [What is Rewrite Url Rule](https://www.alibabacloud.com/help/en/).
+For information about ESA Rewrite Url Rule and how to use it, see [What is Rewrite Url Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateRewriteUrlRule).
 
 -> **NOTE:** Available since v1.243.0.
 
