@@ -55,7 +55,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 resource "alicloud_express_connect_vbr_pconn_association" "example" {
   peer_gateway_ip          = "10.0.0.6"
   local_gateway_ip         = "10.0.0.5"
-  physical_connection_id   = data.alicloud_express_connect_physical_connections.example.connections.2.id
+  physical_connection_id   = data.alicloud_express_connect_physical_connections.example.connections.1.id
   vbr_id                   = alicloud_express_connect_virtual_border_router.default.id
   peering_subnet_mask      = "255.255.255.252"
   vlan_id                  = "1122"
