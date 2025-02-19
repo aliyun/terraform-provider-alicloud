@@ -42,8 +42,7 @@ resource "alicloud_express_connect_ec_failover_test_job" "default" {
   job_type    = "StartNow"
   resource_id = [
     "${data.alicloud_express_connect_physical_connections.default.ids.0}",
-    "${data.alicloud_express_connect_physical_connections.default.ids.1}",
-    "${data.alicloud_express_connect_physical_connections.default.ids.2}"
+    "${data.alicloud_express_connect_physical_connections.default.ids.1}"
   ]
   job_duration              = "1"
   resource_type             = "PHYSICALCONNECTION"
