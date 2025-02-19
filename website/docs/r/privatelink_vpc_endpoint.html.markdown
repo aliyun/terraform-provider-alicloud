@@ -90,7 +90,7 @@ The following arguments are supported:
 * `security_group_ids` - (Optional, Set) The ID of the security group that is associated with the endpoint ENI. The security group can be used to control data transfer between the VPC and the endpoint ENI.
 
   The endpoint can be associated with up to 10 security groups.
-* `service_id` - (Optional, ForceNew) The ID of the endpoint service with which the endpoint is associated.
+* `service_id` - (Optional, ForceNew, Computed) The ID of the endpoint service with which the endpoint is associated.
 * `service_name` - (Optional, ForceNew, Computed) The name of the endpoint service with which the endpoint is associated.
 * `tags` - (Optional, Map, Available since v1.212.0) The list of tags.
 * `vpc_endpoint_name` - (Optional) The name of the endpoint.
