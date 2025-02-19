@@ -25,6 +25,22 @@ func TestAccAlicloudPrivatelinkVpcEndpointsDataSource(t *testing.T) {
 			"enable_details": "true",
 		}),
 	}
+	tagConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_privatelink_vpc_endpoint.default.vpc_endpoint_name}",
+			"enable_details": "true",
+			"tags": map[string]string{
+				"Created": "TF",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_privatelink_vpc_endpoint.default.vpc_endpoint_name}-fake",
+			"enable_details": "true",
+			"tags": map[string]string{
+				"Created": "TF-fake",
+			},
+		}),
+	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":            []string{"${alicloud_privatelink_vpc_endpoint.default.id}"},
@@ -97,6 +113,8 @@ func TestAccAlicloudPrivatelinkVpcEndpointsDataSource(t *testing.T) {
 			"endpoints.0.vpc_endpoint_name":        name,
 			"endpoints.0.vpc_id":                   CHECKSET,
 			"endpoints.0.zone.#":                   "0",
+			"endpoints.0.tags.%":                   "1",
+			"endpoints.0.tags.Created":             "TF",
 		}
 	}
 
@@ -118,7 +136,7 @@ func TestAccAlicloudPrivatelinkVpcEndpointsDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 	}
 
-	PrivatelinkVpcEndpointsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, statusConf, connectionStatusConf, idsConf, allConf)
+	PrivatelinkVpcEndpointsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, tagConf, statusConf, connectionStatusConf, idsConf, allConf)
 }
 
 func dataSourcePrivatelinkVpcEndpointsDependence(name string) string {
@@ -137,6 +155,9 @@ func dataSourcePrivatelinkVpcEndpointsDependence(name string) string {
     auto_accept_connection = false
 	}
     resource "alicloud_privatelink_vpc_endpoint" "default" {
+	  tags = {
+		Created = "TF"
+	  }
 	 service_id = alicloud_privatelink_vpc_endpoint_service.default.id
 	 vpc_id = data.alicloud_vpcs.default.ids.0
      security_group_ids = [alicloud_security_group.default.id]
