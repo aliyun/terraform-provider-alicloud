@@ -738,7 +738,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.Category"] = v
 	}
 
-	request["SystemDisk.Size"] = 40
 	if v, ok := d.GetOk("system_disk_size"); ok {
 		request["SystemDisk.Size"] = v
 	}
@@ -763,7 +762,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.EncryptAlgorithm"] = v
 	}
 
-	request["InstanceName"] = "ECS-Instance"
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceName"] = v
 	}
@@ -790,12 +788,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["LaunchTemplateVersion"] = v
 	}
 
-	request["InternetChargeType"] = "PayByTraffic"
 	if v, ok := d.GetOk("internet_charge_type"); ok {
 		request["InternetChargeType"] = v
 	}
 
-	request["InternetMaxBandwidthOut"] = 0
 	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
 		request["InternetMaxBandwidthOut"] = v
 	}
@@ -830,7 +826,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		vswitchValue = d.Get("subnet_id")
 	}
 
-	request["InstanceChargeType"] = "PostPaid"
 	if v, ok := d.GetOk("instance_charge_type"); ok {
 		request["InstanceChargeType"] = v
 	}
@@ -1103,7 +1098,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["HttpPutResponseHopLimit"] = v
 	}
 
-	request["IoOptimized"] = "optimized"
 	if d.Get("is_outdated").(bool) {
 		request["IoOptimized"] = "none"
 	}
