@@ -1037,29 +1037,6 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	return do(client.cloudapiconn)
 }
 
-func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, error) {
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
-	}
-
-	return conn, nil
-}
-func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client, error) {
-	sdkConfig := client.teaRoaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-
-	conn, err := roa.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the tea roa client: %#v", err)
-	}
-
-	return conn, nil
-}
-
 func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -2110,7 +2087,7 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPost(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("POST", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
+	return client.roaRequest("POST", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaPut invoking ROA API request with PUT method
@@ -2124,7 +2101,7 @@ func (client *AliyunClient) RoaPost(apiProductCode string, apiVersion string, pa
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPut(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("PUT", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
+	return client.roaRequest("PUT", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaGet invoking ROA API request with GET method
@@ -2137,7 +2114,7 @@ func (client *AliyunClient) RoaPut(apiProductCode string, apiVersion string, pat
 //	headers - API parameters in headers
 //	body - API parameters in body
 func (client *AliyunClient) RoaGet(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}) (map[string]interface{}, error) {
-	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, true)
+	return client.roaRequest("GET", apiProductCode, apiVersion, "", pathName, query, headers, body, true, "")
 }
 
 // RoaDelete invoking ROA API request with DELETE method
@@ -2151,7 +2128,7 @@ func (client *AliyunClient) RoaGet(apiProductCode string, apiVersion string, pat
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaDelete(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("DELETE", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
+	return client.roaRequest("DELETE", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaPatch invoking ROA API request with PATCH method
@@ -2165,7 +2142,7 @@ func (client *AliyunClient) RoaDelete(apiProductCode string, apiVersion string, 
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPatch(apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("PATCH", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry)
+	return client.roaRequest("PATCH", apiProductCode, apiVersion, "", pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaPostWithApiName invoking ROA API request with POST method
@@ -2180,7 +2157,7 @@ func (client *AliyunClient) RoaPatch(apiProductCode string, apiVersion string, p
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPostWithApiName(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("POST", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry)
+	return client.roaRequest("POST", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaPutWithApiName invoking ROA API request with PUT method
@@ -2195,7 +2172,7 @@ func (client *AliyunClient) RoaPostWithApiName(apiProductCode string, apiVersion
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPutWithApiName(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("PUT", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry)
+	return client.roaRequest("PUT", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaGetWithApiName invoking ROA API request with GET method
@@ -2209,7 +2186,7 @@ func (client *AliyunClient) RoaPutWithApiName(apiProductCode string, apiVersion 
 //	headers - API parameters in headers
 //	body - API parameters in body
 func (client *AliyunClient) RoaGetWithApiName(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}) (map[string]interface{}, error) {
-	return client.roaRequest("GET", apiProductCode, apiVersion, apiName, pathName, query, headers, body, true)
+	return client.roaRequest("GET", apiProductCode, apiVersion, apiName, pathName, query, headers, body, true, "")
 }
 
 // RoaDeleteWithApiName invoking ROA API request with DELETE method
@@ -2224,7 +2201,7 @@ func (client *AliyunClient) RoaGetWithApiName(apiProductCode string, apiVersion 
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaDeleteWithApiName(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("DELETE", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry)
+	return client.roaRequest("DELETE", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, "")
 }
 
 // RoaPatchWithApiName invoking ROA API request with PATCH method
@@ -2239,14 +2216,23 @@ func (client *AliyunClient) RoaDeleteWithApiName(apiProductCode string, apiVersi
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.roaRequest("PATCH", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry)
+	return client.roaRequest("PATCH", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, "")
 }
 
-func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
-	endpoint, err := client.loadApiEndpoint(apiProductCode)
-	if err != nil {
-		return nil, err
+func (client *AliyunClient) RoaPostWithApiNameEndpoint(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	return client.roaRequest("POST", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, endpoint)
+}
+func (client *AliyunClient) RoaPutWithApiNameEndpoint(apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	return client.roaRequest("Put", apiProductCode, apiVersion, apiName, pathName, query, headers, body, autoRetry, endpoint)
+}
+func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	var err error
+	if endpoint == "" {
+		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+		endpoint, err = client.loadApiEndpoint(apiProductCode)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)

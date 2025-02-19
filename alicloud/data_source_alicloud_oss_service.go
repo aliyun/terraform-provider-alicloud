@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -35,12 +34,8 @@ func dataSourceAlicloudOssServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenOssService)
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err := conn.DoRequest(StringPointer("OpenOssService"), nil, StringPointer("POST"), StringPointer("2019-04-22"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-
+	client := meta.(*connectivity.AliyunClient)
+	response, err := client.RpcPostWithEndpoint("Oss", "2019-04-22", "OpenOssService", nil, nil, false, connectivity.OpenOssService)
 	addDebug("OpenOssService", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILEDError", "ORDER.OPEND"}) {

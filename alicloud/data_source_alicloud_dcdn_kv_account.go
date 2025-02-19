@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,12 +50,8 @@ func dataSourceAlicloudDcdnKvAccountRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenDcdnService)
-	if err != nil {
-		return WrapError(err)
-	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				return resource.RetryableError(err)

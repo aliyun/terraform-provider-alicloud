@@ -13,7 +13,6 @@ import (
 
 	"github.com/alibabacloud-go/tea/tea"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
@@ -1324,13 +1323,8 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 		"type": "ManagedKubernetes",
 		"spec": d.Get("cluster_spec").(string),
 	}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/migrate", d.Id())), nil, nil, migrateClusterRequest, &util.RuntimeOptions{})
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RoaPostWithApiName("CS", "2015-12-15", action, fmt.Sprintf("/clusters/%s/migrate", d.Id()), nil, nil, migrateClusterRequest, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -1341,6 +1335,9 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 		addDebug(action, response, nil)
 		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 
 	stateConf := BuildStateConf([]string{"migrating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -1362,12 +1359,8 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 		modifyClusterTagsRequest = tags
 	}
 	d.SetPartial("tags")
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
-	if err != nil {
-		return WrapError(err)
-	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/tags", d.Id())), nil, nil, modifyClusterTagsRequest, &util.RuntimeOptions{})
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RoaPostWithApiName("CS", "2015-12-15", action, fmt.Sprintf("/clusters/%s/tags", d.Id()), nil, nil, modifyClusterTagsRequest, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
@@ -1378,16 +1371,13 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 		addDebug(action, response, nil)
 		return nil
 	})
-
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return err
 	}
-
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

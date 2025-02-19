@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -37,13 +36,10 @@ func dataSourceAlicloudOtsServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenOtsService)
-	if err != nil {
-		return WrapError(err)
-	}
+	client := meta.(*connectivity.AliyunClient)
 	action := "OpenOtsService"
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-06-20"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := client.RpcPostWithEndpoint("Ots", "2016-06-20", action, nil, nil, false, connectivity.OpenOtsService)
 		if err != nil {
 			if NeedRetry(err) {
 				return resource.RetryableError(err)
