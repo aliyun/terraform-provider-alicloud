@@ -41,6 +41,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of Vpc Endpoint.
 * `vpc_endpoint_name` - (Optional, ForceNew) The name of Vpc Endpoint.
 * `vpc_id` - (Optional, ForceNew) The private network to which the terminal node belongs..
+* `tags` - (Optional, Available since v1.243.0.) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
 
 ## Attributes Reference
 
@@ -61,3 +62,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of Vpc Endpoint.
   * `vpc_endpoint_name` - The name of Vpc Endpoint.
   * `vpc_id` - The private network to which the terminal node belongs.
+  * `tags` - Tag tags of Vpc Endpoint.

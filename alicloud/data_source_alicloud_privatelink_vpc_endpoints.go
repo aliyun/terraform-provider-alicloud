@@ -63,6 +63,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"endpoints": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -90,6 +91,10 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 						},
 						"id": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
 							Computed: true,
 						},
 						"endpoint_id": {
@@ -153,6 +158,9 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		request["Tag"] = tagsFromMap(v.(map[string]interface{}))
 	}
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
@@ -225,6 +233,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 			"status":                   object["EndpointStatus"],
 			"vpc_endpoint_name":        object["EndpointName"],
 			"vpc_id":                   object["VpcId"],
+			"tags":                     tagsToMap(object["Tags"]),
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["EndpointId"]))
