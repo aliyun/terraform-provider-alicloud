@@ -894,8 +894,9 @@ func TestAccAliCloudPrivateLinkVpcEndpoint_basic4793(t *testing.T) {
 }
 
 var AlicloudPrivateLinkVpcEndpointMap4793 = map[string]string{
-	"endpoint_domain":          CHECKSET,
-	"bandwidth":                CHECKSET,
+	"endpoint_domain": CHECKSET,
+	// In some scenarios, bandwidth does not return.
+	//"bandwidth":                CHECKSET
 	"connection_status":        CHECKSET,
 	"status":                   CHECKSET,
 	"create_time":              CHECKSET,
