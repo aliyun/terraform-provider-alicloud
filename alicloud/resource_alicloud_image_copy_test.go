@@ -222,8 +222,9 @@ func resourceImageCopyBasicConfigDependence(name string) string {
 	}
 
 	data "alicloud_images" "default" {
-  		most_recent = true
-  		owners      = "system"
+  		most_recent  = true
+  		owners       = "system"
+  		architecture = "x86_64"
 	}
 
 	data "alicloud_instance_types" "default" {
