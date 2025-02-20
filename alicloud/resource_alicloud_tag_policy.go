@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -11,24 +12,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudTagPolicy() *schema.Resource {
+func resourceAliCloudTagPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudTagPolicyCreate,
-		Read:   resourceAlicloudTagPolicyRead,
-		Update: resourceAlicloudTagPolicyUpdate,
-		Delete: resourceAlicloudTagPolicyDelete,
+		Create: resourceAliCloudTagPolicyCreate,
+		Read:   resourceAliCloudTagPolicyRead,
+		Update: resourceAliCloudTagPolicyUpdate,
+		Delete: resourceAliCloudTagPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"policy_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"policy_desc": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"policy_content": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -38,35 +36,48 @@ func resourceAlicloudTagPolicy() *schema.Resource {
 					return equal
 				},
 			},
+			"policy_desc": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"policy_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
 			"user_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"USER", "RD"}, false),
-				ForceNew:     true,
 				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"USER", "RD"}, false),
 			},
 		},
 	}
 }
 
-func resourceAlicloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreatePolicy"
-	request := make(map[string]interface{})
-	request["RegionId"] = client.RegionId
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	request["PolicyContent"] = d.Get("policy_content")
 	if v, ok := d.GetOk("policy_desc"); ok {
 		request["PolicyDesc"] = v
 	}
-	request["PolicyContent"] = d.Get("policy_content")
-	request["PolicyName"] = d.Get("policy_name")
 	if v, ok := d.GetOk("user_type"); ok {
 		request["UserType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
+	request["PolicyName"] = d.Get("policy_name")
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -74,65 +85,71 @@ func resourceAlicloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_tag_policy", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tag_policy", action, AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprint(response["PolicyId"]))
-	return resourceAlicloudTagPolicyRead(d, meta)
+
+	return resourceAliCloudTagPolicyRead(d, meta)
 }
-func resourceAlicloudTagPolicyRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudTagPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	tagService := TagService{client}
-	object, err := tagService.DescribeTagPolicy(d.Id())
+	tagServiceV2 := TagServiceV2{client}
+
+	objectRaw, err := tagServiceV2.DescribeTagPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_resource_tag_policy tagService.DescribeTagPolicy Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_tag_policy DescribeTagPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("policy_name", object["PolicyName"])
-	d.Set("policy_desc", object["PolicyDesc"])
-	d.Set("policy_content", object["PolicyContent"])
-	d.Set("user_type", object["UserType"])
+
+	d.Set("policy_content", objectRaw["PolicyContent"])
+	d.Set("policy_desc", objectRaw["PolicyDesc"])
+	d.Set("policy_name", objectRaw["PolicyName"])
+	d.Set("user_type", objectRaw["UserType"])
+
 	return nil
 }
 
-func resourceAlicloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
-
-	request := map[string]interface{}{
-		"PolicyId": d.Id(),
-	}
-	request["RegionId"] = client.RegionId
+	var query map[string]interface{}
 	update := false
+
+	var err error
+	action := "ModifyPolicy"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PolicyId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("policy_content") {
+		update = true
+	}
+	request["PolicyContent"] = d.Get("policy_content")
 	if d.HasChange("policy_desc") {
 		update = true
-		if v, ok := d.GetOk("policy_desc"); ok {
-			request["PolicyDesc"] = v
-		}
+		request["PolicyDesc"] = d.Get("policy_desc")
 	}
-	if d.HasChange("policy_content") {
-		request["PolicyContent"] = d.Get("policy_content")
-		update = true
-	}
+
 	if d.HasChange("policy_name") {
-		request["PolicyName"] = d.Get("policy_name")
 		update = true
 	}
-
-	action := "ModifyPolicy"
-
+	request["PolicyName"] = d.Get("policy_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -140,28 +157,33 @@ func resourceAlicloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
-
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudTagPolicyRead(d, meta)
+
+	return resourceAliCloudTagPolicyRead(d, meta)
 }
-func resourceAlicloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePolicy"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	request := map[string]interface{}{
-		"PolicyId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	request["PolicyId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -169,14 +191,16 @@ func resourceAlicloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

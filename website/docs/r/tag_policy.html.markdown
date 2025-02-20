@@ -2,17 +2,17 @@
 subcategory: "TAG"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_tag_policy"
-sidebar_current: "docs-alicloud-resource-tag-policy"
 description: |-
-  Provides a Alicloud Tag Policy resource.
+  Provides a Alicloud TAG Policy resource.
 ---
 
 # alicloud_tag_policy
 
-Provides a Tag Policy resource.
+Provides a TAG Policy resource.
 
-For information about Tag Policy and how to use it,
-see [What is Policy](https://www.alibabacloud.com/help/en/resource-management/latest/create-policy).
+
+
+For information about TAG Policy and how to use it, see [What is Policy](https://www.alibabacloud.com/help/en/resource-management/latest/create-policy).
 
 -> **NOTE:** Available since v1.203.0.
 
@@ -30,9 +30,11 @@ Basic Usage
 variable "name" {
   default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
+
 resource "alicloud_tag_policy" "example" {
   policy_name    = var.name
   policy_desc    = var.name
@@ -47,21 +49,28 @@ resource "alicloud_tag_policy" "example" {
 
 The following arguments are supported:
 
-* `policy_name` - (Required) The name of the policy. name must be 1 to 128 characters in length and can contain letters,
-  digits, and hyphens (-).
-* `policy_content` - (Required) The content of the policy.
+* `policy_name` - (Required) The name of the tag policy. The name must be 1 to 128 characters in length and can contain letters, digits, and underscores (_).
+* `policy_content` - (Required) The document of the tag policy.
 * `policy_desc` - (Optional) The description of the policy. The description must be 1 to 512 characters in length.
-* `user_type` - (Optional, ForceNew) The type of the tag policy. Valid values: `USER`, `RD`.
+* `user_type` - (Optional, ForceNew)The mode of the Tag Policy feature. Valid values: `USER`, `RD`.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The resource ID in terraform of Policy.
 
-* `id` - The resource ID of tag policy.
+## Timeouts
+
+-> **NOTE:** Available since v1.243.0.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Policy.
+* `delete` - (Defaults to 5 mins) Used when delete the Policy.
+* `update` - (Defaults to 5 mins) Used when update the Policy.
 
 ## Import
 
-Tag Policy can be imported using the id, e.g.
+TAG Policy can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_tag_policy.example <id>
