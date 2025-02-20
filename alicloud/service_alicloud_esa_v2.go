@@ -816,7 +816,7 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-
+	query["RegionId"] = client.RegionId
 	action := "GetHttpResponseHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
