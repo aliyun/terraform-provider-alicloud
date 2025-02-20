@@ -1,211 +1,212 @@
-## 1.243.0 (Unreleased)
+## 1.244.0 (Unreleased)
+## 1.243.0 (February 20, 2025)
 
-- **New Resource:** `alicloud_ack_one_membership_attachment` [GH-8276]
-- **New Resource:** `alicloud_esa_rewrite_url_rule` [GH-8277]
-- **New Resource:** `alicloud_esa_redirect_rule` [GH-8277]
-- **New Resource:** `alicloud_esa_http_response_header_modification_rule` [GH-8277]
-- **New Resource:** `alicloud_message_service_endpoint` [GH-8310]
-- **New Resource:** `alicloud_message_service_endpoint_acl` [GH-8314]
-- **New Resource:** `alicloud_cloud_phone_policy` [GH-8328]
-- **New Resource:** `alicloud_cloud_phone_key_pair` [GH-8361]
-- **New Resource:** `alicloud_cloud_phone_image` [GH-8362]
-- **New Resource:** `alicloud_vpc_ipam_ipam_resource_discovery` [GH-8367]
-- **New Data Source:** `alicloud_emrv2_cluster_instances` [GH-8283]
-- **New Data Source:** `alicloud_cloud_firewall_vpc_cen_tr_firewalls` [GH-8327]
-- **New Data Source:** `alicloud_cloud_firewall_nat_firewalls` [GH-8330]
+- **New Resource:** `alicloud_ack_one_membership_attachment` ([#8276](https://github.com/aliyun/terraform-provider-alicloud/issues/8276))
+- **New Resource:** `alicloud_esa_rewrite_url_rule` ([#8277](https://github.com/aliyun/terraform-provider-alicloud/issues/8277))
+- **New Resource:** `alicloud_esa_redirect_rule` ([#8277](https://github.com/aliyun/terraform-provider-alicloud/issues/8277))
+- **New Resource:** `alicloud_esa_http_response_header_modification_rule` ([#8277](https://github.com/aliyun/terraform-provider-alicloud/issues/8277))
+- **New Resource:** `alicloud_message_service_endpoint` ([#8310](https://github.com/aliyun/terraform-provider-alicloud/issues/8310))
+- **New Resource:** `alicloud_message_service_endpoint_acl` ([#8314](https://github.com/aliyun/terraform-provider-alicloud/issues/8314))
+- **New Resource:** `alicloud_cloud_phone_policy` ([#8328](https://github.com/aliyun/terraform-provider-alicloud/issues/8328))
+- **New Resource:** `alicloud_cloud_phone_key_pair` ([#8361](https://github.com/aliyun/terraform-provider-alicloud/issues/8361))
+- **New Resource:** `alicloud_cloud_phone_image` ([#8362](https://github.com/aliyun/terraform-provider-alicloud/issues/8362))
+- **New Resource:** `alicloud_vpc_ipam_ipam_resource_discovery` ([#8367](https://github.com/aliyun/terraform-provider-alicloud/issues/8367))
+- **New Data Source:** `alicloud_emrv2_cluster_instances` ([#8283](https://github.com/aliyun/terraform-provider-alicloud/issues/8283))
+- **New Data Source:** `alicloud_cloud_firewall_vpc_cen_tr_firewalls` ([#8327](https://github.com/aliyun/terraform-provider-alicloud/issues/8327))
+- **New Data Source:** `alicloud_cloud_firewall_nat_firewalls` ([#8330](https://github.com/aliyun/terraform-provider-alicloud/issues/8330))
 
 -
 
 ENHANCEMENTS:
 
-- client: Improved cloudphone client. [GH-8316]
-- client: changes WithCenClient to WithCbnClient. [GH-8336]
-- client: more product client supports refresh credentials automatically and improves the getting endpoint method. [GH-8338]
-- client: Improves the init client method by avoiding concurrent map writes when appending useragent; data-source/alicloud_instances: Removes the useless code; data-source/alicloud_security_group_rules: removes the useless codes. [GH-8346]
-- client: Improves the fetching endpoints rules. [GH-8348]
-- client: Supports more api method when request invoking needs api name. [GH-8354]
-- Aligreen: Improves the invoking api method and supports refreshing credential automatically. [GH-8186]
-- ExpressConnectRouter: Improves the invoking api method and supports refreshing credential automatically. [GH-8187]
-- Cen: Improves the invoking api method and supports refreshing credential automatically. [GH-8188]
-- DFS: Improves the invoking api method and supports refreshing credential automatically. [GH-8189]
-- Cms: Improves the invoking api method and supports refreshing credential automatically. [GH-8191]
-- ExpressConnect: Improves the invoking api method and supports refreshing credential automatically. [GH-8192]
-- VpnGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8193]
-- CBWP: Improves the invoking api method and supports refreshing credential automatically. [GH-8194]
-- EIP: Improves the invoking api method and supports refreshing credential automatically. [GH-8195]
-- NatGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8196]
-- VpnGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8197]
-- HaVip: Improves the invoking api method and supports refreshing credential automatically. [GH-8198]
-- VpcIpv4&Ipv6Resources: Improves the invoking api method and supports refreshing credential automatically. [GH-8199]
-- RDS: Improves the invoking api method and supports refreshing credential automatically. [GH-8200]
-- Vpc: Improves the invoking api method and supports refreshing credential automatically. [GH-8201]
-- PolarDB: Improves the invoking api method and supports refreshing credential automatically. [GH-8202]
-- DRDS: Improves the invoking api method and supports refreshing credential automatically. [GH-8203]
-- BastionHost: Improves the invoking api method and supports refreshing credential automatically. [GH-8204]
-- Lindorm: Improves the invoking api method and supports refreshing credential automatically. [GH-8205]
-- OceanBase: Improves the invoking api method and supports refreshing credential automatically. [GH-8206]
-- ClickHouse: Improves the invoking api method and supports refreshing credential automatically. [GH-8207]
-- SelectDB: Improves the invoking api method and supports refreshing credential automatically. [GH-8208]
-- Dts: Improves the invoking api method and supports refreshing credential automatically. [GH-8209]
-- DAS: Improves the invoking api method and supports refreshing credential automatically. [GH-8210]
-- DBFS: Improves the invoking api method and supports refreshing credential automatically. [GH-8211]
-- Eais: Improves the invoking api method and supports refreshing credential automatically. [GH-8212]
-- DatabaseGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8213]
-- Cloudauth: Improves the invoking api method and supports refreshing credential automatically. [GH-8214]
-- IMP: Improves the invoking api method and supports refreshing credential automatically. [GH-8215]
-- Mhub: Improves the invoking api method and supports refreshing credential automatically. [GH-8216]
-- Ons: Improves the invoking api method and supports refreshing credential automatically. [GH-8217]
-- Fnf: Improves the invoking api method and supports refreshing credential automatically. [GH-8218]
-- Ros: Improves the invoking api method and supports refreshing credential automatically. [GH-8219]
-- PVTZ: Improves the invoking api method and supports refreshing credential automatically. [GH-8220]
-- MaxCompute: Improves the invoking api method and supports refreshing credential automatically. [GH-8221]
-- ResourceSharing: Improves the invoking api method and supports refreshing credential automatically. [GH-8222]
-- ECI: Improves the invoking api method and supports refreshing credential automatically. [GH-8223]
-- Actiontrail: Improves the invoking api method and supports refreshing credential automatically. [GH-8224]
-- Mse: Improves the invoking api method and supports refreshing credential automatically. [GH-8225]
-- BrainIndustrial: Improves the invoking api method and supports refreshing credential automatically. [GH-8226]
-- Eipanycast: Improves the invoking api method and supports refreshing credential automatically. [GH-8227]
-- OOS: Improves the invoking api method and supports refreshing credential automatically. [GH-8228]
-- IMS: Improves the invoking api method and supports refreshing credential automatically. [GH-8229]
-- ResourceManager: Improves the invoking api method and supports refreshing credential automatically. [GH-8230]
-- Nas: Improves the invoking api method and supports refreshing credential automatically. [GH-8232]
-- DmsEnterprise: Improves the invoking api method and supports refreshing credential automatically. [GH-8233]
-- CloudStorageGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8234]
-- Slb: Improves the invoking api method and supports refreshing credential automatically. [GH-8236]
-- Kms: Improves the invoking api method and supports refreshing credential automatically. [GH-8237]
-- Alidns: Improves the invoking api method and supports refreshing credential automatically. [GH-8238]
-- Directmail: Improves the invoking api method and supports refreshing credential automatically. [GH-8239]
-- EventBridge: Improves the invoking api method and supports refreshing credential automatically. [GH-8240]
-- Amqp: Improves the invoking api method and supports refreshing credential automatically. [GH-8241]
-- Cassandra: Improves the invoking api method and supports refreshing credential automatically. [GH-8242]
-- Hbr: Improves the invoking api method and supports refreshing credential automatically. [GH-8243]
-- Arms: Improves the invoking api method and supports refreshing credential automatically. [GH-8244]
-- SAE: Improves the invoking api method and supports refreshing credential automatically. [GH-8245]
-- Alb: Improves the invoking api method and supports refreshing credential automatically. [GH-8247]
-- Ecd: Improves the invoking api method and supports refreshing credential automatically. [GH-8249]
-- Ecp: Improves the invoking api method and supports refreshing credential automatically. [GH-8250]
-- Scdn: Improves the invoking api method and supports refreshing credential automatically. [GH-8251]
-- Dataworks: Improves the invoking api method and supports refreshing credential automatically. [GH-8252]
-- Cdn: Improves the invoking api method and supports refreshing credential automatically. [GH-8253]
-- Cddc: Improves the invoking api method and supports refreshing credential automatically. [GH-8254]
-- ThreatDetection: Improves the invoking api method and supports refreshing credential automatically. [GH-8255]
-- DFS: Improves the invoking api method and supports refreshing credential automatically. [GH-8256]
-- EHPC: Improves the invoking api method and supports refreshing credential automatically. [GH-8257]
-- ENS: Improves the invoking api method and supports refreshing credential automatically. [GH-8258]
-- iot: Improves the invoking api method and supports refreshing credential automatically. [GH-8259]
-- imm: Improves the invoking api method and supports refreshing credential automatically. [GH-8261]
-- cloudsso: Improves the invoking api method and supports refreshing credential automatically. [GH-8262]
-- SimpleApplicationServer: Improves the invoking api method and supports refreshing credential automatically. [GH-8263]
-- vs: Improves the invoking api method and supports refreshing credential automatically. [GH-8265]
-- quickbi: Improves the invoking api method and supports refreshing credential automatically. [GH-8266]
-- DevopsRdc: Improves the invoking api method and supports refreshing credential automatically. [GH-8267]
-- VOD: Improves the invoking api method and supports refreshing credential automatically. [GH-8268]
-- OpenSearch: Improves the invoking api method and supports refreshing credential automatically. [GH-8269]
-- GraphDatabase: Improves the invoking api method and supports refreshing credential automatically. [GH-8270]
-- ServiceMesh: Improves the invoking api method and supports refreshing credential automatically. [GH-8271]
-- CR: Improves the invoking api method and supports refreshing credential automatically. [GH-8272]
-- Alikafka: Improves the invoking api method and supports refreshing credential automatically. [GH-8273]
-- ESS: Improves the invoking api method and supports refreshing credential automatically. [GH-8279]
-- DdosBasic: Improves the invoking api method and supports refreshing credential automatically. [GH-8281]
-- Smartag: Improves the invoking api method and supports refreshing credential automatically. [GH-8282]
-- Tag: Improves the invoking api method and supports refreshing credential automatically. [GH-8285]
-- Edas: Improves the invoking api method and supports refreshing credential automatically. [GH-8286]
-- Schedulerx: Improves the invoking api method and supports refreshing credential automatically. [GH-8287]
-- FC: Improves the invoking api method and supports refreshing credential automatically. [GH-8288]
-- DdosBgp: Improves the invoking api method and supports refreshing credential automatically. [GH-8291]
-- ApiGateway: Improves the invoking api method and supports refreshing credential automatically. [GH-8292]
-- DBS: Improves the invoking api method and supports refreshing credential automatically. [GH-8294]
-- Nlb: Improves the invoking api method and supports refreshing credential automatically. [GH-8295]
-- Ebs: Improves the invoking api method and supports refreshing credential automatically. [GH-8296]
-- MNS: Improves the invoking api method and supports refreshing credential automatically. [GH-8297]
-- MongoDB: Improves the invoking api method and supports refreshing credential automatically. [GH-8298]
-- ServiceCatalog: Improves the invoking api method and supports refreshing credential automatically. [GH-8300]
-- eflo: Improves the invoking api method and supports refreshing credential automatically. [GH-8301]
-- ApiG: Improves the invoking api method and supports refreshing credential automatically. [GH-8302]
-- VpcIpam: Improves the invoking api method and supports refreshing credential automatically. [GH-8304]
-- Gwlb: Improves the invoking api method and supports refreshing credential automatically. [GH-8305]
-- ESA: Improves the invoking api method and supports refreshing credential automatically. [GH-8306]
-- Pai: Improves the invoking api method and supports refreshing credential automatically. [GH-8307]
-- Cbn: Improves the invoking api method and supports refreshing credential automatically. [GH-8311]
-- Chatbot: Improves the invoking api method and supports refreshing credential automatically. [GH-8322]
-- ComputeNest: Improves the invoking api method and supports refreshing credential automatically. [GH-8323]
-- RocketMQ: Improves the invoking api method and supports refreshing credential automatically. [GH-8325]
-- BrainIndustrial: Removes the useless response checking. [GH-8326]
-- msc: Removes the useless response checking. [GH-8329]
-- AckOne: Improves the invoking api method and supports refreshing credential automatically. [GH-8339]
-- Hologram: Improves the invoking api method and supports refreshing credential automatically. [GH-8341]
-- Ecs: Improves the invoking api method and supports refreshing credential automatically. [GH-8344]
-- Emr: Improves the invoking api method and supports refreshing credential automatically. [GH-8352]
-- ACK: Improves the invoking api method and supports refreshing credential automatically. [GH-8353]
-- ElasticSearch: Improves the invoking api method and supports refreshing credential automatically. [GH-8355]
-- GPDB: Improves the invoking api method and supports refreshing credential automatically. [GH-8356]
-- resource/alicloud_threat_detection_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8126]
-- resource/alicloud_maxcompute_project: Support modify default_quota; data-source/alicloud_maxcompute_projects: Optimize code implementation. [GH-8162]
-- resource/alicloud_cs_kubernetes: remove default value of load_balancer_spec. [GH-8164]
-- resource/alicloud_cs_kubernetes_node_pool: support param ram_role_name; support kubelet_configuration params. [GH-8165]
-- resource/alicloud_esa_rate_plan_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8174]
-- resource/alicloud_rocketmq_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8175]
-- resource/alicloud_ddoscoo_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8176]
-- resource/alicloud_cloud_monitor_service_basic_public: Improves the invoking api method and supports refreshing credential automatically. [GH-8177]
-- resource/alicloud_ddosbgp_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8179]
-- resource/alicloud_cloud_monitor_service_enterprise_public: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_cms_site_monitors: Improves the invoking api method and supports refreshing credential automatically. [GH-8190]
-- resource/alicloud_quotas_template_service: Improves the invoking api method and supports refreshing credential automatically. [GH-8231]
-- resource/alicloud_emrv2_cluster: add node attributes:system_disk_encrypted and system_disk_kms_key_id. [GH-8246]
-- resource/alicloud_ecs_deployment_set: Deprecated the field domain, granularity; Fixed the diff error caused by field strategy, domain, granularity. [GH-8248]
-- resource/alicloud_ack_one_cluster: support update argocd_enabled feature. [GH-8260]
-- resource/alicloud_dfs_vsc_mount_point: Supported for new action BindVscMountPointAlias. [GH-8264]
-- resource/alicloud_nlb_listener: Add new attributes proxy_protocol_config. [GH-8280]
-- resource/alicloud_eip_address: Mark description as Computed. [GH-8308]
-- resource/alicloud_alb_load_balancer: add new attribute zone_mappings.intranet_address, zone_mappings.allocation_id and etc. [GH-8309]
-- resource/alicloud_cs_managed_kubernetes: support param ip_stack. [GH-8312]
-- resource/alicloud_instance: remove the default value for attribute internet_max_bandwidth_out,system_disk_size,internet_charge_type and instance_charge_type. [GH-8315]
-- resource/alicloud_db_instance: sql_collector_config_value insert diffSuppressFunc. [GH-8318]
-- resource/alicloud_db_instance: Optimize execution order. [GH-8319]
-- resource/alicloud_vpc_flow_log: Added the field ip_version, region_id; Improved alicloud_vpc_flow_log testcase. [GH-8321]
-- resource/alicloud_arms_integration_exporter: Removes the useless error checking; resource/alicloud_arms_prometheus: Removes the useless error checking; resource/alicloud_bastionhost_instance: Removes the useless error checking; data-source/alicloud_vpcs: Improves the setting tags. [GH-8324]
-- resource/alicloud_ram_account_alias: using the common request invoking its apis; resource/alicloud_ram_group: using the common request invoking its apis; data-source/alicloud_ram_account_alias: using the commong request invoking its api; client: improves the RAM client by adding read timeout. [GH-8332]
-- resource/alicloud_yundun_dbaudit_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8334]
-- resource/alicloud_hbr_vault: Refactored the resource alicloud_hbr_vault; Added the field worm_enabled, resource_group_id, tags, region_id, create_time. [GH-8337]
-- resource/alicloud_alb_load_balancer_security_group_attachment: Add new attribute dry_run. [GH-8340]
-- resource/alicloud_realtime_compute_vvp_instance: Improves the invoking api method and supports refreshing credential automatically. [GH-8343]
-- resource/alicloud_hbr_policy: Added the field policy_type; Improved alicloud_hbr_policy testcase. [GH-8345]
-- resource/alicloud_alb_server_group: Add new attribute ipv6_enabled, service_name and dry_run. [GH-8347]
-- resource/alicloud_cloud_phone_policy: Mark camera_redirect, clipboard as Computed. [GH-8349]
-- resource/alicloud_cloud_phone_instance_group: Remove biz_region. [GH-8359]
-- resource/alicloud_cloud_phone_instance: Improves testcase and doc. [GH-8360]
-- resource/alicloud_mse_nacos_config: Support import nacos config when dataId contains colons; data-source/alicloud_mse_nacos_configs: Escape dataId, group, namespace when build Id. [GH-8366]
-- resource/alicloud_tag_policy: Refactored the resource alicloud_tag_policy; Improved alicloud_tag_policy testcase. [GH-8369]
-- resource/alicloud_nlb_server_group: Add new attribute health_check_req and health_check_exp. [GH-8370]
-- resource/alicloud_cs_kubernetes_node_pool: update description of system_disk_size, file_system and mount_target; support more categories for system_disk and data_disks. [GH-8377]
-- resource/alicloud_privatelink_vpc_endpoint: Mark service_id as Computed. [GH-8383]
-- data-source/alicloud_bss_open_api_products: Improves the invkoing api method; data-source/alicloud_bss_open_api_pricing_modules: Improves the invkoing api method. [GH-8178]
-- data-source/alicloud_ga_basic_accelerators: Added the field bandwidth_billing_type. [GH-8184]
-- data-source/alicloud_instance_types: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_kvstore_instance_classes: Improves the invoking api method and supports refreshing credential automatically. [GH-8185]
-- data-source/alicloud_cs_managed_kubernetes_clusters: deprecated kubeconfig attribute; data-source/alicloud_cs_kubernetes_clusters: deprecated kubeconfig attribute; data-source/alicloud_cs_serverless_kubernetes_clusters: deprecated kubeconfig attribute; docs: deprecated kubeconfig attribute. [GH-8350]
-- data-source/alicloud_privatelink_vpc_endpoints: Support filter by tags. [GH-8379]
-- docs: Removes the useless note of data-source/alicloud_event_bridge_service. [GH-8119]
-- docs: fix url for resource/alicloud_cs_managed_kubernetes and resource/alicloud_cs_serverless_kubernetes. [GH-8173]
-- docs: Fixed invalid link. [GH-8183]
-- docs: add available note for argocd_enabled parameter. [GH-8274]
-- docs: modify available version info of membership attachment. [GH-8284]
-- docs: Improves link. [GH-8289]
-- docs: Updates the resource alicloud_nlb_server_group attribute preserve_client_ip_enabled default to true in docs. [GH-8335]
-- docs: improve examples for config. [GH-8372]
-- docs: improve examples for esa. [GH-8374]
-- docs: docs: improve examples for express_connect. [GH-8376]
-- docs: improve examples for ram. [GH-8378]
-- docs: improve examples for ecd. [GH-8380]
-- docs: Improves description of nat_gateway. [GH-8381]
-- docs: Fix invalid link of esa. [GH-8385]
-- testcase: Fixed alicloud_ga_bandwidth_package_attachment testcase. [GH-8331]
-- testcase: Fixed alicloud_image_copy testcase. [GH-8384]
-- testcase: Fixed alicloud_havip_attachment testcase. [GH-8387]
+- client: Improved cloudphone client. ([#8316](https://github.com/aliyun/terraform-provider-alicloud/issues/8316))
+- client: changes WithCenClient to WithCbnClient. ([#8336](https://github.com/aliyun/terraform-provider-alicloud/issues/8336))
+- client: more product client supports refresh credentials automatically and improves the getting endpoint method. ([#8338](https://github.com/aliyun/terraform-provider-alicloud/issues/8338))
+- client: Improves the init client method by avoiding concurrent map writes when appending useragent; data-source/alicloud_instances: Removes the useless code; data-source/alicloud_security_group_rules: removes the useless codes. ([#8346](https://github.com/aliyun/terraform-provider-alicloud/issues/8346))
+- client: Improves the fetching endpoints rules. ([#8348](https://github.com/aliyun/terraform-provider-alicloud/issues/8348))
+- client: Supports more api method when request invoking needs api name. ([#8354](https://github.com/aliyun/terraform-provider-alicloud/issues/8354))
+- Aligreen: Improves the invoking api method and supports refreshing credential automatically. ([#8186](https://github.com/aliyun/terraform-provider-alicloud/issues/8186))
+- ExpressConnectRouter: Improves the invoking api method and supports refreshing credential automatically. ([#8187](https://github.com/aliyun/terraform-provider-alicloud/issues/8187))
+- Cen: Improves the invoking api method and supports refreshing credential automatically. ([#8188](https://github.com/aliyun/terraform-provider-alicloud/issues/8188))
+- DFS: Improves the invoking api method and supports refreshing credential automatically. ([#8189](https://github.com/aliyun/terraform-provider-alicloud/issues/8189))
+- Cms: Improves the invoking api method and supports refreshing credential automatically. ([#8191](https://github.com/aliyun/terraform-provider-alicloud/issues/8191))
+- ExpressConnect: Improves the invoking api method and supports refreshing credential automatically. ([#8192](https://github.com/aliyun/terraform-provider-alicloud/issues/8192))
+- VpnGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8193](https://github.com/aliyun/terraform-provider-alicloud/issues/8193))
+- CBWP: Improves the invoking api method and supports refreshing credential automatically. ([#8194](https://github.com/aliyun/terraform-provider-alicloud/issues/8194))
+- EIP: Improves the invoking api method and supports refreshing credential automatically. ([#8195](https://github.com/aliyun/terraform-provider-alicloud/issues/8195))
+- NatGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8196](https://github.com/aliyun/terraform-provider-alicloud/issues/8196))
+- VpnGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8197](https://github.com/aliyun/terraform-provider-alicloud/issues/8197))
+- HaVip: Improves the invoking api method and supports refreshing credential automatically. ([#8198](https://github.com/aliyun/terraform-provider-alicloud/issues/8198))
+- VpcIpv4&Ipv6Resources: Improves the invoking api method and supports refreshing credential automatically. ([#8199](https://github.com/aliyun/terraform-provider-alicloud/issues/8199))
+- RDS: Improves the invoking api method and supports refreshing credential automatically. ([#8200](https://github.com/aliyun/terraform-provider-alicloud/issues/8200))
+- Vpc: Improves the invoking api method and supports refreshing credential automatically. ([#8201](https://github.com/aliyun/terraform-provider-alicloud/issues/8201))
+- PolarDB: Improves the invoking api method and supports refreshing credential automatically. ([#8202](https://github.com/aliyun/terraform-provider-alicloud/issues/8202))
+- DRDS: Improves the invoking api method and supports refreshing credential automatically. ([#8203](https://github.com/aliyun/terraform-provider-alicloud/issues/8203))
+- BastionHost: Improves the invoking api method and supports refreshing credential automatically. ([#8204](https://github.com/aliyun/terraform-provider-alicloud/issues/8204))
+- Lindorm: Improves the invoking api method and supports refreshing credential automatically. ([#8205](https://github.com/aliyun/terraform-provider-alicloud/issues/8205))
+- OceanBase: Improves the invoking api method and supports refreshing credential automatically. ([#8206](https://github.com/aliyun/terraform-provider-alicloud/issues/8206))
+- ClickHouse: Improves the invoking api method and supports refreshing credential automatically. ([#8207](https://github.com/aliyun/terraform-provider-alicloud/issues/8207))
+- SelectDB: Improves the invoking api method and supports refreshing credential automatically. ([#8208](https://github.com/aliyun/terraform-provider-alicloud/issues/8208))
+- Dts: Improves the invoking api method and supports refreshing credential automatically. ([#8209](https://github.com/aliyun/terraform-provider-alicloud/issues/8209))
+- DAS: Improves the invoking api method and supports refreshing credential automatically. ([#8210](https://github.com/aliyun/terraform-provider-alicloud/issues/8210))
+- DBFS: Improves the invoking api method and supports refreshing credential automatically. ([#8211](https://github.com/aliyun/terraform-provider-alicloud/issues/8211))
+- Eais: Improves the invoking api method and supports refreshing credential automatically. ([#8212](https://github.com/aliyun/terraform-provider-alicloud/issues/8212))
+- DatabaseGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8213](https://github.com/aliyun/terraform-provider-alicloud/issues/8213))
+- Cloudauth: Improves the invoking api method and supports refreshing credential automatically. ([#8214](https://github.com/aliyun/terraform-provider-alicloud/issues/8214))
+- IMP: Improves the invoking api method and supports refreshing credential automatically. ([#8215](https://github.com/aliyun/terraform-provider-alicloud/issues/8215))
+- Mhub: Improves the invoking api method and supports refreshing credential automatically. ([#8216](https://github.com/aliyun/terraform-provider-alicloud/issues/8216))
+- Ons: Improves the invoking api method and supports refreshing credential automatically. ([#8217](https://github.com/aliyun/terraform-provider-alicloud/issues/8217))
+- Fnf: Improves the invoking api method and supports refreshing credential automatically. ([#8218](https://github.com/aliyun/terraform-provider-alicloud/issues/8218))
+- Ros: Improves the invoking api method and supports refreshing credential automatically. ([#8219](https://github.com/aliyun/terraform-provider-alicloud/issues/8219))
+- PVTZ: Improves the invoking api method and supports refreshing credential automatically. ([#8220](https://github.com/aliyun/terraform-provider-alicloud/issues/8220))
+- MaxCompute: Improves the invoking api method and supports refreshing credential automatically. ([#8221](https://github.com/aliyun/terraform-provider-alicloud/issues/8221))
+- ResourceSharing: Improves the invoking api method and supports refreshing credential automatically. ([#8222](https://github.com/aliyun/terraform-provider-alicloud/issues/8222))
+- ECI: Improves the invoking api method and supports refreshing credential automatically. ([#8223](https://github.com/aliyun/terraform-provider-alicloud/issues/8223))
+- Actiontrail: Improves the invoking api method and supports refreshing credential automatically. ([#8224](https://github.com/aliyun/terraform-provider-alicloud/issues/8224))
+- Mse: Improves the invoking api method and supports refreshing credential automatically. ([#8225](https://github.com/aliyun/terraform-provider-alicloud/issues/8225))
+- BrainIndustrial: Improves the invoking api method and supports refreshing credential automatically. ([#8226](https://github.com/aliyun/terraform-provider-alicloud/issues/8226))
+- Eipanycast: Improves the invoking api method and supports refreshing credential automatically. ([#8227](https://github.com/aliyun/terraform-provider-alicloud/issues/8227))
+- OOS: Improves the invoking api method and supports refreshing credential automatically. ([#8228](https://github.com/aliyun/terraform-provider-alicloud/issues/8228))
+- IMS: Improves the invoking api method and supports refreshing credential automatically. ([#8229](https://github.com/aliyun/terraform-provider-alicloud/issues/8229))
+- ResourceManager: Improves the invoking api method and supports refreshing credential automatically. ([#8230](https://github.com/aliyun/terraform-provider-alicloud/issues/8230))
+- Nas: Improves the invoking api method and supports refreshing credential automatically. ([#8232](https://github.com/aliyun/terraform-provider-alicloud/issues/8232))
+- DmsEnterprise: Improves the invoking api method and supports refreshing credential automatically. ([#8233](https://github.com/aliyun/terraform-provider-alicloud/issues/8233))
+- CloudStorageGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8234](https://github.com/aliyun/terraform-provider-alicloud/issues/8234))
+- Slb: Improves the invoking api method and supports refreshing credential automatically. ([#8236](https://github.com/aliyun/terraform-provider-alicloud/issues/8236))
+- Kms: Improves the invoking api method and supports refreshing credential automatically. ([#8237](https://github.com/aliyun/terraform-provider-alicloud/issues/8237))
+- Alidns: Improves the invoking api method and supports refreshing credential automatically. ([#8238](https://github.com/aliyun/terraform-provider-alicloud/issues/8238))
+- Directmail: Improves the invoking api method and supports refreshing credential automatically. ([#8239](https://github.com/aliyun/terraform-provider-alicloud/issues/8239))
+- EventBridge: Improves the invoking api method and supports refreshing credential automatically. ([#8240](https://github.com/aliyun/terraform-provider-alicloud/issues/8240))
+- Amqp: Improves the invoking api method and supports refreshing credential automatically. ([#8241](https://github.com/aliyun/terraform-provider-alicloud/issues/8241))
+- Cassandra: Improves the invoking api method and supports refreshing credential automatically. ([#8242](https://github.com/aliyun/terraform-provider-alicloud/issues/8242))
+- Hbr: Improves the invoking api method and supports refreshing credential automatically. ([#8243](https://github.com/aliyun/terraform-provider-alicloud/issues/8243))
+- Arms: Improves the invoking api method and supports refreshing credential automatically. ([#8244](https://github.com/aliyun/terraform-provider-alicloud/issues/8244))
+- SAE: Improves the invoking api method and supports refreshing credential automatically. ([#8245](https://github.com/aliyun/terraform-provider-alicloud/issues/8245))
+- Alb: Improves the invoking api method and supports refreshing credential automatically. ([#8247](https://github.com/aliyun/terraform-provider-alicloud/issues/8247))
+- Ecd: Improves the invoking api method and supports refreshing credential automatically. ([#8249](https://github.com/aliyun/terraform-provider-alicloud/issues/8249))
+- Ecp: Improves the invoking api method and supports refreshing credential automatically. ([#8250](https://github.com/aliyun/terraform-provider-alicloud/issues/8250))
+- Scdn: Improves the invoking api method and supports refreshing credential automatically. ([#8251](https://github.com/aliyun/terraform-provider-alicloud/issues/8251))
+- Dataworks: Improves the invoking api method and supports refreshing credential automatically. ([#8252](https://github.com/aliyun/terraform-provider-alicloud/issues/8252))
+- Cdn: Improves the invoking api method and supports refreshing credential automatically. ([#8253](https://github.com/aliyun/terraform-provider-alicloud/issues/8253))
+- Cddc: Improves the invoking api method and supports refreshing credential automatically. ([#8254](https://github.com/aliyun/terraform-provider-alicloud/issues/8254))
+- ThreatDetection: Improves the invoking api method and supports refreshing credential automatically. ([#8255](https://github.com/aliyun/terraform-provider-alicloud/issues/8255))
+- DFS: Improves the invoking api method and supports refreshing credential automatically. ([#8256](https://github.com/aliyun/terraform-provider-alicloud/issues/8256))
+- EHPC: Improves the invoking api method and supports refreshing credential automatically. ([#8257](https://github.com/aliyun/terraform-provider-alicloud/issues/8257))
+- ENS: Improves the invoking api method and supports refreshing credential automatically. ([#8258](https://github.com/aliyun/terraform-provider-alicloud/issues/8258))
+- iot: Improves the invoking api method and supports refreshing credential automatically. ([#8259](https://github.com/aliyun/terraform-provider-alicloud/issues/8259))
+- imm: Improves the invoking api method and supports refreshing credential automatically. ([#8261](https://github.com/aliyun/terraform-provider-alicloud/issues/8261))
+- cloudsso: Improves the invoking api method and supports refreshing credential automatically. ([#8262](https://github.com/aliyun/terraform-provider-alicloud/issues/8262))
+- SimpleApplicationServer: Improves the invoking api method and supports refreshing credential automatically. ([#8263](https://github.com/aliyun/terraform-provider-alicloud/issues/8263))
+- vs: Improves the invoking api method and supports refreshing credential automatically. ([#8265](https://github.com/aliyun/terraform-provider-alicloud/issues/8265))
+- quickbi: Improves the invoking api method and supports refreshing credential automatically. ([#8266](https://github.com/aliyun/terraform-provider-alicloud/issues/8266))
+- DevopsRdc: Improves the invoking api method and supports refreshing credential automatically. ([#8267](https://github.com/aliyun/terraform-provider-alicloud/issues/8267))
+- VOD: Improves the invoking api method and supports refreshing credential automatically. ([#8268](https://github.com/aliyun/terraform-provider-alicloud/issues/8268))
+- OpenSearch: Improves the invoking api method and supports refreshing credential automatically. ([#8269](https://github.com/aliyun/terraform-provider-alicloud/issues/8269))
+- GraphDatabase: Improves the invoking api method and supports refreshing credential automatically. ([#8270](https://github.com/aliyun/terraform-provider-alicloud/issues/8270))
+- ServiceMesh: Improves the invoking api method and supports refreshing credential automatically. ([#8271](https://github.com/aliyun/terraform-provider-alicloud/issues/8271))
+- CR: Improves the invoking api method and supports refreshing credential automatically. ([#8272](https://github.com/aliyun/terraform-provider-alicloud/issues/8272))
+- Alikafka: Improves the invoking api method and supports refreshing credential automatically. ([#8273](https://github.com/aliyun/terraform-provider-alicloud/issues/8273))
+- ESS: Improves the invoking api method and supports refreshing credential automatically. ([#8279](https://github.com/aliyun/terraform-provider-alicloud/issues/8279))
+- DdosBasic: Improves the invoking api method and supports refreshing credential automatically. ([#8281](https://github.com/aliyun/terraform-provider-alicloud/issues/8281))
+- Smartag: Improves the invoking api method and supports refreshing credential automatically. ([#8282](https://github.com/aliyun/terraform-provider-alicloud/issues/8282))
+- Tag: Improves the invoking api method and supports refreshing credential automatically. ([#8285](https://github.com/aliyun/terraform-provider-alicloud/issues/8285))
+- Edas: Improves the invoking api method and supports refreshing credential automatically. ([#8286](https://github.com/aliyun/terraform-provider-alicloud/issues/8286))
+- Schedulerx: Improves the invoking api method and supports refreshing credential automatically. ([#8287](https://github.com/aliyun/terraform-provider-alicloud/issues/8287))
+- FC: Improves the invoking api method and supports refreshing credential automatically. ([#8288](https://github.com/aliyun/terraform-provider-alicloud/issues/8288))
+- DdosBgp: Improves the invoking api method and supports refreshing credential automatically. ([#8291](https://github.com/aliyun/terraform-provider-alicloud/issues/8291))
+- ApiGateway: Improves the invoking api method and supports refreshing credential automatically. ([#8292](https://github.com/aliyun/terraform-provider-alicloud/issues/8292))
+- DBS: Improves the invoking api method and supports refreshing credential automatically. ([#8294](https://github.com/aliyun/terraform-provider-alicloud/issues/8294))
+- Nlb: Improves the invoking api method and supports refreshing credential automatically. ([#8295](https://github.com/aliyun/terraform-provider-alicloud/issues/8295))
+- Ebs: Improves the invoking api method and supports refreshing credential automatically. ([#8296](https://github.com/aliyun/terraform-provider-alicloud/issues/8296))
+- MNS: Improves the invoking api method and supports refreshing credential automatically. ([#8297](https://github.com/aliyun/terraform-provider-alicloud/issues/8297))
+- MongoDB: Improves the invoking api method and supports refreshing credential automatically. ([#8298](https://github.com/aliyun/terraform-provider-alicloud/issues/8298))
+- ServiceCatalog: Improves the invoking api method and supports refreshing credential automatically. ([#8300](https://github.com/aliyun/terraform-provider-alicloud/issues/8300))
+- eflo: Improves the invoking api method and supports refreshing credential automatically. ([#8301](https://github.com/aliyun/terraform-provider-alicloud/issues/8301))
+- ApiG: Improves the invoking api method and supports refreshing credential automatically. ([#8302](https://github.com/aliyun/terraform-provider-alicloud/issues/8302))
+- VpcIpam: Improves the invoking api method and supports refreshing credential automatically. ([#8304](https://github.com/aliyun/terraform-provider-alicloud/issues/8304))
+- Gwlb: Improves the invoking api method and supports refreshing credential automatically. ([#8305](https://github.com/aliyun/terraform-provider-alicloud/issues/8305))
+- ESA: Improves the invoking api method and supports refreshing credential automatically. ([#8306](https://github.com/aliyun/terraform-provider-alicloud/issues/8306))
+- Pai: Improves the invoking api method and supports refreshing credential automatically. ([#8307](https://github.com/aliyun/terraform-provider-alicloud/issues/8307))
+- Cbn: Improves the invoking api method and supports refreshing credential automatically. ([#8311](https://github.com/aliyun/terraform-provider-alicloud/issues/8311))
+- Chatbot: Improves the invoking api method and supports refreshing credential automatically. ([#8322](https://github.com/aliyun/terraform-provider-alicloud/issues/8322))
+- ComputeNest: Improves the invoking api method and supports refreshing credential automatically. ([#8323](https://github.com/aliyun/terraform-provider-alicloud/issues/8323))
+- RocketMQ: Improves the invoking api method and supports refreshing credential automatically. ([#8325](https://github.com/aliyun/terraform-provider-alicloud/issues/8325))
+- BrainIndustrial: Removes the useless response checking. ([#8326](https://github.com/aliyun/terraform-provider-alicloud/issues/8326))
+- msc: Removes the useless response checking. ([#8329](https://github.com/aliyun/terraform-provider-alicloud/issues/8329))
+- AckOne: Improves the invoking api method and supports refreshing credential automatically. ([#8339](https://github.com/aliyun/terraform-provider-alicloud/issues/8339))
+- Hologram: Improves the invoking api method and supports refreshing credential automatically. ([#8341](https://github.com/aliyun/terraform-provider-alicloud/issues/8341))
+- Ecs: Improves the invoking api method and supports refreshing credential automatically. ([#8344](https://github.com/aliyun/terraform-provider-alicloud/issues/8344))
+- Emr: Improves the invoking api method and supports refreshing credential automatically. ([#8352](https://github.com/aliyun/terraform-provider-alicloud/issues/8352))
+- ACK: Improves the invoking api method and supports refreshing credential automatically. ([#8353](https://github.com/aliyun/terraform-provider-alicloud/issues/8353))
+- ElasticSearch: Improves the invoking api method and supports refreshing credential automatically. ([#8355](https://github.com/aliyun/terraform-provider-alicloud/issues/8355))
+- GPDB: Improves the invoking api method and supports refreshing credential automatically. ([#8356](https://github.com/aliyun/terraform-provider-alicloud/issues/8356))
+- resource/alicloud_threat_detection_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8126](https://github.com/aliyun/terraform-provider-alicloud/issues/8126))
+- resource/alicloud_maxcompute_project: Support modify default_quota; data-source/alicloud_maxcompute_projects: Optimize code implementation. ([#8162](https://github.com/aliyun/terraform-provider-alicloud/issues/8162))
+- resource/alicloud_cs_kubernetes: remove default value of load_balancer_spec. ([#8164](https://github.com/aliyun/terraform-provider-alicloud/issues/8164))
+- resource/alicloud_cs_kubernetes_node_pool: support param ram_role_name; support kubelet_configuration params. ([#8165](https://github.com/aliyun/terraform-provider-alicloud/issues/8165))
+- resource/alicloud_esa_rate_plan_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8174](https://github.com/aliyun/terraform-provider-alicloud/issues/8174))
+- resource/alicloud_rocketmq_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8175](https://github.com/aliyun/terraform-provider-alicloud/issues/8175))
+- resource/alicloud_ddoscoo_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8176](https://github.com/aliyun/terraform-provider-alicloud/issues/8176))
+- resource/alicloud_cloud_monitor_service_basic_public: Improves the invoking api method and supports refreshing credential automatically. ([#8177](https://github.com/aliyun/terraform-provider-alicloud/issues/8177))
+- resource/alicloud_ddosbgp_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8179](https://github.com/aliyun/terraform-provider-alicloud/issues/8179))
+- resource/alicloud_cloud_monitor_service_enterprise_public: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_cms_site_monitors: Improves the invoking api method and supports refreshing credential automatically. ([#8190](https://github.com/aliyun/terraform-provider-alicloud/issues/8190))
+- resource/alicloud_quotas_template_service: Improves the invoking api method and supports refreshing credential automatically. ([#8231](https://github.com/aliyun/terraform-provider-alicloud/issues/8231))
+- resource/alicloud_emrv2_cluster: add node attributes:system_disk_encrypted and system_disk_kms_key_id. ([#8246](https://github.com/aliyun/terraform-provider-alicloud/issues/8246))
+- resource/alicloud_ecs_deployment_set: Deprecated the field domain, granularity; Fixed the diff error caused by field strategy, domain, granularity. ([#8248](https://github.com/aliyun/terraform-provider-alicloud/issues/8248))
+- resource/alicloud_ack_one_cluster: support update argocd_enabled feature. ([#8260](https://github.com/aliyun/terraform-provider-alicloud/issues/8260))
+- resource/alicloud_dfs_vsc_mount_point: Supported for new action BindVscMountPointAlias. ([#8264](https://github.com/aliyun/terraform-provider-alicloud/issues/8264))
+- resource/alicloud_nlb_listener: Add new attributes proxy_protocol_config. ([#8280](https://github.com/aliyun/terraform-provider-alicloud/issues/8280))
+- resource/alicloud_eip_address: Mark description as Computed. ([#8308](https://github.com/aliyun/terraform-provider-alicloud/issues/8308))
+- resource/alicloud_alb_load_balancer: add new attribute zone_mappings.intranet_address, zone_mappings.allocation_id and etc. ([#8309](https://github.com/aliyun/terraform-provider-alicloud/issues/8309))
+- resource/alicloud_cs_managed_kubernetes: support param ip_stack. ([#8312](https://github.com/aliyun/terraform-provider-alicloud/issues/8312))
+- resource/alicloud_instance: remove the default value for attribute internet_max_bandwidth_out,system_disk_size,internet_charge_type and instance_charge_type. ([#8315](https://github.com/aliyun/terraform-provider-alicloud/issues/8315))
+- resource/alicloud_db_instance: sql_collector_config_value insert diffSuppressFunc. ([#8318](https://github.com/aliyun/terraform-provider-alicloud/issues/8318))
+- resource/alicloud_db_instance: Optimize execution order. ([#8319](https://github.com/aliyun/terraform-provider-alicloud/issues/8319))
+- resource/alicloud_vpc_flow_log: Added the field ip_version, region_id; Improved alicloud_vpc_flow_log testcase. ([#8321](https://github.com/aliyun/terraform-provider-alicloud/issues/8321))
+- resource/alicloud_arms_integration_exporter: Removes the useless error checking; resource/alicloud_arms_prometheus: Removes the useless error checking; resource/alicloud_bastionhost_instance: Removes the useless error checking; data-source/alicloud_vpcs: Improves the setting tags. ([#8324](https://github.com/aliyun/terraform-provider-alicloud/issues/8324))
+- resource/alicloud_ram_account_alias: using the common request invoking its apis; resource/alicloud_ram_group: using the common request invoking its apis; data-source/alicloud_ram_account_alias: using the commong request invoking its api; client: improves the RAM client by adding read timeout. ([#8332](https://github.com/aliyun/terraform-provider-alicloud/issues/8332))
+- resource/alicloud_yundun_dbaudit_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8334](https://github.com/aliyun/terraform-provider-alicloud/issues/8334))
+- resource/alicloud_hbr_vault: Refactored the resource alicloud_hbr_vault; Added the field worm_enabled, resource_group_id, tags, region_id, create_time. ([#8337](https://github.com/aliyun/terraform-provider-alicloud/issues/8337))
+- resource/alicloud_alb_load_balancer_security_group_attachment: Add new attribute dry_run. ([#8340](https://github.com/aliyun/terraform-provider-alicloud/issues/8340))
+- resource/alicloud_realtime_compute_vvp_instance: Improves the invoking api method and supports refreshing credential automatically. ([#8343](https://github.com/aliyun/terraform-provider-alicloud/issues/8343))
+- resource/alicloud_hbr_policy: Added the field policy_type; Improved alicloud_hbr_policy testcase. ([#8345](https://github.com/aliyun/terraform-provider-alicloud/issues/8345))
+- resource/alicloud_alb_server_group: Add new attribute ipv6_enabled, service_name and dry_run. ([#8347](https://github.com/aliyun/terraform-provider-alicloud/issues/8347))
+- resource/alicloud_cloud_phone_policy: Mark camera_redirect, clipboard as Computed. ([#8349](https://github.com/aliyun/terraform-provider-alicloud/issues/8349))
+- resource/alicloud_cloud_phone_instance_group: Remove biz_region. ([#8359](https://github.com/aliyun/terraform-provider-alicloud/issues/8359))
+- resource/alicloud_cloud_phone_instance: Improves testcase and doc. ([#8360](https://github.com/aliyun/terraform-provider-alicloud/issues/8360))
+- resource/alicloud_mse_nacos_config: Support import nacos config when dataId contains colons; data-source/alicloud_mse_nacos_configs: Escape dataId, group, namespace when build Id. ([#8366](https://github.com/aliyun/terraform-provider-alicloud/issues/8366))
+- resource/alicloud_tag_policy: Refactored the resource alicloud_tag_policy; Improved alicloud_tag_policy testcase. ([#8369](https://github.com/aliyun/terraform-provider-alicloud/issues/8369))
+- resource/alicloud_nlb_server_group: Add new attribute health_check_req and health_check_exp. ([#8370](https://github.com/aliyun/terraform-provider-alicloud/issues/8370))
+- resource/alicloud_cs_kubernetes_node_pool: update description of system_disk_size, file_system and mount_target; support more categories for system_disk and data_disks. ([#8377](https://github.com/aliyun/terraform-provider-alicloud/issues/8377))
+- resource/alicloud_privatelink_vpc_endpoint: Mark service_id as Computed. ([#8383](https://github.com/aliyun/terraform-provider-alicloud/issues/8383))
+- data-source/alicloud_bss_open_api_products: Improves the invkoing api method; data-source/alicloud_bss_open_api_pricing_modules: Improves the invkoing api method. ([#8178](https://github.com/aliyun/terraform-provider-alicloud/issues/8178))
+- data-source/alicloud_ga_basic_accelerators: Added the field bandwidth_billing_type. ([#8184](https://github.com/aliyun/terraform-provider-alicloud/issues/8184))
+- data-source/alicloud_instance_types: Improves the invoking api method and supports refreshing credential automatically; data-source/alicloud_kvstore_instance_classes: Improves the invoking api method and supports refreshing credential automatically. ([#8185](https://github.com/aliyun/terraform-provider-alicloud/issues/8185))
+- data-source/alicloud_cs_managed_kubernetes_clusters: deprecated kubeconfig attribute; data-source/alicloud_cs_kubernetes_clusters: deprecated kubeconfig attribute; data-source/alicloud_cs_serverless_kubernetes_clusters: deprecated kubeconfig attribute; docs: deprecated kubeconfig attribute. ([#8350](https://github.com/aliyun/terraform-provider-alicloud/issues/8350))
+- data-source/alicloud_privatelink_vpc_endpoints: Support filter by tags. ([#8379](https://github.com/aliyun/terraform-provider-alicloud/issues/8379))
+- docs: Removes the useless note of data-source/alicloud_event_bridge_service. ([#8119](https://github.com/aliyun/terraform-provider-alicloud/issues/8119))
+- docs: fix url for resource/alicloud_cs_managed_kubernetes and resource/alicloud_cs_serverless_kubernetes. ([#8173](https://github.com/aliyun/terraform-provider-alicloud/issues/8173))
+- docs: Fixed invalid link. ([#8183](https://github.com/aliyun/terraform-provider-alicloud/issues/8183))
+- docs: add available note for argocd_enabled parameter. ([#8274](https://github.com/aliyun/terraform-provider-alicloud/issues/8274))
+- docs: modify available version info of membership attachment. ([#8284](https://github.com/aliyun/terraform-provider-alicloud/issues/8284))
+- docs: Improves link. ([#8289](https://github.com/aliyun/terraform-provider-alicloud/issues/8289))
+- docs: Updates the resource alicloud_nlb_server_group attribute preserve_client_ip_enabled default to true in docs. ([#8335](https://github.com/aliyun/terraform-provider-alicloud/issues/8335))
+- docs: improve examples for config. ([#8372](https://github.com/aliyun/terraform-provider-alicloud/issues/8372))
+- docs: improve examples for esa. ([#8374](https://github.com/aliyun/terraform-provider-alicloud/issues/8374))
+- docs: docs: improve examples for express_connect. ([#8376](https://github.com/aliyun/terraform-provider-alicloud/issues/8376))
+- docs: improve examples for ram. ([#8378](https://github.com/aliyun/terraform-provider-alicloud/issues/8378))
+- docs: improve examples for ecd. ([#8380](https://github.com/aliyun/terraform-provider-alicloud/issues/8380))
+- docs: Improves description of nat_gateway. ([#8381](https://github.com/aliyun/terraform-provider-alicloud/issues/8381))
+- docs: Fix invalid link of esa. ([#8385](https://github.com/aliyun/terraform-provider-alicloud/issues/8385))
+- testcase: Fixed alicloud_ga_bandwidth_package_attachment testcase. ([#8331](https://github.com/aliyun/terraform-provider-alicloud/issues/8331))
+- testcase: Fixed alicloud_image_copy testcase. ([#8384](https://github.com/aliyun/terraform-provider-alicloud/issues/8384))
+- testcase: Fixed alicloud_havip_attachment testcase. ([#8387](https://github.com/aliyun/terraform-provider-alicloud/issues/8387))
 
 BUG FIXES:
 
-- resource/alicloud_alb_server_group: Fix bug while modify servers.description. [GH-8167]
-- resource/alicloud_cs_managed_kubernetes: fix state typo; resource/alicloud_cs_kubernetes: fix state typo; resource/alicloud_cs_serverless_kubernetes: fix state typo. [GH-8342]
-- resource/alicloud_dts_subscription_job: Fixed the update error caused by tags. [GH-8363]
+- resource/alicloud_alb_server_group: Fix bug while modify servers.description. ([#8167](https://github.com/aliyun/terraform-provider-alicloud/issues/8167))
+- resource/alicloud_cs_managed_kubernetes: fix state typo; resource/alicloud_cs_kubernetes: fix state typo; resource/alicloud_cs_serverless_kubernetes: fix state typo. ([#8342](https://github.com/aliyun/terraform-provider-alicloud/issues/8342))
+- resource/alicloud_dts_subscription_job: Fixed the update error caused by tags. ([#8363](https://github.com/aliyun/terraform-provider-alicloud/issues/8363))
 
 ## 1.242.0 (January 24, 2025)
 

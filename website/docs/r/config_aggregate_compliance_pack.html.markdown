@@ -20,7 +20,7 @@ For information about Cloud Config Aggregate Compliance Pack and how to use it, 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_config_aggregate_compliance_pack&exampleId=12808e93-aeee-b159-88cd-c757c2d5ffa6498d3279&activeTab=example&spm=docs.r.config_aggregate_compliance_pack.0.12808e93ae&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_config_aggregate_compliance_pack&exampleId=77f1d8f8-6c27-15f2-ad02-1e43d5f1c29fb33c6349&activeTab=example&spm=docs.r.config_aggregate_compliance_pack.0.77f1d8f86c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

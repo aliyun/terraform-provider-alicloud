@@ -21,7 +21,7 @@ For information about ESA Http Request Header Modification Rule and how to use i
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_http_request_header_modification_rule&exampleId=541bbf26-41e0-c2b1-977a-bdd9bf147196db471fc0&activeTab=example&spm=docs.r.esa_http_request_header_modification_rule.0.541bbf2641&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_http_request_header_modification_rule&exampleId=f266c577-541b-05f6-08cc-fe780ddccfddc44c05d4&activeTab=example&spm=docs.r.esa_http_request_header_modification_rule.0.f266c57754&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

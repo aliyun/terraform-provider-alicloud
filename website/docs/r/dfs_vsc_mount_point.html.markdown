@@ -19,7 +19,7 @@ For information about Apsara File Storage for HDFS (DFS) Vsc Mount Point and how
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dfs_vsc_mount_point&exampleId=a6fe3dd0-fe81-ae03-e505-b5e16116755d45cb9ec9&activeTab=example&spm=docs.r.dfs_vsc_mount_point.0.a6fe3dd0fe&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dfs_vsc_mount_point&exampleId=4ebae226-7231-6191-23fa-73660f7cc27f694c4d4b&activeTab=example&spm=docs.r.dfs_vsc_mount_point.0.4ebae22672&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

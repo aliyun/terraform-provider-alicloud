@@ -21,7 +21,7 @@ Provides a RAM User access key resource.
 
 Output the secret to a file.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=1285ed40-d52c-b081-7962-4a623f119843fbb939c7&activeTab=example&spm=docs.r.ram_access_key.0.1285ed40d5&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=215c87f4-930d-fb72-356c-fe0010b412841e32d6f9&activeTab=example&spm=docs.r.ram_access_key.0.215c87f493&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -50,7 +50,7 @@ resource "alicloud_ram_access_key" "ak" {
 
 Using `pgp_key` to encrypt the secret.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=2263e4c8-c8a1-6833-fa18-52d03d23653707eeadec&activeTab=example&spm=docs.r.ram_access_key.1.2263e4c8c8&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=b4c8a6fe-72a1-2258-b8bc-53ae1f90586757eaf5e9&activeTab=example&spm=docs.r.ram_access_key.1.b4c8a6fe72&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

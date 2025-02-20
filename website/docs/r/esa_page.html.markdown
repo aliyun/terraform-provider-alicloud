@@ -21,7 +21,7 @@ For information about ESA Page and how to use it, see [What is Page](https://www
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_page&exampleId=7df0db9d-9e50-69bf-52c0-dc0a26b397a52a8cfb71&activeTab=example&spm=docs.r.esa_page.0.7df0db9d9e&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_page&exampleId=0c00ee46-f661-77ad-8028-58c5142ad4abbe8a1442&activeTab=example&spm=docs.r.esa_page.0.0c00ee46f6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
