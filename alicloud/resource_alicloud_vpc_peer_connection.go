@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -136,8 +135,6 @@ func resourceAliCloudVpcPeerPeerConnectionCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("link_type"); ok {
 		request["LinkType"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
@@ -181,54 +178,30 @@ func resourceAliCloudVpcPeerPeerConnectionRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
-	if objectRaw["AcceptingOwnerUid"] != nil {
-		d.Set("accepting_ali_uid", objectRaw["AcceptingOwnerUid"])
-	}
-	if objectRaw["AcceptingRegionId"] != nil {
-		d.Set("accepting_region_id", objectRaw["AcceptingRegionId"])
-	}
-	if objectRaw["Bandwidth"] != nil {
-		d.Set("bandwidth", objectRaw["Bandwidth"])
-	}
-	if objectRaw["GmtCreate"] != nil {
-		d.Set("create_time", objectRaw["GmtCreate"])
-	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["LinkType"] != nil {
-		d.Set("link_type", objectRaw["LinkType"])
-	}
-	if objectRaw["Name"] != nil {
-		d.Set("peer_connection_name", objectRaw["Name"])
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", objectRaw["RegionId"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
+	d.Set("accepting_ali_uid", objectRaw["AcceptingOwnerUid"])
+	d.Set("accepting_region_id", objectRaw["AcceptingRegionId"])
+	d.Set("bandwidth", objectRaw["Bandwidth"])
+	d.Set("create_time", objectRaw["GmtCreate"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("link_type", objectRaw["LinkType"])
+	d.Set("peer_connection_name", objectRaw["Name"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["Status"])
 
-	acceptingVpc1RawObj, _ := jsonpath.Get("$.AcceptingVpc", objectRaw)
-	acceptingVpc1Raw := make(map[string]interface{})
-	if acceptingVpc1RawObj != nil {
-		acceptingVpc1Raw = acceptingVpc1RawObj.(map[string]interface{})
+	acceptingVpcRawObj, _ := jsonpath.Get("$.AcceptingVpc", objectRaw)
+	acceptingVpcRaw := make(map[string]interface{})
+	if acceptingVpcRawObj != nil {
+		acceptingVpcRaw = acceptingVpcRawObj.(map[string]interface{})
 	}
-	if acceptingVpc1Raw["VpcId"] != nil {
-		d.Set("accepting_vpc_id", acceptingVpc1Raw["VpcId"])
-	}
+	d.Set("accepting_vpc_id", acceptingVpcRaw["VpcId"])
 
-	vpc1RawObj, _ := jsonpath.Get("$.Vpc", objectRaw)
-	vpc1Raw := make(map[string]interface{})
-	if vpc1RawObj != nil {
-		vpc1Raw = vpc1RawObj.(map[string]interface{})
+	vpcRawObj, _ := jsonpath.Get("$.Vpc", objectRaw)
+	vpcRaw := make(map[string]interface{})
+	if vpcRawObj != nil {
+		vpcRaw = vpcRawObj.(map[string]interface{})
 	}
-	if vpc1Raw["VpcId"] != nil {
-		d.Set("vpc_id", vpc1Raw["VpcId"])
-	}
+	d.Set("vpc_id", vpcRaw["VpcId"])
 
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
@@ -266,8 +239,6 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 				if v, ok := d.GetOkExists("dry_run"); ok {
 					request["DryRun"] = v
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
@@ -301,8 +272,6 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 				if v, ok := d.GetOkExists("dry_run"); ok {
 					request["DryRun"] = v
 				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
@@ -329,8 +298,8 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	action := "ModifyVpcPeerConnection"
 	var err error
+	action := "ModifyVpcPeerConnection"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -351,7 +320,7 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 		request["Name"] = d.Get("peer_connection_name")
 	}
 
-	if v, ok := d.GetOkExists("dry_run"); ok {
+	if v, ok := d.GetOk("dry_run"); ok {
 		request["DryRun"] = v
 	}
 	if !d.IsNewResource() && d.HasChange("link_type") {
@@ -360,8 +329,6 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
@@ -396,11 +363,9 @@ func resourceAliCloudVpcPeerPeerConnectionUpdate(d *schema.ResourceData, meta in
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, false)
+			response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -445,8 +410,6 @@ func resourceAliCloudVpcPeerPeerConnectionDelete(d *schema.ResourceData, meta in
 	if v, ok := d.GetOkExists("force_delete"); ok {
 		request["Force"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
