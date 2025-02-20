@@ -623,7 +623,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 
 	// get cluster conn certs
 	// If the cluster is failed, there is no need to get cluster certs
-	if tea.StringValue(object.State) == "failed" || tea.StringValue(object.State) == "deleted_failed" || tea.StringValue(object.State) == "deleting" {
+	if tea.StringValue(object.State) == "failed" || tea.StringValue(object.State) == "delete_failed" || tea.StringValue(object.State) == "deleting" {
 		return nil
 	}
 

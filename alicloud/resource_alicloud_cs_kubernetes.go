@@ -1280,7 +1280,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// get cluster conn certs
 	// If the cluster is failed, there is no need to get cluster certs
-	if object.State == "failed" || object.State == "deleted_failed" || object.State == "deleting" {
+	if object.State == "failed" || object.State == "delete_failed" || object.State == "deleting" {
 		return nil
 	}
 
