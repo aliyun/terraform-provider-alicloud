@@ -26,7 +26,7 @@ func init() {
 func testSweepDtsSubscriptionJob(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -102,10 +102,10 @@ func testSweepDtsSubscriptionJob(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
+func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_subscription_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSSubscriptionJobMap0)
+	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDtsSubscriptionJob")
@@ -113,7 +113,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSubscriptionJobBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -261,10 +261,10 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
+func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_subscription_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSSubscriptionJobMap0)
+	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDtsSubscriptionJob")
@@ -272,7 +272,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSubscriptionJobBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -295,10 +295,10 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"source_endpoint_password":           "Test12345",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
-					//"tags": map[string]string{
-					//	"Created": "TF",
-					//	"For":     "acceptance test",
-					//},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -312,27 +312,69 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"source_endpoint_password":           "Test12345",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
-						//"tags.%":                             "2",
-						//"tags.Created":                       "TF",
-						//"tags.For":                           "acceptance test",
+						"tags.%":                             "2",
+						"tags.Created":                       "TF",
+						"tags.For":                           "acceptance test",
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"tags": map[string]string{
-			//			"Created": "TF",
-			//			"For":     "subscribeJob",
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"tags.%":       "2",
-			//			"tags.Created": "TF",
-			//			"tags.For":     "subscribeJob",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "subscribeJob",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "subscribeJob",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"dts_job_name": "tf-testAccCase1",
@@ -393,10 +435,10 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
+func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_subscription_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSSubscriptionJobMap0)
+	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDtsSubscriptionJob")
@@ -404,7 +446,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSubscriptionJobBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -428,11 +470,10 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"source_endpoint_password":           "Test12345",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
-					// There is an api bug that the request parameter tags does not take effect. This should reopen after the bug is fixed.
-					//"tags": map[string]string{
-					//	"Created": "TF",
-					//	"For":     "acceptance test",
-					//},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -446,9 +487,9 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"source_endpoint_password":           "Test12345",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
-						//"tags.%":                             "2",
-						//"tags.Created":                       "TF",
-						//"tags.For":                           "acceptance test",
+						"tags.%":                             "2",
+						"tags.Created":                       "TF",
+						"tags.For":                           "acceptance test",
 					}),
 				),
 			},
@@ -461,7 +502,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudDTSSubscriptionJobMap0 = map[string]string{
+var AliCloudDTSSubscriptionJobMap0 = map[string]string{
 	"auto_pay":                         NOSET,
 	"delay_rule_time":                  NOSET,
 	"compute_unit":                     NOSET,
@@ -485,7 +526,7 @@ var AlicloudDTSSubscriptionJobMap0 = map[string]string{
 	"status":                           CHECKSET,
 }
 
-func AlicloudDTSSubscriptionJobBasicDependence0(name string) string {
+func AliCloudDTSSubscriptionJobBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "tf-testaccdts%s"

@@ -1575,7 +1575,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_user_vpc_authorization":                           resourceAlicloudPvtzUserVpcAuthorization(),
 			"alicloud_mhub_product":                                          resourceAlicloudMhubProduct(),
 			"alicloud_cloud_sso_scim_server_credential":                      resourceAlicloudCloudSsoScimServerCredential(),
-			"alicloud_dts_subscription_job":                                  resourceAlicloudDtsSubscriptionJob(),
+			"alicloud_dts_subscription_job":                                  resourceAliCloudDtsSubscriptionJob(),
 			"alicloud_service_mesh_service_mesh":                             resourceAliCloudServiceMeshServiceMesh(),
 			"alicloud_mhub_app":                                              resourceAlicloudMhubApp(),
 			"alicloud_cloud_sso_group":                                       resourceAlicloudCloudSsoGroup(),

@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDtsSubscriptionJob() *schema.Resource {
+func resourceAliCloudDtsSubscriptionJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDtsSubscriptionJobCreate,
-		Read:   resourceAlicloudDtsSubscriptionJobRead,
-		Update: resourceAlicloudDtsSubscriptionJobUpdate,
-		Delete: resourceAlicloudDtsSubscriptionJobDelete,
+		Create: resourceAliCloudDtsSubscriptionJobCreate,
+		Read:   resourceAliCloudDtsSubscriptionJobRead,
+		Update: resourceAliCloudDtsSubscriptionJobUpdate,
+		Delete: resourceAliCloudDtsSubscriptionJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -199,7 +199,7 @@ func resourceAlicloudDtsSubscriptionJob() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDtsSubscriptionJobCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsSubscriptionJobCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDtsInstance"
@@ -262,9 +262,9 @@ func resourceAlicloudDtsSubscriptionJobCreate(d *schema.ResourceData, meta inter
 	d.SetId(fmt.Sprint(response["JobId"]))
 	d.Set("dts_instance_id", response["InstanceId"])
 
-	return resourceAlicloudDtsSubscriptionJobUpdate(d, meta)
+	return resourceAliCloudDtsSubscriptionJobUpdate(d, meta)
 }
-func resourceAlicloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	object, err := dtsService.DescribeDtsSubscriptionJob(d.Id())
@@ -311,7 +311,7 @@ func resourceAlicloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interfa
 
 	return nil
 }
-func resourceAlicloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	var response map[string]interface{}
@@ -319,7 +319,7 @@ func resourceAlicloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := dtsService.SetResourceTags(d, "ALIYUN::DTS::INSTANCE"); err != nil {
+		if err := dtsService.SetResourceTags(d, "ALIYUN::DTS::INSTANCE:JOB"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
@@ -398,7 +398,7 @@ func resourceAlicloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("source_endpoint_user_name")
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSubscriptionJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSubscriptionJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -406,7 +406,7 @@ func resourceAlicloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 
 	if !d.IsNewResource() && d.HasChange("status") {
 		target := d.Get("status").(string)
-		err := resourceAlicloudDtsSubscriptionJobStatusFlow(d, meta, target)
+		err := resourceAliCloudDtsSubscriptionJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -591,15 +591,15 @@ func resourceAlicloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("subscription_instance_vswitch_id")
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSubscriptionJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSubscriptionJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudDtsSubscriptionJobRead(d, meta)
+	return resourceAliCloudDtsSubscriptionJobRead(d, meta)
 }
-func resourceAlicloudDtsSubscriptionJobDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsSubscriptionJobDelete(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v.(string) == "Subscription" {
@@ -639,7 +639,7 @@ func resourceAlicloudDtsSubscriptionJobDelete(d *schema.ResourceData, meta inter
 	}
 	return nil
 }
-func resourceAlicloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
+func resourceAliCloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	var response map[string]interface{}

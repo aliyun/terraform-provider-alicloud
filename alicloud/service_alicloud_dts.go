@@ -212,6 +212,12 @@ func (s *DtsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				"ResourceType": resourceType,
 				"ResourceId.1": d.Id(),
 			}
+
+			if resourceType == "ALIYUN::DTS::INSTANCE:JOB" {
+				request["ResourceType"] = "ALIYUN::DTS::INSTANCE"
+				request["ResourceId.1"] = d.Get("dts_instance_id")
+			}
+
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
@@ -240,6 +246,12 @@ func (s *DtsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				"ResourceType": resourceType,
 				"ResourceId.1": d.Id(),
 			}
+
+			if resourceType == "ALIYUN::DTS::INSTANCE:JOB" {
+				request["ResourceType"] = "ALIYUN::DTS::INSTANCE"
+				request["ResourceId.1"] = d.Get("dts_instance_id")
+			}
+
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
