@@ -101,8 +101,12 @@ func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface
 	body["compatibleRuntime"] = compatibleRuntimes
 
 	codeMaps := make(map[string]interface{}, 0)
-	if v, ok := d.GetOk("zip_file"); ok && fmt.Sprint(v) != "" {
-		codeMaps["zipFile"] = v
+	if v, ok := d.GetOk("zip_file"); ok && fmt.Sprint(v) != "" && v.(string) != "" {
+		file, err := loadFileContent(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		codeMaps["zipFile"] = file
 	}
 	if v, ok := d.GetOk("oss_bucket_name"); ok && fmt.Sprint(v) != "" {
 		codeMaps["ossBucketName"] = v
