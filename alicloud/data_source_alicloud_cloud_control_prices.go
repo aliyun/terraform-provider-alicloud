@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -134,10 +133,7 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/price/%s", "aliyun", d.Get("product").(string), d.Get("resource_code").(string))
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
@@ -147,11 +143,9 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, body)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -167,7 +161,7 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	resp, _ := jsonpath.Get("$.body.price", response)
+	resp, _ := jsonpath.Get("$.price", response)
 	objects = append(objects, resp.(map[string]interface{}))
 
 	ids := make([]string, 0)

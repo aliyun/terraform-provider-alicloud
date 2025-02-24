@@ -286,7 +286,7 @@ var productCodeToLocationCode = map[string]string{
 	"hologram":             "hologram",        // Hologram
 	"foasconsole":          "foasconsole",     // RealtimeCompute
 	"vpc":                  "vpc",             // VPC, VPNGateway,ExpressConnect, CBWP, EIP
-	"sss":                  "oss",             // OSS
+	"oss":                  "oss",             // OSS
 	"cms":                  "cms",             // CloudMonitorService
 	"waf_openapi":          "waf",             //WAFV3,WAF
 	"dfs":                  "alidfs",          //DFS
@@ -307,6 +307,7 @@ var productCodeToLocationCode = map[string]string{
 	"esa":                  "dcdnservices",    // ESA
 	"live":                 "live",            // Live
 	"eds_aic":              "wycloudphone",    // CloudPhone
+	"cloudcontrol":         "cloudcontrol",    // CloudControl
 }
 
 // irregularProductEndpoint specially records those product codes that
@@ -473,6 +474,7 @@ var regularProductEndpoint = map[string]string{
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
 	"apig":                 "apig.%s.aliyuncs.com",
 	"dds":                  "mongodb.%s.aliyuncs.com",
+	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
@@ -482,12 +484,13 @@ var regularProductEndpoint = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is lower than location service, and as a backup endpoint
 var regularProductEndpointForIntlRegion = map[string]string{
-	"ddoscoo":     "ddoscoo.ap-southeast-1.aliyuncs.com",
-	"eds_user":    "eds-user.ap-southeast-1.aliyuncs.com",
-	"dysmsapi":    "dysmsapi.ap-southeast-1.aliyuncs.com",
-	"sddp":        "sddp.ap-southeast-1.aliyuncs.com",
-	"governance":  "governance.ap-southeast-1.aliyuncs.com",
-	"waf_openapi": "wafopenapi.ap-southeast-1.aliyuncs.com",
+	"ddoscoo":      "ddoscoo.ap-southeast-1.aliyuncs.com",
+	"eds_user":     "eds-user.ap-southeast-1.aliyuncs.com",
+	"dysmsapi":     "dysmsapi.ap-southeast-1.aliyuncs.com",
+	"sddp":         "sddp.ap-southeast-1.aliyuncs.com",
+	"governance":   "governance.ap-southeast-1.aliyuncs.com",
+	"waf_openapi":  "wafopenapi.ap-southeast-1.aliyuncs.com",
+	"cloudcontrol": "cloudcontrol.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
