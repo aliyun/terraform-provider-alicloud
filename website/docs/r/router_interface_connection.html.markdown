@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_router_interface_connection
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.199.0`. Please use new resource [alicloud_express_connect_router_interface](https://www.terraform.io/docs/providers/alicloud/r/alicloud_express_connect_router_interface).
+-> **DEPRECATED:**  This resource has been deprecated from version `1.199.0`. Please use new resource [alicloud_express_connect_router_interface](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/express_connect_router_interface).
 
 Provides a VPC router interface connection resource to connect two router interfaces which are in two different VPCs.
 After that, all of the two router interfaces will be active.
