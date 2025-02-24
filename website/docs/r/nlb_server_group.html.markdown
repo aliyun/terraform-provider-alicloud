@@ -10,8 +10,6 @@ description: |-
 
 Provides a Network Load Balancer (NLB) Server Group resource.
 
-
-
 For information about Network Load Balancer (NLB) Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createservergroup-nlb).
 
 -> **NOTE:** Available since v1.186.0.
@@ -82,8 +80,9 @@ The following arguments are supported:
 * `health_check` - (Optional, Computed, List) Health check configuration information. See [`health_check`](#health_check) below.
 * `preserve_client_ip_enabled` - (Optional, Computed) Specifies whether to enable client IP preservation. Valid values:
 
-  - `true`
-  - `false` (default)
+  - `true` (default)
+  - `false`
+  -> **NOTE:** If you set the value to true and `protocol` to TCP, the server group cannot be associated with TCPSSL listeners.
 * `protocol` - (Optional, ForceNew, Computed) The protocol used to forward requests to the backend servers. Valid values:
 
   - `TCP` (default)
