@@ -2015,19 +2015,15 @@ func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
 }
 
 func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
-	accountId, err := client.AccountId()
-	if err != nil {
-		log.Printf("[WARN] failed to load accountId: %#v", err)
-	}
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
 		}
 	} else {
-		return FormatEndpointWithAccountID(productCode, v.(string), accountId), nil
+		return v.(string), nil
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		return FormatEndpointWithAccountID(productCode, v.(string), accountId), nil
+		return v.(string), nil
 	}
 	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 }

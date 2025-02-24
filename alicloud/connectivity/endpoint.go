@@ -523,6 +523,10 @@ var regularProductEndpointReplace = map[string]string{
 
 // NOTE: The productCode must be lowed.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
+	accountId, err := client.AccountId()
+	if err != nil {
+		log.Printf("[WARN] failed to load accountId: %#v", err)
+	}
 	// Firstly, load endpoint from environment variables
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("ALIBABA_CLOUD_ENDPOINT_%s", strings.ToUpper(productCode))))
 	if endpoint == "" {
@@ -530,7 +534,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		endpoint = strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
 	}
 	if endpoint != "" {
-		client.config.Endpoints.Store(productCode, endpoint)
+		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpoint, accountId))
 		return nil
 	}
 
@@ -548,12 +552,12 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
-		client.config.Endpoints.Store(productCode, endpointFmt)
+		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpoint, accountId))
 		return nil
 	}
 
 	// Thirdly, load endpoint from location
-	endpoint, err := client.describeEndpointForService(productCode)
+	endpoint, err = client.describeEndpointForService(productCode)
 	if err == nil {
 		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && client.IsInternationalAccount() {
 			endpoint = v
@@ -561,7 +565,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if v, ok := regularProductEndpointReplace[endpoint]; ok {
 			endpoint = v
 		}
-		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
+		client.config.Endpoints.Store(strings.ToLower(productCode), FormatEndpointWithAccountID(productCode, endpoint, accountId))
 	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
 		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && client.isInternationalRegion() {
 			endpointFmt = v
@@ -578,7 +582,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if v, ok := regularProductEndpointReplace[endpointFmt]; ok {
 			endpointFmt = v
 		}
-		client.config.Endpoints.Store(productCode, endpointFmt)
+		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpoint, accountId))
 		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpointFmt)
 		return nil
 	}
@@ -611,6 +615,9 @@ func (config *Config) loadEndpointFromLocal() error {
 }
 
 func FormatEndpointWithAccountID(productCode string, endpoint string, accountId string) string {
+	if endpoint == "" || accountId == "" {
+		return endpoint
+	}
 	switch productCode {
 	case "fc_open", "fc":
 		return fmt.Sprintf("%s.%s", accountId, endpoint)
