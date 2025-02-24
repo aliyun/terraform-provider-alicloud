@@ -1909,31 +1909,6 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	}
 	return result, nil
 }
-
-func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
-	productCode := "bpstudio"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("bpstudio.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
 func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	config := &openapi.Config{
 		AccessKeyId:     tea.String(client.config.AccessKey),

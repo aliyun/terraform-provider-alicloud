@@ -475,6 +475,7 @@ var regularProductEndpoint = map[string]string{
 	"apig":                 "apig.%s.aliyuncs.com",
 	"dds":                  "mongodb.%s.aliyuncs.com",
 	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
+	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
@@ -491,6 +492,7 @@ var regularProductEndpointForIntlRegion = map[string]string{
 	"governance":   "governance.ap-southeast-1.aliyuncs.com",
 	"waf_openapi":  "wafopenapi.ap-southeast-1.aliyuncs.com",
 	"cloudcontrol": "cloudcontrol.ap-southeast-1.aliyuncs.com",
+	"bpstudio":     "bpstudio.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
@@ -552,7 +554,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
-		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpoint, accountId))
+		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpointFmt, accountId))
 		return nil
 	}
 
@@ -582,7 +584,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 		if v, ok := regularProductEndpointReplace[endpointFmt]; ok {
 			endpointFmt = v
 		}
-		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpoint, accountId))
+		client.config.Endpoints.Store(productCode, FormatEndpointWithAccountID(productCode, endpointFmt, accountId))
 		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpointFmt)
 		return nil
 	}
