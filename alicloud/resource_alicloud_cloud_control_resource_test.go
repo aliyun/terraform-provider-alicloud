@@ -23,7 +23,6 @@ func TestAccAliCloudCloudControlResource_basic6159_modify(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudControlResourceBasicDependence6159_modify)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -76,7 +75,7 @@ variable "name" {
 }
 
 resource "alicloud_cloud_control_resource" "mq_instance" {
-  desire_attributes = "{\"InstanceName\":\"tf-testacc-ons-instance\"}"
+  desire_attributes = "{\"InstanceName\":\"${var.name}\"}"
   product = "Ons"
   resource_code = "Instance"
 } 
@@ -100,7 +99,6 @@ func TestAccAliCloudCloudControlResource_basic6159(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudControlResourceBasicDependence6159)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,

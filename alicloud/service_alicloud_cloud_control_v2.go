@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -27,19 +26,13 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := convertIdToAction(id)
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["regionId"] = StringPointer(client.RegionId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -57,7 +50,6 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.resource", response)
 	if err != nil {
@@ -110,19 +102,13 @@ func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/price/*", "aliyun", id)
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["regionId"] = StringPointer(client.RegionId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -137,7 +123,6 @@ func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.price", response)
 	if err != nil {
@@ -186,19 +171,13 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/api/v1/providers/%s/products", "aliyun")
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 
 	request["provider"] = "aliyun"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -213,7 +192,6 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.products[*]", response)
 	if err != nil {
@@ -274,20 +252,14 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/resourceTypes", "aliyun", id)
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	query["resourceTypes"] = StringPointer(id)
 
 	request["provider"] = "aliyun"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -302,7 +274,6 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.resourceTypes[*]", response)
 	if err != nil {

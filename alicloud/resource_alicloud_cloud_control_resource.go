@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,19 +72,14 @@ func resourceAliCloudCloudControlResourceCreate(d *schema.ResourceData, meta int
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["regionId"] = StringPointer(client.RegionId)
 	request["body"] = convertJsonStringToObject(d.Get("desire_attributes"))
 	body = request["body"].(map[string]interface{})
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = client.RoaPost("cloudcontrol", "2022-08-30", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -101,7 +95,7 @@ func resourceAliCloudCloudControlResourceCreate(d *schema.ResourceData, meta int
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_control_resource", action, AlibabaCloudSdkGoERROR)
 	}
 
-	resourceIdVar, _ := jsonpath.Get("$.body.resourceId", response)
+	resourceIdVar, _ := jsonpath.Get("$.resourceId", response)
 	d.SetId(convertActionToId(fmt.Sprintf("%v/%v", action, resourceIdVar)))
 
 	return resourceAliCloudCloudControlResourceRead(d, meta)
@@ -142,10 +136,7 @@ func resourceAliCloudCloudControlResourceUpdate(d *schema.ResourceData, meta int
 	update := false
 
 	action := convertIdToAction(d.Id())
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -158,11 +149,9 @@ func resourceAliCloudCloudControlResourceUpdate(d *schema.ResourceData, meta int
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaPut("cloudcontrol", "2022-08-30", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -188,18 +177,13 @@ func resourceAliCloudCloudControlResourceDelete(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["regionId"] = StringPointer(client.RegionId)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+		response, err = client.RoaDelete("cloudcontrol", "2022-08-30", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -91,22 +90,17 @@ func dataSourceAliCloudCloudControlProductRead(d *schema.ResourceData, meta inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := fmt.Sprintf("/api/v1/providers/%s/products", "aliyun")
-	conn, err := client.NewCloudcontrolClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	request["provider"] = "aliyun"
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	query["maxResults"] = StringPointer("50")
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2022-08-30"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+			response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, body)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -122,7 +116,7 @@ func dataSourceAliCloudCloudControlProductRead(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		resp, _ := jsonpath.Get("$.body.products[*]", response)
+		resp, _ := jsonpath.Get("$.products[*]", response)
 
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -138,7 +132,7 @@ func dataSourceAliCloudCloudControlProductRead(d *schema.ResourceData, meta inte
 			objects = append(objects, item)
 		}
 
-		nextToken, _ := jsonpath.Get("$.body.nextToken", response)
+		nextToken, _ := jsonpath.Get("$.nextToken", response)
 		if nextToken != nil && nextToken != "" {
 			query["nextToken"] = StringPointer(fmt.Sprint(nextToken))
 		} else {
