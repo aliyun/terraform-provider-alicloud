@@ -133,7 +133,7 @@ The schema supports the following:
 
 The field_schema supports the following:
 * `field_name` - (Required, ForceNew) Specifies the name of the field in the search index. The value is used as a column name. A field in a search index can be a primary key column or an attribute column.
-* `field_type` - (Required, ForceNew) Specifies the type of the field. Use FieldType.XXX to set the type.
+* `field_type` - (Required, ForceNew) Specifies the type of the field. Valid values: Text, Long, Double, Boolean, Keyword, Date, GeoPoint, Nested.
 * `is_array` - (Optional, ForceNew) Specifies whether the value is an array. Type: Boolean.
 * `index` - (Optional, ForceNew) Specifies whether to enable indexing for the column. Type: Boolean.
 * `analyzer` - (Optional, ForceNew) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used.
