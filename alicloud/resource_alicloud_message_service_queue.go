@@ -2,10 +2,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -35,6 +37,28 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(0, 604800),
+			},
+			"dlq_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_receive_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"dead_letter_target_queue": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"logging_enabled": {
 				Type:     schema.TypeBool,
@@ -109,6 +133,30 @@ func resourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta inte
 		request = expandTagsToMap(request, tagsMap)
 	}
 
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("dlq_policy"); !IsNil(v) {
+		enabled1, _ := jsonpath.Get("$[0].enabled", v)
+		if enabled1 != nil && enabled1 != "" {
+			objectDataLocalMap["Enabled"] = enabled1
+		}
+
+		deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
+		if deadLetterTargetQueue1 != nil && deadLetterTargetQueue1 != "" {
+			objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+		}
+		maxReceiveCount1, _ := jsonpath.Get("$[0].max_receive_count", v)
+		if maxReceiveCount1 != nil && maxReceiveCount1 != "" {
+			objectDataLocalMap["MaxReceiveCount"] = maxReceiveCount1
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["DlqPolicy"] = string(objectDataLocalMapJson)
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
@@ -146,31 +194,31 @@ func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["DelaySeconds"] != nil {
-		d.Set("delay_seconds", objectRaw["DelaySeconds"])
-	}
-	if objectRaw["LoggingEnabled"] != nil {
-		d.Set("logging_enabled", objectRaw["LoggingEnabled"])
-	}
-	if objectRaw["MaximumMessageSize"] != nil {
-		d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
-	}
-	if objectRaw["MessageRetentionPeriod"] != nil {
-		d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
-	}
-	if objectRaw["PollingWaitSeconds"] != nil {
-		d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
-	}
-	if objectRaw["VisibilityTimeout"] != nil {
-		d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
-	}
-	if objectRaw["QueueName"] != nil {
-		d.Set("queue_name", objectRaw["QueueName"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("delay_seconds", objectRaw["DelaySeconds"])
+	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
+	d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
+	d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
+	d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
+	d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
+	d.Set("queue_name", objectRaw["QueueName"])
 
+	dlqPolicyMaps := make([]map[string]interface{}, 0)
+	dlqPolicyMap := make(map[string]interface{})
+	dlqPolicyRaw := make(map[string]interface{})
+	if objectRaw["DlqPolicy"] != nil {
+		dlqPolicyRaw = objectRaw["DlqPolicy"].(map[string]interface{})
+	}
+	if len(dlqPolicyRaw) > 0 {
+		dlqPolicyMap["dead_letter_target_queue"] = dlqPolicyRaw["DeadLetterTargetQueue"]
+		dlqPolicyMap["enabled"] = dlqPolicyRaw["Enabled"]
+		dlqPolicyMap["max_receive_count"] = formatInt(dlqPolicyRaw["MaxReceiveCount"])
+
+		dlqPolicyMaps = append(dlqPolicyMaps, dlqPolicyMap)
+	}
+	if err := d.Set("dlq_policy", dlqPolicyMaps); err != nil {
+		return err
+	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -235,6 +283,35 @@ func resourceAliCloudMessageServiceQueueUpdate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("dlq_policy") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+
+		if v := d.Get("dlq_policy"); v != nil {
+			enabled1, _ := jsonpath.Get("$[0].enabled", v)
+			if enabled1 != nil && (d.HasChange("dlq_policy.0.enabled") || enabled1 != "") {
+				objectDataLocalMap["Enabled"] = enabled1
+
+				if objectDataLocalMap["Enabled"].(bool) {
+					deadLetterTargetQueue1, _ := jsonpath.Get("$[0].dead_letter_target_queue", v)
+					if deadLetterTargetQueue1 != nil && (d.HasChange("dlq_policy.0.dead_letter_target_queue") || deadLetterTargetQueue1 != "") {
+						objectDataLocalMap["DeadLetterTargetQueue"] = deadLetterTargetQueue1
+					}
+					maxReceiveCount1, _ := jsonpath.Get("$[0].max_receive_count", v)
+					if maxReceiveCount1 != nil && (d.HasChange("dlq_policy.0.max_receive_count") || maxReceiveCount1 != "") {
+						objectDataLocalMap["MaxReceiveCount"] = maxReceiveCount1
+					}
+				}
+			}
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["DlqPolicy"] = string(objectDataLocalMapJson)
+		}
 	}
 
 	if update {

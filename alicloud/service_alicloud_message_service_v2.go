@@ -24,10 +24,11 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetQueueAttributes"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["QueueName"] = id
+	request["RegionId"] = client.RegionId
+	action := "GetQueueAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
