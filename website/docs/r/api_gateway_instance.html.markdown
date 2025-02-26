@@ -39,7 +39,7 @@ resource "alicloud_api_gateway_instance" "default" {
 
   instance_spec = "api.s1.small"
   https_policy  = "HTTPS2_TLS1_0"
-  zone_id       = "cn-hangzhou-MAZ6"
+  zone_id       = "cn-hangzhou-MAZ6(i,j,k)"
   payment_type  = "PayAsYouGo"
   instance_type = "normal"
 }
@@ -80,8 +80,8 @@ resource "alicloud_vswitch" "vswitch_2" {
 }
 
 resource "alicloud_security_group" "security_group" {
-  vpc_id = alicloud_vpc.vpc.id
-  name   = var.name
+  vpc_id              = alicloud_vpc.vpc.id
+  security_group_name = var.name
 }
 
 resource "alicloud_api_gateway_instance" "vpc_integration_instance" {
@@ -136,6 +136,7 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `zone_vswitch_security_group` - (Optional, ForceNew, Available since v1.228.0) Network configuration details for Vpc integration instance which includes the availability zone, VSwitch, and security group information. See [`zone_vswitch_security_group`](#zone_vswitch_security_group) below.
 * `to_connect_vpc_ip_block` - (Optional, Available since v1.228.0) The additional IP block that the VPC integration instance can access, conflict with `delete_vpc_ip_block`. See [`to_connect_vpc_ip_block`](#to_connect_vpc_ip_block) below.
 * `delete_vpc_ip_block` - (Optional, Available since v1.228.0) Indicates whether to delete the IP block that the VPC can access, conflict with `to_connect_vpc_ip_block`.
+* `skip_wait_switch` - (Optional, Available since v1.244.0) Specifies whether to skip the WAIT_SWITCH status of instance when modifying instance spec. Works only when instance spec change.
 
 ### `zone_vswitch_security_group`
 

@@ -57,7 +57,6 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 			"instance_spec": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -165,6 +164,10 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"to_connect_vpc_ip_block"},
+			},
+			"skip_wait_switch": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 		},
 	}
@@ -353,6 +356,45 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		apiGatewayServiceV2 := ApiGatewayServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, apiGatewayServiceV2.ApiGatewayInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	action = "ModifyInstanceSpec"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Token"] = buildClientToken(action)
+	request["InstanceId"] = d.Id()
+	if !d.IsNewResource() && d.HasChanges("instance_spec") {
+		update = true
+		request["InstanceSpec"] = d.Get("instance_spec")
+		if v, ok := d.GetOk("skip_wait_switch"); ok {
+			request["SkipWaitSwitch"] = v
+		}
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+			request["Token"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
