@@ -892,6 +892,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_image_transform":                                  resourceAliCloudEsaImageTransform(),
 			"alicloud_esa_cache_rule":                                       resourceAliCloudEsaCacheRule(),
 			"alicloud_esa_network_optimization":                             resourceAliCloudEsaNetworkOptimization(),
 			"alicloud_esa_origin_rule":                                      resourceAliCloudEsaOriginRule(),
