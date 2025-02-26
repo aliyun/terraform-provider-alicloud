@@ -96,6 +96,9 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
 * `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
 corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
+* `open_public_connection` - (Optional, Available since v1.244.0) Whether to enable public connection. Value options: `true`, `false`.
+* `public_connection_string` - (Available since v1.244.0) The public connection string of the cluster. Only valid when `open_public_connection` is `true`.
+
 
 ### `db_cluster_access_white_list`
 
