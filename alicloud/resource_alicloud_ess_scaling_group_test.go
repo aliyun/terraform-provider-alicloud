@@ -834,6 +834,7 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 		"spot_instance_remedy":                     "false",
 		"group_deletion_protection":                "false",
 		"on_demand_percentage_above_base_capacity": "10",
+		"compensate_with_on_demand":                "true",
 	}
 
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -904,12 +905,14 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 					"on_demand_base_capacity": "10",
 					"on_demand_percentage_above_base_capacity": "10",
 					"spot_instance_pools":                      "10",
+					"compensate_with_on_demand":                "false",
 					"spot_instance_remedy":                     "true",
 					"group_deletion_protection":                "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"group_deletion_protection": "true",
+						"compensate_with_on_demand": "false",
 					}),
 				),
 			},
@@ -925,6 +928,7 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 					"on_demand_base_capacity": "0",
 					"on_demand_percentage_above_base_capacity": "0",
 					"spot_instance_pools":                      "10",
+					"compensate_with_on_demand":                "true",
 					"spot_instance_remedy":                     "true",
 					"group_deletion_protection":                "true",
 				}),
@@ -932,6 +936,7 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 					testAccCheck(map[string]string{
 						"on_demand_base_capacity":                  "0",
 						"on_demand_percentage_above_base_capacity": "0",
+						"compensate_with_on_demand":                "true",
 					}),
 				),
 			},
@@ -948,6 +953,7 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 					"on_demand_percentage_above_base_capacity": "8",
 					"spot_instance_pools":                      "10",
 					"spot_instance_remedy":                     "true",
+					"compensate_with_on_demand":                "true",
 					"group_deletion_protection":                "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -969,13 +975,236 @@ func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 					"on_demand_base_capacity": "8",
 					"on_demand_percentage_above_base_capacity": "8",
 					"spot_instance_pools":                      "8",
+					"compensate_with_on_demand":                "false",
 					"spot_instance_remedy":                     "true",
 					"group_deletion_protection":                "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"spot_instance_pools":       "8",
+						"compensate_with_on_demand": "false",
 						"group_deletion_protection": "false",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssScalingGroup_costoptimized_capacityOptions(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                                 "1",
+		"max_size":                                 "1",
+		"default_cooldown":                         "20",
+		"scaling_group_name":                       fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":                            "2",
+		"removal_policies.#":                       "2",
+		"on_demand_base_capacity":                  "10",
+		"spot_instance_pools":                      "10",
+		"spot_instance_remedy":                     "false",
+		"group_deletion_protection":                "false",
+		"on_demand_percentage_above_base_capacity": "10",
+		"compensate_with_on_demand":                "true",
+		"capacity_options_on_demand_base_capacity": "10",
+		"capacity_options_on_demand_percentage_above_base_capacity": "10",
+		"capacity_options_compensate_with_on_demand":                "true",
+		"capacity_options_spot_auto_replace_on_demand":              "true",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "10",
+					"on_demand_percentage_above_base_capacity":                  "10",
+					"spot_instance_pools":                                       "10",
+					"capacity_options_on_demand_base_capacity":                  "10",
+					"capacity_options_on_demand_percentage_above_base_capacity": "10",
+					"capacity_options_compensate_with_on_demand":                "true",
+					"capacity_options_spot_auto_replace_on_demand":              "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "1",
+					"on_demand_percentage_above_base_capacity":                  "1",
+					"spot_instance_pools":                                       "10",
+					"spot_instance_remedy":                                      "true",
+					"capacity_options_on_demand_base_capacity":                  "1",
+					"capacity_options_on_demand_percentage_above_base_capacity": "1",
+					"capacity_options_compensate_with_on_demand":                "false",
+					"capacity_options_spot_auto_replace_on_demand":              "false",
+					"compensate_with_on_demand":                                 "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_instance_remedy":                                      "true",
+						"capacity_options_on_demand_base_capacity":                  "1",
+						"capacity_options_on_demand_percentage_above_base_capacity": "1",
+						"capacity_options_compensate_with_on_demand":                "false",
+						"capacity_options_spot_auto_replace_on_demand":              "false",
+						"on_demand_base_capacity":                                   "1",
+						"on_demand_percentage_above_base_capacity":                  "1",
+						"compensate_with_on_demand":                                 "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "1",
+					"on_demand_percentage_above_base_capacity":                  "1",
+					"spot_instance_pools":                                       "10",
+					"compensate_with_on_demand":                                 "false",
+					"spot_instance_remedy":                                      "true",
+					"group_deletion_protection":                                 "true",
+					"capacity_options_on_demand_base_capacity":                  "1",
+					"capacity_options_on_demand_percentage_above_base_capacity": "1",
+					"capacity_options_compensate_with_on_demand":                "false",
+					"capacity_options_spot_auto_replace_on_demand":              "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_deletion_protection": "true",
+						"compensate_with_on_demand": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "0",
+					"on_demand_percentage_above_base_capacity":                  "0",
+					"spot_instance_pools":                                       "10",
+					"compensate_with_on_demand":                                 "true",
+					"spot_instance_remedy":                                      "true",
+					"group_deletion_protection":                                 "true",
+					"capacity_options_on_demand_base_capacity":                  "0",
+					"capacity_options_on_demand_percentage_above_base_capacity": "0",
+					"capacity_options_compensate_with_on_demand":                "true",
+					"capacity_options_spot_auto_replace_on_demand":              "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"on_demand_base_capacity":                                   "0",
+						"on_demand_percentage_above_base_capacity":                  "0",
+						"compensate_with_on_demand":                                 "true",
+						"capacity_options_compensate_with_on_demand":                "true",
+						"capacity_options_on_demand_base_capacity":                  "0",
+						"capacity_options_on_demand_percentage_above_base_capacity": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "8",
+					"on_demand_percentage_above_base_capacity":                  "8",
+					"spot_instance_pools":                                       "10",
+					"spot_instance_remedy":                                      "true",
+					"compensate_with_on_demand":                                 "true",
+					"group_deletion_protection":                                 "true",
+					"capacity_options_on_demand_base_capacity":                  "8",
+					"capacity_options_on_demand_percentage_above_base_capacity": "8",
+					"capacity_options_compensate_with_on_demand":                "true",
+					"capacity_options_spot_auto_replace_on_demand":              "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"on_demand_base_capacity":                                   "8",
+						"on_demand_percentage_above_base_capacity":                  "8",
+						"capacity_options_on_demand_base_capacity":                  "8",
+						"capacity_options_on_demand_percentage_above_base_capacity": "8",
+						"capacity_options_compensate_with_on_demand":                "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "1",
+					"max_size":                "1",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":         "COST_OPTIMIZED",
+					"on_demand_base_capacity": "8",
+					"on_demand_percentage_above_base_capacity":                  "8",
+					"spot_instance_pools":                                       "8",
+					"compensate_with_on_demand":                                 "false",
+					"spot_instance_remedy":                                      "true",
+					"group_deletion_protection":                                 "false",
+					"capacity_options_on_demand_base_capacity":                  "8",
+					"capacity_options_on_demand_percentage_above_base_capacity": "8",
+					"capacity_options_compensate_with_on_demand":                "false",
+					"capacity_options_spot_auto_replace_on_demand":              "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_instance_pools":                                       "8",
+						"compensate_with_on_demand":                                 "false",
+						"group_deletion_protection":                                 "false",
+						"capacity_options_compensate_with_on_demand":                "false",
+						"capacity_options_on_demand_percentage_above_base_capacity": "8",
+						"on_demand_base_capacity":                                   "8",
+						"capacity_options_on_demand_base_capacity":                  "8",
 					}),
 				),
 			},
