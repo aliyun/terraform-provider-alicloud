@@ -42,6 +42,26 @@ func TestAccAlicloudEsaSiteDataSource(t *testing.T) {
 			"site_name": `"${var.name}_fake"`,
 		}),
 	}
+	CoverageConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
+			"ids":      `["${alicloud_esa_site.default.id}"]`,
+			"coverage": `"overseas"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
+			"ids":      `["${alicloud_esa_site.default.id}_fake"]`,
+			"coverage": `"overseas_fake"`,
+		}),
+	}
+	AccessTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
+			"ids":         `["${alicloud_esa_site.default.id}"]`,
+			"access_type": `"NS"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
+			"ids":         `["${alicloud_esa_site.default.id}_fake"]`,
+			"access_type": `"NS_fake"`,
+		}),
+	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
@@ -49,31 +69,39 @@ func TestAccAlicloudEsaSiteDataSource(t *testing.T) {
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 
 			"site_name": `"${var.name}"`,
+
+			"coverage": `"overseas"`,
+
+			"access_type": `"NS"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEsaSiteSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_esa_site.default.id}_fake"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 
 			"site_name": `"${var.name}_fake"`,
+
+			"coverage": `"overseas_fake"`,
+
+			"access_type": `"NS_fake"`,
 		}),
 	}
 
-	EsaSiteCheckInfo.dataSourceTestCheck(t, rand, idsConf, ResourceGroupIdConf, SiteNameConf, allConf)
+	EsaSiteCheckInfo.dataSourceTestCheck(t, rand, idsConf, ResourceGroupIdConf, SiteNameConf, CoverageConf, AccessTypeConf, allConf)
 }
 
 var existEsaSiteMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"sites.#":                   "1",
-		"sites.0.status":            CHECKSET,
 		"sites.0.modify_time":       CHECKSET,
 		"sites.0.site_id":           CHECKSET,
 		"sites.0.name_server_list":  CHECKSET,
 		"sites.0.site_name":         CHECKSET,
 		"sites.0.resource_group_id": CHECKSET,
+		"sites.0.access_type":       CHECKSET,
+		"sites.0.status":            CHECKSET,
 		"sites.0.instance_id":       CHECKSET,
 		"sites.0.create_time":       CHECKSET,
 		"sites.0.coverage":          CHECKSET,
-		"sites.0.access_type":       CHECKSET,
 	}
 }
 

@@ -56,10 +56,15 @@ output "alicloud_esa_site_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+* `access_type` - (ForceNew, Optional) Access type. Value:-**NS**: Managed access via NS.-**CNAME**: access through CNAME.
+* `coverage` - (ForceNew, Optional) Acceleration area
+* `only_enterprise` - (ForceNew, Optional) Only the Enterprise version, pass **true** when the table only queries the enterprise version of the site.
 * `page_number` - (ForceNew, Optional) Current page number.
 * `page_size` - (ForceNew, Optional) Number of records per page.
+* `plan_subscribe_type` - (ForceNew, Optional) Package subscription type. Value:-**basicplan**: Basic version.-**standardplan**: Standard version.-**advancedplan**: Advanced version.-**enterpriseplan**: Enterprise Edition.
 * `resource_group_id` - (ForceNew, Optional) The ID of the resource group
 * `site_name` - (ForceNew, Optional) Site Name
+* `site_search_type` - (ForceNew, Optional) The search match pattern for the site name. The default value is exact match. Valid values:-**prefix**: matches the prefix.-**suffix**: The suffix matches.-**exact**: exact match.-**fuzzy**: fuzzy match.
 * `status` - (ForceNew, Optional) The status of the resource
 * `tags` - (ForceNew, Optional) Resource tags
 * `ids` - (Optional, ForceNew, Computed) A list of Site IDs.
@@ -73,7 +78,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Site IDs.
 * `names` - A list of name of Sites.
 * `sites` - A list of Site Entries. Each element contains the following attributes:
-  * `access_type` - Site Access Type
+  * `access_type` - Access type. Value:-**NS**: Managed access via NS.-**CNAME**: access through CNAME.
   * `coverage` - Acceleration area
   * `create_time` - Creation time
   * `instance_id` - The ID of the associated package instance.

@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -36,6 +37,21 @@ func dataSourceAliCloudEsaSites() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"access_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"coverage": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"only_enterprise": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"page_number": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -46,12 +62,22 @@ func dataSourceAliCloudEsaSites() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"plan_subscribe_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 			"site_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"site_search_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -158,12 +184,32 @@ func dataSourceAliCloudEsaSiteRead(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("access_type"); ok {
+		query["AccessType"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("coverage"); ok {
+		query["Coverage"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("only_enterprise"); ok {
+		query["OnlyEnterprise"] = strconv.FormatBool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("plan_subscribe_type"); ok {
+		query["PlanSubscribeType"] = v.(string)
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		query["ResourceGroupId"] = v.(string)
 	}
 
 	if v, ok := d.GetOk("site_name"); ok {
 		query["SiteName"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("site_search_type"); ok {
+		query["SiteSearchType"] = v.(string)
 	}
 
 	if v, ok := d.GetOk("status"); ok {
