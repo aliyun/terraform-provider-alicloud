@@ -127,7 +127,7 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	resourceId := "alicloud_message_service_queue.default"
 	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MnsOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMessageServiceQueue")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -136,6 +136,7 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -214,6 +215,52 @@ func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_mns_queue.update.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_mns_queue.update.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -268,7 +315,7 @@ func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
 	resourceId := "alicloud_message_service_queue.default"
 	ra := resourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MnsOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMessageServiceQueue")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -277,6 +324,7 @@ func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -292,6 +340,13 @@ func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
 					"message_retention_period": "256000",
 					"polling_wait_seconds":     "6",
 					"visibility_timeout":       "60",
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_mns_queue.update.id}",
+							"max_receive_count":        "1",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -306,6 +361,7 @@ func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
 						"message_retention_period": "256000",
 						"polling_wait_seconds":     "6",
 						"visibility_timeout":       "60",
+						"dlq_policy.#":             "1",
 						"tags.%":                   "2",
 						"tags.Created":             "TF",
 						"tags.For":                 "Test",
@@ -334,6 +390,15 @@ func AliCloudMessageServiceQueueBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
+	}
+
+	resource "alicloud_mns_queue" "update" {
+  		name                     = "${var.name}-update"
+  		delay_seconds            = 0
+  		maximum_message_size     = 65536
+  		message_retention_period = 345600
+  		visibility_timeout       = 30
+  		polling_wait_seconds     = 0
 	}
 `, name)
 }

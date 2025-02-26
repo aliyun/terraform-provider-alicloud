@@ -45,6 +45,7 @@ resource "alicloud_message_service_queue" "default" {
 
 The following arguments are supported:
 * `delay_seconds` - (Optional, Int) The period after which all messages sent to the queue are consumed. Default value: `0`. Valid values: `0` to `604800`. Unit: seconds.
+* `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
 * `logging_enabled` - (Optional, Bool) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
@@ -54,6 +55,13 @@ The following arguments are supported:
 * `queue_name` - (Required, ForceNew) The name of the queue.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
+
+### `dlq_policy`
+
+The dlq_policy supports the following:
+* `dead_letter_target_queue` - (Optional) The queue to which dead-letter messages are delivered.
+* `enabled` - (Optional, Bool) Specifies whether to enable the dead-letter message delivery. Valid values: `true`, `false`.
+* `max_receive_count` - (Optional, Int) The maximum number of retries.
 
 ## Attributes Reference
 
