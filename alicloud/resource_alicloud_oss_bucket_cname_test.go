@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_cname.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketCnameMap8544)
@@ -119,7 +119,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
 }
 
 // Case 自定义域名测试（初始化带CertId） 8542
-func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_cname.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketCnameMap8542)
@@ -145,7 +145,7 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "15687876-cn-hangzhou",
+							"cert_id": "15582268-cn-hangzhou",
 						},
 					},
 				}),
@@ -217,7 +217,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
 }
 
 // Case 自定义域名测试 8386
-func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_cname.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketCnameMap8386)

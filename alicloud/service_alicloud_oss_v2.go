@@ -1312,7 +1312,7 @@ func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, f
 		object, err := s.DescribeOssBucketCname(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return object, "", nil
+				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
