@@ -69,67 +69,65 @@ func resourceAliCloudMessageServiceEndpointRead(d *schema.ResourceData, meta int
 
 func resourceAliCloudMessageServiceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	messageServiceServiceV2 := MessageServiceServiceV2{client}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 
-	if d.HasChange("endpoint_enabled") {
-		messageServiceServiceV2 := MessageServiceServiceV2{client}
-		object, err := messageServiceServiceV2.DescribeMessageServiceEndpoint(d.Id())
-		if err != nil {
-			return WrapError(err)
+	object, err := messageServiceServiceV2.DescribeMessageServiceEndpoint(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	target, ok := d.GetOkExists("endpoint_enabled")
+	if ok && fmt.Sprint(object["EndpointEnabled"]) != fmt.Sprint(target) {
+		if target == true {
+			action := "EnableEndpoint"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["EndpointType"] = d.Id()
+			request["RegionId"] = client.RegionId
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
 		}
-
-		target := d.Get("endpoint_enabled").(bool)
-		if object["EndpointEnabled"].(bool) != target {
-			if target == true {
-				action := "EnableEndpoint"
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["EndpointType"] = d.Id()
-				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
+		if target == false {
+			action := "DisableEndpoint"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["EndpointType"] = d.Id()
+			request["RegionId"] = client.RegionId
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-
-			}
-			if target == false {
-				action := "DisableEndpoint"
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["EndpointType"] = d.Id()
-				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Mns-open", "2022-01-19", action, query, request, true)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
 					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return resource.NonRetryableError(err)
 				}
-
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 		}
 	}
 
