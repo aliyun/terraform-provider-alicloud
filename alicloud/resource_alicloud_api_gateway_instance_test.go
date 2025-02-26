@@ -95,6 +95,17 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_spec":    "api.s1.medium",
+					"skip_wait_switch": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_spec": "api.s1.medium",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
