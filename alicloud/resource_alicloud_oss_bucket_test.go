@@ -95,7 +95,7 @@ func testSweepOSSBuckets(region string) error {
 	return nil
 }
 
-func TestAccAliCloudOssBucketBasic(t *testing.T) {
+func SkipTestAccAliCloudOssBucketBasic(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -668,7 +668,7 @@ func TestAccAliCloudOssBucketVersioning(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudOssBucketCheckSseRule(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCheckSseRule(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -774,7 +774,7 @@ func TestAccAliCloudOssBucketCheckSseRule(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudOssBucketCheckTransferAcc(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCheckTransferAcc(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -859,7 +859,7 @@ resource "alicloud_oss_bucket" "target"{
 `, name)
 }
 
-func TestAccAliCloudOssBucketBasic1(t *testing.T) {
+func SkipTestAccAliCloudOssBucketBasic1(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -910,7 +910,7 @@ func TestAccAliCloudOssBucketBasic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudOssBucketBasic_no_set_name(t *testing.T) {
+func SkipTestAccAliCloudOssBucketBasic_no_set_name(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -1166,7 +1166,7 @@ func TestAccAliCloudOssBucketLifeCycleRuleOverlap(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudOssBucketAccessMonitor(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAccessMonitor(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"

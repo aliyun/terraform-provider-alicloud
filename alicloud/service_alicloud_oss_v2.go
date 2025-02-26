@@ -9,8 +9,6 @@ import (
 	"github.com/tidwall/sjson"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -27,20 +25,15 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?acl")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketAcl", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketAcl", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -59,10 +52,9 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketAcl", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.AccessControlPolicy.AccessControlList", response)
 	if err != nil {
@@ -104,20 +96,15 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?referer")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketReferer", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketReferer", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -133,10 +120,9 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketReferer", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.RefererConfiguration", response)
 	if err != nil {
@@ -178,20 +164,15 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?httpsConfig")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketHttpsConfig", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketHttpsConfig", action, query, nil, nil, hostMap)
 		addDebug(action, response, request, err)
 		if err != nil {
 			if NeedRetry(err) {
@@ -209,10 +190,9 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketHttpsConfig", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.HttpsConfiguration.TLS", response)
 	if err != nil {
@@ -246,28 +226,21 @@ func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field str
 
 // DescribeOssBucketHttpsConfig >>> Encapsulated.
 
-// DescribeOssBucketCors <<< Encapsulated get interface for Oss BucketCors.
-
+// DescribeOssBucketCors
 func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?cors")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketCors", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketCors", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -286,10 +259,9 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCors", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.CORSConfiguration", response)
 	if err != nil {
@@ -323,28 +295,21 @@ func (s *OssServiceV2) OssBucketCorsStateRefreshFunc(id string, field string, fa
 
 // DescribeOssBucketCors >>> Encapsulated.
 
-// DescribeOssBucketPolicy <<< Encapsulated get interface for Oss BucketPolicy.
-
+// DescribeOssBucketPolicy
 func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?policy")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlJsonParam("GetBucketPolicy", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketPolicy", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -360,13 +325,8 @@ func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]int
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketPolicy", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-	}
-	response = response["body"].(map[string]interface{})
-	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -404,20 +364,14 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?versioning")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketVersioning", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketVersioning", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -433,10 +387,9 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketVersioning", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.VersioningConfiguration", response)
 	if err != nil {
@@ -474,28 +427,21 @@ func (s *OssServiceV2) OssBucketVersioningStateRefreshFunc(id string, field stri
 }
 
 // DescribeOssBucketVersioning >>> Encapsulated.
-// DescribeOssBucketArchiveDirectRead <<< Encapsulated get interface for Oss BucketArchiveDirectRead.
-
+// DescribeOssBucketArchiveDirectRead
 func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?bucketArchiveDirectRead")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketArchiveDirectRead", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketArchiveDirectRead", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -507,10 +453,9 @@ func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map
 		addDebug(action, response, request)
 		return nil
 	})
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketArchiveDirect", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -548,28 +493,21 @@ func (s *OssServiceV2) OssBucketArchiveDirectReadStateRefreshFunc(id string, fie
 
 // DescribeOssBucketArchiveDirectRead >>> Encapsulated.
 
-// DescribeOssBucketRequestPayment <<< Encapsulated get interface for Oss BucketRequestPayment.
-
+// DescribeOssBucketRequestPayment
 func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?requestPayment")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketRequestPayment", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketRequestPayment", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -585,10 +523,9 @@ func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[st
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketRequestPayment", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.RequestPaymentConfiguration", response)
 	if err != nil {
@@ -622,28 +559,21 @@ func (s *OssServiceV2) OssBucketRequestPaymentStateRefreshFunc(id string, field 
 
 // DescribeOssBucketRequestPayment >>> Encapsulated.
 
-// DescribeOssBucketTransferAcceleration <<< Encapsulated get interface for Oss BucketTransferAcceleration.
-
+// DescribeOssBucketTransferAcceleration
 func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?transferAcceleration")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketTransferAcceleration", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketTransferAcceleration", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -662,10 +592,9 @@ func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketTransferAcceleration", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.TransferAccelerationConfiguration", response)
 	if err != nil {
@@ -699,28 +628,21 @@ func (s *OssServiceV2) OssBucketTransferAccelerationStateRefreshFunc(id string, 
 
 // DescribeOssBucketTransferAcceleration >>> Encapsulated.
 
-// DescribeOssBucketAccessMonitor <<< Encapsulated get interface for Oss BucketAccessMonitor.
-
+// DescribeOssBucketAccessMonitor
 func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?accessmonitor")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketAccessMonitor", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketAccessMonitor", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -738,10 +660,9 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketAccessMonitor", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.AccessMonitorConfiguration", response)
 	if err != nil {
@@ -775,28 +696,21 @@ func (s *OssServiceV2) OssBucketAccessMonitorStateRefreshFunc(id string, field s
 
 // DescribeOssBucketAccessMonitor >>> Encapsulated.
 
-// DescribeOssBucketLogging <<< Encapsulated get interface for Oss BucketLogging.
-
+// DescribeOssBucketLogging
 func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?logging")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketLogging", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketLogging", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -811,10 +725,9 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLogging", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.BucketLoggingStatus.LoggingEnabled", response)
 	if err != nil {
@@ -860,28 +773,21 @@ func (s *OssServiceV2) OssBucketLoggingStateRefreshFunc(id string, field string,
 
 // DescribeOssBucketLogging >>> Encapsulated.
 
-// DescribeOssBucketServerSideEncryption <<< Encapsulated get interface for Oss BucketServerSideEncryption.
-
+// DescribeOssBucketServerSideEncryption
 func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?encryption")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketEncryption", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketEncryption", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -900,10 +806,9 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketServerSideEncryption", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.ServerSideEncryptionRule.ApplyServerSideEncryptionByDefault", response)
 	if err != nil {
@@ -936,28 +841,21 @@ func (s *OssServiceV2) OssBucketServerSideEncryptionStateRefreshFunc(id string, 
 }
 
 // DescribeOssBucketServerSideEncryption >>> Encapsulated.
-// DescribeOssBucketUserDefinedLogFields <<< Encapsulated get interface for Oss BucketUserDefinedLogFields.
-
+// DescribeOssBucketUserDefinedLogFields
 func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?userDefinedLogFieldsConfig")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetUserDefinedLogFieldsConfig", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetUserDefinedLogFieldsConfig", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -976,10 +874,9 @@ func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object 
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketUserDefinedLogFields", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -1007,28 +904,21 @@ func (s *OssServiceV2) OssBucketUserDefinedLogFieldsStateRefreshFunc(id string, 
 }
 
 // DescribeOssBucketUserDefinedLogFields >>> Encapsulated.
-// DescribeOssBucketMetaQuery <<< Encapsulated get interface for Oss BucketMetaQuery.
-
+// DescribeOssBucketMetaQuery
 func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?metaQuery")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetMetaQueryStatus", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetMetaQueryStatus", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1047,10 +937,9 @@ func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketMetaQuery", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.MetaQueryStatus", response)
 	if err != nil {
@@ -1083,8 +972,7 @@ func (s *OssServiceV2) OssBucketMetaQueryStateRefreshFunc(id string, field strin
 }
 
 // DescribeOssBucketMetaQuery >>> Encapsulated.
-// DescribeOssBucketStyle <<< Encapsulated get interface for Oss BucketStyle.
-
+// DescribeOssBucketStyle
 func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1095,21 +983,14 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?style")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(parts[0])
-	query["styleName"] = StringPointer(parts[1])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetStyle", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetStyle", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1128,10 +1009,9 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketStyle", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.Style", response)
 	if err != nil {
@@ -1164,8 +1044,7 @@ func (s *OssServiceV2) OssBucketStyleStateRefreshFunc(id string, field string, f
 }
 
 // DescribeOssBucketStyle >>> Encapsulated.
-// DescribeOssBucketDataRedundancyTransition <<< Encapsulated get interface for Oss BucketDataRedundancyTransition.
-
+// DescribeOssBucketDataRedundancyTransition
 func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1176,21 +1055,15 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?redundancyTransition")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(parts[0])
 	query["x-oss-redundancy-transition-taskid"] = StringPointer(parts[1])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketDataRedundancyTransition", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketDataRedundancyTransition", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1209,10 +1082,9 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketDataRedundancyTransition", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -1241,8 +1113,7 @@ func (s *OssServiceV2) OssBucketDataRedundancyTransitionStateRefreshFunc(id stri
 
 // DescribeOssBucketDataRedundancyTransition >>> Encapsulated.
 
-// DescribeOssAccountPublicAccessBlock <<< Encapsulated get interface for Oss AccountPublicAccessBlock.
-
+// DescribeOssAccountPublicAccessBlock
 func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1253,19 +1124,13 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 0, len(parts)))
 	}
 	action := fmt.Sprintf("/?publicAccessBlock")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetPublicAccessBlock", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetPublicAccessBlock", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1284,10 +1149,9 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("AccountPublicAccessBlock", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.PublicAccessBlockConfiguration", response)
 	if err != nil {
@@ -1320,28 +1184,21 @@ func (s *OssServiceV2) OssAccountPublicAccessBlockStateRefreshFunc(id string, fi
 }
 
 // DescribeOssAccountPublicAccessBlock >>> Encapsulated.
-// DescribeOssBucketPublicAccessBlock <<< Encapsulated get interface for Oss BucketPublicAccessBlock.
-
+// DescribeOssBucketPublicAccessBlock
 func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?publicAccessBlock")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketPublicAccessBlock", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketPublicAccessBlock", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1357,10 +1214,9 @@ func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketPublicAccessBlock", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	currentStatus, err := jsonpath.Get("$.PublicAccessBlockConfiguration.BlockPublicAccess", response)
 	if currentStatus == "" {
@@ -1393,8 +1249,7 @@ func (s *OssServiceV2) OssBucketPublicAccessBlockStateRefreshFunc(id string, fie
 }
 
 // DescribeOssBucketPublicAccessBlock >>> Encapsulated.
-// DescribeOssBucketCname <<< Encapsulated get interface for Oss BucketCname.
-
+// DescribeOssBucketCname
 func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1405,21 +1260,14 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?cname")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("ListCname", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.RoaGetV2("OSS", "2019-05-17", "ListCname", action, query, nil, nil, hostMap)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1436,10 +1284,9 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCname", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.ListCnameResult", response)
 	if err != nil {
@@ -1471,6 +1318,9 @@ func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, f
 		}
 
 		v, err := jsonpath.Get(field, object)
+		if err != nil {
+			return object, "", WrapErrorf(err, FailedGetAttributeMsg, id, field, object)
+		}
 		currentStatus := fmt.Sprint(v)
 
 		for _, failState := range failStates {
@@ -1484,8 +1334,7 @@ func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, f
 
 // DescribeOssBucketCname >>> Encapsulated.
 
-// DescribeOssBucketCnameToken <<< Encapsulated get interface for Oss BucketCnameToken.
-
+// DescribeOssBucketCnameToken
 func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1496,10 +1345,6 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?cname&comp=token")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
@@ -1510,12 +1355,9 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 	json.Unmarshal([]byte(jsonString), &request)
 	body := request
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("CreateCnameToken", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.RoaPostV2("Oss", "2019-05-17", "CreateCnameToken", action, query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1532,10 +1374,9 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketCnameToken", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.CnameToken", response)
 	if err != nil {
@@ -1569,29 +1410,21 @@ func (s *OssServiceV2) OssBucketCnameTokenStateRefreshFunc(id string, field stri
 
 // DescribeOssBucketCnameToken >>> Encapsulated.
 
-// DescribeOssBucketWebsite <<< Encapsulated get interface for Oss BucketWebsite.
-
+// DescribeOssBucketWebsite
 func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?website")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketWebsite", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketWebsite", action, query, nil, nil, hostMap)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1608,10 +1441,9 @@ func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]in
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketWebsite", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.WebsiteConfiguration", response)
 	if err != nil {
@@ -1652,8 +1484,7 @@ func (s *OssServiceV2) OssBucketWebsiteStateRefreshFunc(id string, field string,
 
 // DescribeOssBucketWebsite >>> Encapsulated.
 
-// DescribeOssAccessPoint <<< Encapsulated get interface for Oss AccessPoint.
-
+// DescribeOssAccessPoint
 func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1664,23 +1495,14 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?accessPoint")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
-	headerMap := make(map[string]*string)
 	query["x-oss-access-point-name"] = StringPointer(parts[1])
 	hostMap["bucket"] = StringPointer(parts[0])
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetAccessPoint", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap, Headers: headerMap}, &util.RuntimeOptions{})
-
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetAccessPoint", action, query, nil, nil, hostMap)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1695,12 +1517,12 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 		if IsExpectedErrors(err, []string{"NoSuchAccessPoint"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("AccessPoint", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("AccessPoint", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.GetAccessPointResult", response)
 	if err != nil {
@@ -1740,29 +1562,21 @@ func (s *OssServiceV2) OssAccessPointStateRefreshFunc(id string, field string, f
 }
 
 // DescribeOssAccessPoint >>> Encapsulated.
-// DescribeOssBucketLifecycle <<< Encapsulated get interface for Oss BucketLifecycle.
-
+// DescribeOssBucketLifecycle
 func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	action := fmt.Sprintf("/?lifecycle")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketLifecycle", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketLifecycle", action, query, nil, nil, hostMap)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1779,10 +1593,9 @@ func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketLifecycle", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.LifecycleConfiguration", response)
 	if err != nil {
@@ -1822,8 +1635,7 @@ func (s *OssServiceV2) OssBucketLifecycleStateRefreshFunc(id string, field strin
 }
 
 // DescribeOssBucketLifecycle >>> Encapsulated.
-// DescribeOssBucketWorm <<< Encapsulated get interface for Oss BucketWorm.
-
+// DescribeOssBucketWorm
 func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -1834,20 +1646,14 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/?worm")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("GetBucketWorm", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.RoaGetV2("Oss", "2019-05-17", "GetBucketWorm", action, query, nil, nil, hostMap)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1865,10 +1671,9 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if response == nil || response["body"] == nil {
+	if response == nil {
 		return object, WrapErrorf(Error(GetNotFoundMessage("BucketWorm", id)), NotFoundMsg, response)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.WormConfiguration", response)
 	if err != nil {

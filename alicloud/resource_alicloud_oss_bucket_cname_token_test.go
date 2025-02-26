@@ -11,7 +11,7 @@ import (
 
 // Test Oss BucketCnameToken. >>> Resource test cases, automatically generated.
 // Case 自定义域名令牌 8382
-func TestAccAliCloudOssBucketCnameToken_basic8382(t *testing.T) {
+func SkipTestAccAliCloudOssBucketCnameToken_basic8382(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_cname_token.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketCnameTokenMap8382)

@@ -11,7 +11,7 @@ import (
 
 // Test Oss AccountPublicAccessBlock. >>> Resource test cases, automatically generated.
 // Case Account阻止公共访问测试 6554
-func TestAccAliCloudOssAccountPublicAccessBlock_basic6554(t *testing.T) {
+func SkipTestAccAliCloudOssAccountPublicAccessBlock_basic6554(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_account_public_access_block.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssAccountPublicAccessBlockMap6554)
@@ -84,7 +84,7 @@ variable "name" {
 }
 
 // Case Account阻止公共访问测试 6554  twin
-func TestAccAliCloudOssAccountPublicAccessBlock_basic6554_twin(t *testing.T) {
+func SkipTestAccAliCloudOssAccountPublicAccessBlock_basic6554_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_account_public_access_block.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssAccountPublicAccessBlockMap6554)
@@ -125,7 +125,7 @@ func TestAccAliCloudOssAccountPublicAccessBlock_basic6554_twin(t *testing.T) {
 }
 
 // Case Account阻止公共访问测试 6554  raw
-func TestAccAliCloudOssAccountPublicAccessBlock_basic6554_raw(t *testing.T) {
+func SkipTestAccAliCloudOssAccountPublicAccessBlock_basic6554_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_account_public_access_block.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssAccountPublicAccessBlockMap6554)

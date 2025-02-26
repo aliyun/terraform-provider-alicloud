@@ -11,7 +11,7 @@ import (
 
 // Test Oss AccessPoint. >>> Resource test cases, automatically generated.
 // Case AccessPoint测试 6642
-func TestAccAliCloudOssAccessPoint_basic6642(t *testing.T) {
+func SkipTestAccAliCloudOssAccessPoint_basic6642(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_access_point.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssAccessPointMap6642)

@@ -582,3 +582,12 @@ func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
 func (c *Config) getUserAgent() string {
 	return fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)
 }
+
+func (c *Config) needRefreshCredential() bool {
+	credential, err := c.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return false
+	}
+
+	return !(*credential.Type == "sts" || *credential.Type == "access_key")
+}

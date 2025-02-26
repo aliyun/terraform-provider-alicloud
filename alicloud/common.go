@@ -1703,19 +1703,6 @@ func rpcParam(action, method, version string) *openapi.Params {
 	}
 }
 
-func genXmlParam(action, method, version, path string) *openapi.Params {
-	return &openapi.Params{
-		Action:      tea.String(action),
-		Version:     tea.String(version),
-		Protocol:    tea.String("HTTPS"),
-		Pathname:    tea.String(path),
-		Method:      tea.String(method),
-		AuthType:    tea.String("AK"),
-		ReqBodyType: tea.String("xml"),
-		BodyType:    tea.String("xml"),
-	}
-}
-
 func genJsonXmlParam(action, method, version, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
