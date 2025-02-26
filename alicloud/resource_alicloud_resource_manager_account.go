@@ -176,7 +176,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -204,7 +204,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -241,7 +241,7 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
