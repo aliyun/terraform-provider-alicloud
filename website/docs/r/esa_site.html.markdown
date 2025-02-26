@@ -12,19 +12,13 @@ Provides a ESA Site resource.
 
 
 
-For information about ESA Site and how to use it, see [What is Site](https://www.alibabacloud.com/help/en/).
+For information about ESA Site and how to use it, see [What is Site](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateSite).
 
 -> **NOTE:** Available since v1.234.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_site&exampleId=526a6ad2-d747-8099-80fe-4adba67e465727294d3a&activeTab=example&spm=docs.r.esa_site.0.526a6ad2d7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -66,10 +60,25 @@ resource "alicloud_esa_site" "default" {
 
 The following arguments are supported:
 * `access_type` - (Optional, ForceNew) Site Access Type
+* `add_client_geolocation_header` - (Optional, Available since v1.244.0) Add the Visitor geolocation header. Value range:
+  - on
+  - off
+* `add_real_client_ip_header` - (Optional, Available since v1.244.0) Add the "ali-real-client-ip" header containing the real client IP. Value range:
+  - on
+  - off
+* `cache_architecture_mode` - (Optional, Available since v1.244.0) Multi-level cache architecture pattern. Value range:
+edge: edge caching layer.
+edge_smart: Edge Cache layer + Smart Cache layer.
+edge_regional: Edge Cache layer + regional cache layer.
+edge_regional_smart: Edge Cache layer + regional cache layer + intelligent cache layer.
 * `coverage` - (Optional) Acceleration area
 * `instance_id` - (Required, ForceNew) The ID of the associated package instance.
-* `resource_group_id` - (Optional, Computed) The ID of the resource group
+* `ipv6_enable` - (Optional, Available since v1.244.0) IPv6 switch. Value:
+  - on
+  - off
+* `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group
 * `site_name` - (Required, ForceNew) Site Name
+* `site_version` - (Optional, Int, Available since v1.244.0) The version number of the site. For a site with version management enabled, you can use this parameter to specify the effective site version. The default version is 0.
 * `tags` - (Optional, Map) Resource tags
 
 ## Attributes Reference

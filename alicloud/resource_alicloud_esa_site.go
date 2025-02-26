@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -32,6 +31,19 @@ func resourceAliCloudEsaSite() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"add_client_geolocation_header": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"add_real_client_ip_header": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cache_architecture_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"coverage": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -45,15 +57,25 @@ func resourceAliCloudEsaSite() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"ipv6_enable": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"site_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"site_version": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -83,11 +105,9 @@ func resourceAliCloudEsaSiteCreate(d *schema.ResourceData, meta interface{}) err
 	request["Coverage"] = d.Get("coverage")
 	request["AccessType"] = d.Get("access_type")
 	request["InstanceId"] = d.Get("instance_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -128,38 +148,44 @@ func resourceAliCloudEsaSiteRead(d *schema.ResourceData, meta interface{}) error
 		return WrapError(err)
 	}
 
-	if objectRaw["AccessType"] != nil {
-		d.Set("access_type", objectRaw["AccessType"])
-	}
-	if objectRaw["Coverage"] != nil {
-		d.Set("coverage", objectRaw["Coverage"])
-	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["InstanceId"] != nil {
-		d.Set("instance_id", objectRaw["InstanceId"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["SiteName"] != nil {
-		d.Set("site_name", objectRaw["SiteName"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
+	d.Set("access_type", objectRaw["AccessType"])
+	d.Set("coverage", objectRaw["Coverage"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("instance_id", objectRaw["InstanceId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("site_name", objectRaw["SiteName"])
+	d.Set("status", objectRaw["Status"])
 
-	objectRaw, err = esaServiceV2.DescribeListTagResources(d.Id())
-	if err != nil {
+	objectRaw, err = esaServiceV2.DescribeSiteListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
 	tagsMaps := objectRaw["TagResources"]
-	err = d.Set("tags", tagsToMap(tagsMaps))
-	if err != nil {
-		return err
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = esaServiceV2.DescribeSiteGetManagedTransform(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
 	}
+
+	d.Set("add_client_geolocation_header", objectRaw["AddClientGeolocationHeader"])
+	d.Set("add_real_client_ip_header", objectRaw["AddRealClientIpHeader"])
+	d.Set("site_version", objectRaw["SiteVersion"])
+
+	objectRaw, err = esaServiceV2.DescribeSiteGetIPv6(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("ipv6_enable", objectRaw["Enable"])
+
+	objectRaw, err = esaServiceV2.DescribeSiteGetTieredCache(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("cache_architecture_mode", objectRaw["CacheArchitectureMode"])
 
 	return nil
 }
@@ -171,22 +197,21 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "ChangeResourceGroup"
+
 	var err error
+	action := "UpdateSiteCoverage"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-
-	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("coverage") {
 		update = true
 	}
-	request["ResourceGroupId"] = d.Get("resource_group_id")
+	request["Coverage"] = d.Get("coverage")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 					wait()
@@ -207,23 +232,21 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 	update = false
-	action = "UpdateSiteCoverage"
+	action = "UpdateIPv6"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("coverage") {
+	if d.HasChange("ipv6_enable") {
 		update = true
 	}
-	request["Coverage"] = d.Get("coverage")
+	request["Enable"] = d.Get("ipv6_enable")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -235,10 +258,72 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		esaServiceV2 := EsaServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"pending"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaSiteStateRefreshFunc(d.Id(), "Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+	}
+	update = false
+	action = "UpdateTieredCache"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("cache_architecture_mode") {
+		update = true
+	}
+	request["CacheArchitectureMode"] = d.Get("cache_architecture_mode")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "UpdateManagedTransform"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("add_client_geolocation_header") {
+		update = true
+		request["AddClientGeolocationHeader"] = d.Get("add_client_geolocation_header")
+	}
+
+	if d.HasChange("add_real_client_ip_header") {
+		update = true
+		request["AddRealClientIpHeader"] = d.Get("add_real_client_ip_header")
+	}
+
+	if d.HasChange("site_version") {
+		update = true
+		request["SiteVersion"] = d.Get("site_version")
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -262,16 +347,13 @@ func resourceAliCloudEsaSiteDelete(d *schema.ResourceData, meta interface{}) err
 	var err error
 	request = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
