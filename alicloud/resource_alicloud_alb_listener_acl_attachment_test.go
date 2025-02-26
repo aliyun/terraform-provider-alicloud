@@ -22,7 +22,6 @@ import (
 func TestAccAliCloudALBListenerAclAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener_acl_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudAlbListenerAclAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -92,13 +91,13 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   count        = 2
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = format("10.4.%%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_alb_zones.default.zones[count.index + 3].id
-  vswitch_name = format("${var.name}_%%d", count.index + 1)
+  cidr_block   = format("10.4.%%d.0/24", count.index)
+  zone_id      = data.alicloud_alb_zones.default.zones[count.index].id
+  vswitch_name = format("${var.name}_%%d", count.index)
 }
 
 resource "alicloud_alb_load_balancer" "default" {
-  vpc_id                 = data.alicloud_vpcs.default.ids.0
+  vpc_id                 = alicloud_vpc.default.id
   address_type           = "Internet"
   address_allocated_mode = "Fixed"
   load_balancer_name     = var.name
@@ -125,7 +124,7 @@ resource "alicloud_alb_load_balancer" "default" {
 
 resource "alicloud_alb_server_group" "default" {
   protocol          = "HTTP"
-  vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  vpc_id            = alicloud_vpc.default.id
   server_group_name = var.name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   health_check_config {
@@ -136,6 +135,14 @@ resource "alicloud_alb_server_group" "default" {
   }
   tags              = {
     Created = "TF"
+  }
+  connection_drain_config {
+    connection_drain_enabled = "false"
+    connection_drain_timeout = "300"
+  }
+  slow_start_config {
+    slow_start_duration = "30"
+    slow_start_enabled = "false"
   }
 }
 
@@ -153,6 +160,18 @@ resource "alicloud_alb_listener" "default" {
     }
   }
 }
+
+resource "alicloud_alb_acl" "default2" {
+  acl_name          = var.name
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+}
+
+resource "alicloud_alb_listener_acl_attachment" "default2" {
+  acl_id      = alicloud_alb_acl.default2.id
+  listener_id = alicloud_alb_listener.default.id
+  acl_type    = "White"
+}
+
 `, name)
 }
 

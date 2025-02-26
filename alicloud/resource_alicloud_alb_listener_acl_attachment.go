@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -122,8 +121,14 @@ func resourceAliCloudAlbListenerAclAttachmentRead(d *schema.ResourceData, meta i
 	if aclRelations1RawObj != nil {
 		aclRelations1Raw = aclRelations1RawObj.([]interface{})
 	}
-
 	aclRelationsChild1Raw := aclRelations1Raw[0].(map[string]interface{})
+	parts := strings.Split(d.Id(), ":")
+	for _, vv := range aclRelations1Raw {
+		if vv.(map[string]interface{})["AclId"] == parts[1] {
+			aclRelationsChild1Raw = vv.(map[string]interface{})
+			break
+		}
+	}
 	d.Set("status", aclRelationsChild1Raw["Status"])
 	d.Set("acl_id", aclRelationsChild1Raw["AclId"])
 
