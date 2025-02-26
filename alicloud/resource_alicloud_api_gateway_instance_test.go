@@ -70,6 +70,30 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_spec":    "api.s1.medium",
+					"modify_action":    "UPGRADE",
+					"skip_wait_switch": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_spec": "api.s1.medium",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_spec":    "api.s1.small",
+					"modify_action":    "DOWNGRADE",
+					"skip_wait_switch": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_spec": "api.s1.small",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_name":           name + "_update",
 					"instance_spec":           "api.s1.small",
 					"https_policy":            "HTTPS2_TLS1_0",
