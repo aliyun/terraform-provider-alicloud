@@ -101,7 +101,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Bucket Cname.
-* `delete` - (Defaults to 10 mins) Used when delete the Bucket Cname.
+* `delete` - (Defaults to 5 mins) Used when delete the Bucket Cname.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Cname.
 
 ## Import

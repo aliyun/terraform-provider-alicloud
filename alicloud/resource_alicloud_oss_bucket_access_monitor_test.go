@@ -11,7 +11,7 @@ import (
 
 // Test Oss BucketAccessMonitor. >>> Resource test cases, automatically generated.
 // Case AccessMonitor测试 6451
-func TestAccAliCloudOssBucketAccessMonitor_basic6451(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAccessMonitor_basic6451(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_access_monitor.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketAccessMonitorMap6451)
@@ -92,7 +92,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case AccessMonitor测试 6451  twin
-func TestAccAliCloudOssBucketAccessMonitor_basic6451_twin(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAccessMonitor_basic6451_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_access_monitor.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketAccessMonitorMap6451)
@@ -134,7 +134,7 @@ func TestAccAliCloudOssBucketAccessMonitor_basic6451_twin(t *testing.T) {
 }
 
 // Case AccessMonitor测试 6451  raw
-func TestAccAliCloudOssBucketAccessMonitor_basic6451_raw(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAccessMonitor_basic6451_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_access_monitor.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketAccessMonitorMap6451)

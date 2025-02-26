@@ -1318,6 +1318,9 @@ func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, f
 		}
 
 		v, err := jsonpath.Get(field, object)
+		if err != nil {
+			return object, "", WrapErrorf(err, FailedGetAttributeMsg, id, field, object)
+		}
 		currentStatus := fmt.Sprint(v)
 
 		for _, failState := range failStates {

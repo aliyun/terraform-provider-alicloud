@@ -26,7 +26,7 @@ func resourceAliCloudOssBucketCname() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"bucket": {
@@ -370,7 +370,7 @@ func resourceAliCloudOssBucketCnameDelete(d *schema.ResourceData, meta interface
 	}
 
 	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossServiceV2.OssBucketCnameStateRefreshFunc(d.Id(), "$.Cname[0].Domain", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossServiceV2.OssBucketCnameStateRefreshFunc(d.Id(), "$.Domain", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
