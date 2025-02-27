@@ -892,6 +892,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_waiting_room_event":                               resourceAliCloudEsaWaitingRoomEvent(),
 			"alicloud_esa_origin_pool":                                      resourceAliCloudEsaOriginPool(),
 			"alicloud_esa_waiting_room":                                     resourceAliCloudEsaWaitingRoom(),
 			"alicloud_esa_image_transform":                                  resourceAliCloudEsaImageTransform(),
