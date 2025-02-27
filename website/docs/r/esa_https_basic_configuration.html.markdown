@@ -54,26 +54,47 @@ resource "alicloud_esa_https_basic_configuration" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `ciphersuite` - (Optional) Ciphersuite
-* `ciphersuite_group` - (Optional) CiphersuiteGroup
-* `http2` - (Optional) https enable
-* `http3` - (Optional) https enable
-* `https` - (Optional) https enable
-* `ocsp_stapling` - (Optional) OCSP enable
-* `rule` - (Optional) rule
-* `rule_enable` - (Optional) rule enable
-* `rule_name` - (Optional) rule name
-* `site_id` - (Required, ForceNew, Int) Site ID
-* `tls10` - (Optional) Tls10 enable
-* `tls11` - (Optional) Tls11 enable
-* `tls12` - (Optional) Tls12 enable
-* `tls13` - (Optional) Tls13 enable
+* `ciphersuite` - (Optional) Custom cipher suite, indicating the specific encryption algorithm selected when CiphersuiteGroup is set to custom.
+* `ciphersuite_group` - (Optional) Cipher suite group. Default is all cipher suites. Possible values:
+  - all: All cipher suites.
+  - strict: Strong cipher suites.
+  - custom: Custom cipher suites.
+* `http2` - (Optional) Indicates whether HTTP2 is enabled. Default is on. Possible values:
+  - on: Enabled.
+  - off: Disabled.
+* `http3` - (Optional) Whether to enable HTTP3, which is enabled by default. The value can be:
+  - on: Enabled. 
+  - off: Disabled.
+* `https` - (Optional) Whether to enable HTTPS. Default is enabled. Possible values:
+  - on: Enable.
+  - off: Disable.
+* `ocsp_stapling` - (Optional) Indicates whether OCSP is enabled. Default is off. Possible values:
+  - on: Enabled.
+  - off: Disabled.
+* `rule` - (Optional) Matching rule content.
+* `rule_enable` - (Optional) Rule switch. Possible values:
+  - on: Enable.
+  - off: Disable.
+* `rule_name` - (Optional) Rule name, which can be used to find the rule with the specified name.
+* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
+* `tls10` - (Optional) Whether to enable TLS1.0. Default is disabled. Possible values:
+  - on: Enable.
+  - off: Disable.
+* `tls11` - (Optional) Whether to enable TLS1.1. Default is enabled. Possible values:
+  - on: Enable.
+  - off: Disable.
+* `tls12` - (Optional) Whether to enable TLS1.2. Default is enabled. Possible values:
+  - on: Enable.
+  - off: Disable.
+* `tls13` - (Optional) Whether to enable TLS1.3. Default is enabled. Possible values:
+  - on: Enable.
+  - off: Disable.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
-* `config_id` - Config ID
+* `config_id` - ConfigId of the configuration, which can be obtained by calling the [ListHttpsBasicConfigurations](https://www.alibabacloud.com/help/en/doc-detail/2867470.html) interface.
 
 ## Timeouts
 
