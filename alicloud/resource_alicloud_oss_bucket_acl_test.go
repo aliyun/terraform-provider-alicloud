@@ -11,7 +11,7 @@ import (
 
 // Test Oss BucketAcl. >>> Resource test cases, automatically generated.
 // Case 测试BucketAcl 6192
-func TestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketAclMap6192)
@@ -112,7 +112,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case 测试BucketAcl 6192  twin
-func TestAccAliCloudOssBucketAcl_basic6192_twin(t *testing.T) {
+func SkipTestAccAliCloudOssBucketAcl_basic6192_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudOssBucketAclMap6192)

@@ -84,7 +84,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Access Point.
-* `delete` - (Defaults to 5 mins) Used when delete the Access Point.
+* `delete` - (Defaults to 10 mins) Used when delete the Access Point.
 * `update` - (Defaults to 5 mins) Used when update the Access Point.
 
 ## Import
