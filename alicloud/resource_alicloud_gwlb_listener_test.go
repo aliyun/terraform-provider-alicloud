@@ -25,7 +25,7 @@ func TestAccAliCloudGwlbListener_basic8508(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbListenerBasicDependence8508)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -190,11 +190,11 @@ resource "alicloud_gwlb_server_group" "defaultoAkLbr" {
     health_check_protocol        = "TCP"
     health_check_connect_port    = "80"
     health_check_connect_timeout = "5"
-    health_check_domain          = "www.domain.com"
+    health_check_domain          = ""
     health_check_enabled         = true
     health_check_http_code       = ["http_2xx", "http_4xx", "http_3xx"]
     health_check_interval        = "10"
-    health_check_path            = "/health-check"
+    health_check_path            = ""
     healthy_threshold            = "2"
     unhealthy_threshold          = "2"
   }
@@ -229,11 +229,11 @@ resource "alicloud_gwlb_server_group" "defaultN4DOzm" {
     health_check_protocol        = "TCP"
     health_check_connect_port    = "80"
     health_check_connect_timeout = "5"
-    health_check_domain          = "www.domain.com"
+    health_check_domain          = ""
     health_check_enabled         = true
     health_check_http_code       = ["http_2xx", "http_4xx", "http_3xx"]
     health_check_interval        = "10"
-    health_check_path            = "/health-check"
+    health_check_path            = ""
     healthy_threshold            = "2"
     unhealthy_threshold          = "2"
   }
