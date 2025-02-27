@@ -49,32 +49,32 @@ resource "alicloud_esa_network_optimization" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `grpc` - (Optional) Whether to enable GRPC, which is disabled by default. Value range:
-  - on: Open
-  - off: off
-* `http2_origin` - (Optional) Whether to enable HTTP2 back to the source, the default is off. Value range:
-  - on: Open
-  - off: off
-* `rule` - (Optional) The rule content.
-* `rule_enable` - (Optional) Rule switch. Value:
-  - on: Open
-  - off: off
-* `rule_name` - (Optional) Rule name, which can be used to find the rule with the transmitted field as its rule name. This only takes effect when the functionName is provided.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
-* `site_version` - (Optional, ForceNew, Int) The version number of the site. For a site with version management enabled, you can use this parameter to specify the effective site version. The default version is 0.
-* `smart_routing` - (Optional) Whether to enable the intelligent routing service is disabled by default. Value range:
-  - on: Open
-  - off: off
-* `upload_max_filesize` - (Optional) The maximum upload file size, in MB. The value range is 100 to 500.
-* `websocket` - (Optional) Whether to enable Websocket, enabled by default. Value range:
-  - on: Open
-  - off: off
+* `grpc` - (Optional) Indicates whether to enable GRPC, disabled by default. Possible values:
+  - on: Enable
+  - off: Disable
+* `http2_origin` - (Optional) Indicates whether to enable HTTP2 origin, disabled by default. Possible values:
+  - on: Enable
+  - off: Disable
+* `rule` - (Optional) Rule content.
+* `rule_enable` - (Optional) Rule switch. Possible values:
+  - on: Enable
+  - off: Disable
+* `rule_name` - (Optional) Rule name, which can be used to find the rule with the specified name.
+* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
+* `site_version` - (Optional, ForceNew, Int) Version number of the site configuration. For sites with version management enabled, this parameter specifies the version to which the configuration applies, defaulting to version 0.
+* `smart_routing` - (Optional) Indicates whether to enable smart routing service, disabled by default. Possible values:
+  - on: Enable
+  - off: Disable
+* `upload_max_filesize` - (Optional) Maximum upload file size, in MB, value range: 100～500.
+* `websocket` - (Optional) Indicates whether to enable Websocket, enabled by default. Possible values:
+  - on: Enable
+  - off: Disable
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
-* `config_id` - Config Id
+* `config_id` - ConfigId of the configuration, which can be obtained by calling the ListNetworkOptimizations.
 
 ## Timeouts
 

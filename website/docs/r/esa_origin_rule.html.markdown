@@ -49,18 +49,18 @@ The following arguments are supported:
 * `origin_http_port` - (Optional) The port of the origin station accessed when the HTTP protocol is used to return to the origin.
 * `origin_https_port` - (Optional) The port of the origin station accessed when the HTTPS protocol is used to return to the origin.
 * `origin_scheme` - (Optional) The protocol used by the back-to-origin request. Value range:
-  - http: uses the http protocol to return to the source.
-  - https: uses the https protocol to return to the source.
-  - follow: follows the Client Protocol back to the source.
+  - `http`: uses the http protocol to return to the source.
+  - `https`: uses the https protocol to return to the source.
+  - `follow`: follows the Client Protocol back to the source.
 * `origin_sni` - (Optional) SNI carried in the back-to-origin request.
 * `range` - (Optional) Use the range sharding method to download the file from the source. Value range:
-  - on: Open.
-  - off: off.
-  - force: force.
+  - `on`: Open.
+  - `off`: off.
+  - `force`: force.
 * `rule` - (Optional) Rule Content.
 * `rule_enable` - (Optional) Rule switch. Value range:
-  - on: Open.
-  - off: off.
+  - `on`: Open.
+  - `off`: off.
 * `rule_name` - (Optional) Rule Name.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) Version number of the site.

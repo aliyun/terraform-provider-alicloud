@@ -48,21 +48,21 @@ resource "alicloud_esa_compression_rule" "default" {
 
 The following arguments are supported:
 * `brotli` - (Optional) Brotli compression. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `gzip` - (Optional) Gzip compression. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `rule` - (Optional) Rule Content.
 * `rule_enable` - (Optional) Rule switch. Value range:
-  - on: Open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `rule_name` - (Optional) Rule name, you can find out the rule whose rule name is the passed field.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) The version of the website configurations.
 * `zstd` - (Optional) Zstd compression. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 
 ## Attributes Reference
 
