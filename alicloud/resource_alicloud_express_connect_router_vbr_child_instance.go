@@ -241,7 +241,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterVbrChildInstanceDel
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationDenied.VbrHasRouteEntryInMiddleStatus", "Conflict.Lock"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
