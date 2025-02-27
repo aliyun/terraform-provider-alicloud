@@ -20,12 +20,6 @@ For information about Cloud Phone Instance Group and how to use it, see [What is
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_phone_instance_group&exampleId=8dc49b0f-cce2-0201-d74b-bccfba270e431dac65fc&activeTab=example&spm=docs.r.cloud_phone_instance_group.0.8dc49b0fcc&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -100,6 +94,7 @@ The following arguments are supported:
 * `period` - (Optional, Int) The duration of the resource purchase. The unit is specified by PeriodUnit.
 * `period_unit` - (Optional) The unit of time for purchasing resources.
 * `policy_group_id` - (Optional) The policy ID. You can query the list of policies by calling [ListPolicyGroups](~~ ListPolicyGroups ~~).
+* `vswitch_id` - (Optional, Available since v1.244.0) The vSwitch ID. 
 
 ## Attributes Reference
 
@@ -110,7 +105,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Instance Group.
+* `create` - (Defaults to 9 mins) Used when create the Instance Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance Group.
 * `update` - (Defaults to 5 mins) Used when update the Instance Group.
 

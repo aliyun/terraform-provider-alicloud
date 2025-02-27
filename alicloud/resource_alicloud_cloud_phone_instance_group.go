@@ -22,7 +22,7 @@ func resourceAliCloudCloudPhoneInstanceGroup() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(9 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -87,6 +87,10 @@ func resourceAliCloudCloudPhoneInstanceGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -101,7 +105,7 @@ func resourceAliCloudCloudPhoneInstanceGroupCreate(d *schema.ResourceData, meta 
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-
+	request["BizRegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("auto_renew"); ok {
@@ -116,6 +120,9 @@ func resourceAliCloudCloudPhoneInstanceGroupCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("office_site_id"); ok {
 		request["OfficeSiteId"] = v
 	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["AutoPay"] = v
 	}
@@ -126,7 +133,6 @@ func resourceAliCloudCloudPhoneInstanceGroupCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOkExists("amount"); ok {
 		request["Amount"] = v
 	}
-	request["BizRegionId"] = client.RegionId
 	if v, ok := d.GetOk("charge_type"); ok {
 		request["ChargeType"] = v
 	}
