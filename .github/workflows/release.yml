@@ -16,8 +16,8 @@ on:
       - 'v*'
 jobs:
   goreleaser:
-    #runs-on: ubuntu-20.04
-    runs-on: terraform-releaser
+    runs-on: ubuntu-latest
+    # runs-on: terraform-releaser
     steps:
       -
         name: Checkout
@@ -42,6 +42,10 @@ jobs:
 #          # These secrets will need to be configured for the repository:
 #          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 #          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+
+      - 
+        name: check space
+        run: df -h
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
