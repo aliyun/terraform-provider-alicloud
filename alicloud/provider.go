@@ -902,6 +902,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_network_optimization":                             resourceAliCloudEsaNetworkOptimization(),
 			"alicloud_esa_origin_rule":                                      resourceAliCloudEsaOriginRule(),
 			"alicloud_esa_https_application_configuration":                  resourceAliCloudEsaHttpsApplicationConfiguration(),
+			"alicloud_tag_associated_rule":                                  resourceAliCloudTagAssociatedRule(),
 			"alicloud_esa_compression_rule":                                 resourceAliCloudEsaCompressionRule(),
 			"alicloud_esa_https_basic_configuration":                        resourceAliCloudEsaHttpsBasicConfiguration(),
 			"alicloud_vpc_ipam_ipam_resource_discovery":                     resourceAliCloudVpcIpamIpamResourceDiscovery(),
