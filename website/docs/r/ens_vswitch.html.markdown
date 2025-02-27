@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_ens_vswitch
 
-Provides a ENS Vswitch resource. 
+Provides a ENS Vswitch resource.
+
+
 
 For information about ENS Vswitch and how to use it, see [What is Vswitch](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createvswitch).
 
@@ -51,18 +53,18 @@ resource "alicloud_ens_vswitch" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_block` - (Required, ForceNew) IPv4 CIDR block of the VSwitch instance.
-* `description` - (Optional) Description of the VSwitch Instance.
+* `cidr_block` - (Required, ForceNew) The CIDR block of the vSwitch.
+* `description` - (Optional) The description of the vSwitch.
 * `ens_region_id` - (Required, ForceNew) ENS Region ID.
-* `network_id` - (Optional, ForceNew, Computed) Network ID of the VSwitch instance.
-* `vswitch_name` - (Optional) Name of the switch instance.
+* `network_id` - (Optional, ForceNew) The ID of the network to which the vSwitch that you want to create belongs.
+* `vswitch_name` - (Optional) The name of the vSwitch.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the VSwitch instance, in the UTC time format, yyyy-MM-ddTHH:mm:ssZ.
-* `status` - Status of the switch instance.
+* `id` - The resource ID in terraform of Vswitch.
+* `create_time` - The time when the VPC was created.
+* `status` - The status of the vSwitch.
 
 ## Timeouts
 
