@@ -466,10 +466,11 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeVSwitches"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["VSwitchId"] = id
+	request["VSwitchId"] = id
+
+	action := "DescribeVSwitchAttributes"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -482,24 +483,17 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidVSwitchId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.VSwitches.VSwitch[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VSwitches.VSwitch[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *EnsServiceV2) EnsVswitchStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -514,6 +508,13 @@ func (s *EnsServiceV2) EnsVswitchStateRefreshFunc(id string, field string, failS
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

@@ -21,9 +21,9 @@ func resourceAliCloudEnsVswitch() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cidr_block": {
@@ -87,7 +87,6 @@ func resourceAliCloudEnsVswitchCreate(d *schema.ResourceData, meta interface{}) 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -95,9 +94,9 @@ func resourceAliCloudEnsVswitchCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_vswitch", action, AlibabaCloudSdkGoERROR)
@@ -145,26 +144,31 @@ func resourceAliCloudEnsVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "ModifyVSwitchAttribute"
+
 	var err error
+	action := "ModifyVSwitchAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["VSwitchId"] = d.Id()
+	request["VSwitchId"] = d.Id()
+
 	if d.HasChange("vswitch_name") {
 		update = true
-		request["VSwitchName"] = d.Get("vswitch_name")
+	}
+	if v, ok := d.GetOk("vswitch_name"); ok {
+		request["VSwitchName"] = v
 	}
 
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,9 +176,9 @@ func resourceAliCloudEnsVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -192,7 +196,7 @@ func resourceAliCloudEnsVswitchDelete(d *schema.ResourceData, meta interface{}) 
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["VSwitchId"] = d.Id()
+	request["VSwitchId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -205,18 +209,22 @@ func resourceAliCloudEnsVswitchDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsVswitchStateRefreshFunc(d.Id(), "VSwitchId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsVswitchStateRefreshFunc(d.Id(), "$.VSwitchId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
