@@ -892,6 +892,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_client_ca_certificate":                            resourceAliCloudEsaClientCaCertificate(),
 			"alicloud_esa_client_certificate":                               resourceAliCloudEsaClientCertificate(),
 			"alicloud_esa_certificate":                                      resourceAliCloudEsaCertificate(),
 			"alicloud_esa_waiting_room_rule":                                resourceAliCloudEsaWaitingRoomRule(),
