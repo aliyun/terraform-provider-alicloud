@@ -185,6 +185,14 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"open_public_connection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"public_connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -351,6 +359,12 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
+	d.Set("public_connection_string", object["PublicConnectionString"])
+	if object["PublicConnectionString"].(string) == "" {
+		d.Set("open_public_connection", false)
+	} else {
+		d.Set("open_public_connection", true)
+	}
 
 	if ZoneIdVswitchMap, ok := object["ZoneIdVswitchMap"]; ok {
 		vMap := ZoneIdVswitchMap.(map[string]interface{})
@@ -667,6 +681,67 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 			d.SetPartial("renewal_status")
+		}
+	}
+	if d.HasChange("open_public_connection") && !d.IsNewResource() {
+		openPublicConnection := d.Get("open_public_connection").(bool)
+		if openPublicConnection {
+			action := "AllocateClusterPublicConnection"
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"RegionId":    client.RegionId,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			clickhouseService := ClickhouseService{client}
+			stateConf := BuildStateConf([]string{"NetAddressCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("open_public_connection")
+		} else {
+			action := "ReleaseClusterPublicConnection"
+			//NetAddressDeleting
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"RegionId":    client.RegionId,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			clickhouseService := ClickhouseService{client}
+			stateConf := BuildStateConf([]string{"NetAddressDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("open_public_connection")
 		}
 	}
 
