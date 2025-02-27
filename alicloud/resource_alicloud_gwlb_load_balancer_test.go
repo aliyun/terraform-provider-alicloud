@@ -25,7 +25,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence7994)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -201,7 +201,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence8565)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.EfloSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
