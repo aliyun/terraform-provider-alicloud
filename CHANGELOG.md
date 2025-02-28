@@ -1,4 +1,53 @@
 ## 1.244.0 (Unreleased)
+
+- **New Resource:** `alicloud_esa_https_basic_configuration` [GH-8386]
+- **New Resource:** `alicloud_esa_compression_rule` [GH-8404]
+- **New Resource:** `alicloud_esa_https_application_configuration` [GH-8408]
+- **New Resource:** `alicloud_tag_associated_rule` [GH-8409]
+- **New Resource:** `alicloud_esa_network_optimization` [GH-8415]
+- **New Resource:** `alicloud_esa_cache_rule` [GH-8417]
+- **New Resource:** `alicloud_esa_origin_rule` [GH-8418]
+- **New Resource:** `alicloud_esa_image_transform` [GH-8420]
+- **New Resource:** `alicloud_esa_waiting_room` [GH-8421]
+- **New Resource:** `alicloud_esa_origin_pool` [GH-8422]
+- **New Resource:** `alicloud_esa_waiting_room_event` [GH-8423]
+- **New Resource:** `alicloud_esa_waiting_room_rule` [GH-8424]
+- **New Resource:** `alicloud_esa_certificate` [GH-8428]
+- **New Resource:** `alicloud_esa_client_certificate` [GH-8432]
+- **New Resource:** `alicloud_esa_client_ca_certificate` [GH-8433]
+- **New Resource:** `alicloud_esa_kv_namespace` [GH-8438]
+- **New Data Source:** `alicloud_esa_sites` [GH-8405]
+
+ENHANCEMENTS:
+
+- client: Fixes the getting fc endpoint failed error. [GH-8395]
+- BPStudio: Improves the invoking api method and supports refreshing credential automatically. [GH-8299]
+- CloudControl: Improves the invoking api method and supports refreshing credential automatically. [GH-8357]
+- resource/alicloud_message_service_queue: Added the field dlq_policy. [GH-8397]
+- resource/alicloud_message_service_subscription: Refactored the resource alicloud_message_service_subscription; Added the field create_time, dlq_policy. [GH-8400]
+- resource/alicloud_esa_site: Supports attribute add_client_geolocation_header, add_real_client_ip_header, etc. [GH-8402]
+- resource/alicloud_alb_listener_acl_attachment: Fixed bug while read acl_id. [GH-8411]
+- resource/alicloud_api_gateway_instance: Mark attribute instance_spec modifiable. [GH-8414]
+- resource/alicloud_ens_vswitch: Refactored the resource alicloud_ens_vswitch; Updated action DescribeVSwitches to DescribeVSwitchAttributes to improve the read; Improved alicloud_ens_vswitch testcase. [GH-8426]
+- resource/alicloud_cloud_phone_instance_group: Supports new attribute vswitch_id. [GH-8427]
+- resource/alicloud_express_connect_router_vbr_child_instance: Added retry strategy for error code OperationDenied.VbrHasRouteEntryInMiddleStatus; Improved alicloud_express_connect_router_vbr_child_instance testcase. [GH-8429]
+- data-source/alicloud_esa_sites: Supports filter by access_type, coverage, etc. [GH-8406]
+- docs: Improves system_disk_size description of ess_scaling_configuration. [GH-8389]
+- docs: Adds more valid values description for the field_type. [GH-8392]
+- docs: corrects the resource alicloud_nlb_server_group argument preserve_client_ip_enabled default, and add a note. [GH-8393]
+- docs: Fixed invalid link for alicloud_express_connect_router_interface. [GH-8401]
+- docs: Improves description for cbwp. [GH-8430]
+- docs: Improves description for esa. [GH-8436]
+- docs: Improves description for esa_https_application_configuration. [GH-8437]
+- docs: Improves description for esa_certificate. [GH-8439]
+- docs: Improves link for esa. [GH-8440]
+- docs: Fix invalid link of esa. [GH-8441]
+- testcase: Improves test case for gwlb. [GH-8434]
+
+BUG FIXES:
+
+- resource/alicloud_message_service_endpoint: Fixed the create error caused by field endpoint_enabled. [GH-8394]
+
 ## 1.243.0 (February 20, 2025)
 
 - **New Resource:** `alicloud_ack_one_membership_attachment` ([#8276](https://github.com/aliyun/terraform-provider-alicloud/issues/8276))
@@ -14,8 +63,6 @@
 - **New Data Source:** `alicloud_emrv2_cluster_instances` ([#8283](https://github.com/aliyun/terraform-provider-alicloud/issues/8283))
 - **New Data Source:** `alicloud_cloud_firewall_vpc_cen_tr_firewalls` ([#8327](https://github.com/aliyun/terraform-provider-alicloud/issues/8327))
 - **New Data Source:** `alicloud_cloud_firewall_nat_firewalls` ([#8330](https://github.com/aliyun/terraform-provider-alicloud/issues/8330))
-
--
 
 ENHANCEMENTS:
 
