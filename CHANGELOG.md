@@ -1,52 +1,54 @@
-## 1.244.0 (Unreleased)
+## 1.245.0 (Unreleased)
+## 1.244.0 (February 28, 2025)
 
-- **New Resource:** `alicloud_esa_https_basic_configuration` [GH-8386]
-- **New Resource:** `alicloud_esa_compression_rule` [GH-8404]
-- **New Resource:** `alicloud_esa_https_application_configuration` [GH-8408]
-- **New Resource:** `alicloud_tag_associated_rule` [GH-8409]
-- **New Resource:** `alicloud_esa_network_optimization` [GH-8415]
-- **New Resource:** `alicloud_esa_cache_rule` [GH-8417]
-- **New Resource:** `alicloud_esa_origin_rule` [GH-8418]
-- **New Resource:** `alicloud_esa_image_transform` [GH-8420]
-- **New Resource:** `alicloud_esa_waiting_room` [GH-8421]
-- **New Resource:** `alicloud_esa_origin_pool` [GH-8422]
-- **New Resource:** `alicloud_esa_waiting_room_event` [GH-8423]
-- **New Resource:** `alicloud_esa_waiting_room_rule` [GH-8424]
-- **New Resource:** `alicloud_esa_certificate` [GH-8428]
-- **New Resource:** `alicloud_esa_client_certificate` [GH-8432]
-- **New Resource:** `alicloud_esa_client_ca_certificate` [GH-8433]
-- **New Resource:** `alicloud_esa_kv_namespace` [GH-8438]
-- **New Data Source:** `alicloud_esa_sites` [GH-8405]
+- **New Resource:** `alicloud_esa_https_basic_configuration` ([#8386](https://github.com/aliyun/terraform-provider-alicloud/issues/8386))
+- **New Resource:** `alicloud_esa_compression_rule` ([#8404](https://github.com/aliyun/terraform-provider-alicloud/issues/8404))
+- **New Resource:** `alicloud_esa_https_application_configuration` ([#8408](https://github.com/aliyun/terraform-provider-alicloud/issues/8408))
+- **New Resource:** `alicloud_tag_associated_rule` ([#8409](https://github.com/aliyun/terraform-provider-alicloud/issues/8409))
+- **New Resource:** `alicloud_esa_network_optimization` ([#8415](https://github.com/aliyun/terraform-provider-alicloud/issues/8415))
+- **New Resource:** `alicloud_esa_cache_rule` ([#8417](https://github.com/aliyun/terraform-provider-alicloud/issues/8417))
+- **New Resource:** `alicloud_esa_origin_rule` ([#8418](https://github.com/aliyun/terraform-provider-alicloud/issues/8418))
+- **New Resource:** `alicloud_esa_image_transform` ([#8420](https://github.com/aliyun/terraform-provider-alicloud/issues/8420))
+- **New Resource:** `alicloud_esa_waiting_room` ([#8421](https://github.com/aliyun/terraform-provider-alicloud/issues/8421))
+- **New Resource:** `alicloud_esa_origin_pool` ([#8422](https://github.com/aliyun/terraform-provider-alicloud/issues/8422))
+- **New Resource:** `alicloud_esa_waiting_room_event` ([#8423](https://github.com/aliyun/terraform-provider-alicloud/issues/8423))
+- **New Resource:** `alicloud_esa_waiting_room_rule` ([#8424](https://github.com/aliyun/terraform-provider-alicloud/issues/8424))
+- **New Resource:** `alicloud_esa_certificate` ([#8428](https://github.com/aliyun/terraform-provider-alicloud/issues/8428))
+- **New Resource:** `alicloud_esa_client_certificate` ([#8432](https://github.com/aliyun/terraform-provider-alicloud/issues/8432))
+- **New Resource:** `alicloud_esa_client_ca_certificate` ([#8433](https://github.com/aliyun/terraform-provider-alicloud/issues/8433))
+- **New Resource:** `alicloud_esa_kv_namespace` ([#8438](https://github.com/aliyun/terraform-provider-alicloud/issues/8438))
+- **New Data Source:** `alicloud_esa_sites` ([#8405](https://github.com/aliyun/terraform-provider-alicloud/issues/8405))
 
 ENHANCEMENTS:
 
-- client: Fixes the getting fc endpoint failed error. [GH-8395]
-- BPStudio: Improves the invoking api method and supports refreshing credential automatically. [GH-8299]
-- CloudControl: Improves the invoking api method and supports refreshing credential automatically. [GH-8357]
-- resource/alicloud_message_service_queue: Added the field dlq_policy. [GH-8397]
-- resource/alicloud_message_service_subscription: Refactored the resource alicloud_message_service_subscription; Added the field create_time, dlq_policy. [GH-8400]
-- resource/alicloud_esa_site: Supports attribute add_client_geolocation_header, add_real_client_ip_header, etc. [GH-8402]
-- resource/alicloud_alb_listener_acl_attachment: Fixed bug while read acl_id. [GH-8411]
-- resource/alicloud_api_gateway_instance: Mark attribute instance_spec modifiable. [GH-8414]
-- resource/alicloud_ens_vswitch: Refactored the resource alicloud_ens_vswitch; Updated action DescribeVSwitches to DescribeVSwitchAttributes to improve the read; Improved alicloud_ens_vswitch testcase. [GH-8426]
-- resource/alicloud_cloud_phone_instance_group: Supports new attribute vswitch_id. [GH-8427]
-- resource/alicloud_express_connect_router_vbr_child_instance: Added retry strategy for error code OperationDenied.VbrHasRouteEntryInMiddleStatus; Improved alicloud_express_connect_router_vbr_child_instance testcase. [GH-8429]
-- data-source/alicloud_esa_sites: Supports filter by access_type, coverage, etc. [GH-8406]
-- docs: Improves system_disk_size description of ess_scaling_configuration. [GH-8389]
-- docs: Adds more valid values description for the field_type. [GH-8392]
-- docs: corrects the resource alicloud_nlb_server_group argument preserve_client_ip_enabled default, and add a note. [GH-8393]
-- docs: Fixed invalid link for alicloud_express_connect_router_interface. [GH-8401]
-- docs: Improves description for cbwp. [GH-8430]
-- docs: Improves description for esa. [GH-8436]
-- docs: Improves description for esa_https_application_configuration. [GH-8437]
-- docs: Improves description for esa_certificate. [GH-8439]
-- docs: Improves link for esa. [GH-8440]
-- docs: Fix invalid link of esa. [GH-8441]
-- testcase: Improves test case for gwlb. [GH-8434]
+- provider: improves the argument oidc_token setting. ([#8445](https://github.com/aliyun/terraform-provider-alicloud/issues/8445))
+- client: Fixes the getting fc endpoint failed error. ([#8395](https://github.com/aliyun/terraform-provider-alicloud/issues/8395))
+- BPStudio: Improves the invoking api method and supports refreshing credential automatically. ([#8299](https://github.com/aliyun/terraform-provider-alicloud/issues/8299))
+- CloudControl: Improves the invoking api method and supports refreshing credential automatically. ([#8357](https://github.com/aliyun/terraform-provider-alicloud/issues/8357))
+- resource/alicloud_message_service_queue: Added the field dlq_policy. ([#8397](https://github.com/aliyun/terraform-provider-alicloud/issues/8397))
+- resource/alicloud_message_service_subscription: Refactored the resource alicloud_message_service_subscription; Added the field create_time, dlq_policy. ([#8400](https://github.com/aliyun/terraform-provider-alicloud/issues/8400))
+- resource/alicloud_esa_site: Supports attribute add_client_geolocation_header, add_real_client_ip_header, etc. ([#8402](https://github.com/aliyun/terraform-provider-alicloud/issues/8402))
+- resource/alicloud_alb_listener_acl_attachment: Fixed bug while read acl_id. ([#8411](https://github.com/aliyun/terraform-provider-alicloud/issues/8411))
+- resource/alicloud_api_gateway_instance: Mark attribute instance_spec modifiable. ([#8414](https://github.com/aliyun/terraform-provider-alicloud/issues/8414))
+- resource/alicloud_ens_vswitch: Refactored the resource alicloud_ens_vswitch; Updated action DescribeVSwitches to DescribeVSwitchAttributes to improve the read; Improved alicloud_ens_vswitch testcase. ([#8426](https://github.com/aliyun/terraform-provider-alicloud/issues/8426))
+- resource/alicloud_cloud_phone_instance_group: Supports new attribute vswitch_id. ([#8427](https://github.com/aliyun/terraform-provider-alicloud/issues/8427))
+- resource/alicloud_express_connect_router_vbr_child_instance: Added retry strategy for error code OperationDenied.VbrHasRouteEntryInMiddleStatus; Improved alicloud_express_connect_router_vbr_child_instance testcase. ([#8429](https://github.com/aliyun/terraform-provider-alicloud/issues/8429))
+- data-source/alicloud_esa_sites: Supports filter by access_type, coverage, etc. ([#8406](https://github.com/aliyun/terraform-provider-alicloud/issues/8406))
+- docs: Improves system_disk_size description of ess_scaling_configuration. ([#8389](https://github.com/aliyun/terraform-provider-alicloud/issues/8389))
+- docs: Adds more valid values description for the field_type. ([#8392](https://github.com/aliyun/terraform-provider-alicloud/issues/8392))
+- docs: corrects the resource alicloud_nlb_server_group argument preserve_client_ip_enabled default, and add a note. ([#8393](https://github.com/aliyun/terraform-provider-alicloud/issues/8393))
+- docs: Fixed invalid link for alicloud_express_connect_router_interface. ([#8401](https://github.com/aliyun/terraform-provider-alicloud/issues/8401))
+- docs: Improves description for cbwp. ([#8430](https://github.com/aliyun/terraform-provider-alicloud/issues/8430))
+- docs: Improves description for esa. ([#8436](https://github.com/aliyun/terraform-provider-alicloud/issues/8436))
+- docs: Improves description for esa_https_application_configuration. ([#8437](https://github.com/aliyun/terraform-provider-alicloud/issues/8437))
+- docs: Improves description for esa_certificate. ([#8439](https://github.com/aliyun/terraform-provider-alicloud/issues/8439))
+- docs: Improves link for esa. ([#8440](https://github.com/aliyun/terraform-provider-alicloud/issues/8440))
+- docs: Fix invalid link of esa. ([#8441](https://github.com/aliyun/terraform-provider-alicloud/issues/8441))
+- testcase: Improves test case for gwlb. ([#8434](https://github.com/aliyun/terraform-provider-alicloud/issues/8434))
 
 BUG FIXES:
 
-- resource/alicloud_message_service_endpoint: Fixed the create error caused by field endpoint_enabled. [GH-8394]
+- resource/alicloud_message_service_endpoint: Fixed the create error caused by field endpoint_enabled. ([#8394](https://github.com/aliyun/terraform-provider-alicloud/issues/8394))
 
 ## 1.243.0 (February 20, 2025)
 
