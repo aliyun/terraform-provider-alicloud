@@ -55,37 +55,37 @@ resource "alicloud_esa_https_application_configuration" "default" {
 
 The following arguments are supported:
 * `alt_svc` - (Optional) Function switch, default off. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `alt_svc_clear` - (Optional) Alt-Svc whether The header contains the clear parameter. This parameter is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `alt_svc_ma` - (Optional) The effective time of the Alt-Svc, in seconds. The default value is 86400 seconds.
 * `alt_svc_persist` - (Optional) Alt-Svc whether The header contains the persist parameter. This parameter is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `hsts` - (Optional) Whether to enable HSTS. It is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `hsts_include_subdomains` - (Optional) Whether to include subdomains in HSTS is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `hsts_max_age` - (Optional) The expiration time of HSTS, in seconds.
 * `hsts_preload` - (Optional) Whether to enable HSTS preloading. It is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `https_force` - (Optional) Whether to enable forced HTTPS. It is disabled by default. Value range:
-  - on: open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `https_force_code` - (Optional) Forced HTTPS jump status code, value range:
-  - 301
-  - 302
-  - 307
-  - 308
+  - `301`
+  - `302`
+  - `307`
+  - `308`
 * `rule` - (Optional) Rule Content.
 * `rule_enable` - (Optional) Rule switch. Value range:
-  - on: Open.
-  - off: off.
+  - `on`: on.
+  - `off`: off.
 * `rule_name` - (Optional) Rule name, you can find out the rule whose rule name is the passed field.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) The version of the website configurations.
