@@ -2607,7 +2607,7 @@ func assumeRoleWithOidcSchema() *schema.Schema {
 					Type:         schema.TypeString,
 					Optional:     true,
 					ValidateFunc: validation.StringLenBetween(4, 20000),
-					DefaultFunc:  schema.EnvDefaultFunc("ALIBABA_CLOUD_OIDC_TOKEN", ""),
+					DefaultFunc:  schema.EnvDefaultFunc("ALIBABA_CLOUD_OIDC_TOKEN", nil),
 					//ExactlyOneOf: []string{"assume_role_with_oidc.0.oidc_token", "assume_role_with_oidc.0.oidc_token_file"},
 				},
 				"role_arn": {
@@ -3948,8 +3948,8 @@ func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.As
 	}
 
 	missingOidcToken := true
-	if v, ok := tfMap["oidc_token"].(string); ok && v != "" {
-		assumeRole.OIDCToken = v
+	if v, ok := tfMap["oidc_token"]; ok && v.(string) != "" {
+		assumeRole.OIDCToken = v.(string)
 		missingOidcToken = false
 	}
 
