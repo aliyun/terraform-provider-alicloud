@@ -349,6 +349,7 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 * `oidc_provider_arn` - (Required) ARN of the OIDC IdP. Can also be set with the `ALIBABA_CLOUD_OIDC_PROVIDER_ARN` environment variable.
 * `role_arn` - (Required) ARN of the RAM Role to assume. Can also be set with the `ALIBABA_CLOUD_ROLE_ARN` environment variable.
 * `oidc_token` - (Optional) Value of a RRSA security token from an OIDC Idp. One of `oidc_token` or `oidc_token_file` is required.
+  Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN` environment variable.
 * `oidc_token_file` - (Optional) File containing a RRSA security token from an OIDC. One of `oidc_token_file` or `oidc_token` is required.
   Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN_FILE` environment variable.
 * `role_session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRoleWithOIDC call as session name. 
