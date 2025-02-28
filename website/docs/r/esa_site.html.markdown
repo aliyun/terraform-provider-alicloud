@@ -12,7 +12,7 @@ Provides a ESA Site resource.
 
 
 
-For information about ESA Site and how to use it, see [What is Site](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateSite).
+For information about ESA Site and how to use it, see [What is Site](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/user-guide/site-management).
 
 -> **NOTE:** Available since v1.234.0.
 
