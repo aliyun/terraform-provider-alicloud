@@ -88,8 +88,8 @@ func (s *VpcServiceV2) VpcPublicIpAddressPoolStateRefreshFunc(id string, field s
 // SetResourceTags <<< Encapsulated tag function for Vpc.
 func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -108,14 +108,14 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -138,7 +138,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -146,9 +145,10 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
+			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, false)
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -1073,11 +1073,11 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeNetworkAclAttributes"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["NetworkAclId"] = id
-	query["RegionId"] = client.RegionId
+	request["NetworkAclId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeNetworkAclAttributes"
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1092,14 +1092,13 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1123,6 +1122,13 @@ func (s *VpcServiceV2) VpcNetworkAclStateRefreshFunc(id string, field string, fa
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
