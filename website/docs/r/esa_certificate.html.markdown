@@ -39,12 +39,9 @@ resource "alicloud_esa_certificate" "default" {
 
 The following arguments are supported:
 * `cas_id` - (Optional) The certificate ID on Certificate Management Service.
-* `cert_id` - (Optional, ForceNew, Computed) The website ID, which can be obtained by calling the [ListSites](~~ListSites~~) operation.
-* `cert_name` - (Optional) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
-* `certificate` - (Optional) The certificate type. Valid values:
-
-  - cas: a certificate purchased by using Certificate Management Service.
-  - upload: a custom certificate that you upload.
+* `cert_id` - (Optional, ForceNew, Computed) The certificate ID on ESA.
+* `cert_name` - (Optional) The certificate name.
+* `certificate` - (Optional) The certificate content.
 * `created_type` - (Required) The certificate ID on Certificate Management Service. Valid values:
   - free: a free certificate.
   - cas: a certificate purchased by using Certificate Management Service.
@@ -52,15 +49,17 @@ The following arguments are supported:
 * `domains` - (Optional, ForceNew) The Subject Alternative Name (SAN) of the certificate.
 * `private_key` - (Optional) The certificate content.
 * `region` - (Optional) The private key of the certificate.
-* `site_id` - (Required, ForceNew, Int) The website ID.
-* `type` - (Optional, ForceNew) The certificate type.
+* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) interface.
+* `type` - (Optional, ForceNew) The certificate type. Valid values:
+  - cas: a certificate purchased by using Certificate Management Service.
+  - upload: a custom certificate that you upload.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<cert_id>`.
-* `create_time` - The time when the certificate was created.
-* `status` - The certificate status.
+* `create_time` - Creation time.
+* `status` - Certificate status.(within 30 days).- issued.- applying.- application failed.- canceled.
 
 ## Timeouts
 
