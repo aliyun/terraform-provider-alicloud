@@ -12,7 +12,7 @@ Provides a ESA Http Response Header Modification Rule resource.
 
 
 
-For information about ESA Http Response Header Modification Rule and how to use it, see [What is Http Response Header Modification Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateHttpResponseHeaderModificationRule).
+For information about ESA Http Response Header Modification Rule and how to use it, see [What is Http Response Header Modification Rule](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-createhttpresponseheadermodificationrule).
 
 -> **NOTE:** Available since v1.243.0.
 

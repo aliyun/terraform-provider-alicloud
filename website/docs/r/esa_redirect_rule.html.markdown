@@ -12,7 +12,7 @@ Provides a ESA Redirect Rule resource.
 
 
 
-For information about ESA Redirect Rule and how to use it, see [What is Redirect Rule](https://next.api.alibabacloud.com/document/ESA/2024-09-10/CreateRedirectRule).
+For information about ESA Redirect Rule and how to use it, see [What is Redirect Rule](https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-createredirectrule).
 
 -> **NOTE:** Available since v1.243.0.
 
