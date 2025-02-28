@@ -274,7 +274,7 @@ func buildAlicloudEssScheduledTaskArgs(d *schema.ResourceData) *ess.CreateSchedu
 		request.MaxValue = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("desired_capacity"); ok && v.(int) != 0 {
+	if v, ok := d.GetOkExists("desired_capacity"); ok {
 		request.DesiredCapacity = requests.NewInteger(v.(int))
 	}
 

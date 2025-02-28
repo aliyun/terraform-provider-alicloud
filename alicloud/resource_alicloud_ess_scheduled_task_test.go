@@ -399,6 +399,26 @@ func TestAccAliCloudEssScheduledTask_basic_3(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default1.id}",
+					"launch_time":         time.Now().Add(oneDay).Format("2006-01-02T15:06Z"),
+					"scheduled_task_name": "${var.name}",
+					"min_value":           "0",
+					"max_value":           "0",
+					"desired_capacity":    "0",
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_value":        "0",
+						"launch_time":      CHECKSET,
+						"desired_capacity": "0",
+						"max_value":        "0",
+						"scaling_group_id": CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
