@@ -1874,32 +1874,6 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 	client.r_kvstoreConn.SecureTransport = client.config.SecureTransport
 	return do(client.r_kvstoreConn)
 }
-
-func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
-	productCode := "quotas"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "quotas.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	openapiConfig := client.teaRpcOpenapiConfig
-	openapiConfig.Endpoint = tea.String(endpoint)
-	openapiConfig.Protocol = client.teaRpcOpenapiConfig.Protocol
-	result, err := openapi.NewClient(&openapiConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return result, nil
-}
 func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	config := &openapi.Config{
 		AccessKeyId:     tea.String(client.config.AccessKey),
@@ -2200,7 +2174,7 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		sdkConfig = client.teaRpcOpenapiConfig
 	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
-		sdkConfig.SetProtocol(client.config.Protocol)
+		apiParams.Protocol = tea.String(client.config.Protocol)
 	}
 	sdkConfig.SetEndpoint(endpoint)
 	credential, err := client.config.Credential.GetCredential()
