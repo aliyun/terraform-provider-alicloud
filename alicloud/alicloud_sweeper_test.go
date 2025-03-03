@@ -50,6 +50,7 @@ func sharedClientForRegionWithBackendRegions(region string, supported bool, regi
 }
 
 var endpoints sync.Map
+var signVersion sync.Map
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a give n region
@@ -66,12 +67,13 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	securityToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
 
 	conf := connectivity.Config{
-		Region:    connectivity.Region(region),
-		RegionId:  region,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
-		Protocol:  "HTTPS",
-		Endpoints: &endpoints,
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &endpoints,
+		SignVersion: &signVersion,
 	}
 	if securityToken != "" {
 		conf.SecurityToken = securityToken

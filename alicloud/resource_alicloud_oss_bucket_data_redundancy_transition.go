@@ -4,12 +4,10 @@ package alicloud
 import (
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,20 +57,15 @@ func resourceAliCloudOssBucketDataRedundancyTransitionCreate(d *schema.ResourceD
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 
 	query["x-oss-target-redundancy-type"] = StringPointer("ZRS")
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("CreateBucketDataRedundancyTransition", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "CreateBucketDataRedundancyTransition", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -88,7 +81,7 @@ func resourceAliCloudOssBucketDataRedundancyTransitionCreate(d *schema.ResourceD
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_data_redundancy_transition", action, AlibabaCloudSdkGoERROR)
 	}
 
-	BucketDataRedundancyTransitionTaskId, _ := jsonpath.Get("$.body.BucketDataRedundancyTransition.TaskId", response)
+	BucketDataRedundancyTransitionTaskId, _ := jsonpath.Get("$.BucketDataRedundancyTransition.TaskId", response)
 	d.SetId(fmt.Sprintf("%v:%v", *hostMap["bucket"], BucketDataRedundancyTransitionTaskId))
 
 	return resourceAliCloudOssBucketDataRedundancyTransitionRead(d, meta)
@@ -134,21 +127,15 @@ func resourceAliCloudOssBucketDataRedundancyTransitionDelete(d *schema.ResourceD
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(parts[0])
 	query["x-oss-redundancy-transition-taskid"] = StringPointer(parts[1])
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("DeleteBucketDataRedundancyTransition", "DELETE", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Oss", genXmlParam("DELETE", "2019-05-17", "DeleteBucketDataRedundancyTransition", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

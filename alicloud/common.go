@@ -1703,7 +1703,7 @@ func rpcParam(action, method, version string) *openapi.Params {
 	}
 }
 
-func genXmlParam(action, method, version, path string) *openapi.Params {
+func genXmlParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
@@ -1716,7 +1716,7 @@ func genXmlParam(action, method, version, path string) *openapi.Params {
 	}
 }
 
-func genJsonXmlParam(action, method, version, path string) *openapi.Params {
+func genJsonXmlParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
@@ -1729,7 +1729,7 @@ func genJsonXmlParam(action, method, version, path string) *openapi.Params {
 	}
 }
 
-func genXmlJsonParam(action, method, version, path string) *openapi.Params {
+func genXmlJsonParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),

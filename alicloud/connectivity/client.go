@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
+	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
 
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
@@ -448,66 +449,56 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
-	// Initialize the OSS client if necessary
-	if client.ossconn == nil {
-		schma := strings.ToLower(client.config.Protocol)
-		endpoint := client.config.OssEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, OSSCode)
-		}
-		if endpoint == "" {
-			endpointItem, err := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
-			if err != nil {
-				log.Printf("describeEndpointForService got an error: %#v.", err)
-			}
-			endpoint = endpointItem
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.RegionId)
-			}
-		}
-		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
-		}
-
-		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent())}
-		proxy, err := client.getHttpProxy()
-		if proxy != nil {
-			skip, err := client.skipProxy(endpoint)
-			if err != nil {
-				return nil, err
-			}
-			if !skip {
-				clientOptions = append(clientOptions, oss.Proxy(proxy.String()))
-			}
-		}
-
-		clientOptions = append(clientOptions, oss.SetCredentialsProvider(&ossCredentialsProvider{client: client}))
-
-		// region
-		clientOptions = append(clientOptions, oss.Region(client.config.RegionId))
-
-		// SignVersion
-		if ossV, ok := client.config.SignVersion.Load("oss"); ok {
-			clientOptions = append(clientOptions, oss.AuthVersion(func(v any) oss.AuthVersionType {
-				switch fmt.Sprintf("%v", v) {
-				case "v4":
-					return oss.AuthV4
-				case "v2":
-					return oss.AuthV2
-				}
-				//default is v1
-				return oss.AuthV1
-			}(ossV)))
-		}
-
-		ossconn, err := oss.New(endpoint, "", "", clientOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the OSS client: %#v", err)
-		}
-
-		client.ossconn = ossconn
+	if client.ossconn != nil && !client.config.needRefreshCredential() {
+		return do(client.ossconn)
+	}
+	product := "oss"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	schma := strings.ToLower(client.config.Protocol)
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
 	}
 
+	clientOptions := []oss.ClientOption{oss.UserAgent(client.config.getUserAgent())}
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+		if !skip {
+			clientOptions = append(clientOptions, oss.Proxy(proxy.String()))
+		}
+	}
+
+	clientOptions = append(clientOptions, oss.SetCredentialsProvider(&ossCredentialsProvider{client: client}))
+
+	// region
+	clientOptions = append(clientOptions, oss.Region(client.config.RegionId))
+
+	// SignVersion
+	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
+		clientOptions = append(clientOptions, oss.AuthVersion(func(v any) oss.AuthVersionType {
+			switch fmt.Sprintf("%v", v) {
+			case "v4":
+				return oss.AuthV4
+			case "v2":
+				return oss.AuthV2
+			}
+			//default is v1
+			return oss.AuthV1
+		}(ossV)))
+	}
+
+	ossconn, err := oss.New(endpoint, "", "", clientOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the OSS client: %#v", err)
+	}
+
+	client.ossconn = ossconn
 	return do(client.ossconn)
 }
 
@@ -1940,55 +1931,6 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 
 	return openapiClient, nil
 }
-
-func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
-	config := &client.teaRoaOpenapiConfig
-
-	productCode := "oss"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		// Firstly, load endpoint from provider
-		endpoint = client.config.OssEndpoint
-		if endpoint == "" {
-			// Secondly, load endpoint from environment
-			endpoint = loadEndpoint(client.config.RegionId, OSSCode)
-		}
-		if endpoint == "" {
-			// Thirdly, load endpoint from common method
-			if err := client.loadEndpoint(productCode); err != nil {
-				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.config.RegionId)
-				client.config.Endpoints.Store(productCode, endpoint)
-				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-			}
-		} else {
-			client.config.Endpoints.Store(productCode, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-
-	config.Endpoint = tea.String(endpoint)
-	openapiClient, _err := openapi.NewClient(config)
-	if _err != nil {
-		return nil, _err
-	}
-	openapiClient.Spi, _err = ossclient.NewClient()
-	if _err != nil {
-		return nil, _err
-	}
-
-	// SignVersion
-	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
-		openapiClient.SignatureVersion = tea.String(ossV.(string))
-	}
-
-	return openapiClient, nil
-}
-
 func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2246,6 +2188,61 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	return response, formatError(response, err)
 }
 
+func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkConfig := client.teaRoaOpenapiConfig
+	if apiParams.Style != nil && *apiParams.Style == "RPC" {
+		sdkConfig = client.teaRpcOpenapiConfig
+	}
+	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
+		sdkConfig.SetProtocol(client.config.Protocol)
+	}
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	sdkConfig.SetUserAgent(client.config.getUserAgent())
+	openapiClient, err := openapi.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	if apiProductCode == "oss" {
+		openapiClient.Spi, err = ossclient.NewClient()
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+		}
+		// SignVersion
+		if ossV, ok := client.config.SignVersion.Load("oss"); ok {
+			openapiClient.SignatureVersion = tea.String(ossV.(string))
+		}
+	}
+	if apiProductCode == "log" {
+		openapiClient.Spi, err = gatewayclient.NewClient()
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+		}
+		openapiClient.Protocol = tea.String(client.config.Protocol)
+	}
+	var response map[string]interface{}
+	runtime := &utilV2.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+	if respBody, isExist := response["body"]; isExist && respBody != nil {
+		if v, ok := respBody.(map[string]interface{}); ok {
+			response = v
+		}
+	}
+	return response, formatError(response, err)
+}
 func formatError(response map[string]interface{}, err error) error {
 	if err != nil {
 		return err

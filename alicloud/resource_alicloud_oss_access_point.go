@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,7 +27,7 @@ func resourceAliCloudOssAccessPoint() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_point_name": {
@@ -85,19 +83,14 @@ func resourceAliCloudOssAccessPoint() *schema.Resource {
 }
 
 func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-
 	action := fmt.Sprintf("/?accessPoint")
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 	jsonString := "{}"
@@ -119,7 +112,6 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 		if vpcId1 != nil && vpcId1 != "" {
 			vpcConfiguration["VpcId"] = vpcId1
 		}
-
 		objectDataLocalMap["VpcConfiguration"] = vpcConfiguration
 	}
 
@@ -129,11 +121,9 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 
 	request["CreateAccessPointConfiguration"] = objectDataLocalMap
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("CreateAccessPoint", "PUT", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "CreateAccessPoint", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -228,10 +218,7 @@ func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface
 
 	parts := strings.Split(d.Id(), ":")
 	action := fmt.Sprintf("/?publicAccessBlock")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -255,11 +242,9 @@ func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(genXmlParam("PutAccessPointPublicAccessBlock", "PUT", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutAccessPointPublicAccessBlock", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -285,22 +270,16 @@ func resourceAliCloudOssAccessPointDelete(d *schema.ResourceData, meta interface
 	action := fmt.Sprintf("/?accessPoint")
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(parts[0])
 	query["x-oss-access-point-name"] = StringPointer(parts[1])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("DeleteAccessPoint", "DELETE", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Oss", genXmlParam("DELETE", "2019-05-17", "DeleteAccessPoint", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessPointCreatingConflict"}) || NeedRetry(err) {
 				wait()
