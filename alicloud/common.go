@@ -1693,11 +1693,22 @@ func rpcParam(action, method, version string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
-		Protocol:    tea.String("HTTPS"),
 		Pathname:    tea.String("/"),
 		Method:      tea.String(method),
 		AuthType:    tea.String("AK"),
 		Style:       tea.String("RPC"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+}
+func roaParam(method, version, action, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
 		ReqBodyType: tea.String("formData"),
 		BodyType:    tea.String("json"),
 	}

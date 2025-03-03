@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -178,10 +176,7 @@ func resourceAliCloudSlsScheduledSQLCreate(d *schema.ResourceData, meta interfac
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(d.Get("project").(string))
 	request["name"] = d.Get("scheduled_sql_name")
@@ -295,11 +290,9 @@ func resourceAliCloudSlsScheduledSQLCreate(d *schema.ResourceData, meta interfac
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("CreateScheduledSQL", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateScheduledSQL", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
 				wait()
@@ -400,10 +393,7 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 	parts := strings.Split(d.Id(), ":")
 	scheduledSQLName := parts[1]
 	action := fmt.Sprintf("/scheduledsqls/%s", scheduledSQLName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -529,11 +519,9 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateScheduledSQL", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -563,21 +551,15 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 				parts = strings.Split(d.Id(), ":")
 				scheduledSQLName = parts[1]
 				action = fmt.Sprintf("/scheduledsqls/{scheduledSQLName}?action=enable")
-				conn, err = client.NewSlsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				hostMap := make(map[string]*string)
 				hostMap["project"] = StringPointer(parts[0])
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(client.GenRoaParam("EnableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+					response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "EnableScheduledSQL", action), query, body, nil, hostMap, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -597,21 +579,15 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 				parts = strings.Split(d.Id(), ":")
 				scheduledSQLName = parts[1]
 				action = fmt.Sprintf("/scheduledsqls/{scheduledSQLName}?action=disable")
-				conn, err = client.NewSlsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				hostMap := make(map[string]*string)
 				hostMap["project"] = StringPointer(parts[0])
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(client.GenRoaParam("DisableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+					response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "DisableScheduledSQL", action), query, body, nil, hostMap, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -644,20 +620,14 @@ func resourceAliCloudSlsScheduledSQLDelete(d *schema.ResourceData, meta interfac
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("DeleteScheduledSQL", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteScheduledSQL", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

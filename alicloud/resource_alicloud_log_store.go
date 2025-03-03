@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -253,10 +251,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	request["logstoreName"] = d.Get("logstore_name")
 	hostMap["project"] = StringPointer(d.Get("project_name").(string))
@@ -334,11 +329,9 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("CreateLogStore", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateLogStore", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -507,10 +500,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	parts := strings.Split(d.Id(), ":")
 	logstore := parts[1]
 	action := fmt.Sprintf("/logstores/%s", logstore)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -612,7 +602,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
-		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return nil, slsClient.UpdateMetricStore(projectName, logstore)
 			})
@@ -637,11 +627,9 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	}
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateLogStore", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogStore", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -660,10 +648,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	parts = strings.Split(d.Id(), ":")
 	logstore = parts[1]
 	action = fmt.Sprintf("/logstores/%s/meteringmode", logstore)
-	conn, err = client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -679,11 +663,9 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateLogStoreMeteringMode", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogStoreMeteringMode", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -713,19 +695,13 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("DeleteLogStore", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteLogStore", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

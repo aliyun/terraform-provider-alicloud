@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -82,10 +80,7 @@ func resourceAliCloudSlsProjectCreate(d *schema.ResourceData, meta interface{}) 
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("project_name"); ok {
 		request["projectName"] = v
@@ -101,12 +96,9 @@ func resourceAliCloudSlsProjectCreate(d *schema.ResourceData, meta interface{}) 
 		request["resourceGroupId"] = v
 	}
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("CreateProject", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateProject", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -179,10 +171,7 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	update := false
 	d.Partial(true)
 	action := fmt.Sprintf("/")
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -194,12 +183,9 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	request["description"] = d.Get("description")
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateProject", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateProject", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -216,10 +202,6 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	update = false
 	action = fmt.Sprintf("/resourcegroup")
-	conn, err = client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -232,12 +214,9 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	request["resourceType"] = "PROJECT"
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("ChangeResourceGroup", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "ChangeResourceGroup", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -289,19 +268,13 @@ func resourceAliCloudSlsProjectDelete(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(d.Id())
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("DeleteProject", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteProject", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

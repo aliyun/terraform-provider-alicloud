@@ -809,28 +809,26 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the HBase client if necessary
-	if client.logpopconn == nil {
-		logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
-		}
-		logpopconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		logpopconn.SourceIp = client.config.SourceIp
-		logpopconn.SecureTransport = client.config.SecureTransport
-		endpoint := client.config.LogEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
-			}
-		}
-		endpoint = strings.TrimPrefix(endpoint, "https://")
-		endpoint = strings.TrimPrefix(endpoint, "http://")
-		logpopconn.Domain = endpoint + "/open-api"
-		client.logpopconn = logpopconn
+	if client.logpopconn != nil && !client.config.needRefreshCredential() {
+		return do(client.logpopconn)
 	}
+	product := "sls"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+
+	logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
+	}
+	logpopconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	logpopconn.SourceIp = client.config.SourceIp
+	logpopconn.SecureTransport = client.config.SecureTransport
+	endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "https://"), "http://")
+	logpopconn.Domain = endpoint + "/open-api"
+	client.logpopconn = logpopconn
 
 	return do(client.logpopconn)
 }
@@ -839,25 +837,24 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
-	// Initialize the LOG client if necessary
-	if client.logconn == nil {
-		endpoint := client.config.LogEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
-			}
-		}
-		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
-		}
-		client.logconn = &sls.Client{
-			AccessKeyID:     client.config.AccessKey,
-			AccessKeySecret: client.config.SecretKey,
-			Endpoint:        endpoint,
-			SecurityToken:   client.config.SecurityToken,
-			UserAgent:       client.getUserAgent(),
-		}
+	if client.logconn != nil && !client.config.needRefreshCredential() {
+		return do(client.logconn)
+	}
+	product := "sls"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
+	}
+	client.logconn = &sls.Client{
+		AccessKeyID:     client.config.AccessKey,
+		AccessKeySecret: client.config.SecretKey,
+		Endpoint:        endpoint,
+		SecurityToken:   client.config.SecurityToken,
+		UserAgent:       client.getUserAgent(),
 	}
 
 	return do(client.logconn)
@@ -1900,37 +1897,6 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	}
 	return result, nil
 }
-func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
-	config := &openapi.Config{
-		AccessKeyId:     tea.String(client.config.AccessKey),
-		AccessKeySecret: tea.String(client.config.SecretKey),
-		SecurityToken:   tea.String(client.config.SecurityToken),
-		UserAgent:       tea.String(client.config.getUserAgent()),
-	}
-
-	endpoint := client.config.LogEndpoint
-	if endpoint == "" {
-		endpoint = loadEndpoint(client.config.RegionId, LOGCode)
-		if endpoint == "" {
-			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
-		}
-	}
-	endpoint = strings.TrimPrefix(endpoint, "https://")
-	endpoint = strings.TrimPrefix(endpoint, "http://")
-
-	config.Endpoint = tea.String(endpoint)
-	openapiClient, _err := openapi.NewClient(config)
-	if _err != nil {
-		return nil, _err
-	}
-	openapiClient.Spi, _err = gatewayclient.NewClient()
-	if _err != nil {
-		return nil, _err
-	}
-	openapiClient.Protocol = tea.String(client.config.Protocol)
-
-	return openapiClient, nil
-}
 func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2188,6 +2154,16 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	return response, formatError(response, err)
 }
 
+// Do invoking API request with SDK v2
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiParams - API params
+//	query - API parameters in query
+//	body - API parameters in body
+//	headers - API parameters in headers
+//	hostMap - API parameters in hostMap
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
@@ -2200,7 +2176,7 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		sdkConfig = client.teaRpcOpenapiConfig
 	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
-		sdkConfig.SetProtocol(client.config.Protocol)
+		apiParams.Protocol = tea.String(client.config.Protocol)
 	}
 	sdkConfig.SetEndpoint(endpoint)
 	credential, err := client.config.Credential.GetCredential()
@@ -2225,7 +2201,7 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 			openapiClient.SignatureVersion = tea.String(ossV.(string))
 		}
 	}
-	if apiProductCode == "log" {
+	if apiProductCode == "sls" {
 		openapiClient.Spi, err = gatewayclient.NewClient()
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
@@ -2336,18 +2312,4 @@ func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.D
 	}
 
 	return defaultTimeout
-}
-
-func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
-	return &openapi.Params{
-		Action:      tea.String(action),
-		Version:     tea.String(version),
-		Protocol:    tea.String(client.config.Protocol),
-		Pathname:    tea.String(path),
-		Method:      tea.String(method),
-		AuthType:    tea.String("AK"),
-		Style:       tea.String("ROA"),
-		ReqBodyType: tea.String("formData"),
-		BodyType:    tea.String("json"),
-	}
 }
