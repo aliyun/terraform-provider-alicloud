@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"github.com/tidwall/sjson"
 	"log"
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -119,10 +117,7 @@ func resourceAliCloudOssBucketCnameCreate(d *schema.ResourceData, meta interface
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 	jsonString := "{}"
@@ -159,11 +154,9 @@ func resourceAliCloudOssBucketCnameCreate(d *schema.ResourceData, meta interface
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("PutCname", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "PutCname", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"NeedVerifyDomainOwnership"}) {
 				wait()
@@ -261,10 +254,7 @@ func resourceAliCloudOssBucketCnameUpdate(d *schema.ResourceData, meta interface
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := fmt.Sprintf("/?cname&comp=add")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -311,11 +301,9 @@ func resourceAliCloudOssBucketCnameUpdate(d *schema.ResourceData, meta interface
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(genXmlParam("PutCname", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "PutCname", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -349,10 +337,7 @@ func resourceAliCloudOssBucketCnameDelete(d *schema.ResourceData, meta interface
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(parts[0])
 	jsonString := "{}"
@@ -363,12 +348,9 @@ func resourceAliCloudOssBucketCnameDelete(d *schema.ResourceData, meta interface
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("DeleteCname", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "DeleteCname", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -388,7 +370,7 @@ func resourceAliCloudOssBucketCnameDelete(d *schema.ResourceData, meta interface
 	}
 
 	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossServiceV2.OssBucketCnameStateRefreshFunc(d.Id(), "$.Cname[0].Domain", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossServiceV2.OssBucketCnameStateRefreshFunc(d.Id(), "$.Domain", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

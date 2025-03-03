@@ -145,7 +145,7 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "15687876-cn-hangzhou",
+							"cert_id": "15582268-cn-hangzhou",
 						},
 					},
 				}),

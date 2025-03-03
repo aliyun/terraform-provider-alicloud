@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,10 +54,7 @@ func resourceAliCloudOssBucketCnameTokenCreate(d *schema.ResourceData, meta inte
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 	jsonString := "{}"
@@ -70,11 +65,9 @@ func resourceAliCloudOssBucketCnameTokenCreate(d *schema.ResourceData, meta inte
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("CreateCnameToken", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -90,8 +83,8 @@ func resourceAliCloudOssBucketCnameTokenCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_cname_token", action, AlibabaCloudSdkGoERROR)
 	}
 
-	CnameTokenBucketVar, _ := jsonpath.Get("$.body.CnameToken.Bucket", response)
-	CnameTokenCnameVar, _ := jsonpath.Get("$.body.CnameToken.Cname", response)
+	CnameTokenBucketVar, _ := jsonpath.Get("$.CnameToken.Bucket", response)
+	CnameTokenCnameVar, _ := jsonpath.Get("$.CnameToken.Cname", response)
 	d.SetId(fmt.Sprintf("%v:%v", CnameTokenBucketVar, CnameTokenCnameVar))
 
 	return resourceAliCloudOssBucketCnameTokenRead(d, meta)

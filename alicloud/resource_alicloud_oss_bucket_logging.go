@@ -3,11 +3,9 @@ package alicloud
 
 import (
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -55,10 +53,7 @@ func resourceAliCloudOssBucketLoggingCreate(d *schema.ResourceData, meta interfa
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 
@@ -73,11 +68,9 @@ func resourceAliCloudOssBucketLoggingCreate(d *schema.ResourceData, meta interfa
 
 	request["BucketLoggingStatus"] = objectDataLocalMap
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("PutBucketLogging", "PUT", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketLogging", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -139,10 +132,7 @@ func resourceAliCloudOssBucketLoggingUpdate(d *schema.ResourceData, meta interfa
 	update := false
 
 	action := fmt.Sprintf("/?logging")
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -167,11 +157,9 @@ func resourceAliCloudOssBucketLoggingUpdate(d *schema.ResourceData, meta interfa
 	request["BucketLoggingStatus"] = objectDataLocalMap
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(genXmlParam("PutBucketLogging", "PUT", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketLogging", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -203,19 +191,13 @@ func resourceAliCloudOssBucketLoggingDelete(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
-	conn, err := client.NewOssClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Id())
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genXmlParam("DeleteBucketLogging", "DELETE", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Oss", genXmlParam("DELETE", "2019-05-17", "DeleteBucketLogging", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
