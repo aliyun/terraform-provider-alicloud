@@ -30,24 +30,19 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
-data "alicloud_cloud_sso_directories" "default" {}
 
-resource "alicloud_cloud_sso_directory" "default" {
-  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name = var.name
-}
-
-locals {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+data "alicloud_cloud_sso_directories" "default" {
 }
 
 resource "alicloud_cloud_sso_scim_server_credential" "default" {
-  directory_id = local.directory_id
+  directory_id           = data.alicloud_cloud_sso_directories.default.directories.0.id
+  credential_secret_file = "./credential_secret_file.txt"
 }
 ```
 
@@ -56,14 +51,18 @@ resource "alicloud_cloud_sso_scim_server_credential" "default" {
 The following arguments are supported:
 
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `status` - (Optional) The Status of the resource. Valid values: `Disabled`, `Enabled`.
+* `status` - (Optional) The status of the SCIM Server Credential. Valid values: `Enabled`, `Disabled`.
+* `credential_secret_file` - (Optional, ForceNew, Available since v1.245.0) The name of file that can save Credential ID and Credential Secret. Strongly suggest you to specified it when you creating credential, otherwise, you wouldn't get its secret ever.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of SCIM Server Credential. The value formats as `<directory_id>:<credential_id>`.
-* `credential_id` - The CredentialId of the resource.
+* `id` - The resource ID in terraform of SCIM Server Credential. It formats as `<directory_id>:<credential_id>`.
+* `credential_id` - The ID of the SCIM credential.
+* `credential_type` - (Available since v1.245.0) The type of the SCIM credential.
+* `create_time` - (Available since v1.245.0) The time when the SCIM credential was created.
+* `expire_time` - (Available since v1.245.0) The time when the SCIM credential expires.
 
 ## Import
 
