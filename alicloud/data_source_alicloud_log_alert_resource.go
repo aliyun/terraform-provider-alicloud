@@ -38,8 +38,8 @@ func dataSourceAlicloudLogAlertResource() *schema.Resource {
 func dataSourceAlicloudLogAlertResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourceType := d.Get("type").(string)
-	lang, _ := d.Get("lang").(string)
-	project, _ := d.Get("project").(string)
+	lang := d.Get("lang").(string)
+	project := d.Get("project").(string)
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
 			switch resourceType {

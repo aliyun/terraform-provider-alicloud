@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -167,10 +165,7 @@ func resourceAliCloudSlsOssExportSinkCreate(d *schema.ResourceData, meta interfa
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(d.Get("project").(string))
 	request["name"] = d.Get("job_name")
@@ -262,11 +257,9 @@ func resourceAliCloudSlsOssExportSinkCreate(d *schema.ResourceData, meta interfa
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("CreateOSSExport", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateOSSExport", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
 				wait()
@@ -383,10 +376,7 @@ func resourceAliCloudSlsOssExportSinkUpdate(d *schema.ResourceData, meta interfa
 	parts := strings.Split(d.Id(), ":")
 	ossExportName := parts[1]
 	action := fmt.Sprintf("/ossexports/%s", ossExportName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -490,11 +480,9 @@ func resourceAliCloudSlsOssExportSinkUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateOSSExport", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateOSSExport", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
 					wait()
@@ -528,19 +516,13 @@ func resourceAliCloudSlsOssExportSinkDelete(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("DeleteOSSExport", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteOSSExport", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
 				wait()
