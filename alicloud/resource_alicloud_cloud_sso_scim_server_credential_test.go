@@ -19,10 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
+func TestAccAliCloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
 	resourceId := "alicloud_cloud_sso_scim_server_credential.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudSSOSCIMServerCredentialMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOSCIMServerCredentialMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudssoService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudSsoScimServerCredential")
@@ -30,12 +31,10 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%scloudssoscimservercredential%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudSSOSCIMServerCredentialBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOSCIMServerCredentialBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CloudSsoSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -43,7 +42,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"directory_id": "${local.directory_id}",
+					"directory_id": "${data.alicloud_cloud_sso_directories.default.directories.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -72,33 +71,79 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"credential_secret_file"},
 			},
 		},
 	})
 }
 
-var AlicloudCloudSSOSCIMServerCredentialMap0 = map[string]string{}
+func TestAccAliCloudCloudSSOSCIMServerCredential_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
+	resourceId := "alicloud_cloud_sso_scim_server_credential.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOSCIMServerCredentialMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudssoService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSsoScimServerCredential")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudssoscimservercredential%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOSCIMServerCredentialBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":           "${data.alicloud_cloud_sso_directories.default.directories.0.id}",
+					"status":                 "Enabled",
+					"credential_secret_file": "./credential_secret_file.txt",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id": CHECKSET,
+						"status":       "Enabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"credential_secret_file"},
+			},
+		},
+	})
+}
 
-func AlicloudCloudSSOSCIMServerCredentialBasicDependence0(name string) string {
+var AliCloudCloudSSOSCIMServerCredentialMap0 = map[string]string{
+	"status":          CHECKSET,
+	"credential_id":   CHECKSET,
+	"credential_type": CHECKSET,
+	"create_time":     CHECKSET,
+	"expire_time":     CHECKSET,
+}
+
+func AliCloudCloudSSOSCIMServerCredentialBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_cloud_sso_directories" "default" {}
-resource "alicloud_cloud_sso_directory" "default" {
-  count             = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name    = var.name
-}
-locals{
-  directory_id =  length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_cloud_sso_directories" "default" {
+	}
 `, name)
 }
 
-func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
+func TestUnitAliCloudCloudSSOSCIMServerCredential(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_scim_server_credential"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_scim_server_credential"].Schema).Data(nil, nil)
@@ -170,7 +215,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoScimServerCredentialCreate(dInit, rawClient)
+		err := resourceAliCloudCloudSsoScimServerCredentialCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{
@@ -197,7 +242,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoScimServerCredentialCreate(dInit, rawClient)
+			err := resourceAliCloudCloudSsoScimServerCredentialCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -226,7 +271,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoScimServerCredentialUpdate(dExisted, rawClient)
+		err := resourceAliCloudCloudSsoScimServerCredentialUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		// UpdateSCIMServerCredentialStatus
@@ -263,7 +308,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoScimServerCredentialUpdate(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoScimServerCredentialUpdate(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -304,7 +349,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoScimServerCredentialRead(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoScimServerCredentialRead(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -325,7 +370,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoScimServerCredentialDelete(dExisted, rawClient)
+		err := resourceAliCloudCloudSsoScimServerCredentialDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		attributesDiff := map[string]interface{}{}
@@ -353,7 +398,7 @@ func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoScimServerCredentialDelete(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoScimServerCredentialDelete(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
