@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -443,10 +441,7 @@ func resourceAliCloudSlsAlertCreate(d *schema.ResourceData, meta interface{}) er
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(d.Get("project_name").(string))
 	request["name"] = d.Get("alert_name")
@@ -730,12 +725,9 @@ func resourceAliCloudSlsAlertCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("CreateAlert", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateAlert", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1027,10 +1019,7 @@ func resourceAliCloudSlsAlertUpdate(d *schema.ResourceData, meta interface{}) er
 	parts := strings.Split(d.Id(), ":")
 	alertName := parts[1]
 	action := fmt.Sprintf("/alerts/%s", alertName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -1326,12 +1315,9 @@ func resourceAliCloudSlsAlertUpdate(d *schema.ResourceData, meta interface{}) er
 
 	body = request
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(client.GenRoaParam("UpdateAlert", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateAlert", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1361,22 +1347,15 @@ func resourceAliCloudSlsAlertUpdate(d *schema.ResourceData, meta interface{}) er
 				parts = strings.Split(d.Id(), ":")
 				alertName = parts[1]
 				action = fmt.Sprintf("/alerts/%s?action=enable", alertName)
-				conn, err = client.NewSlsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				hostMap := make(map[string]*string)
 				hostMap["project"] = StringPointer(parts[0])
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(client.GenRoaParam("EnableAlert", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+					response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "EnableAlert", action), query, body, nil, hostMap, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1396,22 +1375,15 @@ func resourceAliCloudSlsAlertUpdate(d *schema.ResourceData, meta interface{}) er
 				parts = strings.Split(d.Id(), ":")
 				alertName = parts[1]
 				action = fmt.Sprintf("/alerts/%s?action=disable", alertName)
-				conn, err = client.NewSlsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request = make(map[string]interface{})
 				query = make(map[string]*string)
 				body = make(map[string]interface{})
 				hostMap := make(map[string]*string)
 				hostMap["project"] = StringPointer(parts[0])
 				body = request
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(client.GenRoaParam("DisableAlert", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+					response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "DisableAlert", action), query, body, nil, hostMap, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1444,20 +1416,14 @@ func resourceAliCloudSlsAlertDelete(d *schema.ResourceData, meta interface{}) er
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
 	body = request
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("DeleteAlert", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteAlert", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

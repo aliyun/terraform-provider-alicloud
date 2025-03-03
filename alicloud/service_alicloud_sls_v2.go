@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -26,21 +24,14 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 	var query map[string]*string
 	var hostMap map[string]*string
 	action := fmt.Sprintf("/")
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap = make(map[string]*string)
 	hostMap["project"] = StringPointer(id)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetProject", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetProject", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -59,7 +50,7 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -68,22 +59,15 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	var query map[string]*string
 	var hostMap map[string]*string
 	action := fmt.Sprintf("/tags")
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap = make(map[string]*string)
 	query["resourceType"] = StringPointer("PROJECT")
 	query["resourceId"] = StringPointer(convertListToJsonString(convertListStringToListInterface([]string{id})))
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("ListTagResources", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "ListTagResources", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -102,7 +86,7 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *SlsServiceV2) SlsProjectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -133,7 +117,6 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *openapi.Client
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -150,10 +133,6 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		}
 		if len(removedTagKeys) > 0 {
 			action = fmt.Sprintf("/untag")
-			conn, err = client.NewSlsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -164,12 +143,9 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["tags"] = convertListStringToListInterface(removedTagKeys)
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.Execute(client.GenRoaParam("UntagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+				response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "UntagResources", action), query, body, nil, hostMap, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -188,10 +164,6 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 		if len(added) > 0 {
 			action = fmt.Sprintf("/tag")
-			conn, err = client.NewSlsClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
@@ -211,12 +183,9 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request["tags"] = tagsMaps
 
 			body = request
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.Execute(client.GenRoaParam("TagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
+				response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "TagResources", action), query, body, nil, hostMap, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -253,21 +222,14 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	}
 	logstore := parts[1]
 	action := fmt.Sprintf("/logstores/%s", logstore)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetLogStore", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStore", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -285,7 +247,6 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -300,21 +261,14 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	}
 	logstore := parts[1]
 	action := fmt.Sprintf("/logstores/%s/meteringmode", logstore)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetLogStoreMeteringMode", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStoreMeteringMode", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -332,7 +286,6 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -374,21 +327,14 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 	}
 	alertName := parts[1]
 	action := fmt.Sprintf("/alerts/%s", alertName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetAlert", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetAlert", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -407,7 +353,7 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *SlsServiceV2) SlsAlertStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -447,21 +393,14 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 	}
 	scheduledSQLName := parts[1]
 	action := fmt.Sprintf("/scheduledsqls/%s", scheduledSQLName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetScheduledSQL", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetScheduledSQL", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -479,7 +418,6 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
@@ -517,21 +455,14 @@ func (s *SlsServiceV2) DescribeSlsCollectionPolicy(id string) (object map[string
 	var query map[string]*string
 	policyName := id
 	action := fmt.Sprintf("/collectionpolicy/%s", policyName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	request["policyName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetCollectionPolicy", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetCollectionPolicy", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -549,7 +480,6 @@ func (s *SlsServiceV2) DescribeSlsCollectionPolicy(id string) (object map[string
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.collectionPolicy", response)
 	if err != nil {
@@ -602,21 +532,14 @@ func (s *SlsServiceV2) DescribeSlsOssExportSink(id string) (object map[string]in
 	}
 	ossExportName := parts[1]
 	action := fmt.Sprintf("/ossexports/%s", ossExportName)
-	conn, err := client.NewSlsClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(client.GenRoaParam("GetOSSExport", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetOSSExport", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -633,7 +556,6 @@ func (s *SlsServiceV2) DescribeSlsOssExportSink(id string) (object map[string]in
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	return response, nil
 }
