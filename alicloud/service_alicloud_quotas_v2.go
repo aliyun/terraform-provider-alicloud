@@ -5,11 +5,7 @@ import (
 	"strings"
 	"time"
 
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	utilv2 "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,17 +23,13 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := "ListQuotaApplicationTemplates"
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["Id"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &utilv2.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -55,7 +47,6 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.QuotaApplicationTemplates[*]", response)
 	if err != nil {
@@ -99,17 +90,13 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := "GetQuotaApplication"
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["ApplicationId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &utilv2.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -127,7 +114,6 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response = response["body"].(map[string]interface{})
 	v, err := jsonpath.Get("$.QuotaApplication", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.QuotaApplication", response)
@@ -166,16 +152,12 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := "GetQuotaAlarm"
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["AlarmId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &utilv2.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -194,7 +176,7 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.QuotaAlarm", response["body"].(map[string]interface{}))
+	v, err := jsonpath.Get("$.QuotaAlarm", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.QuotaAlarm", response)
 	}
@@ -231,18 +213,12 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateApplications(id string) (object 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	action := "ListQuotaApplicationsForTemplate"
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	request["BatchQuotaApplicationId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &utilv2.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -254,7 +230,6 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateApplications(id string) (object 
 		addDebug(action, response, request)
 		return nil
 	})
-	response = response["body"].(map[string]interface{})
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -346,8 +321,6 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateService(id string) (object map[s
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, true)

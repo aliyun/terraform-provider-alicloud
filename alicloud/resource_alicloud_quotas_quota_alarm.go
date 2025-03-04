@@ -3,11 +3,9 @@ package alicloud
 
 import (
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -94,10 +92,7 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	action := "CreateQuotaAlarm"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["ProductCode"] = d.Get("product_code")
@@ -129,8 +124,7 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
-
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -146,7 +140,7 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_alarm", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["body"].(map[string]interface{})["AlarmId"]))
+	d.SetId(fmt.Sprint(response["AlarmId"]))
 
 	return resourceAliCloudQuotasQuotaAlarmUpdate(d, meta)
 }
@@ -187,10 +181,7 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	update := false
 	action := "UpdateQuotaAlarm"
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["AlarmId"] = d.Id()
@@ -221,7 +212,7 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
+			response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -248,17 +239,14 @@ func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interfa
 	action := "DeleteQuotaAlarm"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["AlarmId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
