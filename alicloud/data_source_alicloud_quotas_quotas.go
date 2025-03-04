@@ -2,11 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"regexp"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -206,18 +204,12 @@ func dataSourceAlicloudQuotasQuotasRead(d *schema.ResourceData, meta interface{}
 		quotaNameRegex = r
 	}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quotas", action, AlibabaCloudSdkGoERROR)
 		}
-		response = response["body"].(map[string]interface{})
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Quotas", response)

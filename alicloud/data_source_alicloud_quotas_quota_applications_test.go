@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
@@ -88,13 +89,13 @@ func dataSourceQuotasQuotaApplicationsDependence(name string) string {
 	resource "alicloud_quotas_quota_application" "default" {
 	  product_code = "vpc"
 	  notice_type = "3"
-	  effective_time = "2023-05-22T16:00:00Z"
-	  expire_time = "2024-09-15T00:08:32Z"
+	  effective_time = "%s"
+	  expire_time = "%s"
 	  desire_value = "1"
 	  reason = ""
 	  quota_action_code = "vpc_whitelist/ha_vip_whitelist"
 	  audit_mode = "Sync"
 	  env_language = "zh"
 	  quota_category = "WhiteListLabel"
-	}`)
+	}`, time.Now().Add(1*time.Minute).Format("2006-01-02T15:04:05Z"), time.Now().Add(1*time.Hour).Format("2006-01-02T15:04:05Z"))
 }

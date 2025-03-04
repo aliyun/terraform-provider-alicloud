@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"log"
 	"net/http"
 	"net/url"
@@ -26,7 +27,6 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
@@ -2211,7 +2211,11 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 	var response map[string]interface{}
 	runtime := &utilV2.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+	if apiParams.Style != nil && *apiParams.Style == "RPC" {
+		response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+	} else {
+		response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+	}
 	if respBody, isExist := response["body"]; isExist && respBody != nil {
 		if v, ok := respBody.(map[string]interface{}); ok {
 			response = v

@@ -3,11 +3,9 @@ package alicloud
 
 import (
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -140,10 +138,7 @@ func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 	action := "CreateQuotaApplication"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClientV2()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 
 	request["ProductCode"] = d.Get("product_code")
@@ -182,7 +177,7 @@ func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
+		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -199,7 +194,7 @@ func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_application", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["body"].(map[string]interface{})["ApplicationId"]))
+	d.SetId(fmt.Sprint(response["ApplicationId"]))
 
 	return resourceAliCloudQuotasQuotaApplicationRead(d, meta)
 }
