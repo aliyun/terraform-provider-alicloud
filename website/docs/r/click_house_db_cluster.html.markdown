@@ -38,6 +38,9 @@ provider "alicloud" {
   region = var.region
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
 data "alicloud_click_house_regions" "default" {
   region_id = var.region
 }
@@ -65,6 +68,7 @@ resource "alicloud_click_house_db_cluster" "default" {
   storage_type            = "cloud_essd"
   vswitch_id              = alicloud_vswitch.default.id
   vpc_id                  = alicloud_vpc.default.id
+  resource_group_id       = data.alicloud_resource_manager_resource_groups.default.groups.0.id
 }
 ```
 
@@ -96,6 +100,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
 * `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
 corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
+* `resource_group_id` - (Optional, Available since v1.245.0) The ID of the resource group.
 
 ### `db_cluster_access_white_list`
 

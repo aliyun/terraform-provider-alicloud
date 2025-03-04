@@ -799,6 +799,146 @@ func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":      "23.8",
+					"category":                "Basic",
+					"db_cluster_class":        "S8",
+					"db_cluster_network_type": "vpc",
+					"db_node_group_count":     "1",
+					"payment_type":            "PayAsYouGo",
+					"db_node_storage":         "100",
+					"storage_type":            "cloud_essd",
+					"vpc_id":                  "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"resource_group_id":       "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":      "23.8",
+						"category":                "Basic",
+						"db_cluster_class":        "S8",
+						"db_cluster_network_type": "vpc",
+						"db_node_group_count":     "1",
+						"payment_type":            "PayAsYouGo",
+						"db_node_storage":         "100",
+						"storage_type":            "cloud_essd",
+						"vswitch_id":              CHECKSET,
+						"vpc_id":                  CHECKSET,
+						"resource_group_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":      "23.8",
+					"category":                "Basic",
+					"db_cluster_class":        "S8",
+					"db_cluster_network_type": "vpc",
+					"db_node_group_count":     "1",
+					"payment_type":            "PayAsYouGo",
+					"db_node_storage":         "100",
+					"storage_type":            "cloud_essd",
+					"vpc_id":                  "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":      "23.8",
+						"category":                "Basic",
+						"db_cluster_class":        "S8",
+						"db_cluster_network_type": "vpc",
+						"db_node_group_count":     "1",
+						"payment_type":            "PayAsYouGo",
+						"db_node_storage":         "100",
+						"storage_type":            "cloud_essd",
+						"vswitch_id":              CHECKSET,
+						"vpc_id":                  CHECKSET,
+						"resource_group_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AliCloudClickHouseDBClusterMap0 = map[string]string{
 	"db_cluster_version":      CHECKSET,
 	"category":                CHECKSET,
@@ -887,6 +1027,33 @@ func AliCloudClickHouseDBClusterBasicDependence3(name string) string {
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.194.0/24"
   		zone_id      = "cn-hangzhou-i"
+	}
+`, name)
+}
+
+func AliCloudClickHouseDBClusterBasicDependence4(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_click_house_regions" "default" {
+  		current = true
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 `, name)
 }
