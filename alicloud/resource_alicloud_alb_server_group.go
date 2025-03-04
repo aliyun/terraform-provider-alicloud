@@ -31,6 +31,7 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 			"connection_drain_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -229,6 +230,7 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 			"slow_start_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

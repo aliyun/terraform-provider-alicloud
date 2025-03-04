@@ -274,11 +274,13 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"cross_zone_enabled": "true",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id":  CHECKSET,
+						"cross_zone_enabled": "true",
 					}),
 				),
 			},
