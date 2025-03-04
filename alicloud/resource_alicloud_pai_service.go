@@ -22,9 +22,9 @@ func resourceAliCloudPaiService() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(15 * time.Minute),
-			Delete: schema.DefaultTimeout(15 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(16 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -33,10 +33,6 @@ func resourceAliCloudPaiService() *schema.Resource {
 			},
 			"develop": {
 				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"labels": {
-				Type:     schema.TypeMap,
 				Optional: true,
 			},
 			"region_id": {
@@ -61,6 +57,7 @@ func resourceAliCloudPaiService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"workspace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -86,7 +83,7 @@ func resourceAliCloudPaiServiceCreate(d *schema.ResourceData, meta interface{}) 
 		query["Develop"] = StringPointer(v.(string))
 	}
 
-	if v, ok := d.GetOk("labels"); ok {
+	if v, ok := d.GetOk("tags"); ok {
 		query["Labels"] = StringPointer(convertMapToJsonStringIgnoreError(v.(map[string]interface{})))
 	}
 
@@ -138,22 +135,15 @@ func resourceAliCloudPaiServiceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["Region"] != nil {
-		d.Set("region_id", objectRaw["Region"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["WorkspaceId"] != nil {
-		d.Set("workspace_id", objectRaw["WorkspaceId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("region_id", objectRaw["Region"])
+	d.Set("service_uid", objectRaw["ServiceUid"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("workspace_id", objectRaw["WorkspaceId"])
 
 	e := jsonata.MustCompile("$merge($map($.Labels, function($v, $k) {{$lookup($v, \"LabelKey\"): $lookup($v, \"LabelValue\")}}))")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("labels", evaluation)
+	d.Set("tags", evaluation)
 	e = jsonata.MustCompile("$.ServiceConfig")
 	evaluation, _ = e.Eval(objectRaw)
 	d.Set("service_config", evaluation)
@@ -238,7 +228,7 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				paiServiceV2 := PaiServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, paiServiceV2.PaiServiceStateRefreshFunc(d.Id(), "Status", []string{}))
+				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, paiServiceV2.PaiServiceStateRefreshFunc(d.Id(), "Status", []string{"Failed"}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
@@ -285,79 +275,10 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("labels") {
-		oldEntry, newEntry := d.GetChange("labels")
-		removed := oldEntry.(map[string]interface{})
-		added := newEntry.(map[string]interface{})
-
-		if len(removed) > 0 {
-			ServiceName := d.Id()
-			ClusterId := client.RegionId
-			action := fmt.Sprintf("/api/v2/services/%s/%s/label", ClusterId, ServiceName)
-			request = make(map[string]interface{})
-			query = make(map[string]*string)
-			body = make(map[string]interface{})
-			request["ServiceName"] = d.Id()
-			query["ClusterId"] = StringPointer(client.RegionId)
-
-			removedLabels := make([]interface{}, 0)
-			for key, value := range removed {
-				old, ok := added[key]
-				if !ok || old != value {
-					removedLabels = append(removedLabels, key)
-				}
-			}
-			query["Keys"] = StringPointer(convertListToJsonString(removedLabels))
-
-			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RoaDelete("EAS", "2021-07-01", action, query, nil, body, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, request)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-
-		}
-
-		if len(added) > 0 {
-			ServiceName := d.Id()
-			ClusterId := client.RegionId
-			action := fmt.Sprintf("/api/v2/services/%s/%s/label", ClusterId, ServiceName)
-			request = make(map[string]interface{})
-			query = make(map[string]*string)
-			body = make(map[string]interface{})
-			request["ServiceName"] = d.Id()
-			query["ClusterId"] = StringPointer(client.RegionId)
-			request["Labels"] = added
-
-			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, request)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-
+	if d.HasChange("tags") {
+		paiServiceV2 := PaiServiceV2{client}
+		if err := paiServiceV2.SetResourceTags(d, "service"); err != nil {
+			return WrapError(err)
 		}
 	}
 	return resourceAliCloudPaiServiceRead(d, meta)
@@ -400,7 +321,7 @@ func resourceAliCloudPaiServiceDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	paiServiceV2 := PaiServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, paiServiceV2.PaiServiceStateRefreshFunc(d.Id(), "", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, paiServiceV2.PaiServiceStateRefreshFunc(d.Id(), "$.ServiceName", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

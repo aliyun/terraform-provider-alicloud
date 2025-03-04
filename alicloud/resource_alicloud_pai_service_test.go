@@ -32,11 +32,11 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"labels": map[string]interface{}{
-						"\"0\"": "{\\\"LabelKey\\\":\\\"testkey\\\",\\\"LabelValue\\\":\\\"testvalue\\\"}",
-					},
+					//"labels": map[string]interface{}{
+					//	"\"0\"": "{\\\"LabelKey\\\":\\\"testkey\\\",\\\"LabelValue\\\":\\\"testvalue\\\"}",
+					//},
 					"develop":        "false",
-					"service_config": "{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.default.id}\\\"},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.default.id}\\\",\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
+					"service_config": "{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc234\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.default.id}\\\"},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.default.id}\\\",\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
 					"workspace_id":   "${alicloud_pai_workspace_workspace.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -48,16 +48,59 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service_config": "{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\"},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\",\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
+					"service_config": "{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc234\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\"},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\",\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
 					"workspace_id":   "${alicloud_pai_workspace_workspace.update.id}",
-					"labels": map[string]interface{}{
-						"\"0\"": "{\\\"LabelKey\\\":\\\"testkeyupdate\\\",\\\"LabelValue\\\":\\\"testvalueupdate\\\"}",
-						"\"1\"": "{\\\"LabelKey\\\":\\\"testkeyupdate1\\\",\\\"LabelValue\\\":\\\"testvalueupdate1\\\"}",
-					},
+					//"labels": map[string]interface{}{
+					//	"\"0\"": "{\\\"LabelKey\\\":\\\"testkeyupdate\\\",\\\"LabelValue\\\":\\\"testvalueupdate\\\"}",
+					//	"\"1\"": "{\\\"LabelKey\\\":\\\"testkeyupdate1\\\",\\\"LabelValue\\\":\\\"testvalueupdate1\\\"}",
+					//},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_config": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_config": "{\\\"labels\\\":{},\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc234\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\"},\\\"workspace_id\\\":\\\"${alicloud_pai_workspace_workspace.update.id}\\\",\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -137,11 +180,8 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"labels": map[string]interface{}{
-						"\"0\"": "{\\\"LabelKey\\\":\\\"testkey\\\",\\\"LabelValue\\\":\\\"testvalue\\\"}",
-					},
 					"develop":        "false",
-					"service_config": fmt.Sprintf("{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc%d\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000}},\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}", rand),
+					"service_config": fmt.Sprintf("{\\\"metadata\\\":{\\\"cpu\\\":1,\\\"gpu\\\":0,\\\"instance\\\":1,\\\"memory\\\":2000,\\\"name\\\":\\\"tftestacc234%d\\\",\\\"rpc\\\":{\\\"keepalive\\\":70000}},\\\"model_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_entry\\\":\\\"libecho.so\\\",\\\"processor_path\\\":\\\"http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz\\\",\\\"processor_type\\\":\\\"cpp\\\"}", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
