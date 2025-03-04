@@ -117,7 +117,7 @@ resource "alicloud_alb_server_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `connection_drain_config` - (Optional, List, Available since v1.242.0) Elegant interrupt configuration. See [`connection_drain_config`](#connection_drain_config) below.
+* `connection_drain_config` - (Optional, Computed, List, Available since v1.242.0) Elegant interrupt configuration. See [`connection_drain_config`](#connection_drain_config) below.
 * `cross_zone_enabled` - (Optional, Computed, Available since v1.242.0) Indicates whether cross-zone load balancing is enabled for the server group. Valid values:
   - `true` (default)
   - `false`
@@ -168,7 +168,7 @@ false (default): Send a normal request.
 * `servers` - (Optional, Set) List of servers. See [`servers`](#servers) below.
 * `service_name` - (Optional, Available since v1.243.0) Only applicable to the ALB Ingress scenario, indicating the K8s Service name corresponding to the server group.
 * `slow_start_config` - (Optional, List, Available since v1.242.0) Slow start configuration. See [`slow_start_config`](#slow_start_config) below.
-* `sticky_session_config` - (Optional, List) The configuration of health checks See [`sticky_session_config`](#sticky_session_config) below.
+* `sticky_session_config` - (Optional, Computed, List) The configuration of health checks See [`sticky_session_config`](#sticky_session_config) below.
 * `tags` - (Optional, Map) The creation time of the resource
 * `uch_config` - (Optional, List, Available since v1.242.0) Url consistency hash parameter configuration See [`uch_config`](#uch_config) below.
 * `upstream_keepalive_enabled` - (Optional, Available since v1.242.0) Specifies whether to enable persistent TCP connections.
