@@ -198,6 +198,10 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"delete_on_release": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 					},
 				},
 				MaxItems: 1,
@@ -561,6 +565,7 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			networkInterfacesMap["PrimaryIpAddress"] = networkInterfacesArg["primary_ip"]
 			networkInterfacesMap["SecurityGroupId"] = networkInterfacesArg["security_group_id"]
 			networkInterfacesMap["VSwitchId"] = networkInterfacesArg["vswitch_id"]
+			networkInterfacesMap["DeleteOnRelease"] = networkInterfacesArg["delete_on_release"]
 			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
 		}
 		request["NetworkInterface"] = networkInterfacesMaps
@@ -727,9 +732,10 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_launch_template", action, AlibabaCloudSdkGoERROR)
 	}
@@ -810,6 +816,7 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 					"primary_ip":        m1["PrimaryIpAddress"],
 					"security_group_id": m1["SecurityGroupId"],
 					"vswitch_id":        m1["VSwitchId"],
+					"delete_on_release": m1["DeleteOnRelease"],
 				}
 				networkInterface = append(networkInterface, temp1)
 
@@ -1067,6 +1074,7 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 			NetworkInterfaces[i]["PrimaryIpAddress"] = NetworkInterfacesMap["primary_ip"]
 			NetworkInterfaces[i]["SecurityGroupId"] = NetworkInterfacesMap["security_group_id"]
 			NetworkInterfaces[i]["VSwitchId"] = NetworkInterfacesMap["vswitch_id"]
+			NetworkInterfaces[i]["DeleteOnRelease"] = NetworkInterfacesMap["delete_on_release"]
 		}
 		request["NetworkInterface"] = NetworkInterfaces
 
@@ -1251,9 +1259,10 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1283,9 +1292,10 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1317,9 +1327,10 @@ func resourceAliCloudEcsLaunchTemplateDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}

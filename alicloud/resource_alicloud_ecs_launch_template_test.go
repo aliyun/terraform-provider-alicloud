@@ -154,15 +154,6 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 						"tag1": "hello",
 						"tag2": "world",
 					},
-					"network_interfaces": []map[string]string{
-						{
-							"name":              "eth0",
-							"description":       "hello1",
-							"primary_ip":        "10.0.0.2",
-							"security_group_id": "xxxx",
-							"vswitch_id":        "xxxxxxx",
-						},
-					},
 					"data_disks": []map[string]string{
 						{
 							"name":                 "disk1",
@@ -502,6 +493,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 							"primary_ip":        "10.0.0.6",
 							"security_group_id": "xxxxx",
 							"vswitch_id":        "xxxxx",
+							"delete_on_release": "true",
 						},
 					},
 				}),
@@ -514,11 +506,31 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"default_version_number": "25",
+					"network_interfaces": []map[string]string{
+						{
+							"name":              "eth0",
+							"description":       "hello",
+							"primary_ip":        "10.0.0.6",
+							"security_group_id": "xxxxx",
+							"vswitch_id":        "xxxxx",
+							"delete_on_release": "false",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_version_number": "25",
+						"network_interfaces.#":  "1",
+						"latest_version_number": "26",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_version_number": "26",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_version_number": "26",
 					}),
 				),
 			},
@@ -529,7 +541,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_version_number": "25",
+						"default_version_number": "26",
 					}),
 				),
 			},
@@ -568,6 +580,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 							"primary_ip":        "10.0.0.2",
 							"security_group_id": CHECKSET,
 							"vswitch_id":        CHECKSET,
+							"delete_on_release": "true",
 						},
 					},
 					"system_disk": []map[string]interface{}{
@@ -631,8 +644,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 						"system_disk.#":                 "1",
 						"network_interfaces.#":          "1",
 						"data_disks.#":                  "2",
-						"latest_version_number":         "26",
-						"default_version_number":        "26",
+						"latest_version_number":         "27",
+						"default_version_number":        "27",
 					}),
 				),
 			},
@@ -712,6 +725,7 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 							"primary_ip":        "10.0.0.2",
 							"security_group_id": "xxxx",
 							"vswitch_id":        "xxxxxxx",
+							"delete_on_release": "true",
 						},
 					},
 					"data_disks": []map[string]string{
@@ -762,6 +776,7 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 						"private_ip_address":     CHECKSET,
 						"version_description":    name,
 						"data_disks.#":           "4",
+						"network_interfaces.#":   "1",
 						"latest_version_number":  "1",
 						"default_version_number": "1",
 					}),
@@ -901,6 +916,7 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 							"primary_ip":        "10.0.0.2",
 							"security_group_id": "xxxx",
 							"vswitch_id":        "xxxxxxx",
+							"delete_on_release": "true",
 						},
 					},
 					"data_disks": []map[string]string{
@@ -955,6 +971,7 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 						"private_ip_address":     CHECKSET,
 						"version_description":    name,
 						"data_disks.#":           "4",
+						"network_interfaces.#":   "1",
 						"latest_version_number":  "1",
 						"default_version_number": "1",
 					}),
@@ -1059,6 +1076,7 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 						"key_pair_name":          name,
 						"ram_role_name":          name,
 						"security_group_ids.#":   "2",
+						"network_interfaces.#":   "1",
 						"latest_version_number":  "1",
 						"default_version_number": "1",
 					}),
@@ -1087,7 +1105,6 @@ var testAccLaunchTemplateCheckMap = map[string]string{
 	"vswitch_id":                    CHECKSET,
 	"vpc_id":                        CHECKSET,
 	"zone_id":                       CHECKSET,
-	"network_interfaces.#":          "1",
 	"data_disks.#":                  "2",
 }
 
