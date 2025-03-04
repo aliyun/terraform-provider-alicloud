@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"time"
@@ -106,7 +107,7 @@ func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapError(err)
 		}
-		codeMaps["zipFile"] = file
+		codeMaps["zipFile"] = base64.StdEncoding.EncodeToString(file)
 	}
 	if v, ok := d.GetOk("oss_bucket_name"); ok && fmt.Sprint(v) != "" {
 		codeMaps["ossBucketName"] = v
