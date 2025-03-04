@@ -22,10 +22,11 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnection(id string) (object map[
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetVpcPeerConnectionAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
+
+	action := "GetVpcPeerConnectionAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -85,8 +86,9 @@ func (s *VpcPeerServiceV2) VpcPeerPeerConnectionStateRefreshFunc(id string, fiel
 // SetResourceTags <<< Encapsulated tag function for VpcPeer.
 func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
+		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
@@ -100,7 +102,6 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UnTagResources"
-			client := s.client
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -132,7 +133,6 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 		if len(added) > 0 {
 			action = "TagResources"
-			client := s.client
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -178,10 +178,11 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnectionAccepter(id string) (obj
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetVpcPeerConnectionAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
+
+	action := "GetVpcPeerConnectionAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -201,6 +202,38 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnectionAccepter(id string) (obj
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnectionAccepter", id)), NotFoundMsg, response)
 		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *VpcPeerServiceV2) DescribePeerConnectionAccepterListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "PeerConnection"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
