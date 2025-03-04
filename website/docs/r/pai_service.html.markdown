@@ -12,19 +12,15 @@ Provides a PAI Service resource.
 
 Eas service instance.
 
-For information about PAI Service and how to use it, see [What is Service](https://www.alibabacloud.com/help/en/).
+For information about PAI Service and how to use it, see [What is Service](https://next.api.alibabacloud.com/document/eas/2021-07-01/CreateService).
+
+-> **NOTE:** Field `labels` has been removed since version 1.245.0. Please use new field `tags`.
 
 -> **NOTE:** Available since v1.238.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_pai_service&exampleId=01478edd-11cc-cce5-afbf-6d17539d284ad8204066&activeTab=example&spm=docs.r.pai_service.0.01478edd11&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -36,9 +32,6 @@ provider "alicloud" {
 }
 
 resource "alicloud_pai_service" "default" {
-  labels = {
-    "0" = jsonencode({ "LabelKey" : "examplekey", "LabelValue" : "examplevalue" })
-  }
   develop        = "false"
   service_config = jsonencode({ "metadata" : { "cpu" : 1, "gpu" : 0, "instance" : 1, "memory" : 2000, "name" : "tfexample", "rpc" : { "keepalive" : 70000 } }, "model_path" : "http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz", "processor_entry" : "libecho.so", "processor_path" : "http://eas-data.oss-cn-shanghai.aliyuncs.com/processors/echo_processor_release.tar.gz", "processor_type" : "cpp" })
 }
@@ -48,9 +41,9 @@ resource "alicloud_pai_service" "default" {
 
 The following arguments are supported:
 * `develop` - (Optional) Whether to enter the development mode.
-* `labels` - (Optional, Map) Service Tag.
 * `service_config` - (Required, JsonString) Service configuration information. Please refer to https://www.alibabacloud.com/help/en/pai/user-guide/parameters-of-model-services
-* `status` - (Optional, Computed) Service Current Status, valid values `Running`, `Stopped`.
+* `status` - (Optional, Computed) Service Current Status.
+* `tags` - (Optional, Map, Available since v1.245.0) The tag of the resource.
 * `workspace_id` - (Optional) Workspace id
 
 ## Attributes Reference
@@ -65,7 +58,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Service.
 * `delete` - (Defaults to 5 mins) Used when delete the Service.
-* `update` - (Defaults to 5 mins) Used when update the Service.
+* `update` - (Defaults to 16 mins) Used when update the Service.
 
 ## Import
 
