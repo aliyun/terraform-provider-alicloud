@@ -1006,44 +1006,74 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("resource_group_id")
 	}
+
 	update = false
-	migrateToOtherZoneReq := r_kvstore.CreateMigrateToOtherZoneRequest()
-	migrateToOtherZoneReq.DBInstanceId = d.Id()
-	if !d.IsNewResource() && (d.HasChange("zone_id") || d.HasChange("availability_zone")) {
-		update = true
-	}
-	if v, ok := d.GetOk("zone_id"); ok {
-		migrateToOtherZoneReq.ZoneId = v.(string)
-	} else {
-		migrateToOtherZoneReq.ZoneId = d.Get("availability_zone").(string)
+	migrateToOtherZoneReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
 	}
 
-	if v, ok := d.GetOk("effective_time"); ok {
-		migrateToOtherZoneReq.EffectiveTime = v.(string)
+	if !d.IsNewResource() && d.HasChange("zone_id") {
+		update = true
+
+		if v, ok := d.GetOk("zone_id"); ok {
+			migrateToOtherZoneReq["ZoneId"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("vswitch_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("vswitch_id"); ok {
-		migrateToOtherZoneReq.VSwitchId = v.(string)
+		migrateToOtherZoneReq["VSwitchId"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("secondary_zone_id"); ok {
-		migrateToOtherZoneReq.SecondaryZoneId = v.(string)
+		migrateToOtherZoneReq["SecondaryZoneId"] = v
+	}
+
+	if v, ok := d.GetOkExists("read_only_count"); ok {
+		migrateToOtherZoneReq["ReadOnlyCount"] = v
+	}
+
+	if v, ok := d.GetOkExists("slave_read_only_count"); ok {
+		migrateToOtherZoneReq["SlaveReadOnlyCount"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("availability_zone") {
+		update = true
+
+		if v, ok := d.GetOk("availability_zone"); ok {
+			migrateToOtherZoneReq["ZoneId"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("effective_time"); ok {
+		migrateToOtherZoneReq["EffectiveTime"] = v
 	}
 
 	if update {
-		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-			return r_kvstoreClient.MigrateToOtherZone(migrateToOtherZoneReq)
+		action := "MigrateToOtherZone"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, migrateToOtherZoneReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-		addDebug(migrateToOtherZoneReq.GetActionName(), raw)
+		addDebug(action, response, migrateToOtherZoneReq)
+
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), migrateToOtherZoneReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -1214,10 +1244,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	update = false
-	object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
 	modifyInstanceSpecReq := map[string]interface{}{
 		"RegionId":   client.RegionId,
 		"AutoPay":    true,
@@ -1229,9 +1255,10 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("instance_class"); ok {
 		modifyInstanceSpecReq["InstanceClass"] = v
 	}
+
 	// read_only_count and slave_read_only_count may be changed after other attributes changed, like secondary_zone_id
 	// and ReadOnlyCount and SlaveReadOnlyCount can not be changed together
-	if !d.IsNewResource() && (d.HasChange("read_only_count") || fmt.Sprint(object["ReadOnlyCount"]) != fmt.Sprint(d.Get("read_only_count"))) {
+	if !d.IsNewResource() && d.HasChange("read_only_count") {
 		update = true
 
 		if v, ok := d.GetOkExists("read_only_count"); ok {
@@ -1271,9 +1298,10 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, modifyInstanceSpecReq)
 			return nil
 		})
+		addDebug(action, response, modifyInstanceSpecReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1296,13 +1324,19 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if !d.IsNewResource() && (d.HasChange("slave_read_only_count") || fmt.Sprint(object["SlaveReadOnlyCount"]) != fmt.Sprint(d.Get("slave_read_only_count"))) {
+	// read_only_count and slave_read_only_count may be changed after other attributes changed, like secondary_zone_id
+	// and ReadOnlyCount and SlaveReadOnlyCount can not be changed together
+	if !d.IsNewResource() && d.HasChange("slave_read_only_count") {
 		update = true
-		if v, ok := d.GetOk("slave_read_only_count"); ok {
+
+		if v, ok := d.GetOkExists("slave_read_only_count"); ok {
 			modifyInstanceSpecReq["SlaveReadOnlyCount"] = v
 		}
+
 		delete(modifyInstanceSpecReq, "ReadOnlyCount")
+
 		action := "ModifyInstanceSpec"
+
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyInstanceSpecReq, false)
@@ -1313,9 +1347,10 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, modifyInstanceSpecReq)
 			return nil
 		})
+		addDebug(action, response, modifyInstanceSpecReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1334,7 +1369,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyInstanceMajorVersionReq := r_kvstore.CreateModifyInstanceMajorVersionRequest()
 	modifyInstanceMajorVersionReq.InstanceId = d.Id()
-	if !d.IsNewResource() && d.HasChange("engine_version") && !d.HasChange("instance_class") {
+	if !d.IsNewResource() && d.HasChange("engine_version") {
 		update = true
 	}
 
