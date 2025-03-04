@@ -185,6 +185,11 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -256,6 +261,10 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 		request["VSwitchBak"] = vswitch1["vswitch_id"]
 		request["ZoneIdBak2"] = vswitch2["zone_id"]
 		request["VSwitchBak2"] = vswitch2["vswitch_id"]
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
@@ -351,6 +360,7 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	if ZoneIdVswitchMap, ok := object["ZoneIdVswitchMap"]; ok {
 		vMap := ZoneIdVswitchMap.(map[string]interface{})
@@ -668,6 +678,36 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			}
 			d.SetPartial("renewal_status")
 		}
+	}
+	if d.HasChange("resource_group_id") && !d.IsNewResource() {
+		action := "ChangeResourceGroup"
+		request := map[string]interface{}{
+			"ResourceId":       d.Id(),
+			"ResourceGroupId":  d.Get("resource_group_id"),
+			"ResourceRegionId": client.RegionId,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		clickhouseService := ClickhouseService{client}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("resource_group_id")
 	}
 
 	d.Partial(false)
