@@ -70,7 +70,18 @@ func (s *RosService) DescribeRosStack(id string) (object map[string]interface{},
 		"StackId":  id,
 	}
 	request["ClientToken"] = buildClientToken("GetStack")
-	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RosStack", id)), NotFoundMsg, ProviderERROR)
