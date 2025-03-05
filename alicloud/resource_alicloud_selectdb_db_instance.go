@@ -23,7 +23,7 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
@@ -77,6 +77,11 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 			"enable_public_network": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"admin_pass": {
+				Type:      schema.TypeString,
+				Sensitive: true,
+				Optional:  true,
 			},
 			"upgraded_engine_minor_version": {
 				Type:     schema.TypeString,
@@ -360,7 +365,7 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 
 	}
 
-	if !d.IsNewResource() && d.HasChange("upgraded_engine_minor_version") && d.Get("upgraded_engine_minor_version") != "" {
+	if d.HasChange("upgraded_engine_minor_version") && d.Get("upgraded_engine_minor_version") != "" {
 		_, newVersion := d.GetChange("upgraded_engine_minor_version")
 		instanceId := fmt.Sprint(d.Id())
 		instanceResp, err := selectDBService.DescribeSelectDBDbInstance(instanceId)
@@ -368,28 +373,42 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 			return WrapError(err)
 		}
 		upgradeTargetVersion := ""
+		isNewVersionWithMajorVersion := false
+		if newVersion.(string) == "3.0" || newVersion.(string) == "4.0" {
+			isNewVersionWithMajorVersion = true
+		}
 		canUpgradeVersion := instanceResp["CanUpgradeVersions"].([]interface{})
 		for _, version := range canUpgradeVersion {
-			if newVersion.(string) == version.(string) {
-				upgradeTargetVersion = newVersion.(string)
-				break
+			if isNewVersionWithMajorVersion {
+				if strings.HasPrefix(version.(string), newVersion.(string)) {
+					upgradeTargetVersion = version.(string)
+					break
+				}
+			} else {
+				if newVersion.(string) == version.(string) {
+					upgradeTargetVersion = version.(string)
+					break
+				}
 			}
 		}
+
 		if upgradeTargetVersion == "" {
-			return WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), AlibabaCloudSdkGoERROR)
+			if !isNewVersionWithMajorVersion {
+				return WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), AlibabaCloudSdkGoERROR)
+			}
+		} else {
+			// todo maintaintime update
+			_, err = selectDBService.UpgradeSelectDBInstanceEngineVersion(d.Id(), upgradeTargetVersion, false)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeSelectDBInstanceEngineVersion", AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{"MODULE_UPGRADING"}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
-		// todo maintaintime update
-		_, err = selectDBService.UpgradeSelectDBInstanceEngineVersion(d.Id(), upgradeTargetVersion, false)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeSelectDBInstanceEngineVersion", AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{"MODULE_UPGRADING"}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
 		d.SetPartial("upgraded_engine_minor_version")
-
 	}
 
 	cacheSizeModified := false
@@ -453,6 +472,14 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
+	}
+
+	if d.HasChange("admin_pass") {
+		_, newPass := d.GetChange("admin_pass")
+		if _, err := selectDBService.ModifySelectDBInstanceAdminPass(d.Id(), newPass.(string)); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("admin_pass")
 	}
 
 	if d.HasChange("desired_security_ip_lists") {
