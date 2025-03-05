@@ -69,7 +69,8 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of the VPC for DBInstance.
 * `vswitch_id` - (Required, ForceNew) The ID of vswitch for DBInstance.
 * `enable_public_network` - (Optional) If DBInstance need to open public network, set it to `true`.
-* `upgraded_engine_minor_version` - (Optional) The DBInstance minor version want to upgraded to.
+* `upgraded_engine_minor_version` - (Optional) The DBInstance minor version want to upgraded to. (Available since 1.245.0) Can be set to `4.0` in creating SelectDB 4.0 DBInstance.
+* `admin_pass` - (Optional, Available since 1.245.0) The password for DBInstance using admin account.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
@@ -90,7 +91,7 @@ The following attributes are exported:
 * `region_id` - The region ID of the instance.
 * `engine` - The engine of DBInstance. Always `selectdb`.
 * `engine_minor_version` - The current DBInstance minor version.
-* `status` - The status of the resource. Valid values: `ACTIVE`,`STOPPED`,`STARTING`,`RESTART`.
+* `status` - The status of the resource. Valid values: `ACTIVATION`,`STOPPED`,`STARTING`,`RESTART`.
 * `cpu_prepaid` - The sum of cpu resource amount for every `Subscription` clusters in DBInstance.
 * `memory_prepaid` - The sum of memory resource amount offor every `Subscription` clusters in DBInstance.
 * `cache_size_prepaid` - The sum of cache size for every `Subscription` clusters in DBInstance.
@@ -125,7 +126,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the SelectDB DBInstance (until it reaches the initial `ACTIVATION` status).
+* `create` - (Defaults to 60 mins) Used when creating the SelectDB DBInstance (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 30 mins) Used when update the SelectDB DBInstance.
 * `delete` - (Defaults to 10 mins) Used when delete the SelectDB DBInstance.
 
