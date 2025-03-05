@@ -2203,27 +2203,18 @@ type ossCredentials struct {
 }
 
 func (defCre *ossCredentials) GetAccessKeyID() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.AccessKey
+	value, _, _ := defCre.client.config.GetRefreshCredential()
+	return value
 }
 
 func (defCre *ossCredentials) GetAccessKeySecret() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.SecretKey
+	_, value, _ := defCre.client.config.GetRefreshCredential()
+	return value
 }
 
 func (defCre *ossCredentials) GetSecurityToken() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.SecurityToken
+	_, _, value := defCre.client.config.GetRefreshCredential()
+	return value
 }
 
 type ossCredentialsProvider struct {
