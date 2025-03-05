@@ -480,50 +480,50 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if d.HasChange("certificate_config.0.cert_name") {
 		update = true
-		jsonPathResult1, err := jsonpath.Get("$[0].cert_name", d.Get("certificate_config"))
-		if err == nil {
-			request["CertName"] = jsonPathResult1
-		}
+	}
+	jsonPathResult1, err := jsonpath.Get("$[0].cert_name", d.Get("certificate_config"))
+	if err == nil && jsonPathResult1 != nil {
+		request["CertName"] = jsonPathResult1
 	}
 
 	if d.HasChange("certificate_config.0.cert_id") {
 		update = true
-		jsonPathResult2, err := jsonpath.Get("$[0].cert_id", d.Get("certificate_config"))
-		if err == nil {
-			request["CertId"] = jsonPathResult2
-		}
+	}
+	jsonPathResult2, err := jsonpath.Get("$[0].cert_id", d.Get("certificate_config"))
+	if err == nil && jsonPathResult2 != nil {
+		request["CertId"] = jsonPathResult2
 	}
 
 	if d.HasChange("certificate_config.0.cert_type") {
 		update = true
-		jsonPathResult3, err := jsonpath.Get("$[0].cert_type", d.Get("certificate_config"))
-		if err == nil {
-			request["CertType"] = jsonPathResult3
-		}
+	}
+	jsonPathResult3, err := jsonpath.Get("$[0].cert_type", d.Get("certificate_config"))
+	if err == nil && jsonPathResult3 != nil {
+		request["CertType"] = jsonPathResult3
 	}
 
 	if d.HasChange("certificate_config.0.server_certificate") {
 		update = true
-		jsonPathResult4, err := jsonpath.Get("$[0].server_certificate", d.Get("certificate_config"))
-		if err == nil {
-			request["SSLPub"] = jsonPathResult4
-		}
+	}
+	jsonPathResult4, err := jsonpath.Get("$[0].server_certificate", d.Get("certificate_config"))
+	if err == nil && jsonPathResult4 != nil {
+		request["SSLPub"] = jsonPathResult4
 	}
 
 	if d.HasChange("certificate_config.0.private_key") {
 		update = true
-		jsonPathResult5, err := jsonpath.Get("$[0].private_key", d.Get("certificate_config"))
-		if err == nil {
-			request["SSLPri"] = jsonPathResult5
-		}
+	}
+	jsonPathResult5, err := jsonpath.Get("$[0].private_key", d.Get("certificate_config"))
+	if err == nil && jsonPathResult5 != nil {
+		request["SSLPri"] = jsonPathResult5
 	}
 
 	if d.HasChange("certificate_config.0.cert_region") {
 		update = true
-		jsonPathResult6, err := jsonpath.Get("$[0].cert_region", d.Get("certificate_config"))
-		if err == nil {
-			request["CertRegion"] = jsonPathResult6
-		}
+	}
+	jsonPathResult6, err := jsonpath.Get("$[0].cert_region", d.Get("certificate_config"))
+	if err == nil && jsonPathResult6 != nil {
+		request["CertRegion"] = jsonPathResult6
 	}
 
 	if v, ok := d.GetOk("env"); ok {
