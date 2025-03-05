@@ -62,7 +62,7 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 			"functions.#":                              "1",
 			"functions.0.name":                         name,
 			"functions.0.description":                  name + "-description",
-			"functions.0.runtime":                      "python2.7",
+			"functions.0.runtime":                      "python3.9",
 			"functions.0.handler":                      "hello.handler",
 			"functions.0.timeout":                      "120",
 			"functions.0.memory_size":                  "512",
@@ -210,7 +210,7 @@ resource "alicloud_fc_function" "default" {
 	oss_bucket = "${alicloud_oss_bucket.default.id}"
 	oss_key = "${alicloud_oss_bucket_object.default.key}"
 	memory_size = "512"
-	runtime = "python2.7"
+	runtime = "python3.9"
 	handler = "hello.handler"
 	timeout = "120"
     environment_variables = {

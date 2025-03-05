@@ -85,7 +85,7 @@ func resourceAliCloudOssBucketUserDefinedLogFieldsCreate(d *schema.ResourceData,
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -202,7 +202,7 @@ func resourceAliCloudOssBucketUserDefinedLogFieldsUpdate(d *schema.ResourceData,
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -237,7 +237,7 @@ func resourceAliCloudOssBucketUserDefinedLogFieldsDelete(d *schema.ResourceData,
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("DELETE", "2019-05-17", "DeleteUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteUserDefinedLogFieldsConfig", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

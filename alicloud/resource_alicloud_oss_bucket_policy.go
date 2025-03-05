@@ -61,7 +61,7 @@ func resourceAliCloudOssBucketPolicyCreate(d *schema.ResourceData, meta interfac
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genJsonXmlParam("PUT", "2019-05-17", "PutBucketPolicy", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", jsonXmlParam("PUT", "2019-05-17", "PutBucketPolicy", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -124,7 +124,7 @@ func resourceAliCloudOssBucketPolicyUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("Oss", genJsonXmlParam("PUT", "2019-05-17", "PutBucketPolicy", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", jsonXmlParam("PUT", "2019-05-17", "PutBucketPolicy", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -159,7 +159,7 @@ func resourceAliCloudOssBucketPolicyDelete(d *schema.ResourceData, meta interfac
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("Oss", genJsonXmlParam("DELETE", "2019-05-17", "DeleteBucketPolicy", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", jsonXmlParam("DELETE", "2019-05-17", "DeleteBucketPolicy", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

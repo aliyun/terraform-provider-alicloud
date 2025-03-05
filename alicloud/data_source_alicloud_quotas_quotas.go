@@ -206,7 +206,7 @@ func dataSourceAlicloudQuotasQuotasRead(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	var err error
 	for {
-		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quotas", action, AlibabaCloudSdkGoERROR)
 		}

@@ -67,7 +67,7 @@ func resourceAliCloudOssBucketCnameTokenCreate(d *schema.ResourceData, meta inte
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

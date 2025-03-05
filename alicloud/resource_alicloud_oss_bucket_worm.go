@@ -77,7 +77,7 @@ func resourceAliCloudOssBucketWormCreate(d *schema.ResourceData, meta interface{
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "InitiateBucketWorm", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "InitiateBucketWorm", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -162,7 +162,7 @@ func resourceAliCloudOssBucketWormUpdate(d *schema.ResourceData, meta interface{
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "CompleteBucketWorm", action), query, body, nil, hostMap, false)
+					response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "CompleteBucketWorm", action), query, body, nil, hostMap, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -205,7 +205,7 @@ func resourceAliCloudOssBucketWormUpdate(d *schema.ResourceData, meta interface{
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "ExtendBucketWorm", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "ExtendBucketWorm", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -250,7 +250,7 @@ func resourceAliCloudOssBucketWormDelete(d *schema.ResourceData, meta interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("DELETE", "2019-05-17", "AbortBucketWorm", action), query, request, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "AbortBucketWorm", action), query, request, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

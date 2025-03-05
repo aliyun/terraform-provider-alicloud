@@ -63,7 +63,7 @@ func resourceAliCloudOssBucketAccessMonitorCreate(d *schema.ResourceData, meta i
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketAccessMonitor", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketAccessMonitor", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -143,7 +143,7 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketAccessMonitor", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketAccessMonitor", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

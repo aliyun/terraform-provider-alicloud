@@ -70,7 +70,7 @@ func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_group_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(strings.Join([]string{"group", request.PolicyName, string(request.PolicyType), request.GroupName}, COLON_SEPARATED))
+	d.SetId(strings.Join([]string{"group", request.PolicyName, request.PolicyType, request.GroupName}, COLON_SEPARATED))
 
 	return resourceAlicloudRamGroupPolicyAttachmentRead(d, meta)
 }

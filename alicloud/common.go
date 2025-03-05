@@ -1689,7 +1689,7 @@ func InArray(target string, strArray []string) bool {
 	return false
 }
 
-func rpc(method, version, action string) *openapi.Params {
+func rpcParam(method, version, action string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
@@ -1714,7 +1714,7 @@ func roaParam(method, version, action, path string) *openapi.Params {
 	}
 }
 
-func genXmlParam(method, version, action, path string) *openapi.Params {
+func xmlParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
@@ -1727,7 +1727,7 @@ func genXmlParam(method, version, action, path string) *openapi.Params {
 	}
 }
 
-func genJsonXmlParam(method, version, action, path string) *openapi.Params {
+func jsonXmlParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
@@ -1740,7 +1740,7 @@ func genJsonXmlParam(method, version, action, path string) *openapi.Params {
 	}
 }
 
-func genXmlJsonParam(method, version, action, path string) *openapi.Params {
+func xmlJsonParam(method, version, action, path string) *openapi.Params {
 	return &openapi.Params{
 		Action:      tea.String(action),
 		Version:     tea.String(version),
