@@ -21,7 +21,7 @@ import (
 
 func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster_lake_version.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -46,9 +46,9 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
 					"zone_id":            "${data.alicloud_adb_zones.default.ids.0}",
+					"payment_type":       "PayAsYouGo",
 					"compute_resource":   "16ACU",
 					"storage_resource":   "0ACU",
-					"payment_type":       "PayAsYouGo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -56,9 +56,9 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 						"vpc_id":             CHECKSET,
 						"vswitch_id":         CHECKSET,
 						"zone_id":            CHECKSET,
+						"payment_type":       "PayAsYouGo",
 						"compute_resource":   "16ACU",
 						"storage_resource":   "0ACU",
-						"payment_type":       "PayAsYouGo",
 					}),
 				),
 			},
@@ -106,6 +106,26 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -136,7 +156,73 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 
 func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_adb_db_cluster_lake_version.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbDbClusterLakeVersion")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterLakeVersionBasicDependence0Twin)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":            "5.0",
+					"vpc_id":                        "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
+					"payment_type":                  "PayAsYouGo",
+					"compute_resource":              "16ACU",
+					"storage_resource":              "0ACU",
+					"disk_encryption":               "true",
+					"kms_id":                        "${alicloud_kms_key.default.id}",
+					"security_ips":                  "10.23.1.0",
+					"enable_ssl":                    "true",
+					"db_cluster_description":        name,
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"enable_default_resource_group": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":     "5.0",
+						"vpc_id":                 CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"zone_id":                CHECKSET,
+						"payment_type":           "PayAsYouGo",
+						"compute_resource":       "16ACU",
+						"storage_resource":       "0ACU",
+						"disk_encryption":        "true",
+						"kms_id":                 CHECKSET,
+						"security_ips":           "10.23.1.0",
+						"enable_ssl":             "true",
+						"db_cluster_description": name,
+						"resource_group_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster_lake_version.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -157,14 +243,158 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":  "5.0",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":             "${data.alicloud_adb_zones.default.ids.0}",
+					"payment_type":        "PayAsYouGo",
+					"product_form":        "IntegrationForm",
+					"product_version":     "EnterpriseVersion",
+					"reserved_node_size":  "8ACU",
+					"reserved_node_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":  "5.0",
+						"vpc_id":              CHECKSET,
+						"vswitch_id":          CHECKSET,
+						"zone_id":             CHECKSET,
+						"payment_type":        "PayAsYouGo",
+						"product_form":        "IntegrationForm",
+						"product_version":     "EnterpriseVersion",
+						"reserved_node_size":  "8ACU",
+						"reserved_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reserved_node_size": "12ACU",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reserved_node_size": "12ACU",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reserved_node_count": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reserved_node_count": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reserved_node_size":  "8ACU",
+					"reserved_node_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reserved_node_size":  "8ACU",
+						"reserved_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": "10.23.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips": "10.23.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudADBDBClusterLakeVersion_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_adb_db_cluster_lake_version.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbDbClusterLakeVersion")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterLakeVersionBasicDependence0Twin)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_version":            "5.0",
 					"vpc_id":                        "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
-					"compute_resource":              "16ACU",
-					"storage_resource":              "0ACU",
 					"payment_type":                  "PayAsYouGo",
+					"product_form":                  "IntegrationForm",
+					"product_version":               "EnterpriseVersion",
+					"reserved_node_size":            "8ACU",
+					"reserved_node_count":           "3",
+					"disk_encryption":               "true",
+					"kms_id":                        "${alicloud_kms_key.default.id}",
 					"security_ips":                  "10.23.1.0",
+					"enable_ssl":                    "true",
 					"db_cluster_description":        name,
 					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 					"enable_default_resource_group": "false",
@@ -175,10 +405,15 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 						"vpc_id":                 CHECKSET,
 						"vswitch_id":             CHECKSET,
 						"zone_id":                CHECKSET,
-						"compute_resource":       "16ACU",
-						"storage_resource":       "0ACU",
 						"payment_type":           "PayAsYouGo",
+						"product_form":           "IntegrationForm",
+						"product_version":        "EnterpriseVersion",
+						"reserved_node_size":     "8ACU",
+						"reserved_node_count":    "3",
+						"disk_encryption":        "true",
+						"kms_id":                 CHECKSET,
 						"security_ips":           "10.23.1.0",
+						"enable_ssl":             "true",
 						"db_cluster_description": name,
 						"resource_group_id":      CHECKSET,
 					}),
@@ -195,6 +430,9 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 }
 
 var AliCloudAdbDbClusterLakeVersionMap0 = map[string]string{
+	"product_form":           CHECKSET,
+	"product_version":        CHECKSET,
+	"reserved_node_size":     CHECKSET,
 	"security_ips":           CHECKSET,
 	"db_cluster_description": CHECKSET,
 	"commodity_code":         CHECKSET,
@@ -227,6 +465,35 @@ func AliCloudAdbDbClusterLakeVersionBasicDependence0(name string) string {
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
   		zone_id = data.alicloud_adb_zones.default.ids.0
+	}
+`, name)
+}
+
+func AliCloudAdbDbClusterLakeVersionBasicDependence0Twin(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_adb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_adb_zones.default.ids.0
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		pending_window_in_days = "7"
+  		status                 = "Enabled"
 	}
 `, name)
 }

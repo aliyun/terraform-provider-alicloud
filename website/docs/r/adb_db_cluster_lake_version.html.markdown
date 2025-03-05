@@ -62,12 +62,24 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
-* `compute_resource` - (Required) The computing resources of the cluster.
-* `storage_resource` - (Required) The storage resources of the cluster.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`.
+* `product_form` - (Optional, ForceNew, Available since v1.245.0) The product form of the cluster. Valid values:
+  - `IntegrationForm`: Integrated.
+  - `LegacyForm`: Data Lakehouse Edition.
+* `product_version` - (Optional, ForceNew, Available since v1.245.0) The edition of the cluster. Valid values:
+  - `BasicVersion`: Basic Edition.
+  - `EnterpriseVersion`: Enterprise Edition.
+-> **NOTE:** `product_version` must be specified only when `product_form` is set to `IntegrationForm`.
+* `compute_resource` - (Optional) The computing resources of the cluster.
+* `storage_resource` - (Optional) The storage resources of the cluster.
+* `reserved_node_size` - (Optional, Available since v1.245.0) The specifications of reserved resource nodes.
+* `reserved_node_count` - (Optional, Int, Available since v1.245.0) The number of reserved resource nodes.
+* `disk_encryption` - (Optional, Bool, ForceNew, Available since v1.245.0) Specifies whether to enable disk encryption. Valid values: `true`, `false`.
+* `kms_id` - (Optional, ForceNew, Available since v1.245.0) The ID of the key that is used to encrypt disk data. `kms_id` is valid only when `disk_encryption` is set to `true`.
 * `security_ips` - (Optional, Available since v1.198.0) The IP addresses in an IP address whitelist of a cluster. Separate multiple IP addresses with commas (,). You can add a maximum of 500 different IP addresses to a whitelist. The entries in the IP address whitelist must be in one of the following formats:
   - IP addresses, such as 10.23.XX.XX.
   - CIDR blocks, such as 10.23.xx.xx/24. In this example, 24 indicates that the prefix of each IP address in the IP whitelist is 24 bits in length. You can replace 24 with a value within the range of 1 to 32.
+* `enable_ssl` - (Optional, Bool, Available since v1.245.0) Specifies whether to enable SSL encryption. Valid values: `true`, `false`.
 * `db_cluster_description` - (Optional, Available since v1.198.0) The description of the cluster.
 * `resource_group_id` - (Optional, Available since v1.211.1) The ID of the resource group.
 * `enable_default_resource_group` - (Optional, Bool) Whether to enable default allocation of resources to user_default resource groups.

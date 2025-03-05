@@ -1060,3 +1060,62 @@ func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[st
 
 	return object, nil
 }
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeDBClusterSSL"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DBClusterLakeVersion", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["SSLEnabled"]) == failState {
+				return object, fmt.Sprint(object["SSLEnabled"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["SSLEnabled"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["SSLEnabled"]), nil
+	}
+}
