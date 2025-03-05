@@ -199,6 +199,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
+				Computed: true,
 			},
 			"system_disk_encrypt_algorithm": {
 				Type:     schema.TypeString,
