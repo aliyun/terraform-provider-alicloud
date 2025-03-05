@@ -96,6 +96,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
 * `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
 corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
+* `cold_storage` - (Optional, Available since v1.245.0) Whether to use cold storage. Valid values: `ENABLE`, `DISABLE`, default to `DISABLE`. When it's set to `ENABLE`, cold storage will be used, and `cold_storage` cannot be set to `DISABLE` again.
 
 ### `db_cluster_access_white_list`
 
