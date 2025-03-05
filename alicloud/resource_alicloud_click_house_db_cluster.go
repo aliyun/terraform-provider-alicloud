@@ -198,6 +198,12 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"cold_storage": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ENABLE", "DISABLE"}, false),
+			},
 		},
 	}
 }
@@ -426,6 +432,12 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 			d.Set("db_cluster_access_white_list", dBClusterAccessWhiteListMaps)
 		}
 	}
+
+	describeClickHouseOSSStorageObject, err := clickhouseService.DescribeClickHouseOSSStorage(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("cold_storage", describeClickHouseOSSStorageObject["State"].(string))
 
 	return nil
 }
@@ -783,6 +795,35 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			}
 			d.SetPartial("allocate_public_connection")
 		}
+	}
+	if v, ok := d.GetOk("cold_storage"); ok && v.(string) == "ENABLE" && d.HasChange("cold_storage") && !d.IsNewResource() {
+		action := "CreateOSSStorage"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+			"RegionId":    client.RegionId,
+		}
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		clickhouseService := ClickhouseService{client}
+		stateConf := BuildStateConf([]string{"CREATING"}, []string{"DISABLE", "ENABLE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseOSSStorageStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("cold_storage")
 	}
 
 	d.Partial(false)
