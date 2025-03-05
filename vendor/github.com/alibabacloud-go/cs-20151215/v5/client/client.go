@@ -56,6 +56,29 @@ func (s *Addon) SetVersion(v string) *Addon {
 	return s
 }
 
+type ContainerdConfig struct {
+	InsecureRegistries []*string `json:"insecureRegistries,omitempty" xml:"insecureRegistries,omitempty" type:"Repeated"`
+	RegistryMirrors    []*string `json:"registryMirrors,omitempty" xml:"registryMirrors,omitempty" type:"Repeated"`
+}
+
+func (s ContainerdConfig) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ContainerdConfig) GoString() string {
+	return s.String()
+}
+
+func (s *ContainerdConfig) SetInsecureRegistries(v []*string) *ContainerdConfig {
+	s.InsecureRegistries = v
+	return s
+}
+
+func (s *ContainerdConfig) SetRegistryMirrors(v []*string) *ContainerdConfig {
+	s.RegistryMirrors = v
+	return s
+}
+
 type DataDisk struct {
 	// example:
 	//
@@ -194,28 +217,62 @@ func (s *DataDisk) SetSnapshotId(v string) *DataDisk {
 }
 
 type InstancePatterns struct {
+	// Deprecated
 	Architectures []*string `json:"architectures,omitempty" xml:"architectures,omitempty" type:"Repeated"`
+	// Deprecated
+	//
 	// example:
 	//
 	// Exclude
 	BurstPerformanceOption *string `json:"burst_performance_option,omitempty" xml:"burst_performance_option,omitempty"`
+	// Deprecated
+	//
 	// example:
 	//
 	// 4
-	Core                  *int64    `json:"core,omitempty" xml:"core,omitempty"`
+	Core *int64 `json:"core,omitempty" xml:"core,omitempty"`
+	// example:
+	//
+	// 4
+	Cores                 *int64    `json:"cores,omitempty" xml:"cores,omitempty"`
+	CpuArchitectures      []*string `json:"cpu_architectures,omitempty" xml:"cpu_architectures,omitempty" type:"Repeated"`
 	ExcludedInstanceTypes []*string `json:"excluded_instance_types,omitempty" xml:"excluded_instance_types,omitempty" type:"Repeated"`
+	InstanceCategories    []*string `json:"instance_categories,omitempty" xml:"instance_categories,omitempty" type:"Repeated"`
 	// example:
 	//
 	// EnterpriseLevel
-	InstanceFamilyLevel *string `json:"instance_family_level,omitempty" xml:"instance_family_level,omitempty"`
+	InstanceFamilyLevel  *string   `json:"instance_family_level,omitempty" xml:"instance_family_level,omitempty"`
+	InstanceTypeFamilies []*string `json:"instance_type_families,omitempty" xml:"instance_type_families,omitempty" type:"Repeated"`
+	// example:
+	//
+	// 8
+	MaxCpuCores *int64 `json:"max_cpu_cores,omitempty" xml:"max_cpu_cores,omitempty"`
+	// example:
+	//
+	// 16
+	MaxMemorySize *float32 `json:"max_memory_size,omitempty" xml:"max_memory_size,omitempty"`
+	// Deprecated
+	//
 	// example:
 	//
 	// 2
-	MaxPrice *float32 `json:"max_price,omitempty" xml:"max_price,omitempty"`
+	MaxPrice         *float32 `json:"max_price,omitempty" xml:"max_price,omitempty"`
+	MaximumGpuAmount *int64   `json:"maximum_gpu_amount,omitempty" xml:"maximum_gpu_amount,omitempty"`
 	// example:
 	//
 	// 8
 	Memory *float32 `json:"memory,omitempty" xml:"memory,omitempty"`
+	// example:
+	//
+	// 4
+	MinCpuCores *int64 `json:"min_cpu_cores,omitempty" xml:"min_cpu_cores,omitempty"`
+	// example:
+	//
+	// 8
+	MinMemorySize                      *float32 `json:"min_memory_size,omitempty" xml:"min_memory_size,omitempty"`
+	MinimumEniIpv6AddressQuantity      *int64   `json:"minimum_eni_ipv6_address_quantity,omitempty" xml:"minimum_eni_ipv6_address_quantity,omitempty"`
+	MinimumEniPrivateIpAddressQuantity *int64   `json:"minimum_eni_private_ip_address_quantity,omitempty" xml:"minimum_eni_private_ip_address_quantity,omitempty"`
+	MinimumEniQuantity                 *int64   `json:"minimum_eni_quantity,omitempty" xml:"minimum_eni_quantity,omitempty"`
 }
 
 func (s InstancePatterns) String() string {
@@ -241,8 +298,23 @@ func (s *InstancePatterns) SetCore(v int64) *InstancePatterns {
 	return s
 }
 
+func (s *InstancePatterns) SetCores(v int64) *InstancePatterns {
+	s.Cores = &v
+	return s
+}
+
+func (s *InstancePatterns) SetCpuArchitectures(v []*string) *InstancePatterns {
+	s.CpuArchitectures = v
+	return s
+}
+
 func (s *InstancePatterns) SetExcludedInstanceTypes(v []*string) *InstancePatterns {
 	s.ExcludedInstanceTypes = v
+	return s
+}
+
+func (s *InstancePatterns) SetInstanceCategories(v []*string) *InstancePatterns {
+	s.InstanceCategories = v
 	return s
 }
 
@@ -251,8 +323,28 @@ func (s *InstancePatterns) SetInstanceFamilyLevel(v string) *InstancePatterns {
 	return s
 }
 
+func (s *InstancePatterns) SetInstanceTypeFamilies(v []*string) *InstancePatterns {
+	s.InstanceTypeFamilies = v
+	return s
+}
+
+func (s *InstancePatterns) SetMaxCpuCores(v int64) *InstancePatterns {
+	s.MaxCpuCores = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMaxMemorySize(v float32) *InstancePatterns {
+	s.MaxMemorySize = &v
+	return s
+}
+
 func (s *InstancePatterns) SetMaxPrice(v float32) *InstancePatterns {
 	s.MaxPrice = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMaximumGpuAmount(v int64) *InstancePatterns {
+	s.MaximumGpuAmount = &v
 	return s
 }
 
@@ -261,8 +353,34 @@ func (s *InstancePatterns) SetMemory(v float32) *InstancePatterns {
 	return s
 }
 
+func (s *InstancePatterns) SetMinCpuCores(v int64) *InstancePatterns {
+	s.MinCpuCores = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMinMemorySize(v float32) *InstancePatterns {
+	s.MinMemorySize = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMinimumEniIpv6AddressQuantity(v int64) *InstancePatterns {
+	s.MinimumEniIpv6AddressQuantity = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMinimumEniPrivateIpAddressQuantity(v int64) *InstancePatterns {
+	s.MinimumEniPrivateIpAddressQuantity = &v
+	return s
+}
+
+func (s *InstancePatterns) SetMinimumEniQuantity(v int64) *InstancePatterns {
+	s.MinimumEniQuantity = &v
+	return s
+}
+
 type KubeletConfig struct {
 	AllowedUnsafeSysctls []*string `json:"allowedUnsafeSysctls,omitempty" xml:"allowedUnsafeSysctls,omitempty" type:"Repeated"`
+	ClusterDNS           []*string `json:"clusterDNS,omitempty" xml:"clusterDNS,omitempty" type:"Repeated"`
 	// example:
 	//
 	// 5
@@ -271,6 +389,22 @@ type KubeletConfig struct {
 	//
 	// 10Mi
 	ContainerLogMaxSize *string `json:"containerLogMaxSize,omitempty" xml:"containerLogMaxSize,omitempty"`
+	// example:
+	//
+	// 1
+	ContainerLogMaxWorkers *int32 `json:"containerLogMaxWorkers,omitempty" xml:"containerLogMaxWorkers,omitempty"`
+	// example:
+	//
+	// 10s
+	ContainerLogMonitorInterval *string `json:"containerLogMonitorInterval,omitempty" xml:"containerLogMonitorInterval,omitempty"`
+	// example:
+	//
+	// true
+	CpuCFSQuota *bool `json:"cpuCFSQuota,omitempty" xml:"cpuCFSQuota,omitempty"`
+	// example:
+	//
+	// 100ms
+	CpuCFSQuotaPeriod *string `json:"cpuCFSQuotaPeriod,omitempty" xml:"cpuCFSQuotaPeriod,omitempty"`
 	// example:
 	//
 	// none
@@ -289,6 +423,14 @@ type KubeletConfig struct {
 	FeatureGates            map[string]interface{} `json:"featureGates,omitempty" xml:"featureGates,omitempty"`
 	// example:
 	//
+	// 85
+	ImageGCHighThresholdPercent *int32 `json:"imageGCHighThresholdPercent,omitempty" xml:"imageGCHighThresholdPercent,omitempty"`
+	// example:
+	//
+	// 80
+	ImageGCLowThresholdPercent *int32 `json:"imageGCLowThresholdPercent,omitempty" xml:"imageGCLowThresholdPercent,omitempty"`
+	// example:
+	//
 	// 10
 	KubeAPIBurst *int64 `json:"kubeAPIBurst,omitempty" xml:"kubeAPIBurst,omitempty"`
 	// example:
@@ -302,6 +444,14 @@ type KubeletConfig struct {
 	MaxPods *int64 `json:"maxPods,omitempty" xml:"maxPods,omitempty"`
 	// example:
 	//
+	// none
+	MemoryManagerPolicy *string `json:"memoryManagerPolicy,omitempty" xml:"memoryManagerPolicy,omitempty"`
+	// example:
+	//
+	// -1
+	PodPidsLimit *int64 `json:"podPidsLimit,omitempty" xml:"podPidsLimit,omitempty"`
+	// example:
+	//
 	// 0
 	ReadOnlyPort *int64 `json:"readOnlyPort,omitempty" xml:"readOnlyPort,omitempty"`
 	// example:
@@ -311,12 +461,18 @@ type KubeletConfig struct {
 	// example:
 	//
 	// 5
-	RegistryPullQPS *int64 `json:"registryPullQPS,omitempty" xml:"registryPullQPS,omitempty"`
+	RegistryPullQPS *int64                         `json:"registryPullQPS,omitempty" xml:"registryPullQPS,omitempty"`
+	ReservedMemory  []*KubeletConfigReservedMemory `json:"reservedMemory,omitempty" xml:"reservedMemory,omitempty" type:"Repeated"`
 	// example:
 	//
 	// true
 	SerializeImagePulls *bool                  `json:"serializeImagePulls,omitempty" xml:"serializeImagePulls,omitempty"`
 	SystemReserved      map[string]interface{} `json:"systemReserved,omitempty" xml:"systemReserved,omitempty"`
+	// example:
+	//
+	// restricted
+	TopologyManagerPolicy *string               `json:"topologyManagerPolicy,omitempty" xml:"topologyManagerPolicy,omitempty"`
+	Tracing               *KubeletConfigTracing `json:"tracing,omitempty" xml:"tracing,omitempty" type:"Struct"`
 }
 
 func (s KubeletConfig) String() string {
@@ -332,6 +488,11 @@ func (s *KubeletConfig) SetAllowedUnsafeSysctls(v []*string) *KubeletConfig {
 	return s
 }
 
+func (s *KubeletConfig) SetClusterDNS(v []*string) *KubeletConfig {
+	s.ClusterDNS = v
+	return s
+}
+
 func (s *KubeletConfig) SetContainerLogMaxFiles(v int64) *KubeletConfig {
 	s.ContainerLogMaxFiles = &v
 	return s
@@ -339,6 +500,26 @@ func (s *KubeletConfig) SetContainerLogMaxFiles(v int64) *KubeletConfig {
 
 func (s *KubeletConfig) SetContainerLogMaxSize(v string) *KubeletConfig {
 	s.ContainerLogMaxSize = &v
+	return s
+}
+
+func (s *KubeletConfig) SetContainerLogMaxWorkers(v int32) *KubeletConfig {
+	s.ContainerLogMaxWorkers = &v
+	return s
+}
+
+func (s *KubeletConfig) SetContainerLogMonitorInterval(v string) *KubeletConfig {
+	s.ContainerLogMonitorInterval = &v
+	return s
+}
+
+func (s *KubeletConfig) SetCpuCFSQuota(v bool) *KubeletConfig {
+	s.CpuCFSQuota = &v
+	return s
+}
+
+func (s *KubeletConfig) SetCpuCFSQuotaPeriod(v string) *KubeletConfig {
+	s.CpuCFSQuotaPeriod = &v
 	return s
 }
 
@@ -377,6 +558,16 @@ func (s *KubeletConfig) SetFeatureGates(v map[string]interface{}) *KubeletConfig
 	return s
 }
 
+func (s *KubeletConfig) SetImageGCHighThresholdPercent(v int32) *KubeletConfig {
+	s.ImageGCHighThresholdPercent = &v
+	return s
+}
+
+func (s *KubeletConfig) SetImageGCLowThresholdPercent(v int32) *KubeletConfig {
+	s.ImageGCLowThresholdPercent = &v
+	return s
+}
+
 func (s *KubeletConfig) SetKubeAPIBurst(v int64) *KubeletConfig {
 	s.KubeAPIBurst = &v
 	return s
@@ -397,6 +588,16 @@ func (s *KubeletConfig) SetMaxPods(v int64) *KubeletConfig {
 	return s
 }
 
+func (s *KubeletConfig) SetMemoryManagerPolicy(v string) *KubeletConfig {
+	s.MemoryManagerPolicy = &v
+	return s
+}
+
+func (s *KubeletConfig) SetPodPidsLimit(v int64) *KubeletConfig {
+	s.PodPidsLimit = &v
+	return s
+}
+
 func (s *KubeletConfig) SetReadOnlyPort(v int64) *KubeletConfig {
 	s.ReadOnlyPort = &v
 	return s
@@ -412,6 +613,11 @@ func (s *KubeletConfig) SetRegistryPullQPS(v int64) *KubeletConfig {
 	return s
 }
 
+func (s *KubeletConfig) SetReservedMemory(v []*KubeletConfigReservedMemory) *KubeletConfig {
+	s.ReservedMemory = v
+	return s
+}
+
 func (s *KubeletConfig) SetSerializeImagePulls(v bool) *KubeletConfig {
 	s.SerializeImagePulls = &v
 	return s
@@ -419,6 +625,65 @@ func (s *KubeletConfig) SetSerializeImagePulls(v bool) *KubeletConfig {
 
 func (s *KubeletConfig) SetSystemReserved(v map[string]interface{}) *KubeletConfig {
 	s.SystemReserved = v
+	return s
+}
+
+func (s *KubeletConfig) SetTopologyManagerPolicy(v string) *KubeletConfig {
+	s.TopologyManagerPolicy = &v
+	return s
+}
+
+func (s *KubeletConfig) SetTracing(v *KubeletConfigTracing) *KubeletConfig {
+	s.Tracing = v
+	return s
+}
+
+type KubeletConfigReservedMemory struct {
+	Limits   map[string]interface{} `json:"limits,omitempty" xml:"limits,omitempty"`
+	NumaNode *int32                 `json:"numaNode,omitempty" xml:"numaNode,omitempty"`
+}
+
+func (s KubeletConfigReservedMemory) String() string {
+	return tea.Prettify(s)
+}
+
+func (s KubeletConfigReservedMemory) GoString() string {
+	return s.String()
+}
+
+func (s *KubeletConfigReservedMemory) SetLimits(v map[string]interface{}) *KubeletConfigReservedMemory {
+	s.Limits = v
+	return s
+}
+
+func (s *KubeletConfigReservedMemory) SetNumaNode(v int32) *KubeletConfigReservedMemory {
+	s.NumaNode = &v
+	return s
+}
+
+type KubeletConfigTracing struct {
+	// example:
+	//
+	// localhost:4317
+	Endpoint               *string `json:"endpoint,omitempty" xml:"endpoint,omitempty"`
+	SamplingRatePerMillion *int32  `json:"samplingRatePerMillion,omitempty" xml:"samplingRatePerMillion,omitempty"`
+}
+
+func (s KubeletConfigTracing) String() string {
+	return tea.Prettify(s)
+}
+
+func (s KubeletConfigTracing) GoString() string {
+	return s.String()
+}
+
+func (s *KubeletConfigTracing) SetEndpoint(v string) *KubeletConfigTracing {
+	s.Endpoint = &v
+	return s
+}
+
+func (s *KubeletConfigTracing) SetSamplingRatePerMillion(v int32) *KubeletConfigTracing {
+	s.SamplingRatePerMillion = &v
 	return s
 }
 
@@ -1740,9 +2005,9 @@ type AttachInstancesRequest struct {
 	//
 	// 	- `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
 	//
-	// 	- `none`: specifies that the default CPU affinity is used.
+	// 	- `none`: uses default CPU affinity.
 	//
-	// Default value: `none`.
+	// Default value: `none`
 	//
 	// >  This parameter is not supported if you specify `nodepool_id`.
 	//
@@ -1750,7 +2015,7 @@ type AttachInstancesRequest struct {
 	//
 	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	// Specifies whether to store container data and images on data disks. Valid values:
+	// Specifies whether to store container data and images on data disks. Valid value:
 	//
 	// 	- `true`: stores container data and images on data disks.
 	//
@@ -1786,7 +2051,7 @@ type AttachInstancesRequest struct {
 	//
 	// This parameter is required.
 	Instances []*string `json:"instances,omitempty" xml:"instances,omitempty" type:"Repeated"`
-	// Specifies whether the node that you want to add is an Edge Node Service (ENS) node. Valid values:
+	// Specifies whether the node that you want to add is an Edge Node Service (ENS) node. Valid value:
 	//
 	// 	- `true`: the node that you want to add is an ENS node.
 	//
@@ -1800,7 +2065,7 @@ type AttachInstancesRequest struct {
 	//
 	// false
 	IsEdgeWorker *bool `json:"is_edge_worker,omitempty" xml:"is_edge_worker,omitempty"`
-	// Specifies whether to retain the instance name. Valid values:
+	// Specifies whether to retain the instance name. Valid value:
 	//
 	// 	- `true`: retains the instance name.
 	//
@@ -1848,7 +2113,7 @@ type AttachInstancesRequest struct {
 	//
 	// >  This parameter is not supported if you specify `nodepool_id`.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The user-defined data on the node. For more information, see [Generate user-defined data](https://help.aliyun.com/document_detail/49121.html).
+	// The user-defined data on the node. For more information, see [Use instance user data to automatically run commands or scripts on instance startup](https://help.aliyun.com/document_detail/49121.html).
 	//
 	// >  This parameter is not supported if you specify `nodepool_id`.
 	//
@@ -2733,7 +2998,9 @@ type CreateAutoscalingConfigRequest struct {
 	//
 	// 0
 	MinReplicaCount *int32 `json:"min_replica_count,omitempty" xml:"min_replica_count,omitempty"`
-	// Specifies whether to delete the corresponding Kubernetes node objects after nodes are removed in swift mode. For more information about the swift mode, see [Scaling mode](https://help.aliyun.com/document_detail/119099.html). Default value: false. Valid values:
+	// Auto-scaling priority configuration. After creating a node pool with elasticity enabled, you can choose whether to configure a priority strategy and priority settings through [Enabling Node Auto-scaling](https://help.aliyun.com/document_detail/119099.html). This allows you to set priorities for the specified auto-scaling node pool scaling group. The priority value range is [1, 100] and must be a positive integer.
+	Priorities map[string][]*string `json:"priorities,omitempty" xml:"priorities,omitempty"`
+	// Specifies whether to delete the corresponding Kubernetes node objects after nodes are removed in swift mode. For more information about the swift mode, see [Scaling mode](https://help.aliyun.com/document_detail/119099.html). Default value: false Valid values:
 	//
 	// 	- `true`: deletes the corresponding Kubernetes node objects after nodes are removed in swift mode. We recommend that you do not set the value to true because data inconsistency may occur in Kubernetes objects.
 	//
@@ -2763,9 +3030,15 @@ type CreateAutoscalingConfigRequest struct {
 	//
 	// true
 	ScaleUpFromZero *bool `json:"scale_up_from_zero,omitempty" xml:"scale_up_from_zero,omitempty"`
+	// Elastic component type, default is goatscaler for cluster version 1.24 and above, and cluster-autoscaler below that. Values:
+	//
+	// - `goatscaler`: Instant elasticity.
+	//
+	// - `cluster-autoscaler`: Auto-scaling.
+	//
 	// example:
 	//
-	// cluster-autoscaler
+	// goatscaler
 	ScalerType *string `json:"scaler_type,omitempty" xml:"scaler_type,omitempty"`
 	// The interval at which the system scans for events that trigger scaling activities. Unit: seconds. Default value: 60.
 	//
@@ -2847,6 +3120,11 @@ func (s *CreateAutoscalingConfigRequest) SetMinReplicaCount(v int32) *CreateAuto
 	return s
 }
 
+func (s *CreateAutoscalingConfigRequest) SetPriorities(v map[string][]*string) *CreateAutoscalingConfigRequest {
+	s.Priorities = v
+	return s
+}
+
 func (s *CreateAutoscalingConfigRequest) SetRecycleNodeDeletionEnabled(v bool) *CreateAutoscalingConfigRequest {
 	s.RecycleNodeDeletionEnabled = &v
 	return s
@@ -2893,14 +3171,20 @@ func (s *CreateAutoscalingConfigRequest) SetUtilizationThreshold(v string) *Crea
 }
 
 type CreateAutoscalingConfigResponseBody struct {
+	// The cluster ID.
+	//
 	// example:
 	//
 	// cc212d04dfe184547bffaa596********
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The request ID.
+	//
 	// example:
 	//
 	// AF8BE105-C32B-1269-9774-5510********
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
+	// The task ID.
+	//
 	// example:
 	//
 	// T-5fd211e924e1d007********
@@ -3002,11 +3286,13 @@ type CreateClusterRequest struct {
 	ApiAudiences *string `json:"api_audiences,omitempty" xml:"api_audiences,omitempty"`
 	// Deprecated
 	//
+	// **This parameter is deprecated.**
+	//
 	// Specifies whether to enable auto-renewal. This parameter takes effect only when `charge_type` is set to `PrePaid`. Valid values:
 	//
 	// 	- `true`: enables auto-renewal.
 	//
-	// 	- `false`: disables auto-renewal.
+	// 	- `false`: disables auto-renewal
 	//
 	// Default value: `false`
 	//
@@ -3017,6 +3303,8 @@ type CreateClusterRequest struct {
 	// true
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
 	// Deprecated
+	//
+	// **This parameter is deprecated.**
 	//
 	// The auto-renewal duration. This parameter takes effect only if charge_type is set to PrePaid and auto_renew is set to true. If you set `period_unit` to Month, the valid values of auto_renew_period are 1, 2, 3, 6, and 12.
 	//
@@ -3030,19 +3318,19 @@ type CreateClusterRequest struct {
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
 	// Deprecated
 	//
-	// The billing method of the resource. The following resources are billed on a subscription basis:
+	// The billing method of the Classic Load Balancer (CLB) instance that is used by the API server. Default value: PostPaid. Valid values:
 	//
-	// The internal-facing SLB instance used by the API server.
+	// 	- PostPaid: pay-as-you-go
 	//
-	// Valid values:
+	// 	- PrePaid: subscription. The newly created billing method for the CLB instance is not supported.
 	//
-	// PrePaid: subscription
+	// >
 	//
-	// PostPaid: pay-as-you-go
+	// 	- This parameter was changed on October 15, 2024. For more information, see [Announcement on changes to the parameter behavior of the CreateCluster operation](https://help.aliyun.com/document_detail/2849194.html).
 	//
-	// Default value: PostPaid.
+	// 	- Starting from December 1, 2024, new CLB instances no longer support the subscription billing method and will be charged for the instances.
 	//
-	// This parameter was changed on October 15, 2024. For more information, see [Announcement on changes to the parameter behavior of the CreateCluster operation](https://help.aliyun.com/document_detail/2849194.html).
+	// For more information, see [CLB billing adjustments](https://help.aliyun.com/document_detail/2839797.html).
 	//
 	// example:
 	//
@@ -3090,7 +3378,7 @@ type CreateClusterRequest struct {
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
 	// 	- `Kubernetes`: an ACK dedicated cluster.
 	//
-	// 	- `ManagedKubernetes`: an ACK managed cluster. ACK managed clusters include ACK Basic clusters, ACK Pro clusters, ACK Serverless clusters (Basic and Pro), ACK Edge clusters (Basic and Pro), and ACK Lingjun clusters (Pro).
+	// 	- `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Basic clusters, ACK Pro clusters, ACK Serverless Basic clusters, ACK Serverless Pro clusters, ACK Edge Basic clusters, ACK Edge Pro clusters, and ACK Lingjun Pro clusters.
 	//
 	// 	- `ExternalKubernetes`: a registered cluster.
 	//
@@ -3109,7 +3397,8 @@ type CreateClusterRequest struct {
 	// example:
 	//
 	// 172.20.0.0/16
-	ContainerCidr      *string                                 `json:"container_cidr,omitempty" xml:"container_cidr,omitempty"`
+	ContainerCidr *string `json:"container_cidr,omitempty" xml:"container_cidr,omitempty"`
+	// The control plane configurations of an ACK dedicated cluster.
 	ControlPlaneConfig *CreateClusterRequestControlPlaneConfig `json:"control_plane_config,omitempty" xml:"control_plane_config,omitempty" type:"Struct"`
 	// The control plane component for which you want to enable log collection.
 	//
@@ -3355,7 +3644,7 @@ type CreateClusterRequest struct {
 	//
 	// Hello@1234
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	// Cluster maintenance window.
+	// The configurations of the cluster maintenance window.
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty" xml:"maintenance_window,omitempty"`
 	// Deprecated
 	//
@@ -3363,7 +3652,7 @@ type CreateClusterRequest struct {
 	//
 	// 	- `true`: enables auto-renewal.
 	//
-	// 	- `false`: disables auto-renewal.
+	// 	- `false`: disables auto-renewal
 	//
 	// Default value: `true`
 	//
@@ -3397,9 +3686,9 @@ type CreateClusterRequest struct {
 	//
 	// The billing method of master nodes. Valid values:
 	//
-	// 	- `PrePaid`: subscription.
+	// 	- `PrePaid`: subscription
 	//
-	// 	- `PostPaid`: pay-as-you-go.
+	// 	- `PostPaid`: the pay-as-you-go
 	//
 	// Default value: `PostPaid`
 	//
@@ -3409,7 +3698,7 @@ type CreateClusterRequest struct {
 	MasterInstanceChargeType *string `json:"master_instance_charge_type,omitempty" xml:"master_instance_charge_type,omitempty"`
 	// Deprecated
 	//
-	// The instance types of master nodes. For more information, see [Overview of instance families](https://help.aliyun.com/document_detail/25378.html).
+	// The instance types of master nodes. For more information, see [Overview of ECS instance families](https://help.aliyun.com/document_detail/25378.html).
 	MasterInstanceTypes []*string `json:"master_instance_types,omitempty" xml:"master_instance_types,omitempty" type:"Repeated"`
 	// Deprecated
 	//
@@ -3441,7 +3730,7 @@ type CreateClusterRequest struct {
 	//
 	// 	- `cloud_ssd`: standard SSD
 	//
-	// 	- `cloud_essd`: Enterprise SSD (ESSD).
+	// 	- `cloud_essd`: Enterprise SSD (ESSD)
 	//
 	// Default value: `cloud_ssd`. The default value may vary in different zones.
 	//
@@ -3481,7 +3770,7 @@ type CreateClusterRequest struct {
 	//
 	// The number of vSwitches must be the same as that specified in `master_count` and the same as those specified in `master_vswitch_ids`.
 	MasterVswitchIds []*string `json:"master_vswitch_ids,omitempty" xml:"master_vswitch_ids,omitempty" type:"Repeated"`
-	// The name of the cluster.
+	// The cluster name.
 	//
 	// The cluster name must be 1 to 63 characters in length, and can contain digits, letters, and underscores (_). The cluster name cannot start with a hyphen (-).
 	//
@@ -3539,7 +3828,7 @@ type CreateClusterRequest struct {
 	//
 	// 3
 	NumOfNodes *int64 `json:"num_of_nodes,omitempty" xml:"num_of_nodes,omitempty"`
-	// Cluster auto operation and maintenance policy.
+	// The automatic O\\&M policy of the cluster.
 	OperationPolicy *CreateClusterRequestOperationPolicy `json:"operation_policy,omitempty" xml:"operation_policy,omitempty" type:"Struct"`
 	// Deprecated
 	//
@@ -3557,6 +3846,8 @@ type CreateClusterRequest struct {
 	OsType *string `json:"os_type,omitempty" xml:"os_type,omitempty"`
 	// Deprecated
 	//
+	// **This parameter is deprecated.**
+	//
 	// The subscription duration of the instance. This parameter takes effect and is required only when you set charge_type to PrePaid.
 	//
 	// Valid values: 1, 2, 3, 6, 12, 24, 36, 48, and 60.
@@ -3571,6 +3862,8 @@ type CreateClusterRequest struct {
 	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
 	// Deprecated
 	//
+	// **This parameter is deprecated.**
+	//
 	// The billing cycle. This parameter is required if charge_type is set to PrePaid.
 	//
 	// Valid value: Month, which indicates that resources are billed only on a monthly basis.
@@ -3583,7 +3876,7 @@ type CreateClusterRequest struct {
 	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// Deprecated
 	//
-	// The operating system distribution. Valid values:
+	// The OS distribution that is used. Valid values:
 	//
 	// 	- CentOS
 	//
@@ -3609,13 +3902,13 @@ type CreateClusterRequest struct {
 	PodVswitchIds []*string `json:"pod_vswitch_ids,omitempty" xml:"pod_vswitch_ids,omitempty" type:"Repeated"`
 	// If you set `cluster_type` to `ManagedKubernetes`, an ACK managed cluster is created. In this case, you can further specify the cluster edition. Valid values:
 	//
-	// 	- `Default`. an ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
+	// 	- `Default`: ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
 	//
-	// 	- `Edge`: an ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
+	// 	- `Edge`: ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
 	//
-	// 	- `Serverless`: an ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
+	// 	- `Serverless`: ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
 	//
-	// 	- `Lingjun`: an ACK Lingjun Pro cluster.
+	// 	- `Lingjun`: ACK Lingjun Pro cluster.
 	//
 	// example:
 	//
@@ -3625,7 +3918,7 @@ type CreateClusterRequest struct {
 	//
 	// 	- `iptables`: a mature and stable kube-proxy mode that uses iptables rules to conduct Service discovery and load balancing. The performance of this mode is limited by the size of the cluster. This mode is suitable for clusters that run a small number of Services.
 	//
-	// 	- `ipvs`: provides high performance and uses IP Virtual Server (IPVS). This allows you to configure service discovery and load balancing. This mode is suitable for clusters that are required to run a large number of services. We recommend that you use this mode in scenarios that require high load balancing performance.
+	// 	- `ipvs`: a mode that provides high performance and uses IP Virtual Server (IPVS) to conduct service discovery and load balancing. This mode is suitable for clusters that run a large number of Services. We recommend that you use this mode in scenarios that require high-performance load balancing.
 	//
 	// Default value: `ipvs`.
 	//
@@ -3717,13 +4010,13 @@ type CreateClusterRequest struct {
 	SnatEntry *bool `json:"snat_entry,omitempty" xml:"snat_entry,omitempty"`
 	// Deprecated
 	//
-	// Specifies whether to enable security hardening based on Multi-Level Protection Scheme (MLPS). For more information, see [ACK security hardening based on MLPS](https://help.aliyun.com/document_detail/196148.html).
+	// Specifies whether to enable Multi-Level Protection Scheme (MLPS) security hardening. For more information, see [ACK security hardening based on MLPS](https://help.aliyun.com/document_detail/196148.html).
 	//
 	// Valid values:
 	//
-	// 	- `true`: enables security hardening based on MLPS.
+	// 	- `true`: enables MLPS security hardening.
 	//
-	// 	- `false`: disables security hardening based on MLPS.
+	// 	- `false`: disables MLPS security hardening.
 	//
 	// Default value: `false`
 	//
@@ -3743,9 +4036,9 @@ type CreateClusterRequest struct {
 	//
 	// true
 	SshFlags *bool `json:"ssh_flags,omitempty" xml:"ssh_flags,omitempty"`
-	// The tags to be added to nodes. You must add labels based on the following rules:
+	// The tags to be added to nodes. When you add tags to a node, the following rules apply:
 	//
-	// 	- A label is a case-sensitive key-value pair. You can add up to 20 labels.
+	// 	- A tag is a case-sensitive key-value pair. You can add up to 20 tags.
 	//
 	// 	- When you add a tag, you must specify a unique key but you can leave the value empty. A key cannot exceed 64 characters in length and a value cannot exceed 128 characters in length. Keys and values cannot start with aliyun, acs:, https://, or http://. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
@@ -3821,9 +4114,9 @@ type CreateClusterRequest struct {
 	//
 	// The billing method of worker nodes. Valid values:
 	//
-	// 	- `PrePaid`: subscription.
+	// 	- `PrePaid`: subscription
 	//
-	// 	- `PostPaid`: pay-as-you-go.
+	// 	- `PostPaid`: the pay-as-you-go
 	//
 	// Default value: PostPaid.
 	//
@@ -3863,11 +4156,11 @@ type CreateClusterRequest struct {
 	//
 	// Valid values:
 	//
-	// 	- `cloud_efficiency`: ultra disk.
+	// 	- `cloud_efficiency`: ultra disk
 	//
-	// 	- `cloud_ssd`: standard SSD.
+	// 	- `cloud_ssd`: standard SSD
 	//
-	// Default value: `cloud_ssd`.
+	// Default value: `cloud_ssd`
 	//
 	// example:
 	//
@@ -4436,30 +4729,146 @@ func (s *CreateClusterRequest) SetZoneIds(v []*string) *CreateClusterRequest {
 }
 
 type CreateClusterRequestControlPlaneConfig struct {
-	AutoRenew                  *bool     `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
-	AutoRenewPeriod            *int64    `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	ChargeType                 *string   `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
-	CloudMonitorFlags          *bool     `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
-	CpuPolicy                  *string   `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	DeploymentsetId            *string   `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
-	ImageId                    *string   `json:"image_id,omitempty" xml:"image_id,omitempty"`
-	ImageType                  *string   `json:"image_type,omitempty" xml:"image_type,omitempty"`
-	InstanceTypes              []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
-	KeyPair                    *string   `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	LoginPassword              *string   `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	NodePortRange              *string   `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
-	Period                     *int64    `json:"period,omitempty" xml:"period,omitempty"`
-	PeriodUnit                 *string   `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
-	Runtime                    *string   `json:"runtime,omitempty" xml:"runtime,omitempty"`
-	SecurityHardeningOs        *bool     `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
-	Size                       *int64    `json:"size,omitempty" xml:"size,omitempty"`
-	SocEnabled                 *bool     `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
-	SystemDiskBurstingEnabled  *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	SystemDiskCategory         *string   `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
-	SystemDiskPerformanceLevel *string   `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64    `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
-	SystemDiskSize             *int64    `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
-	SystemDiskSnapshotPolicyId *string   `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
+	// Indicates whether auto-renewal is enabled for the control plane node.
+	//
+	// example:
+	//
+	// true
+	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
+	// The auto-renewal duration for the control plane node.
+	//
+	// example:
+	//
+	// 1
+	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
+	// The billing method of the control plane node.
+	//
+	// example:
+	//
+	// PrePaid
+	ChargeType *string `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
+	// Indicates whether to install CloudMonitor for the node.
+	//
+	// example:
+	//
+	// true
+	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
+	// The CPU management policy of nodes in the node pool.
+	//
+	// example:
+	//
+	// none
+	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
+	// The ID of the deployment set.
+	//
+	// example:
+	//
+	// ds-bp10b35imuam5amw****
+	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
+	// The ID of the image.
+	//
+	// example:
+	//
+	// aliyun_3_x64_20G_alibase_20240819.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// The type of the OS image.
+	//
+	// example:
+	//
+	// AliyunLinux3
+	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
+	// The instance type of the node.
+	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
+	// The name of the key pair. You must set key_pair or login_password.
+	//
+	// example:
+	//
+	// ack
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// The SSH logon password. The password must be 8 to 30 characters in length and contain a minimum of three of the following character types: uppercase letters, lowercase letters, digits, and special characters. You must set login_password or key_pair.
+	//
+	// example:
+	//
+	// ack@Test
+	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
+	// The node port range.
+	//
+	// example:
+	//
+	// 30000-32767
+	NodePortRange *string `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
+	// The subscription duration of the control plane node.
+	//
+	// example:
+	//
+	// 1
+	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
+	// The unit of the subscription duration of the control plane node.
+	//
+	// example:
+	//
+	// Month
+	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
+	// The runtime.
+	//
+	// example:
+	//
+	// containerd
+	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
+	// Indicates whether to enable Alibaba Cloud Linux Security Hardening.
+	//
+	// example:
+	//
+	// true
+	SecurityHardeningOs *bool `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// The number of control plane nodes.
+	//
+	// example:
+	//
+	// 3
+	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
+	// Indicates whether to enable MLPS security hardening.
+	//
+	// example:
+	//
+	// true
+	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
+	// Indicates whether to enable the burst feature for the system disk.
+	//
+	// example:
+	//
+	// true
+	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
+	// The category of the system disk for nodes.
+	//
+	// example:
+	//
+	// cloud_essd
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for ESSDs.
+	//
+	// example:
+	//
+	// PL1
+	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
+	// The preset read/write IOPS of the system disk.
+	//
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// The system disk size of the node. The value must be at least 40 GB.
+	//
+	// example:
+	//
+	// 120
+	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
+	// The automatic snapshot policy of the node.
+	//
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
+	SystemDiskSnapshotPolicyId *string `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
 }
 
 func (s CreateClusterRequestControlPlaneConfig) String() string {
@@ -4591,7 +5000,7 @@ func (s *CreateClusterRequestControlPlaneConfig) SetSystemDiskSnapshotPolicyId(v
 }
 
 type CreateClusterRequestOperationPolicy struct {
-	// Automatic cluster upgrade
+	// The configurations of auto cluster update.
 	ClusterAutoUpgrade *CreateClusterRequestOperationPolicyClusterAutoUpgrade `json:"cluster_auto_upgrade,omitempty" xml:"cluster_auto_upgrade,omitempty" type:"Struct"`
 }
 
@@ -4609,19 +5018,19 @@ func (s *CreateClusterRequestOperationPolicy) SetClusterAutoUpgrade(v *CreateClu
 }
 
 type CreateClusterRequestOperationPolicyClusterAutoUpgrade struct {
-	// Cluster auto-upgrade frequency. Possible values:
+	// The automatic update frequency. Valid values:
 	//
-	// - patch
+	// 	- patch
 	//
-	// - stable
+	// 	- stable
 	//
-	// - rapid
+	// 	- rapid
 	//
 	// example:
 	//
 	// patch
 	Channel *string `json:"channel,omitempty" xml:"channel,omitempty"`
-	// Whether to enable automatic cluster upgrades.
+	// Specifies whether to enable auto cluster update.
 	//
 	// example:
 	//
@@ -5638,11 +6047,11 @@ type CreateClusterNodePoolRequestManagementAutoVulFixPolicy struct {
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 	// The severity levels of CVEs that can be automatically patched. Separate multiple levels with commas (,). Example: `asap,later`. Valid values:
 	//
-	// 	- `asap`: high severity.
+	// 	- `asap`: high
 	//
-	// 	- `later`: medium severity.
+	// 	- `later`: medium
 	//
-	// 	- `nntf`: low severity.
+	// 	- `nntf`: low
 	//
 	// If `auto_vul_fix` is set to true, the default value of this parameter is `asap`.
 	//
@@ -6142,7 +6551,7 @@ type CreateClusterNodePoolRequestScalingGroup struct {
 	//
 	// 	- `cloud_ssd`: standard SSD.
 	//
-	// 	- `cloud_essd`: Enterprise SSD (ESSD).
+	// 	- `cloud_essd`: ESSD.
 	//
 	// 	- `cloud_auto`: ESSD AutoPL disk.
 	//
@@ -7242,6 +7651,8 @@ func (s *CreateTriggerResponse) SetBody(v *CreateTriggerResponseBody) *CreateTri
 }
 
 type DeleteAlertContactRequest struct {
+	// The list of alert contact IDs.
+	//
 	// This parameter is required.
 	ContactIds []*int64 `json:"contact_ids,omitempty" xml:"contact_ids,omitempty" type:"Repeated"`
 }
@@ -7260,6 +7671,8 @@ func (s *DeleteAlertContactRequest) SetContactIds(v []*int64) *DeleteAlertContac
 }
 
 type DeleteAlertContactShrinkRequest struct {
+	// The list of alert contact IDs.
+	//
 	// This parameter is required.
 	ContactIdsShrink *string `json:"contact_ids,omitempty" xml:"contact_ids,omitempty"`
 }
@@ -7324,8 +7737,27 @@ func (s *DeleteAlertContactResponseBody) SetResult(v []*DeleteAlertContactRespon
 }
 
 type DeleteAlertContactResponseBodyResult struct {
-	Status    *bool   `json:"status,omitempty" xml:"status,omitempty"`
-	Msg       *string `json:"msg,omitempty" xml:"msg,omitempty"`
+	// The deletion status.
+	//
+	// 	- true: The alert contact was deleted.
+	//
+	// 	- false: The alert contact failed to be deleted.
+	//
+	// example:
+	//
+	// true
+	Status *bool `json:"status,omitempty" xml:"status,omitempty"`
+	// The error message returned if the call fails.
+	//
+	// example:
+	//
+	// Delete contact resource failed.
+	Msg *string `json:"msg,omitempty" xml:"msg,omitempty"`
+	// An alert contact ID.
+	//
+	// example:
+	//
+	// 12345
 	ContactId *string `json:"contact_id,omitempty" xml:"contact_id,omitempty"`
 }
 
@@ -7353,6 +7785,8 @@ func (s *DeleteAlertContactResponseBodyResult) SetContactId(v string) *DeleteAle
 }
 
 type DeleteAlertContactGroupRequest struct {
+	// The list of alert contact group IDs.
+	//
 	// This parameter is required.
 	ContactGroupIds []*int64 `json:"contact_group_ids,omitempty" xml:"contact_group_ids,omitempty" type:"Repeated"`
 }
@@ -7371,6 +7805,8 @@ func (s *DeleteAlertContactGroupRequest) SetContactGroupIds(v []*int64) *DeleteA
 }
 
 type DeleteAlertContactGroupShrinkRequest struct {
+	// The list of alert contact group IDs.
+	//
 	// This parameter is required.
 	ContactGroupIdsShrink *string `json:"contact_group_ids,omitempty" xml:"contact_group_ids,omitempty"`
 }
@@ -7418,8 +7854,27 @@ func (s *DeleteAlertContactGroupResponse) SetBody(v []*DeleteAlertContactGroupRe
 }
 
 type DeleteAlertContactGroupResponseBody struct {
-	Status         *bool   `json:"status,omitempty" xml:"status,omitempty"`
-	Msg            *string `json:"msg,omitempty" xml:"msg,omitempty"`
+	// The deletion status.
+	//
+	// 	- true: The alert contact group was deleted.
+	//
+	// 	- false: The alert contact group failed to be deleted.
+	//
+	// example:
+	//
+	// true
+	Status *bool `json:"status,omitempty" xml:"status,omitempty"`
+	// The error message returned if the call fails.
+	//
+	// example:
+	//
+	// Delete contact group resource failed.
+	Msg *string `json:"msg,omitempty" xml:"msg,omitempty"`
+	// The alert contact group ID.
+	//
+	// example:
+	//
+	// 12345
 	ContactGroupId *string `json:"contact_group_id,omitempty" xml:"contact_group_id,omitempty"`
 }
 
@@ -8965,6 +9420,10 @@ type DescribeClusterAttachScriptsRequest struct {
 	//
 	// amd64
 	Arch *string `json:"arch,omitempty" xml:"arch,omitempty"`
+	// example:
+	//
+	// 1740037333
+	Expired *int64 `json:"expired,omitempty" xml:"expired,omitempty"`
 	// Specifies whether to mount data disks to an existing instance when you add the instance to the cluster. You can add data disks to store container data and images. Valid values:
 	//
 	// 	- `true`: mounts data disks to the existing instance that you want to add. After a data disk is mounted, the original data on the disk is erased. Back up data before you mount a data disk.
@@ -9028,6 +9487,11 @@ func (s *DescribeClusterAttachScriptsRequest) SetArch(v string) *DescribeCluster
 	return s
 }
 
+func (s *DescribeClusterAttachScriptsRequest) SetExpired(v int64) *DescribeClusterAttachScriptsRequest {
+	s.Expired = &v
+	return s
+}
+
 func (s *DescribeClusterAttachScriptsRequest) SetFormatDisk(v bool) *DescribeClusterAttachScriptsRequest {
 	s.FormatDisk = &v
 	return s
@@ -9083,7 +9547,7 @@ func (s *DescribeClusterAttachScriptsResponse) SetBody(v string) *DescribeCluste
 }
 
 type DescribeClusterDetailResponseBody struct {
-	// The on-premises domain name of the cluster.
+	// The domain name of the cluster.
 	//
 	// example:
 	//
@@ -9115,12 +9579,13 @@ type DescribeClusterDetailResponseBody struct {
 	//
 	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
-	// The CIDR block of the pod.
+	// The CIDR block of the pod. The configuration of the Flannel network plug-in.
 	//
 	// example:
 	//
 	// 172.20.0.0/16
-	ContainerCidr      *string                                              `json:"container_cidr,omitempty" xml:"container_cidr,omitempty"`
+	ContainerCidr *string `json:"container_cidr,omitempty" xml:"container_cidr,omitempty"`
+	// The control plane configurations in an ACK dedicated cluster.
 	ControlPlaneConfig *DescribeClusterDetailResponseBodyControlPlaneConfig `json:"control_plane_config,omitempty" xml:"control_plane_config,omitempty" type:"Struct"`
 	// The time when the cluster was created.
 	//
@@ -9206,7 +9671,7 @@ type DescribeClusterDetailResponseBody struct {
 	//
 	// 1.18.8-aliyun.1
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
-	// The number of the IP addresses of the node.
+	// The maximum number of IP addresses that can be assigned to nodes. This number is determined by the node CIDR block. This parameter takes effect only if the cluster uses Flannel network plug-in.
 	//
 	// example:
 	//
@@ -9242,7 +9707,11 @@ type DescribeClusterDetailResponseBody struct {
 	//
 	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
-	// The proxy mode. Valid values: ipvs and iptables.
+	// The kube-proxy mode. Valid values:
+	//
+	// 	- `iptables`: a mature and stable kube-proxy mode that uses iptables rules to conduct Service discovery and load balancing. The performance of this mode is limited by the size of the cluster. This mode is suitable for clusters that run a small number of Services.
+	//
+	// 	- `ipvs`: provides high performance and uses IP Virtual Server (IPVS). This allows you to configure service discovery and load balancing. This mode is suitable for clusters that are required to run a large number of services. We recommend that you use this mode in scenarios that require high load balancing performance.
 	//
 	// example:
 	//
@@ -9266,7 +9735,7 @@ type DescribeClusterDetailResponseBody struct {
 	//
 	// sg-25yq****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
-	// The CIDR block of the Service.
+	// The CIDR block of the service network.
 	//
 	// This parameter is required.
 	//
@@ -9328,9 +9797,9 @@ type DescribeClusterDetailResponseBody struct {
 	//
 	// 172.20.0.0/16
 	SubnetCidr *string `json:"subnet_cidr,omitempty" xml:"subnet_cidr,omitempty"`
-	// The resource tags of the cluster.
+	// The resource labels of the cluster.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The time zone.
+	// The time zone
 	//
 	// example:
 	//
@@ -9350,7 +9819,7 @@ type DescribeClusterDetailResponseBody struct {
 	VpcId *string `json:"vpc_id,omitempty" xml:"vpc_id,omitempty"`
 	// Deprecated
 	//
-	// The IDs of the vSwitches. You can select one to three vSwitches when you create a cluster. To ensure the high availability of the cluster, we recommend that you select vSwitches in different zones.
+	// The ID of the vSwitche. This field is deprecated. Use vswitch_ids to query the vSwitches on the control plane and vswitch_ids to query the vSwitches on the data plane.
 	//
 	// example:
 	//
@@ -9581,29 +10050,140 @@ func (s *DescribeClusterDetailResponseBody) SetZoneId(v string) *DescribeCluster
 }
 
 type DescribeClusterDetailResponseBodyControlPlaneConfig struct {
-	AutoRenew                  *bool     `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
-	AutoRenewPeriod            *int64    `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	ChargeType                 *string   `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
-	CloudMonitorFlags          *bool     `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
-	CpuPolicy                  *string   `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	DeploymentsetId            *string   `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
-	ImageId                    *string   `json:"image_id,omitempty" xml:"image_id,omitempty"`
-	ImageType                  *string   `json:"image_type,omitempty" xml:"image_type,omitempty"`
-	InstanceTypes              []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
-	KeyPair                    *string   `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	NodePortRange              *string   `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
-	Period                     *int64    `json:"period,omitempty" xml:"period,omitempty"`
-	PeriodUnit                 *string   `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
-	Runtime                    *string   `json:"runtime,omitempty" xml:"runtime,omitempty"`
-	SecurityHardeningOs        *bool     `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
-	Size                       *int64    `json:"size,omitempty" xml:"size,omitempty"`
-	SocEnabled                 *bool     `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
-	SystemDiskBurstingEnabled  *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	SystemDiskCategory         *string   `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
-	SystemDiskPerformanceLevel *string   `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64    `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
-	SystemDiskSize             *int64    `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
-	SystemDiskSnapshotPolicyId *string   `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
+	// Indicates whether auto-renewal is enabled for the nodes.
+	//
+	// example:
+	//
+	// true
+	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
+	// The auto-renewal duration for the nodes.
+	//
+	// example:
+	//
+	// 1
+	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
+	// The billing method of the control plane node.
+	//
+	// example:
+	//
+	// PrePaid
+	ChargeType *string `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
+	// Indicates whether to install CloudMonitor for the node.
+	//
+	// example:
+	//
+	// true
+	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
+	// The CPU management policy of nodes.
+	//
+	// example:
+	//
+	// none
+	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
+	// The ID of the deployment set.
+	//
+	// example:
+	//
+	// ds-bp10b35imuam5amw****
+	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
+	// The ID of the image.
+	//
+	// example:
+	//
+	// aliyun_3_x64_20G_alibase_20240819.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// The type of the OS image.
+	//
+	// example:
+	//
+	// AliyunLinux3
+	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
+	// The instance types of the nodes.
+	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
+	// The name of the key pair. You must set key_pair or login_password.
+	//
+	// example:
+	//
+	// ack
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// The node port range.
+	//
+	// example:
+	//
+	// 30000-32767
+	NodePortRange *string `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
+	// The subscription duration.
+	//
+	// example:
+	//
+	// 1
+	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
+	// The unit of the subscription duration.
+	//
+	// example:
+	//
+	// Month
+	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
+	// The runtime.
+	//
+	// example:
+	//
+	// containerd
+	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
+	// Indicates whether to enable Alibaba Cloud Linux Security Hardening.
+	//
+	// example:
+	//
+	// true
+	SecurityHardeningOs *bool `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// The number of control plane nodes.
+	//
+	// example:
+	//
+	// 3
+	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
+	// Indicates whether to enable Multi-Level Protection Scheme (MLPS) security hardening.
+	//
+	// example:
+	//
+	// false
+	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
+	// Indicates whether to enable the burst feature for the system disk.
+	//
+	// example:
+	//
+	// true
+	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
+	// The category of the system disk for nodes.
+	//
+	// example:
+	//
+	// cloud_essd
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for ESSDs.
+	//
+	// example:
+	//
+	// PL1
+	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
+	// The preset read/write IOPS of the system disk.
+	//
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// The system disk size of the node. The value must be at least 40 GB.
+	//
+	// example:
+	//
+	// 120
+	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
+	// The automatic snapshot policy of the node.
+	//
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
+	SystemDiskSnapshotPolicyId *string `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
 }
 
 func (s DescribeClusterDetailResponseBodyControlPlaneConfig) String() string {
@@ -13891,6 +14471,10 @@ func (s *DescribeClusterNodesResponse) SetBody(v *DescribeClusterNodesResponseBo
 
 type DescribeClusterResourcesRequest struct {
 	// Specifies whether to query the resources created by cluster components.
+	//
+	// example:
+	//
+	// false
 	WithAddonResources *bool `json:"with_addon_resources,omitempty" xml:"with_addon_resources,omitempty"`
 }
 
@@ -14005,7 +14589,7 @@ type DescribeClusterResourcesResponseBody struct {
 	AssociatedObject *DescribeClusterResourcesResponseBodyAssociatedObject `json:"associated_object,omitempty" xml:"associated_object,omitempty" type:"Struct"`
 	// The deletion behavior of the resource when the cluster is deleted.
 	DeleteBehavior *DescribeClusterResourcesResponseBodyDeleteBehavior `json:"delete_behavior,omitempty" xml:"delete_behavior,omitempty" type:"Struct"`
-	// The resource creator. Valid values:
+	// The type of the resource creator. Valid values:
 	//
 	// 	- user: The resource is created by the user.
 	//
@@ -14551,7 +15135,8 @@ func (s *DescribeClusterUserKubeconfigResponse) SetBody(v *DescribeClusterUserKu
 }
 
 type DescribeClusterV2UserKubeconfigRequest struct {
-	PrivateIpAddress *bool `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
+	PrivateIpAddress         *bool  `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
+	TemporaryDurationMinutes *int64 `json:"TemporaryDurationMinutes,omitempty" xml:"TemporaryDurationMinutes,omitempty"`
 }
 
 func (s DescribeClusterV2UserKubeconfigRequest) String() string {
@@ -14564,6 +15149,11 @@ func (s DescribeClusterV2UserKubeconfigRequest) GoString() string {
 
 func (s *DescribeClusterV2UserKubeconfigRequest) SetPrivateIpAddress(v bool) *DescribeClusterV2UserKubeconfigRequest {
 	s.PrivateIpAddress = &v
+	return s
+}
+
+func (s *DescribeClusterV2UserKubeconfigRequest) SetTemporaryDurationMinutes(v int64) *DescribeClusterV2UserKubeconfigRequest {
+	s.TemporaryDurationMinutes = &v
 	return s
 }
 
@@ -15689,7 +16279,7 @@ func (s *DescribeClustersV1Request) SetRegionId(v string) *DescribeClustersV1Req
 }
 
 type DescribeClustersV1ResponseBody struct {
-	// The details of the clusters.
+	// Details of the clusters.
 	Clusters []*DescribeClustersV1ResponseBodyClusters `json:"clusters,omitempty" xml:"clusters,omitempty" type:"Repeated"`
 	// The pagination information.
 	PageInfo *DescribeClustersV1ResponseBodyPageInfo `json:"page_info,omitempty" xml:"page_info,omitempty" type:"Struct"`
@@ -15746,7 +16336,7 @@ type DescribeClustersV1ResponseBodyClusters struct {
 	//
 	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
-	// The pod CIDR block.
+	// The pod CIDR block and the configuration of the Flannel network plug-in.
 	//
 	// example:
 	//
@@ -15874,7 +16464,11 @@ type DescribeClustersV1ResponseBodyClusters struct {
 	//
 	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
-	// The kube-proxy mode. Valid values: ipvs and iptables.
+	// The Kube-proxy mode. Valid values:
+	//
+	// 	- `iptables`: a mature and stable kube-proxy mode that uses iptables rules to conduct Service discovery and load balancing. The performance of this mode is limited by the size of the cluster. This mode is suitable for clusters that run a small number of Services.
+	//
+	// 	- `ipvs`: provides high performance and uses IP Virtual Server (IPVS). This allows you to configure service discovery and load balancing. This mode is suitable for clusters that are required to run a large number of services. We recommend that you use this mode in scenarios that require high load balancing performance.
 	//
 	// example:
 	//
@@ -15940,7 +16534,7 @@ type DescribeClustersV1ResponseBodyClusters struct {
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// Deprecated
 	//
-	// The pod CIDR block. It must be a valid and private CIDR block, and must be one of the following CIDR blocks or their subnets:
+	// Tis parameter is deprecated. Use the container_cidr parameter to obtain the pod CIDR block. The pod CIDR block. It must be a valid and private CIDR block, and must be one of the following CIDR blocks or their subnets:
 	//
 	// 	- 10.0.0.0/8
 	//
@@ -15958,7 +16552,7 @@ type DescribeClustersV1ResponseBodyClusters struct {
 	SubnetCidr *string `json:"subnet_cidr,omitempty" xml:"subnet_cidr,omitempty"`
 	// The resource labels of the cluster.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The time zone.
+	// The time zone
 	//
 	// example:
 	//
@@ -17849,12 +18443,34 @@ func (s *DescribeKubernetesVersionMetadataResponse) SetBody(v []*DescribeKuberne
 
 type DescribeKubernetesVersionMetadataResponseBody struct {
 	// Features of the queried Kubernetes version.
+	//
+	// example:
+	//
+	// {
+	//
+	//       "AnyAZ": true,
+	//
+	//       "ChargeType": "PostPaid"
+	//
+	// }
 	Capabilities map[string]interface{} `json:"capabilities,omitempty" xml:"capabilities,omitempty"`
 	// The OS images that are returned.
 	Images []*DescribeKubernetesVersionMetadataResponseBodyImages `json:"images,omitempty" xml:"images,omitempty" type:"Repeated"`
 	// The metadata of the Kubernetes version.
+	//
+	// example:
+	//
+	// {
+	//
+	//       "KubernetesVersion": "1.31.1-aliyun.1",
+	//
+	//       "SubClass": "default",
+	//
+	//       "ServiceCIDR": ""
+	//
+	// }
 	MetaData map[string]interface{} `json:"meta_data,omitempty" xml:"meta_data,omitempty"`
-	// Details of the supported container runtimes.
+	// The container runtime configurations.
 	Runtimes []*Runtime `json:"runtimes,omitempty" xml:"runtimes,omitempty" type:"Repeated"`
 	// The Kubernetes version supported by ACK. For more information, see [Release notes for Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
 	//
@@ -21371,7 +21987,7 @@ func (s *GetClusterAuditProjectResponse) SetBody(v *GetClusterAuditProjectRespon
 }
 
 type GetClusterCheckResponseBody struct {
-	// Id of the request
+	// The ID of the cluster check task.
 	//
 	// example:
 	//
@@ -21480,6 +22096,28 @@ func (s *GetClusterCheckResponse) SetStatusCode(v int32) *GetClusterCheckRespons
 
 func (s *GetClusterCheckResponse) SetBody(v *GetClusterCheckResponseBody) *GetClusterCheckResponse {
 	s.Body = v
+	return s
+}
+
+type GetClusterDiagnosisCheckItemsRequest struct {
+	// The query language.
+	//
+	// example:
+	//
+	// zh_CN
+	Language *string `json:"language,omitempty" xml:"language,omitempty"`
+}
+
+func (s GetClusterDiagnosisCheckItemsRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetClusterDiagnosisCheckItemsRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetClusterDiagnosisCheckItemsRequest) SetLanguage(v string) *GetClusterDiagnosisCheckItemsRequest {
+	s.Language = &v
 	return s
 }
 
@@ -21667,6 +22305,28 @@ func (s *GetClusterDiagnosisCheckItemsResponse) SetStatusCode(v int32) *GetClust
 
 func (s *GetClusterDiagnosisCheckItemsResponse) SetBody(v *GetClusterDiagnosisCheckItemsResponseBody) *GetClusterDiagnosisCheckItemsResponse {
 	s.Body = v
+	return s
+}
+
+type GetClusterDiagnosisResultRequest struct {
+	// The query language.
+	//
+	// example:
+	//
+	// zh_CN
+	Language *string `json:"language,omitempty" xml:"language,omitempty"`
+}
+
+func (s GetClusterDiagnosisResultRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetClusterDiagnosisResultRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetClusterDiagnosisResultRequest) SetLanguage(v string) *GetClusterDiagnosisResultRequest {
+	s.Language = &v
 	return s
 }
 
@@ -22397,9 +23057,54 @@ func (s *InstallClusterAddonsRequestBody) SetVersion(v string) *InstallClusterAd
 	return s
 }
 
+type InstallClusterAddonsResponseBody struct {
+	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c82e6987e2961451182edacd74faf****
+	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The ID of the request.
+	//
+	// example:
+	//
+	// 48BD70F6-A7E6-543D-9F23-08DEB764C92E
+	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
+	// The ID of the task.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00002f
+	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
+}
+
+func (s InstallClusterAddonsResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s InstallClusterAddonsResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *InstallClusterAddonsResponseBody) SetClusterId(v string) *InstallClusterAddonsResponseBody {
+	s.ClusterId = &v
+	return s
+}
+
+func (s *InstallClusterAddonsResponseBody) SetRequestId(v string) *InstallClusterAddonsResponseBody {
+	s.RequestId = &v
+	return s
+}
+
+func (s *InstallClusterAddonsResponseBody) SetTaskId(v string) *InstallClusterAddonsResponseBody {
+	s.TaskId = &v
+	return s
+}
+
 type InstallClusterAddonsResponse struct {
-	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
-	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Headers    map[string]*string                `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                            `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *InstallClusterAddonsResponseBody `json:"body,omitempty" xml:"body,omitempty"`
 }
 
 func (s InstallClusterAddonsResponse) String() string {
@@ -22417,6 +23122,11 @@ func (s *InstallClusterAddonsResponse) SetHeaders(v map[string]*string) *Install
 
 func (s *InstallClusterAddonsResponse) SetStatusCode(v int32) *InstallClusterAddonsResponse {
 	s.StatusCode = &v
+	return s
+}
+
+func (s *InstallClusterAddonsResponse) SetBody(v *InstallClusterAddonsResponseBody) *InstallClusterAddonsResponse {
+	s.Body = v
 	return s
 }
 
@@ -23193,7 +23903,7 @@ func (s *ListOperationPlansRequest) SetType(v string) *ListOperationPlansRequest
 }
 
 type ListOperationPlansResponseBody struct {
-	// The operation plans.
+	// The list of auto O\\&M execution plans.
 	Plans []*ListOperationPlansResponseBodyPlans `json:"plans,omitempty" xml:"plans,omitempty" type:"Repeated"`
 }
 
@@ -23263,6 +23973,12 @@ type ListOperationPlansResponseBodyPlans struct {
 	//
 	// cluster
 	TargetType *string `json:"target_type,omitempty" xml:"target_type,omitempty"`
+	// The ID of the task generated by the execution plan.
+	//
+	// example:
+	//
+	// T-6764d027be846d01310006b1
+	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The plan type. Valid values:
 	//
 	// 	- cluster_upgrade
@@ -23318,6 +24034,11 @@ func (s *ListOperationPlansResponseBodyPlans) SetTargetId(v string) *ListOperati
 
 func (s *ListOperationPlansResponseBodyPlans) SetTargetType(v string) *ListOperationPlansResponseBodyPlans {
 	s.TargetType = &v
+	return s
+}
+
+func (s *ListOperationPlansResponseBodyPlans) SetTaskId(v string) *ListOperationPlansResponseBodyPlans {
+	s.TaskId = &v
 	return s
 }
 
@@ -23985,7 +24706,7 @@ func (s *MigrateClusterResponse) SetBody(v *MigrateClusterResponseBody) *Migrate
 }
 
 type ModifyClusterRequest struct {
-	// The network access control lists (ACLs) of the SLB instance associated with the API server if the cluster is a registered cluster.
+	// The network access control list (ACL) of the SLB instance associated with the API server if the cluster is a registered cluster.
 	AccessControlList []*string `json:"access_control_list,omitempty" xml:"access_control_list,omitempty" type:"Repeated"`
 	// The custom subject alternative names (SANs) for the API server certificate to accept requests from specified IP addresses or domain names. This parameter is available only for ACK managed clusters.
 	ApiServerCustomCertSans *ModifyClusterRequestApiServerCustomCertSans `json:"api_server_custom_cert_sans,omitempty" xml:"api_server_custom_cert_sans,omitempty" type:"Struct"`
@@ -24012,7 +24733,8 @@ type ModifyClusterRequest struct {
 	// example:
 	//
 	// cluster-new-name
-	ClusterName        *string                                 `json:"cluster_name,omitempty" xml:"cluster_name,omitempty"`
+	ClusterName *string `json:"cluster_name,omitempty" xml:"cluster_name,omitempty"`
+	// The control plane configurations of an ACK dedicated cluster.
 	ControlPlaneConfig *ModifyClusterRequestControlPlaneConfig `json:"control_plane_config,omitempty" xml:"control_plane_config,omitempty" type:"Struct"`
 	// Specifies whether to enable cluster deletion protection. If you enable this option, the cluster cannot be deleted in the console or by calling API operations. Valid values:
 	//
@@ -24070,15 +24792,26 @@ type ModifyClusterRequest struct {
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty" xml:"maintenance_window,omitempty"`
 	// The automatic O\\&M policy of the cluster.
 	OperationPolicy *ModifyClusterRequestOperationPolicy `json:"operation_policy,omitempty" xml:"operation_policy,omitempty" type:"Struct"`
-	// The cluster resource group ID.
+	// The resource group ID of the cluster.
 	//
 	// example:
 	//
 	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
+	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The storage configurations of system events.
 	SystemEventsLogging *ModifyClusterRequestSystemEventsLogging `json:"system_events_logging,omitempty" xml:"system_events_logging,omitempty" type:"Struct"`
-	VswitchIds          []*string                                `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
+	Timezone            *string                                  `json:"timezone,omitempty" xml:"timezone,omitempty"`
+	// The vSwitches of the control plane. This parameter can be used to change the vSwitches of the control plane in an ACK managed cluster. Take note of the following items:
+	//
+	// 	- This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane.
+	//
+	// 	- The control plane restarts during the change process. Exercise caution when you perform this operation.
+	//
+	// 	- Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server.
+	//
+	// 	- If the new vSwitches of the control plane are configured with an ACL, ensure that the ACL allows communication between the new vSwitches and CIDR blocks such as those of the cluster nodes and the container network.
+	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
 }
 
 func (s ModifyClusterRequest) String() string {
@@ -24159,8 +24892,18 @@ func (s *ModifyClusterRequest) SetResourceGroupId(v string) *ModifyClusterReques
 	return s
 }
 
+func (s *ModifyClusterRequest) SetSecurityGroupId(v string) *ModifyClusterRequest {
+	s.SecurityGroupId = &v
+	return s
+}
+
 func (s *ModifyClusterRequest) SetSystemEventsLogging(v *ModifyClusterRequestSystemEventsLogging) *ModifyClusterRequest {
 	s.SystemEventsLogging = v
+	return s
+}
+
+func (s *ModifyClusterRequest) SetTimezone(v string) *ModifyClusterRequest {
+	s.Timezone = &v
 	return s
 }
 
@@ -24180,7 +24923,7 @@ type ModifyClusterRequestApiServerCustomCertSans struct {
 	//
 	// append
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
-	// The SANs.
+	// The list of SANs.
 	SubjectAlternativeNames []*string `json:"subject_alternative_names,omitempty" xml:"subject_alternative_names,omitempty" type:"Repeated"`
 }
 
@@ -24203,30 +24946,216 @@ func (s *ModifyClusterRequestApiServerCustomCertSans) SetSubjectAlternativeNames
 }
 
 type ModifyClusterRequestControlPlaneConfig struct {
-	AutoRenew                  *bool     `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
-	AutoRenewPeriod            *int64    `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	ChargeType                 *string   `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
-	CloudMonitorFlags          *bool     `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
-	CpuPolicy                  *string   `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	DeploymentsetId            *string   `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
-	ImageId                    *string   `json:"image_id,omitempty" xml:"image_id,omitempty"`
-	ImageType                  *string   `json:"image_type,omitempty" xml:"image_type,omitempty"`
-	InstanceTypes              []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
-	KeyPair                    *string   `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	LoginPassword              *string   `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	NodePortRange              *string   `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
-	Period                     *int64    `json:"period,omitempty" xml:"period,omitempty"`
-	PeriodUnit                 *string   `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
-	Runtime                    *string   `json:"runtime,omitempty" xml:"runtime,omitempty"`
-	SecurityHardeningOs        *bool     `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
-	Size                       *int64    `json:"size,omitempty" xml:"size,omitempty"`
-	SocEnabled                 *bool     `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
-	SystemDiskBurstingEnabled  *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	SystemDiskCategory         *string   `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
-	SystemDiskPerformanceLevel *string   `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64    `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
-	SystemDiskSize             *int64    `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
-	SystemDiskSnapshotPolicyId *string   `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
+	// Specifies whether to enable auto-renewal for the instance. This parameter takes effect only when `charge_type` is set to `PrePaid`. Valid values:
+	//
+	// 	- `true`: enables auto-renewal.
+	//
+	// 	- `false`: disables auto-renewal.
+	//
+	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
+	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
+	// The auto-renewal period of the instance. Valid values: 1, 2, 3, 6, and 12.
+	//
+	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
+	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
+	// The billing method of the instance. Valid values:
+	//
+	// 	- `PrePaid`: subscription.
+	//
+	// 	- `PostPaid`: pay-as-you-go.
+	//
+	// Default value: `PostPaid`.
+	//
+	// example:
+	//
+	// PrePaid
+	ChargeType *string `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
+	// Specifies whether to install the CloudMonitor agent. Valid values:
+	//
+	// 	- `true`: installs the CloudMonitor agent.
+	//
+	// 	- `false`: does not install the CloudMonitor agent.
+	//
+	// example:
+	//
+	// true
+	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
+	// The CPU management policy of nodes in the node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later:
+	//
+	// 	- `static`: allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: specifies that the default CPU affinity is used.
+	//
+	// Default value: `none`.
+	//
+	// example:
+	//
+	// none
+	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
+	// The ID of the deployment set.
+	//
+	// example:
+	//
+	// ds-bp10b35imuam5amw****
+	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
+	// The custom image ID. You must configure this parameter if you use a custom image.
+	//
+	// example:
+	//
+	// aliyun_3_x64_20G_alibase_20240819.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// The type of the OS image. Valid values:
+	//
+	// 	- `AliyunLinux3`: Alibaba Cloud Linux 3.
+	//
+	// 	- `Custom`: the custom image.
+	//
+	// example:
+	//
+	// AliyunLinux3
+	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
+	// The instance type. For more information, see [Overview of ECS instance families](https://help.aliyun.com/document_detail/25378.html).
+	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
+	// The name of the key pair. You must configure either this parameter or the `login_password` parameter.
+	//
+	// example:
+	//
+	// ack
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// The password for SSH logon. You must configure either this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. To log on with a password, you must specify this parameter during the scale-out.
+	//
+	// example:
+	//
+	// Ack@2000.
+	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
+	// The node port range.
+	//
+	// example:
+	//
+	// 30000-32767
+	NodePortRange *string `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
+	// The subscription duration of the instance. This parameter takes effect and is required only when `charge_type` is set to `PrePaid`.
+	//
+	// If `PeriodUnit=Month` is specified, the valid values are 1, 2, 3, 6, 12, 24, 36, 48, and 60.
+	//
+	// example:
+	//
+	// 1
+	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
+	// The billing cycle of the instance. This parameter takes effect only when `instance_charge_type` is set to `PrePaid`.
+	//
+	// Valid value: `Month`.
+	//
+	// example:
+	//
+	// Month
+	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
+	// The type of the container runtime. Valid values:
+	//
+	// 	- `containerd`: supports all Kubernetes versions. We recommend that you set the parameter to this value.
+	//
+	// Default value: containerd.
+	//
+	// example:
+	//
+	// containerd
+	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
+	// Specifies whether to enable Alibaba Cloud Linux Security Hardening. Valid values:
+	//
+	// 	- `true`: enables Alibaba Cloud Linux Security Hardening.
+	//
+	// 	- `false`: disables Alibaba Cloud Linux Security Hardening.
+	//
+	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
+	SecurityHardeningOs *bool `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// The number of control plane nodes. If you want to scale out the control plane in an ACK dedicated cluster, set this parameter to the desired number of nodes. This parameter must be greater than the current number of nodes.
+	//
+	// example:
+	//
+	// 5
+	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
+	// Specifies whether to enable Multi-Level Protection Scheme (MLPS) security hardening. For more information, see [ACK security hardening based on MLPS](https://help.aliyun.com/document_detail/196148.html).
+	//
+	// Valid values:
+	//
+	// 	- `true`: enables MLPS security hardening.
+	//
+	// 	- `false`: disables MLPS security hardening.
+	//
+	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
+	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
+	// Specifies whether to enable the burst feature for the system disk. Valid values:
+	//
+	// 	- `true`: enables the burst feature.
+	//
+	// 	- `false`: disables the burst feature.
+	//
+	// This parameter is effective only when `system_disk_category` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](https://help.aliyun.com/document_detail/368372.html).
+	//
+	// example:
+	//
+	// true
+	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
+	// The type of the node system disk. Valid values:
+	//
+	// 	- `cloud`: basic disk.
+	//
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// 	- `cloud_essd`: enhanced SSD (ESSD).
+	//
+	// 	- `cloud_auto`: ESSD AutoPL disk.
+	//
+	// 	- `cloud_essd_entry`: ESSD Entry disk.
+	//
+	// example:
+	//
+	// cloud_essd
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// The performance level (PL) of the system disk that you want to use for the node. This parameter is effective only for ESSDs. This parameter is related to the disk size. For more information, see [ESSDs](https://help.aliyun.com/document_detail/122389.html).
+	//
+	// example:
+	//
+	// PL1
+	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
+	// The preset read/write input/output operations per second (IOPS) of the system disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS} Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}.
+	//
+	// This parameter is effective only when `system_disk_category` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](https://help.aliyun.com/document_detail/368372.html).
+	//
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// The type of the system disk. Valid values: [40,500]. Unit: GiB.
+	//
+	// example:
+	//
+	// 120
+	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
+	// The ID of the automatic snapshot policy applied to the node system disk.
+	//
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
+	SystemDiskSnapshotPolicyId *string `json:"system_disk_snapshot_policy_id,omitempty" xml:"system_disk_snapshot_policy_id,omitempty"`
 }
 
 func (s ModifyClusterRequestControlPlaneConfig) String() string {
@@ -24358,7 +25287,7 @@ func (s *ModifyClusterRequestControlPlaneConfig) SetSystemDiskSnapshotPolicyId(v
 }
 
 type ModifyClusterRequestOperationPolicy struct {
-	// The configurations of auto cluster update.
+	// The configurations of automatic update.
 	ClusterAutoUpgrade *ModifyClusterRequestOperationPolicyClusterAutoUpgrade `json:"cluster_auto_upgrade,omitempty" xml:"cluster_auto_upgrade,omitempty" type:"Struct"`
 }
 
@@ -24376,19 +25305,21 @@ func (s *ModifyClusterRequestOperationPolicy) SetClusterAutoUpgrade(v *ModifyClu
 }
 
 type ModifyClusterRequestOperationPolicyClusterAutoUpgrade struct {
-	// The frequency of auto cluster updates. Valid values:
+	// The frequency of automatic cluster updates. For more information, see [Update frequency](https://help.aliyun.com/document_detail/2712866.html).
 	//
-	// 	- patch
+	// Valid values:
 	//
-	// 	- stable
+	// 	- patch: the latest patch version.
 	//
-	// 	- rapid
+	// 	- stables: the second-latest minor version.
+	//
+	// 	- rapid: the latest minor version.
 	//
 	// example:
 	//
 	// patch
 	Channel *string `json:"channel,omitempty" xml:"channel,omitempty"`
-	// Specifies whether to enable auto cluster update.
+	// Specifies whether to enable automatic update.
 	//
 	// example:
 	//
@@ -24566,7 +25497,7 @@ func (s *ModifyClusterAddonResponse) SetStatusCode(v int32) *ModifyClusterAddonR
 }
 
 type ModifyClusterConfigurationRequest struct {
-	// The custom configuration.
+	// The custom configurations.
 	CustomizeConfig []*ModifyClusterConfigurationRequestCustomizeConfig `json:"customize_config,omitempty" xml:"customize_config,omitempty" type:"Repeated"`
 }
 
@@ -24584,7 +25515,7 @@ func (s *ModifyClusterConfigurationRequest) SetCustomizeConfig(v []*ModifyCluste
 }
 
 type ModifyClusterConfigurationRequestCustomizeConfig struct {
-	// The custom configuration.
+	// The custom configurations.
 	Configs []*ModifyClusterConfigurationRequestCustomizeConfigConfigs `json:"configs,omitempty" xml:"configs,omitempty" type:"Repeated"`
 	// The name of the component.
 	//
@@ -24746,7 +25677,7 @@ func (s *ModifyClusterNodePoolRequest) SetUpdateNodes(v bool) *ModifyClusterNode
 type ModifyClusterNodePoolRequestAutoScaling struct {
 	// Deprecated
 	//
-	// The maximum bandwidth of the EIP.
+	// The maximum bandwidth of the elastic IP address (EIP).
 	//
 	// example:
 	//
@@ -24758,7 +25689,7 @@ type ModifyClusterNodePoolRequestAutoScaling struct {
 	//
 	// 	- `PayByBandwidth`: pay-by-bandwidth.
 	//
-	// 	- `PayByTraffic`: pay-by-data-transfer.
+	// 	- `PayByTraffic`: pay-by-data-transfer
 	//
 	// Default value: `PayByBandwidth`.
 	//
@@ -24782,11 +25713,11 @@ type ModifyClusterNodePoolRequestAutoScaling struct {
 	//
 	// Specifies whether to associate an elastic IP address (EIP) with the node pool. Valid values:
 	//
-	// 	- `true`: associates an EIP with the node pool.
+	// 	- `true`: An EIP is associated with the node pool.
 	//
 	// 	- `false`: No EIP is associated with the node pool.
 	//
-	// Default value: `false`.
+	// Default value: `false`
 	//
 	// example:
 	//
@@ -24808,7 +25739,7 @@ type ModifyClusterNodePoolRequestAutoScaling struct {
 	//
 	// The instance type that is used for auto scaling. Valid values:
 	//
-	// 	- `cpu`: regular instance.
+	// 	- `cpu`: regular instance
 	//
 	// 	- `gpu`: GPU-accelerated instance.
 	//
@@ -24992,7 +25923,7 @@ type ModifyClusterNodePoolRequestManagement struct {
 	//
 	// 	- `false`: disables auto repair.
 	//
-	// Default value: `true`.
+	// Default value: `true`
 	//
 	// example:
 	//
@@ -25000,7 +25931,7 @@ type ModifyClusterNodePoolRequestManagement struct {
 	AutoRepair *bool `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
 	// The auto node repair policy.
 	AutoRepairPolicy *ModifyClusterNodePoolRequestManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
-	// Indicates whether auto update is enabled. Valid values:
+	// Specifies whether to enable auto update. Valid values:
 	//
 	// 	- `true`: enables auto update.
 	//
@@ -25014,7 +25945,7 @@ type ModifyClusterNodePoolRequestManagement struct {
 	AutoUpgradePolicy *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
 	// Specifies whether ACK is allowed to automatically patch CVE vulnerabilities. Valid values:
 	//
-	// 	- `true`: enables auto CVE patching.
+	// 	- `true`: eanbles auto CVE patching.
 	//
 	// 	- `true`: disables auto CVE patching.
 	//
@@ -25093,9 +26024,9 @@ func (s *ModifyClusterNodePoolRequestManagement) SetUpgradeConfig(v *ModifyClust
 type ModifyClusterNodePoolRequestManagementAutoRepairPolicy struct {
 	// Specifies whether ACK is allowed to automatically restart nodes after repairing the nodes. Valid values:
 	//
-	// 	- `true`: allows node restart.
+	// 	- `true`: yes.
 	//
-	// 	- `false`: does not allow node restart.
+	// 	- `false`: no.
 	//
 	// example:
 	//
@@ -25119,9 +26050,9 @@ func (s *ModifyClusterNodePoolRequestManagementAutoRepairPolicy) SetRestartNode(
 type ModifyClusterNodePoolRequestManagementAutoUpgradePolicy struct {
 	// Specifies whether ACK is allowed to automatically update the kubelet. Valid values:
 	//
-	// 	- `true`: allows auto update of the kubelet.
+	// 	- `true`: yes.
 	//
-	// 	- `false`: does not allow auto update of the kubelet.
+	// 	- `false`: no.
 	//
 	// example:
 	//
@@ -25171,9 +26102,9 @@ func (s *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgrade
 type ModifyClusterNodePoolRequestManagementAutoVulFixPolicy struct {
 	// Specifies whether ACK is allowed to automatically restart nodes after repairing the nodes. Valid values:
 	//
-	// 	- `true`: allows node restart.
+	// 	- `true`: yes.
 	//
-	// 	- `false`: does not allow node restart.
+	// 	- `false`: no.
 	//
 	// example:
 	//
@@ -25208,7 +26139,7 @@ func (s *ModifyClusterNodePoolRequestManagementAutoVulFixPolicy) SetVulLevel(v s
 type ModifyClusterNodePoolRequestManagementUpgradeConfig struct {
 	// Deprecated
 	//
-	// Specifies whether to enable auto update.
+	// Specifies whether to enable auto update. Valid values:
 	//
 	// 	- true: enables auto update.
 	//
@@ -25224,7 +26155,7 @@ type ModifyClusterNodePoolRequestManagementUpgradeConfig struct {
 	//
 	// Valid values: 1 to 1000.
 	//
-	// Default value: 1.
+	// Default value: 1
 	//
 	// example:
 	//
@@ -25283,7 +26214,7 @@ type ModifyClusterNodePoolRequestNodepoolInfo struct {
 	//
 	// default-nodepool
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
-	// The ID of the resource group.
+	// The resource group ID.
 	//
 	// example:
 	//
@@ -25322,9 +26253,13 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// true
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
-	// The duration of the auto-renewal. This parameter takes effect and is required only when you set `instance_charge_type` to `PrePaid`.
+	// The auto-renewal period. Valid values:
 	//
-	// If you specify `PeriodUnit=Month`, the valid values are 1, 2, 3, 6, and 12.
+	// 	- Valid values when PeriodUnit is set to Week: 1, 2, and 3
+	//
+	// 	- Valid values when PeriodUnit is set to Month: 1, 2, 3, 6, 12, 24, 36, 48, and 60
+	//
+	// Default value: 1
 	//
 	// example:
 	//
@@ -25332,7 +26267,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
 	// Specifies whether to automatically create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as the cost or insufficient inventory. This parameter takes effect only when you set `multi_az_policy` to `COST_OPTIMIZED`. Valid values:
 	//
-	// 	- `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	// 	- `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created
 	//
 	// 	- `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
 	//
@@ -25340,7 +26275,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
-	// The configurations of the data disks that are mounted to the nodes in the node pool. You can mount at most 10 data disks to the nodes in the node pool.
+	// The configurations of the data disks that are mounted to nodes in the node pool. Valid values: 0 to 10. You can mount at most 10 data disks to the nodes in the node pool.
 	DataDisks []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
 	// The expected number of nodes in the node pool.
 	//
@@ -25360,7 +26295,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// 	- `AliyunLinuxSecurity`: Alibaba Cloud Linux 2 (UEFI).
 	//
-	// 	- `AliyunLinux3`: Alibaba Cloud Linux 3.
+	// 	- `AliyunLinux3`: Alibaba Cloud Linux 3
 	//
 	// 	- `AliyunLinux3Arm64`: Alibaba Cloud Linux 3 (ARM).
 	//
@@ -25394,7 +26329,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	InstancePatterns []*InstancePatterns `json:"instance_patterns,omitempty" xml:"instance_patterns,omitempty" type:"Repeated"`
 	// The instance types. You can specify multiple instance types. A node is assigned the instance type from the first instance type of the list until the node is created. The instance type that is used to create the node varies based on the actual instance stock.
 	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
-	// The metering method of the public IP address. Valid values:
+	// The billing method of the public IP address. Valid values:
 	//
 	// 	- `PayByBandwidth`: pay-by-bandwidth.
 	//
@@ -25522,7 +26457,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// 	- `NoSpot`: non-preemptible instance.
 	//
-	// 	- `SpotWithPriceLimit`: specifies the highest bid for the preemptible instance.
+	// 	- `SpotWithPriceLimit`: specifies the highest bid.
 	//
 	// 	- `SpotAsPriceGo`: automatically submits bids based on the up-to-date market price.
 	//
@@ -25538,13 +26473,13 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// true
 	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	// The system disk types. The system attempts to create system disks of a disk type with a lower priority if the disk type with a higher priority is unavailable. Valid values: cloud: disk. cloud_efficiency (ultra disk), cloud_ssd: standard SSD. cloud_essd: Enterprise SSD (ESSD).
+	// The system disk types. The system attempts to create system disks of a disk type with a lower priority if the disk type with a higher priority is unavailable. Valid values: cloud: disk. cloud_efficiency (ultra disk). cloud_ssd: standard SSD. cloud_essd: Enterprise SSD (ESSD).
 	SystemDiskCategories []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
 	// The type of system disk. Valid values:
 	//
 	// 	- `cloud_efficiency`: ultra disk.
 	//
-	// 	- `cloud_ssd`: standard SSD
+	// 	- `cloud_ssd`: standard SSD.
 	//
 	// Default value: `cloud_ssd`.
 	//
@@ -25558,7 +26493,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// aes-256
 	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	// Indicates whether the system disk is encrypted. Valid values: true: encrypts the system disk. false: does not encrypt the system disk.
+	// Specifies whether to encrypt the system disk. Valid values: true: encrypts the system disk. false: does not encrypt the system disk.
 	//
 	// example:
 	//
@@ -25586,7 +26521,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	//
 	// Valid values: 20 to 500.
 	//
-	// The value of this parameter must be at least 20 and greater than or equal to the image size.
+	// The value of this parameter must be at least 20 and greater than or equal to the size of the image.
 	//
 	// Default value: the greater value between 40 and the image size.
 	//
@@ -25596,7 +26531,7 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
 	// The tags that you want to add only to ECS instances.
 	//
-	// The label key must be unique and cannot exceed 128 characters in length. The label key and value cannot start with aliyun or acs: or contain https:// or http://.
+	// The label key must be unique and cannot exceed 128 characters in length. The label key and value cannot start with aliyun or acs: and cannot contain https:// or http://.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
 	// The IDs of vSwitches. You can specify 1 to 20 vSwitches.
 	//
@@ -25811,7 +26746,7 @@ type ModifyClusterNodePoolRequestScalingGroupPrivatePoolOptions struct {
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of private node pool. This parameter specifies the type of private node pool that you want to use to create instances. A private pool is generated when an elasticity assurance or a capacity reservation takes effect. The system selects a private pool to start instances. Valid values:
 	//
-	// 	- `Open`: open private node pool. The system selects an open private pool to start instances. If no matching open private pools are available, the resources in the public pool are used.
+	// 	- `Open`: open private pool. The system selects an open private pool to start instances. If no matching open private pools are available, the resources in the public pool are used.
 	//
 	// 	- `Target`: private node pool. The system uses the resources of the specified private pool to start instances. If the specified private pool is unavailable, instances cannot be started.
 	//
@@ -25978,7 +26913,7 @@ func (s *ModifyClusterNodePoolResponse) SetBody(v *ModifyClusterNodePoolResponse
 }
 
 type ModifyClusterTagsRequest struct {
-	// The data of the labels that you want to modify.
+	// The data of the tags that you want to modify.
 	Body []*Tag `json:"body,omitempty" xml:"body,omitempty" type:"Repeated"`
 }
 
@@ -26019,11 +26954,12 @@ func (s *ModifyClusterTagsResponse) SetStatusCode(v int32) *ModifyClusterTagsRes
 }
 
 type ModifyNodePoolNodeConfigRequest struct {
-	// The kubelet configuration.
+	ContainerdConfig *ContainerdConfig `json:"containerd_config,omitempty" xml:"containerd_config,omitempty"`
+	// The parameters of the kubelet.
 	KubeletConfig *KubeletConfig `json:"kubelet_config,omitempty" xml:"kubelet_config,omitempty"`
 	// The OS configuration.
 	OsConfig *ModifyNodePoolNodeConfigRequestOsConfig `json:"os_config,omitempty" xml:"os_config,omitempty" type:"Struct"`
-	// The rotation configuration.
+	// The rolling policy configuration.
 	RollingPolicy *ModifyNodePoolNodeConfigRequestRollingPolicy `json:"rolling_policy,omitempty" xml:"rolling_policy,omitempty" type:"Struct"`
 }
 
@@ -26033,6 +26969,11 @@ func (s ModifyNodePoolNodeConfigRequest) String() string {
 
 func (s ModifyNodePoolNodeConfigRequest) GoString() string {
 	return s.String()
+}
+
+func (s *ModifyNodePoolNodeConfigRequest) SetContainerdConfig(v *ContainerdConfig) *ModifyNodePoolNodeConfigRequest {
+	s.ContainerdConfig = v
+	return s
 }
 
 func (s *ModifyNodePoolNodeConfigRequest) SetKubeletConfig(v *KubeletConfig) *ModifyNodePoolNodeConfigRequest {
@@ -26500,7 +27441,11 @@ type RemoveNodePoolNodesRequest struct {
 	InstanceIds []*string `json:"instance_ids,omitempty" xml:"instance_ids,omitempty" type:"Repeated"`
 	// Deprecated
 	//
+	// This parameter is deprecated.
+	//
 	// A list of nodes that you want to remove.
+	//
+	// >  This parameter is deprecated. Use instance_ids instead.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
 	// Specifies whether to release the nodes after they are removed. Valid values:
 	//
@@ -26568,7 +27513,11 @@ type RemoveNodePoolNodesShrinkRequest struct {
 	InstanceIdsShrink *string `json:"instance_ids,omitempty" xml:"instance_ids,omitempty"`
 	// Deprecated
 	//
+	// This parameter is deprecated.
+	//
 	// A list of nodes that you want to remove.
+	//
+	// >  This parameter is deprecated. Use instance_ids instead.
 	NodesShrink *string `json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// Specifies whether to release the nodes after they are removed. Valid values:
 	//
@@ -26678,6 +27627,8 @@ func (s *RemoveNodePoolNodesResponse) SetBody(v *RemoveNodePoolNodesResponseBody
 }
 
 type RepairClusterNodePoolRequest struct {
+	// Deprecated
+	//
 	// Specifies whether to restart the instance of the node.
 	//
 	// example:
@@ -26685,7 +27636,8 @@ type RepairClusterNodePoolRequest struct {
 	// true
 	AutoRestart *bool `json:"auto_restart,omitempty" xml:"auto_restart,omitempty"`
 	// The list of nodes. If you do not specify nodes, all nodes in the node pool are selected.
-	Nodes      []*string                                 `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
+	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
+	// The repair operation to be performed. If not specified, all repair operations will be executed by default. Generally, there is no need to specify this in most scenarios.
 	Operations []*RepairClusterNodePoolRequestOperations `json:"operations,omitempty" xml:"operations,omitempty" type:"Repeated"`
 }
 
@@ -26713,8 +27665,14 @@ func (s *RepairClusterNodePoolRequest) SetOperations(v []*RepairClusterNodePoolR
 }
 
 type RepairClusterNodePoolRequestOperations struct {
-	Args        []*string `json:"args,omitempty" xml:"args,omitempty" type:"Repeated"`
-	OperationId *string   `json:"operation_id,omitempty" xml:"operation_id,omitempty"`
+	// List of repair operation parameters.
+	Args []*string `json:"args,omitempty" xml:"args,omitempty" type:"Repeated"`
+	// Repair operation ID.
+	//
+	// example:
+	//
+	// remove.containerdContainer
+	OperationId *string `json:"operation_id,omitempty" xml:"operation_id,omitempty"`
 }
 
 func (s RepairClusterNodePoolRequestOperations) String() string {
@@ -26955,7 +27913,7 @@ type RunClusterCheckResponseBody struct {
 	//
 	// 1697100584236600453-ce0da5a1d627e4e9e9f96cae8ad07****-clustercheck-lboto
 	CheckId *string `json:"check_id,omitempty" xml:"check_id,omitempty"`
-	// Id of the request
+	// The ID of the request.
 	//
 	// example:
 	//
@@ -27819,8 +28777,16 @@ func (s *ScanClusterVulsResponse) SetBody(v *ScanClusterVulsResponseBody) *ScanC
 
 type StartAlertRequest struct {
 	// The name of the alert rule set to be enabled.
+	//
+	// example:
+	//
+	// sample
 	AlertRuleGroupName *string `json:"alert_rule_group_name,omitempty" xml:"alert_rule_group_name,omitempty"`
 	// The name of the alert rule to be enabled. If you do not specify an alert rule name, the alert rule set is enabled.
+	//
+	// example:
+	//
+	// sample
 	AlertRuleName *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
 }
 
@@ -27906,8 +28872,16 @@ func (s *StartAlertResponse) SetBody(v *StartAlertResponseBody) *StartAlertRespo
 
 type StopAlertRequest struct {
 	// The name of the alert rule set to be disabled.
+	//
+	// example:
+	//
+	// sample
 	AlertRuleGroupName *string `json:"alert_rule_group_name,omitempty" xml:"alert_rule_group_name,omitempty"`
 	// The name of the alert rule to be disabled. If you do not specify an alert rule name, the alert rule set is disabled.
+	//
+	// example:
+	//
+	// sample
 	AlertRuleName *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
 }
 
@@ -28159,7 +29133,7 @@ func (s *TagResourcesResponse) SetBody(v *TagResourcesResponseBody) *TagResource
 }
 
 type UnInstallClusterAddonsRequest struct {
-	// The components that you want to uninstall. The list is an array.
+	// The list of components that you want to uninstall. The list is an array.
 	Addons []*UnInstallClusterAddonsRequestAddons `json:"addons,omitempty" xml:"addons,omitempty" type:"Repeated"`
 }
 
@@ -28177,13 +29151,17 @@ func (s *UnInstallClusterAddonsRequest) SetAddons(v []*UnInstallClusterAddonsReq
 }
 
 type UnInstallClusterAddonsRequestAddons struct {
-	// Specifies whether to release cloud resources.
+	// Specifies whether to clear cloud resources.
+	//
+	// 	- true: clears the data and cloud resources.
+	//
+	// 	- false: retains the data and cloud resources.
 	//
 	// example:
 	//
 	// true
 	CleanupCloudResources *bool `json:"cleanup_cloud_resources,omitempty" xml:"cleanup_cloud_resources,omitempty"`
-	// The component name.
+	// The name of the component.
 	//
 	// example:
 	//
@@ -28209,9 +29187,54 @@ func (s *UnInstallClusterAddonsRequestAddons) SetName(v string) *UnInstallCluste
 	return s
 }
 
+type UnInstallClusterAddonsResponseBody struct {
+	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c5b5e80b0b64a4bf6939d2d8fbbc5****
+	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The ID of the request.
+	//
+	// example:
+	//
+	// 74D1512F-67DA-54E8-99EA-4D50EB4898F4
+	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
+	// The ID of the task.
+	//
+	// example:
+	//
+	// T-66e39b39c0fdd001320005c0
+	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
+}
+
+func (s UnInstallClusterAddonsResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UnInstallClusterAddonsResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *UnInstallClusterAddonsResponseBody) SetClusterId(v string) *UnInstallClusterAddonsResponseBody {
+	s.ClusterId = &v
+	return s
+}
+
+func (s *UnInstallClusterAddonsResponseBody) SetRequestId(v string) *UnInstallClusterAddonsResponseBody {
+	s.RequestId = &v
+	return s
+}
+
+func (s *UnInstallClusterAddonsResponseBody) SetTaskId(v string) *UnInstallClusterAddonsResponseBody {
+	s.TaskId = &v
+	return s
+}
+
 type UnInstallClusterAddonsResponse struct {
-	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
-	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Headers    map[string]*string                  `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                              `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *UnInstallClusterAddonsResponseBody `json:"body,omitempty" xml:"body,omitempty"`
 }
 
 func (s UnInstallClusterAddonsResponse) String() string {
@@ -28229,6 +29252,11 @@ func (s *UnInstallClusterAddonsResponse) SetHeaders(v map[string]*string) *UnIns
 
 func (s *UnInstallClusterAddonsResponse) SetStatusCode(v int32) *UnInstallClusterAddonsResponse {
 	s.StatusCode = &v
+	return s
+}
+
+func (s *UnInstallClusterAddonsResponse) SetBody(v *UnInstallClusterAddonsResponseBody) *UnInstallClusterAddonsResponse {
+	s.Body = v
 	return s
 }
 
@@ -28424,23 +29452,23 @@ func (s *UntagResourcesResponse) SetBody(v *UntagResourcesResponseBody) *UntagRe
 }
 
 type UpdateClusterAuditLogConfigRequest struct {
-	// Enable or disable the audit log feature.
+	// Enable or disable audit logging.
 	//
-	// 	- false: enables the audit log feature or updates the audit log configuration.
+	// 	- false: enables audit logging or updates the audit logging configurations.
 	//
-	// 	- true: disables the audit log feature.
+	// 	- true: disables audit logging.
 	//
 	// example:
 	//
 	// false
 	Disable *bool `json:"disable,omitempty" xml:"disable,omitempty"`
-	// The [SLS project](https://help.aliyun.com/zh/sls/product-overview/project?spm=a2c4g.11186623.0.i3) to which the [Logstore](https://help.aliyun.com/zh/sls/product-overview/logstore?spm=a2c4g.11186623.0.0.48287ce0jAUWWM) belongs.
+	// The [Simple Log Service project](https://help.aliyun.com/document_detail/48873.html) to which the [Logstore](https://help.aliyun.com/document_detail/48873.html) that stores the cluster audit logs belongs.
 	//
 	// 	- Default value: k8s-log-{clusterid}.
 	//
 	// 	- After the cluster audit log feature is enabled, a Logstore is created in the specified SLS project to store the cluster audit logs.
 	//
-	// 	- If you want to change the project after the cluster audit log feature is enabled, you can use this parameter to specify another SLS project. You can perform this operation only in ACK managed clusters.
+	// 	- If you want to change the project after audit logging is enabled for the cluster, you can use this parameter to specify another project. You can perform this operation only in ACK managed clusters.
 	//
 	// example:
 	//
@@ -28826,7 +29854,7 @@ func (s *UpdateK8sClusterUserConfigExpireResponse) SetStatusCode(v int32) *Updat
 }
 
 type UpdateResourcesDeleteProtectionRequest struct {
-	// Specify whether to enable deletion protection. Set the value to true to enable deletion protection and set the value to false to disable deletion protection.
+	// Specifies whether to enable deletion protection. Set the value to true to enable deletion protection and set the value to false to disable deletion protection.
 	//
 	// example:
 	//
@@ -29074,7 +30102,7 @@ type UpdateUserPermissionsRequest struct {
 	//
 	// 	- `patch`: grants the specified permissions to the RAM user or role. If you use this method, only the permissions that you specify are granted, other permissions of the RAM user or RAM role on the cluster are not affected.
 	//
-	// Default value: `apply`
+	// Default value: `apply`.
 	//
 	// example:
 	//
@@ -29243,7 +30271,7 @@ type UpgradeClusterRequest struct {
 	//
 	// 1.16.9-aliyun.1
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
-	// Policy of rolling.
+	// The rotation configuration.
 	RollingPolicy *UpgradeClusterRequestRollingPolicy `json:"rolling_policy,omitempty" xml:"rolling_policy,omitempty" type:"Struct"`
 	// Deprecated
 	//
@@ -29289,7 +30317,7 @@ func (s *UpgradeClusterRequest) SetVersion(v string) *UpgradeClusterRequest {
 }
 
 type UpgradeClusterRequestRollingPolicy struct {
-	// Maximum number of executions per batch.
+	// The maximum size of each batch.
 	//
 	// example:
 	//
@@ -29910,13 +30938,24 @@ func (client *Client) AttachInstancesWithOptions(ClusterId *string, request *Att
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &AttachInstancesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &AttachInstancesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &AttachInstancesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -29986,13 +31025,24 @@ func (client *Client) AttachInstancesToNodePoolWithOptions(ClusterId *string, No
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &AttachInstancesToNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &AttachInstancesToNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &AttachInstancesToNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30041,13 +31091,24 @@ func (client *Client) CancelClusterUpgradeWithOptions(ClusterId *string, headers
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &CancelClusterUpgradeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CancelClusterUpgradeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CancelClusterUpgradeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI CancelClusterUpgrade is deprecated
@@ -30097,13 +31158,24 @@ func (client *Client) CancelComponentUpgradeWithOptions(clusterId *string, compo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &CancelComponentUpgradeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CancelComponentUpgradeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CancelComponentUpgradeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI CancelComponentUpgrade is deprecated
@@ -30150,13 +31222,24 @@ func (client *Client) CancelOperationPlanWithOptions(planId *string, headers map
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CancelOperationPlanResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CancelOperationPlanResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CancelOperationPlanResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30200,13 +31283,24 @@ func (client *Client) CancelTaskWithOptions(taskId *string, headers map[string]*
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &CancelTaskResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CancelTaskResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CancelTaskResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30250,13 +31344,24 @@ func (client *Client) CheckControlPlaneLogEnableWithOptions(ClusterId *string, h
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CheckControlPlaneLogEnableResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CheckControlPlaneLogEnableResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CheckControlPlaneLogEnableResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30312,13 +31417,24 @@ func (client *Client) CheckServiceRoleWithOptions(request *CheckServiceRoleReque
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CheckServiceRoleResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CheckServiceRoleResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CheckServiceRoleResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30342,7 +31458,7 @@ func (client *Client) CheckServiceRole(request *CheckServiceRoleRequest) (_resul
 
 // Summary:
 //
-// You can call the CleanClusterUserPermissions operation to delete kubeconfig files that may pose potential risks from a user and revoke Role-Based Access Control (RBAC) permissions on a cluster.
+// Deletes kubeconfig files that may pose potential risks from a user and revokes Role-Based Access Control (RBAC) permissions on a cluster.
 //
 // Description:
 //
@@ -30386,18 +31502,29 @@ func (client *Client) CleanClusterUserPermissionsWithOptions(ClusterId *string, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &CleanClusterUserPermissionsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CleanClusterUserPermissionsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CleanClusterUserPermissionsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// You can call the CleanClusterUserPermissions operation to delete kubeconfig files that may pose potential risks from a user and revoke Role-Based Access Control (RBAC) permissions on a cluster.
+// Deletes kubeconfig files that may pose potential risks from a user and revokes Role-Based Access Control (RBAC) permissions on a cluster.
 //
 // Description:
 //
@@ -30478,13 +31605,24 @@ func (client *Client) CleanUserPermissionsWithOptions(Uid *string, tmpReq *Clean
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CleanUserPermissionsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CleanUserPermissionsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CleanUserPermissionsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -30555,6 +31693,10 @@ func (client *Client) CreateAutoscalingConfigWithOptions(ClusterId *string, requ
 		body["min_replica_count"] = request.MinReplicaCount
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.Priorities)) {
+		body["priorities"] = request.Priorities
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.RecycleNodeDeletionEnabled)) {
 		body["recycle_node_deletion_enabled"] = request.RecycleNodeDeletionEnabled
 	}
@@ -30606,13 +31748,24 @@ func (client *Client) CreateAutoscalingConfigWithOptions(ClusterId *string, requ
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateAutoscalingConfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateAutoscalingConfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateAutoscalingConfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31074,13 +32227,24 @@ func (client *Client) CreateClusterWithOptions(request *CreateClusterRequest, he
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31120,7 +32284,7 @@ func (client *Client) CreateCluster(request *CreateClusterRequest) (_result *Cre
 
 // Summary:
 //
-// 发起集群诊断
+// Starts a cluster diagnostic.
 //
 // @param request - CreateClusterDiagnosisRequest
 //
@@ -31158,18 +32322,29 @@ func (client *Client) CreateClusterDiagnosisWithOptions(clusterId *string, reque
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateClusterDiagnosisResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateClusterDiagnosisResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateClusterDiagnosisResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// 发起集群诊断
+// Starts a cluster diagnostic.
 //
 // @param request - CreateClusterDiagnosisRequest
 //
@@ -31270,13 +32445,24 @@ func (client *Client) CreateClusterNodePoolWithOptions(ClusterId *string, reques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateClusterNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateClusterNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateClusterNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31342,13 +32528,24 @@ func (client *Client) CreateEdgeMachineWithOptions(request *CreateEdgeMachineReq
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateEdgeMachineResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateEdgeMachineResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateEdgeMachineResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31370,6 +32567,8 @@ func (client *Client) CreateEdgeMachine(request *CreateEdgeMachineRequest) (_res
 	return _result, _err
 }
 
+// Deprecated: OpenAPI CreateKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the CreateKubernetesTrigger operation to create a trigger for an application.
@@ -31381,6 +32580,7 @@ func (client *Client) CreateEdgeMachine(request *CreateEdgeMachineRequest) (_res
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return CreateKubernetesTriggerResponse
+// Deprecated
 func (client *Client) CreateKubernetesTriggerWithOptions(request *CreateKubernetesTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateKubernetesTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -31418,15 +32618,28 @@ func (client *Client) CreateKubernetesTriggerWithOptions(request *CreateKubernet
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateKubernetesTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateKubernetesTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateKubernetesTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI CreateKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the CreateKubernetesTrigger operation to create a trigger for an application.
@@ -31434,6 +32647,7 @@ func (client *Client) CreateKubernetesTriggerWithOptions(request *CreateKubernet
 // @param request - CreateKubernetesTriggerRequest
 //
 // @return CreateKubernetesTriggerResponse
+// Deprecated
 func (client *Client) CreateKubernetesTrigger(request *CreateKubernetesTriggerRequest) (_result *CreateKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -31498,13 +32712,24 @@ func (client *Client) CreateTemplateWithOptions(request *CreateTemplateRequest, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateTemplateResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateTemplateResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateTemplateResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31574,13 +32799,24 @@ func (client *Client) CreateTriggerWithOptions(clusterId *string, request *Creat
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &CreateTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &CreateTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &CreateTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31604,7 +32840,7 @@ func (client *Client) CreateTrigger(clusterId *string, request *CreateTriggerReq
 
 // Summary:
 //
-// 删除ACK报警联系人
+// Deletes one or more ACK alert contacts.
 //
 // @param tmpReq - DeleteAlertContactRequest
 //
@@ -31644,18 +32880,29 @@ func (client *Client) DeleteAlertContactWithOptions(tmpReq *DeleteAlertContactRe
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DeleteAlertContactResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteAlertContactResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteAlertContactResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// 删除ACK报警联系人
+// Deletes one or more ACK alert contacts.
 //
 // @param request - DeleteAlertContactRequest
 //
@@ -31674,7 +32921,7 @@ func (client *Client) DeleteAlertContact(request *DeleteAlertContactRequest) (_r
 
 // Summary:
 //
-// 删除ACK报警联系人分组
+// Deletes an ACK alert contact group.
 //
 // @param tmpReq - DeleteAlertContactGroupRequest
 //
@@ -31714,18 +32961,29 @@ func (client *Client) DeleteAlertContactGroupWithOptions(tmpReq *DeleteAlertCont
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DeleteAlertContactGroupResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteAlertContactGroupResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteAlertContactGroupResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// 删除ACK报警联系人分组
+// Deletes an ACK alert contact group.
 //
 // @param request - DeleteAlertContactGroupRequest
 //
@@ -31800,13 +33058,24 @@ func (client *Client) DeleteClusterWithOptions(ClusterId *string, tmpReq *Delete
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DeleteClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31864,13 +33133,24 @@ func (client *Client) DeleteClusterNodepoolWithOptions(ClusterId *string, Nodepo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DeleteClusterNodepoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteClusterNodepoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteClusterNodepoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31902,9 +33182,7 @@ func (client *Client) DeleteClusterNodepool(ClusterId *string, NodepoolId *strin
 //
 // 	- The operation may have unexpected risks. Back up the data before you perform this operation.
 //
-// 	- When the system removes a node, it sets the status of the node to Unschedulable.
-//
-// 	- The system removes only worker nodes. It does not remove master nodes.
+// 	- When you remove a node, the system sets the status of the node to Unschedulable.
 //
 // @param request - DeleteClusterNodesRequest
 //
@@ -31946,13 +33224,24 @@ func (client *Client) DeleteClusterNodesWithOptions(ClusterId *string, request *
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DeleteClusterNodesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteClusterNodesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteClusterNodesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -31965,9 +33254,7 @@ func (client *Client) DeleteClusterNodesWithOptions(ClusterId *string, request *
 //
 // 	- The operation may have unexpected risks. Back up the data before you perform this operation.
 //
-// 	- When the system removes a node, it sets the status of the node to Unschedulable.
-//
-// 	- The system removes only worker nodes. It does not remove master nodes.
+// 	- When you remove a node, the system sets the status of the node to Unschedulable.
 //
 // @param request - DeleteClusterNodesRequest
 //
@@ -32020,13 +33307,24 @@ func (client *Client) DeleteEdgeMachineWithOptions(edgeMachineid *string, reques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &DeleteEdgeMachineResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteEdgeMachineResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteEdgeMachineResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32048,6 +33346,8 @@ func (client *Client) DeleteEdgeMachine(edgeMachineid *string, request *DeleteEd
 	return _result, _err
 }
 
+// Deprecated: OpenAPI DeleteKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the DeleteKubernetesTrigger operation to delete an application trigger by trigger ID
@@ -32057,6 +33357,7 @@ func (client *Client) DeleteEdgeMachine(edgeMachineid *string, request *DeleteEd
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return DeleteKubernetesTriggerResponse
+// Deprecated
 func (client *Client) DeleteKubernetesTriggerWithOptions(Id *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteKubernetesTriggerResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -32072,20 +33373,34 @@ func (client *Client) DeleteKubernetesTriggerWithOptions(Id *string, headers map
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &DeleteKubernetesTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteKubernetesTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteKubernetesTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI DeleteKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the DeleteKubernetesTrigger operation to delete an application trigger by trigger ID
 //
 // @return DeleteKubernetesTriggerResponse
+// Deprecated
 func (client *Client) DeleteKubernetesTrigger(Id *string) (_result *DeleteKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -32134,13 +33449,24 @@ func (client *Client) DeletePolicyInstanceWithOptions(clusterId *string, policyN
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DeletePolicyInstanceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeletePolicyInstanceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeletePolicyInstanceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32186,13 +33512,24 @@ func (client *Client) DeleteTemplateWithOptions(TemplateId *string, headers map[
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &DeleteTemplateResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteTemplateResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteTemplateResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32236,13 +33573,24 @@ func (client *Client) DeleteTriggerWithOptions(clusterId *string, Id *string, he
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &DeleteTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeleteTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeleteTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32306,13 +33654,24 @@ func (client *Client) DeployPolicyInstanceWithOptions(clusterId *string, policyN
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DeployPolicyInstanceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DeployPolicyInstanceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DeployPolicyInstanceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32394,13 +33753,24 @@ func (client *Client) DescribeAddonWithOptions(addonName *string, request *Descr
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeAddonResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeAddonResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeAddonResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32477,13 +33847,24 @@ func (client *Client) DescribeAddonsWithOptions(request *DescribeAddonsRequest, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeAddonsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeAddonsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeAddonsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeAddons is deprecated
@@ -32535,13 +33916,24 @@ func (client *Client) DescribeClusterAddonInstanceWithOptions(ClusterID *string,
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterAddonInstanceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAddonInstanceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAddonInstanceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterAddonInstance is deprecated
@@ -32603,13 +33995,24 @@ func (client *Client) DescribeClusterAddonMetadataWithOptions(clusterId *string,
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterAddonMetadataResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAddonMetadataResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAddonMetadataResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterAddonMetadata is deprecated
@@ -32661,13 +34064,24 @@ func (client *Client) DescribeClusterAddonUpgradeStatusWithOptions(ClusterId *st
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterAddonUpgradeStatusResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAddonUpgradeStatusResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAddonUpgradeStatusResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterAddonUpgradeStatus is deprecated
@@ -32735,13 +34149,24 @@ func (client *Client) DescribeClusterAddonsUpgradeStatusWithOptions(ClusterId *s
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterAddonsUpgradeStatusResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAddonsUpgradeStatusResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAddonsUpgradeStatusResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterAddonsUpgradeStatus is deprecated
@@ -32793,13 +34218,24 @@ func (client *Client) DescribeClusterAddonsVersionWithOptions(ClusterId *string,
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterAddonsVersionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAddonsVersionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAddonsVersionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterAddonsVersion is deprecated
@@ -32843,6 +34279,10 @@ func (client *Client) DescribeClusterAttachScriptsWithOptions(ClusterId *string,
 		body["arch"] = request.Arch
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.Expired)) {
+		body["expired"] = request.Expired
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.FormatDisk)) {
 		body["format_disk"] = request.FormatDisk
 	}
@@ -32878,13 +34318,24 @@ func (client *Client) DescribeClusterAttachScriptsWithOptions(ClusterId *string,
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("string"),
 	}
-	_result = &DescribeClusterAttachScriptsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterAttachScriptsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterAttachScriptsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -32930,13 +34381,24 @@ func (client *Client) DescribeClusterDetailWithOptions(ClusterId *string, header
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterDetailResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterDetailResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterDetailResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33000,13 +34462,24 @@ func (client *Client) DescribeClusterEventsWithOptions(ClusterId *string, reques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterEventsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterEventsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterEventsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33052,13 +34525,24 @@ func (client *Client) DescribeClusterLogsWithOptions(ClusterId *string, headers 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeClusterLogsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterLogsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterLogsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33102,13 +34586,24 @@ func (client *Client) DescribeClusterNodePoolDetailWithOptions(ClusterId *string
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterNodePoolDetailResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterNodePoolDetailResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterNodePoolDetailResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33164,13 +34659,24 @@ func (client *Client) DescribeClusterNodePoolsWithOptions(ClusterId *string, req
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterNodePoolsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterNodePoolsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterNodePoolsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33244,13 +34750,24 @@ func (client *Client) DescribeClusterNodesWithOptions(ClusterId *string, request
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterNodesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterNodesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterNodesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33308,13 +34825,24 @@ func (client *Client) DescribeClusterResourcesWithOptions(ClusterId *string, req
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeClusterResourcesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterResourcesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterResourcesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33376,13 +34904,24 @@ func (client *Client) DescribeClusterTasksWithOptions(clusterId *string, request
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterTasksResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterTasksResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterTasksResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33448,13 +34987,24 @@ func (client *Client) DescribeClusterUserKubeconfigWithOptions(ClusterId *string
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterUserKubeconfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterUserKubeconfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterUserKubeconfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33504,6 +35054,10 @@ func (client *Client) DescribeClusterV2UserKubeconfigWithOptions(ClusterId *stri
 		query["PrivateIpAddress"] = request.PrivateIpAddress
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.TemporaryDurationMinutes)) {
+		query["TemporaryDurationMinutes"] = request.TemporaryDurationMinutes
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
 		Query:   openapiutil.Query(query),
@@ -33519,13 +35073,24 @@ func (client *Client) DescribeClusterV2UserKubeconfigWithOptions(ClusterId *stri
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterV2UserKubeconfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterV2UserKubeconfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterV2UserKubeconfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusterV2UserKubeconfig is deprecated
@@ -33574,13 +35139,24 @@ func (client *Client) DescribeClusterVulsWithOptions(clusterId *string, headers 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClusterVulsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClusterVulsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClusterVulsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33647,13 +35223,24 @@ func (client *Client) DescribeClustersWithOptions(request *DescribeClustersReque
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeClustersResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClustersResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClustersResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI DescribeClusters is deprecated
@@ -33738,13 +35325,24 @@ func (client *Client) DescribeClustersForRegionWithOptions(regionId *string, req
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClustersForRegionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClustersForRegionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClustersForRegionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33830,13 +35428,24 @@ func (client *Client) DescribeClustersV1WithOptions(request *DescribeClustersV1R
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeClustersV1Response{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeClustersV1Response{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeClustersV1Response{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33858,6 +35467,8 @@ func (client *Client) DescribeClustersV1(request *DescribeClustersV1Request) (_r
 	return _result, _err
 }
 
+// Deprecated: OpenAPI DescribeEdgeMachineActiveProcess is deprecated
+//
 // Summary:
 //
 // You can call the DescribeEdgeMachineActiveProcess operation to query the activation progress of a cloud-native box.
@@ -33867,6 +35478,7 @@ func (client *Client) DescribeClustersV1(request *DescribeClustersV1Request) (_r
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return DescribeEdgeMachineActiveProcessResponse
+// Deprecated
 func (client *Client) DescribeEdgeMachineActiveProcessWithOptions(edgeMachineid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEdgeMachineActiveProcessResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -33882,20 +35494,34 @@ func (client *Client) DescribeEdgeMachineActiveProcessWithOptions(edgeMachineid 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEdgeMachineActiveProcessResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEdgeMachineActiveProcessResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEdgeMachineActiveProcessResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI DescribeEdgeMachineActiveProcess is deprecated
+//
 // Summary:
 //
 // You can call the DescribeEdgeMachineActiveProcess operation to query the activation progress of a cloud-native box.
 //
 // @return DescribeEdgeMachineActiveProcessResponse
+// Deprecated
 func (client *Client) DescribeEdgeMachineActiveProcess(edgeMachineid *string) (_result *DescribeEdgeMachineActiveProcessResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -33932,13 +35558,24 @@ func (client *Client) DescribeEdgeMachineModelsWithOptions(headers map[string]*s
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEdgeMachineModelsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEdgeMachineModelsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEdgeMachineModelsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -33982,13 +35619,24 @@ func (client *Client) DescribeEdgeMachineTunnelConfigDetailWithOptions(edgeMachi
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEdgeMachineTunnelConfigDetailResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEdgeMachineTunnelConfigDetailResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEdgeMachineTunnelConfigDetailResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34064,13 +35712,24 @@ func (client *Client) DescribeEdgeMachinesWithOptions(request *DescribeEdgeMachi
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEdgeMachinesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEdgeMachinesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEdgeMachinesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34140,13 +35799,24 @@ func (client *Client) DescribeEventsWithOptions(request *DescribeEventsRequest, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEventsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEventsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEventsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34212,13 +35882,24 @@ func (client *Client) DescribeEventsForRegionWithOptions(regionId *string, reque
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeEventsForRegionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeEventsForRegionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeEventsForRegionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34240,6 +35921,8 @@ func (client *Client) DescribeEventsForRegion(regionId *string, request *Describ
 	return _result, _err
 }
 
+// Deprecated: OpenAPI DescribeExternalAgent is deprecated
+//
 // Summary:
 //
 // Queries the proxy configurations of a registered cluster based on the cluster ID.
@@ -34255,6 +35938,7 @@ func (client *Client) DescribeEventsForRegion(regionId *string, request *Describ
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return DescribeExternalAgentResponse
+// Deprecated
 func (client *Client) DescribeExternalAgentWithOptions(ClusterId *string, request *DescribeExternalAgentRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeExternalAgentResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -34284,15 +35968,28 @@ func (client *Client) DescribeExternalAgentWithOptions(ClusterId *string, reques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeExternalAgentResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeExternalAgentResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeExternalAgentResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI DescribeExternalAgent is deprecated
+//
 // Summary:
 //
 // Queries the proxy configurations of a registered cluster based on the cluster ID.
@@ -34304,6 +36001,7 @@ func (client *Client) DescribeExternalAgentWithOptions(ClusterId *string, reques
 // @param request - DescribeExternalAgentRequest
 //
 // @return DescribeExternalAgentResponse
+// Deprecated
 func (client *Client) DescribeExternalAgent(ClusterId *string, request *DescribeExternalAgentRequest) (_result *DescribeExternalAgentResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -34376,13 +36074,24 @@ func (client *Client) DescribeKubernetesVersionMetadataWithOptions(request *Desc
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeKubernetesVersionMetadataResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeKubernetesVersionMetadataResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeKubernetesVersionMetadataResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34440,13 +36149,24 @@ func (client *Client) DescribeNodePoolVulsWithOptions(clusterId *string, nodepoo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeNodePoolVulsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeNodePoolVulsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeNodePoolVulsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34492,13 +36212,24 @@ func (client *Client) DescribePoliciesWithOptions(headers map[string]*string, ru
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribePoliciesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribePoliciesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribePoliciesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34542,13 +36273,24 @@ func (client *Client) DescribePolicyDetailsWithOptions(policyName *string, heade
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribePolicyDetailsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribePolicyDetailsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribePolicyDetailsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34592,13 +36334,24 @@ func (client *Client) DescribePolicyGovernanceInClusterWithOptions(clusterId *st
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribePolicyGovernanceInClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribePolicyGovernanceInClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribePolicyGovernanceInClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34658,13 +36411,24 @@ func (client *Client) DescribePolicyInstancesWithOptions(clusterId *string, requ
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribePolicyInstancesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribePolicyInstancesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribePolicyInstancesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34710,13 +36474,24 @@ func (client *Client) DescribePolicyInstancesStatusWithOptions(clusterId *string
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribePolicyInstancesStatusResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribePolicyInstancesStatusResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribePolicyInstancesStatusResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34776,13 +36551,24 @@ func (client *Client) DescribeResourcesDeleteProtectionWithOptions(ClusterId *st
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeResourcesDeleteProtectionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeResourcesDeleteProtectionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeResourcesDeleteProtectionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34810,9 +36596,7 @@ func (client *Client) DescribeResourcesDeleteProtection(ClusterId *string, Resou
 //
 // Description:
 //
-// *
-//
-// ****Only Alibaba Cloud accounts can call this API operation.
+// You can call this operation only by using an Alibaba Cloud account.
 //
 // @param request - DescribeSubaccountK8sClusterUserConfigRequest
 //
@@ -34850,13 +36634,24 @@ func (client *Client) DescribeSubaccountK8sClusterUserConfigWithOptions(ClusterI
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeSubaccountK8sClusterUserConfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeSubaccountK8sClusterUserConfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeSubaccountK8sClusterUserConfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34865,9 +36660,7 @@ func (client *Client) DescribeSubaccountK8sClusterUserConfigWithOptions(ClusterI
 //
 // Description:
 //
-// *
-//
-// ****Only Alibaba Cloud accounts can call this API operation.
+// You can call this operation only by using an Alibaba Cloud account.
 //
 // @param request - DescribeSubaccountK8sClusterUserConfigRequest
 //
@@ -34908,13 +36701,24 @@ func (client *Client) DescribeTaskInfoWithOptions(taskId *string, headers map[st
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeTaskInfoResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeTaskInfoResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeTaskInfoResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -34970,13 +36774,24 @@ func (client *Client) DescribeTemplateAttributeWithOptions(TemplateId *string, r
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeTemplateAttributeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeTemplateAttributeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeTemplateAttributeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35042,13 +36857,24 @@ func (client *Client) DescribeTemplatesWithOptions(request *DescribeTemplatesReq
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeTemplatesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeTemplatesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeTemplatesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35118,13 +36944,24 @@ func (client *Client) DescribeTriggerWithOptions(clusterId *string, request *Des
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35170,13 +37007,24 @@ func (client *Client) DescribeUserClusterNamespacesWithOptions(ClusterId *string
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeUserClusterNamespacesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeUserClusterNamespacesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeUserClusterNamespacesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35226,13 +37074,24 @@ func (client *Client) DescribeUserPermissionWithOptions(uid *string, headers map
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &DescribeUserPermissionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeUserPermissionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeUserPermissionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35282,13 +37141,24 @@ func (client *Client) DescribeUserQuotaWithOptions(headers map[string]*string, r
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &DescribeUserQuotaResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &DescribeUserQuotaResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &DescribeUserQuotaResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35308,6 +37178,8 @@ func (client *Client) DescribeUserQuota() (_result *DescribeUserQuotaResponse, _
 	return _result, _err
 }
 
+// Deprecated: OpenAPI EdgeClusterAddEdgeMachine is deprecated
+//
 // Summary:
 //
 // You can call the EdgeClusterAddEdgeMachine operation to add a cloud-native box to a Container Service for Kubernetes (ACK) Edge cluster.
@@ -35319,6 +37191,7 @@ func (client *Client) DescribeUserQuota() (_result *DescribeUserQuotaResponse, _
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return EdgeClusterAddEdgeMachineResponse
+// Deprecated
 func (client *Client) EdgeClusterAddEdgeMachineWithOptions(clusterid *string, edgeMachineid *string, request *EdgeClusterAddEdgeMachineRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *EdgeClusterAddEdgeMachineResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -35352,15 +37225,28 @@ func (client *Client) EdgeClusterAddEdgeMachineWithOptions(clusterid *string, ed
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &EdgeClusterAddEdgeMachineResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &EdgeClusterAddEdgeMachineResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &EdgeClusterAddEdgeMachineResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI EdgeClusterAddEdgeMachine is deprecated
+//
 // Summary:
 //
 // You can call the EdgeClusterAddEdgeMachine operation to add a cloud-native box to a Container Service for Kubernetes (ACK) Edge cluster.
@@ -35368,6 +37254,7 @@ func (client *Client) EdgeClusterAddEdgeMachineWithOptions(clusterid *string, ed
 // @param request - EdgeClusterAddEdgeMachineRequest
 //
 // @return EdgeClusterAddEdgeMachineResponse
+// Deprecated
 func (client *Client) EdgeClusterAddEdgeMachine(clusterid *string, edgeMachineid *string, request *EdgeClusterAddEdgeMachineRequest) (_result *EdgeClusterAddEdgeMachineResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -35438,13 +37325,24 @@ func (client *Client) FixNodePoolVulsWithOptions(clusterId *string, nodepoolId *
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &FixNodePoolVulsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &FixNodePoolVulsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &FixNodePoolVulsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35500,13 +37398,24 @@ func (client *Client) GetClusterAddonInstanceWithOptions(clusterId *string, inst
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetClusterAddonInstanceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetClusterAddonInstanceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetClusterAddonInstanceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35550,13 +37459,24 @@ func (client *Client) GetClusterAuditProjectWithOptions(clusterid *string, heade
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetClusterAuditProjectResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetClusterAuditProjectResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetClusterAuditProjectResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35600,13 +37520,24 @@ func (client *Client) GetClusterCheckWithOptions(clusterId *string, checkId *str
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetClusterCheckResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetClusterCheckResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetClusterCheckResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35628,16 +37559,28 @@ func (client *Client) GetClusterCheck(clusterId *string, checkId *string) (_resu
 
 // Summary:
 //
-// 获取集群诊断检查项
+// Queries cluster diagnostic items.
+//
+// @param request - GetClusterDiagnosisCheckItemsRequest
 //
 // @param headers - map
 //
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return GetClusterDiagnosisCheckItemsResponse
-func (client *Client) GetClusterDiagnosisCheckItemsWithOptions(clusterId *string, diagnosisId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterDiagnosisCheckItemsResponse, _err error) {
+func (client *Client) GetClusterDiagnosisCheckItemsWithOptions(clusterId *string, diagnosisId *string, request *GetClusterDiagnosisCheckItemsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterDiagnosisCheckItemsResponse, _err error) {
+	_err = util.ValidateModel(request)
+	if _err != nil {
+		return _result, _err
+	}
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.Language)) {
+		query["language"] = request.Language
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
+		Query:   openapiutil.Query(query),
 	}
 	params := &openapi.Params{
 		Action:      tea.String("GetClusterDiagnosisCheckItems"),
@@ -35650,25 +37593,38 @@ func (client *Client) GetClusterDiagnosisCheckItemsWithOptions(clusterId *string
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetClusterDiagnosisCheckItemsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetClusterDiagnosisCheckItemsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetClusterDiagnosisCheckItemsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// 获取集群诊断检查项
+// Queries cluster diagnostic items.
+//
+// @param request - GetClusterDiagnosisCheckItemsRequest
 //
 // @return GetClusterDiagnosisCheckItemsResponse
-func (client *Client) GetClusterDiagnosisCheckItems(clusterId *string, diagnosisId *string) (_result *GetClusterDiagnosisCheckItemsResponse, _err error) {
+func (client *Client) GetClusterDiagnosisCheckItems(clusterId *string, diagnosisId *string, request *GetClusterDiagnosisCheckItemsRequest) (_result *GetClusterDiagnosisCheckItemsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
 	_result = &GetClusterDiagnosisCheckItemsResponse{}
-	_body, _err := client.GetClusterDiagnosisCheckItemsWithOptions(clusterId, diagnosisId, headers, runtime)
+	_body, _err := client.GetClusterDiagnosisCheckItemsWithOptions(clusterId, diagnosisId, request, headers, runtime)
 	if _err != nil {
 		return _result, _err
 	}
@@ -35678,16 +37634,28 @@ func (client *Client) GetClusterDiagnosisCheckItems(clusterId *string, diagnosis
 
 // Summary:
 //
-// 获取集群诊断结果
+// Queries cluster diagnostic results.
+//
+// @param request - GetClusterDiagnosisResultRequest
 //
 // @param headers - map
 //
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return GetClusterDiagnosisResultResponse
-func (client *Client) GetClusterDiagnosisResultWithOptions(clusterId *string, diagnosisId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterDiagnosisResultResponse, _err error) {
+func (client *Client) GetClusterDiagnosisResultWithOptions(clusterId *string, diagnosisId *string, request *GetClusterDiagnosisResultRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterDiagnosisResultResponse, _err error) {
+	_err = util.ValidateModel(request)
+	if _err != nil {
+		return _result, _err
+	}
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.Language)) {
+		query["language"] = request.Language
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
+		Query:   openapiutil.Query(query),
 	}
 	params := &openapi.Params{
 		Action:      tea.String("GetClusterDiagnosisResult"),
@@ -35700,25 +37668,38 @@ func (client *Client) GetClusterDiagnosisResultWithOptions(clusterId *string, di
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetClusterDiagnosisResultResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetClusterDiagnosisResultResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetClusterDiagnosisResultResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// 获取集群诊断结果
+// Queries cluster diagnostic results.
+//
+// @param request - GetClusterDiagnosisResultRequest
 //
 // @return GetClusterDiagnosisResultResponse
-func (client *Client) GetClusterDiagnosisResult(clusterId *string, diagnosisId *string) (_result *GetClusterDiagnosisResultResponse, _err error) {
+func (client *Client) GetClusterDiagnosisResult(clusterId *string, diagnosisId *string, request *GetClusterDiagnosisResultRequest) (_result *GetClusterDiagnosisResultResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
 	_result = &GetClusterDiagnosisResultResponse{}
-	_body, _err := client.GetClusterDiagnosisResultWithOptions(clusterId, diagnosisId, headers, runtime)
+	_body, _err := client.GetClusterDiagnosisResultWithOptions(clusterId, diagnosisId, request, headers, runtime)
 	if _err != nil {
 		return _result, _err
 	}
@@ -35726,6 +37707,8 @@ func (client *Client) GetClusterDiagnosisResult(clusterId *string, diagnosisId *
 	return _result, _err
 }
 
+// Deprecated: OpenAPI GetKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the GetKubernetesTrigger operationto query the triggers of an application by application name.
@@ -35737,6 +37720,7 @@ func (client *Client) GetClusterDiagnosisResult(clusterId *string, diagnosisId *
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return GetKubernetesTriggerResponse
+// Deprecated
 func (client *Client) GetKubernetesTriggerWithOptions(ClusterId *string, request *GetKubernetesTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetKubernetesTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -35774,15 +37758,28 @@ func (client *Client) GetKubernetesTriggerWithOptions(ClusterId *string, request
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("array"),
 	}
-	_result = &GetKubernetesTriggerResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetKubernetesTriggerResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetKubernetesTriggerResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI GetKubernetesTrigger is deprecated
+//
 // Summary:
 //
 // You can call the GetKubernetesTrigger operationto query the triggers of an application by application name.
@@ -35790,6 +37787,7 @@ func (client *Client) GetKubernetesTriggerWithOptions(ClusterId *string, request
 // @param request - GetKubernetesTriggerRequest
 //
 // @return GetKubernetesTriggerResponse
+// Deprecated
 func (client *Client) GetKubernetesTrigger(ClusterId *string, request *GetKubernetesTriggerRequest) (_result *GetKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -35829,13 +37827,24 @@ func (client *Client) GetUpgradeStatusWithOptions(ClusterId *string, headers map
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &GetUpgradeStatusResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GetUpgradeStatusResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GetUpgradeStatusResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI GetUpgradeStatus is deprecated
@@ -35897,13 +37906,24 @@ func (client *Client) GrantPermissionsWithOptions(uid *string, request *GrantPer
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &GrantPermissionsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &GrantPermissionsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &GrantPermissionsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -35962,15 +37982,26 @@ func (client *Client) InstallClusterAddonsWithOptions(ClusterId *string, request
 		AuthType:    tea.String("AK"),
 		Style:       tea.String("ROA"),
 		ReqBodyType: tea.String("json"),
-		BodyType:    tea.String("none"),
+		BodyType:    tea.String("json"),
 	}
-	_result = &InstallClusterAddonsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &InstallClusterAddonsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &InstallClusterAddonsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36048,13 +38079,24 @@ func (client *Client) ListAddonsWithOptions(request *ListAddonsRequest, headers 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListAddonsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListAddonsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListAddonsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36100,13 +38142,24 @@ func (client *Client) ListClusterAddonInstancesWithOptions(clusterId *string, he
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListClusterAddonInstancesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListClusterAddonInstancesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListClusterAddonInstancesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36166,13 +38219,24 @@ func (client *Client) ListClusterChecksWithOptions(clusterId *string, request *L
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListClusterChecksResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListClusterChecksResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListClusterChecksResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36196,7 +38260,7 @@ func (client *Client) ListClusterChecks(clusterId *string, request *ListClusterC
 
 // Summary:
 //
-// You can call the ListClusterKubeconfigStates operation to query the kubeconfig files that are issued to users for the current cluster and the status of the kubeconfig files.
+// Queries the kubeconfig files that are issued to users for the current cluster and the status of the kubeconfig files.
 //
 // Description:
 //
@@ -36240,18 +38304,29 @@ func (client *Client) ListClusterKubeconfigStatesWithOptions(ClusterId *string, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListClusterKubeconfigStatesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListClusterKubeconfigStatesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListClusterKubeconfigStatesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// You can call the ListClusterKubeconfigStates operation to query the kubeconfig files that are issued to users for the current cluster and the status of the kubeconfig files.
+// Queries the kubeconfig files that are issued to users for the current cluster and the status of the kubeconfig files.
 //
 // Description:
 //
@@ -36276,7 +38351,7 @@ func (client *Client) ListClusterKubeconfigStates(ClusterId *string, request *Li
 
 // Summary:
 //
-// Queries the auto O\\&M schedules of a cluster.
+// Queries the automated maintenance schedules of a cluster.
 //
 // @param request - ListOperationPlansRequest
 //
@@ -36314,18 +38389,29 @@ func (client *Client) ListOperationPlansWithOptions(request *ListOperationPlansR
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListOperationPlansResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListOperationPlansResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListOperationPlansResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// Queries the auto O\\&M schedules of a cluster.
+// Queries the automated maintenance schedules of a cluster.
 //
 // @param request - ListOperationPlansRequest
 //
@@ -36404,13 +38490,24 @@ func (client *Client) ListTagResourcesWithOptions(tmpReq *ListTagResourcesReques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListTagResourcesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListTagResourcesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListTagResourcesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36476,13 +38573,24 @@ func (client *Client) ListUserKubeConfigStatesWithOptions(Uid *string, request *
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ListUserKubeConfigStatesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ListUserKubeConfigStatesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ListUserKubeConfigStatesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36548,13 +38656,24 @@ func (client *Client) MigrateClusterWithOptions(clusterId *string, request *Migr
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &MigrateClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &MigrateClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &MigrateClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36649,8 +38768,16 @@ func (client *Client) ModifyClusterWithOptions(ClusterId *string, request *Modif
 		body["resource_group_id"] = request.ResourceGroupId
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.SecurityGroupId)) {
+		body["security_group_id"] = request.SecurityGroupId
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.SystemEventsLogging)) {
 		body["system_events_logging"] = request.SystemEventsLogging
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.Timezone)) {
+		body["timezone"] = request.Timezone
 	}
 
 	if !tea.BoolValue(util.IsUnset(request.VswitchIds)) {
@@ -36672,13 +38799,24 @@ func (client *Client) ModifyClusterWithOptions(ClusterId *string, request *Modif
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ModifyClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36746,13 +38884,24 @@ func (client *Client) ModifyClusterAddonWithOptions(clusterId *string, component
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ModifyClusterAddonResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyClusterAddonResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyClusterAddonResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36784,6 +38933,8 @@ func (client *Client) ModifyClusterAddon(clusterId *string, componentId *string,
 	return _result, _err
 }
 
+// Deprecated: OpenAPI ModifyClusterConfiguration is deprecated
+//
 // Summary:
 //
 // This API operation applies only to Container Service for Kubernetes (ACK) managed clusters.
@@ -36795,6 +38946,7 @@ func (client *Client) ModifyClusterAddon(clusterId *string, componentId *string,
 // @param runtime - runtime options for this request RuntimeOptions
 //
 // @return ModifyClusterConfigurationResponse
+// Deprecated
 func (client *Client) ModifyClusterConfigurationWithOptions(ClusterId *string, request *ModifyClusterConfigurationRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterConfigurationResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -36820,15 +38972,28 @@ func (client *Client) ModifyClusterConfigurationWithOptions(ClusterId *string, r
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ModifyClusterConfigurationResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyClusterConfigurationResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyClusterConfigurationResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Deprecated: OpenAPI ModifyClusterConfiguration is deprecated
+//
 // Summary:
 //
 // This API operation applies only to Container Service for Kubernetes (ACK) managed clusters.
@@ -36836,6 +39001,7 @@ func (client *Client) ModifyClusterConfigurationWithOptions(ClusterId *string, r
 // @param request - ModifyClusterConfigurationRequest
 //
 // @return ModifyClusterConfigurationResponse
+// Deprecated
 func (client *Client) ModifyClusterConfiguration(ClusterId *string, request *ModifyClusterConfigurationRequest) (_result *ModifyClusterConfigurationResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -36912,13 +39078,24 @@ func (client *Client) ModifyClusterNodePoolWithOptions(ClusterId *string, Nodepo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ModifyClusterNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyClusterNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyClusterNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -36942,7 +39119,7 @@ func (client *Client) ModifyClusterNodePool(ClusterId *string, NodepoolId *strin
 
 // Summary:
 //
-// You can add labels in key-value pairs to clusters. This allows cluster developers or O\\&M engineers to classify and manage clusters in a more flexible manner. This also meets the requirements for monitoring, cost analysis, and tenant isolation. You can call the ModifyClusterTags operation to modify the labels of a cluster.
+// You can add labels in key-value pairs to clusters. This allows cluster developers or O\\\\\\&M engineers to classify and manage clusters in a more flexible manner. This also meets the requirements for monitoring, cost analysis, and tenant isolation. You can call the ModifyClusterTags operation to modify the labels of a cluster.
 //
 // @param request - ModifyClusterTagsRequest
 //
@@ -36971,18 +39148,29 @@ func (client *Client) ModifyClusterTagsWithOptions(ClusterId *string, request *M
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ModifyClusterTagsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyClusterTagsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyClusterTagsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
 //
-// You can add labels in key-value pairs to clusters. This allows cluster developers or O\\&M engineers to classify and manage clusters in a more flexible manner. This also meets the requirements for monitoring, cost analysis, and tenant isolation. You can call the ModifyClusterTags operation to modify the labels of a cluster.
+// You can add labels in key-value pairs to clusters. This allows cluster developers or O\\\\\\&M engineers to classify and manage clusters in a more flexible manner. This also meets the requirements for monitoring, cost analysis, and tenant isolation. You can call the ModifyClusterTags operation to modify the labels of a cluster.
 //
 // @param request - ModifyClusterTagsRequest
 //
@@ -37020,6 +39208,10 @@ func (client *Client) ModifyNodePoolNodeConfigWithOptions(ClusterId *string, Nod
 		return _result, _err
 	}
 	body := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.ContainerdConfig)) {
+		body["containerd_config"] = request.ContainerdConfig
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.KubeletConfig)) {
 		body["kubelet_config"] = request.KubeletConfig
 	}
@@ -37047,13 +39239,24 @@ func (client *Client) ModifyNodePoolNodeConfigWithOptions(ClusterId *string, Nod
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ModifyNodePoolNodeConfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyNodePoolNodeConfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyNodePoolNodeConfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37127,13 +39330,24 @@ func (client *Client) ModifyPolicyInstanceWithOptions(clusterId *string, policyN
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ModifyPolicyInstanceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ModifyPolicyInstanceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ModifyPolicyInstanceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37197,13 +39411,24 @@ func (client *Client) OpenAckServiceWithOptions(request *OpenAckServiceRequest, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &OpenAckServiceResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &OpenAckServiceResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &OpenAckServiceResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37258,13 +39483,24 @@ func (client *Client) PauseClusterUpgradeWithOptions(ClusterId *string, headers 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &PauseClusterUpgradeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &PauseClusterUpgradeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &PauseClusterUpgradeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI PauseClusterUpgrade is deprecated
@@ -37314,13 +39550,24 @@ func (client *Client) PauseComponentUpgradeWithOptions(clusterid *string, compon
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &PauseComponentUpgradeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &PauseComponentUpgradeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &PauseComponentUpgradeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI PauseComponentUpgrade is deprecated
@@ -37367,13 +39614,24 @@ func (client *Client) PauseTaskWithOptions(taskId *string, headers map[string]*s
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &PauseTaskResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &PauseTaskResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &PauseTaskResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37452,13 +39710,24 @@ func (client *Client) RemoveClusterNodesWithOptions(ClusterId *string, request *
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &RemoveClusterNodesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &RemoveClusterNodesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &RemoveClusterNodesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI RemoveClusterNodes is deprecated
@@ -37501,13 +39770,15 @@ func (client *Client) RemoveClusterNodes(ClusterId *string, request *RemoveClust
 //
 // Description:
 //
-// - When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
+//   When you remove a node, the pods on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
 //
-// - The operation may have unexpected risks. Back up the data before you perform this operation.
+// 	- The operation may have unexpected risks. Back up the data before you perform this operation.
 //
-// - When the system removes a node, it sets the status of the node to Unschedulable.
+// 	- Nodes remain in the Unschedulable state when they are being removed.
 //
-// - The system removes only worker nodes. It does not remove master nodes.
+// 	- The system removes only worker nodes. It does not remove master nodes.
+//
+// 	- Even if you set the `release_node` parameter to `true`, subscription nodes are not released. You must release the subscription nodes in the [ECS console](https://ecs.console.aliyun.com/) after you remove the nodes.
 //
 // @param tmpReq - RemoveNodePoolNodesRequest
 //
@@ -37567,13 +39838,24 @@ func (client *Client) RemoveNodePoolNodesWithOptions(ClusterId *string, Nodepool
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &RemoveNodePoolNodesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &RemoveNodePoolNodesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &RemoveNodePoolNodesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37582,13 +39864,15 @@ func (client *Client) RemoveNodePoolNodesWithOptions(ClusterId *string, Nodepool
 //
 // Description:
 //
-// - When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
+//   When you remove a node, the pods on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
 //
-// - The operation may have unexpected risks. Back up the data before you perform this operation.
+// 	- The operation may have unexpected risks. Back up the data before you perform this operation.
 //
-// - When the system removes a node, it sets the status of the node to Unschedulable.
+// 	- Nodes remain in the Unschedulable state when they are being removed.
 //
-// - The system removes only worker nodes. It does not remove master nodes.
+// 	- The system removes only worker nodes. It does not remove master nodes.
+//
+// 	- Even if you set the `release_node` parameter to `true`, subscription nodes are not released. You must release the subscription nodes in the [ECS console](https://ecs.console.aliyun.com/) after you remove the nodes.
 //
 // @param request - RemoveNodePoolNodesRequest
 //
@@ -37649,13 +39933,24 @@ func (client *Client) RepairClusterNodePoolWithOptions(clusterId *string, nodepo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &RepairClusterNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &RepairClusterNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &RepairClusterNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37704,13 +39999,24 @@ func (client *Client) ResumeComponentUpgradeWithOptions(clusterid *string, compo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ResumeComponentUpgradeResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ResumeComponentUpgradeResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ResumeComponentUpgradeResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI ResumeComponentUpgrade is deprecated
@@ -37757,13 +40063,24 @@ func (client *Client) ResumeTaskWithOptions(taskId *string, headers map[string]*
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ResumeTaskResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ResumeTaskResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ResumeTaskResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37810,13 +40127,24 @@ func (client *Client) ResumeUpgradeClusterWithOptions(ClusterId *string, headers
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &ResumeUpgradeClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ResumeUpgradeClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ResumeUpgradeClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI ResumeUpgradeCluster is deprecated
@@ -37863,13 +40191,24 @@ func (client *Client) RevokeK8sClusterKubeConfigWithOptions(ClusterId *string, h
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &RevokeK8sClusterKubeConfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &RevokeK8sClusterKubeConfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &RevokeK8sClusterKubeConfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -37933,13 +40272,24 @@ func (client *Client) RunClusterCheckWithOptions(clusterId *string, request *Run
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &RunClusterCheckResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &RunClusterCheckResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &RunClusterCheckResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38072,13 +40422,24 @@ func (client *Client) ScaleClusterWithOptions(ClusterId *string, request *ScaleC
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ScaleClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ScaleClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ScaleClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Deprecated: OpenAPI ScaleCluster is deprecated
@@ -38139,13 +40500,24 @@ func (client *Client) ScaleClusterNodePoolWithOptions(ClusterId *string, Nodepoo
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ScaleClusterNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ScaleClusterNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ScaleClusterNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38289,13 +40661,24 @@ func (client *Client) ScaleOutClusterWithOptions(ClusterId *string, request *Sca
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ScaleOutClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ScaleOutClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ScaleOutClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38347,13 +40730,24 @@ func (client *Client) ScanClusterVulsWithOptions(clusterId *string, headers map[
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &ScanClusterVulsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &ScanClusterVulsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &ScanClusterVulsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38373,6 +40767,10 @@ func (client *Client) ScanClusterVuls(clusterId *string) (_result *ScanClusterVu
 	return _result, _err
 }
 
+// Summary:
+//
+// 启用告警
+//
 // @param request - StartAlertRequest
 //
 // @param headers - map
@@ -38409,15 +40807,30 @@ func (client *Client) StartAlertWithOptions(ClusterId *string, request *StartAle
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &StartAlertResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &StartAlertResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &StartAlertResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
+// Summary:
+//
+// 启用告警
+//
 // @param request - StartAlertRequest
 //
 // @return StartAlertResponse
@@ -38473,13 +40886,24 @@ func (client *Client) StopAlertWithOptions(ClusterId *string, request *StopAlert
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &StopAlertResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &StopAlertResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &StopAlertResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38525,13 +40949,24 @@ func (client *Client) SyncClusterNodePoolWithOptions(ClusterId *string, headers 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &SyncClusterNodePoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &SyncClusterNodePoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &SyncClusterNodePoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38599,13 +41034,24 @@ func (client *Client) TagResourcesWithOptions(request *TagResourcesRequest, head
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &TagResourcesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &TagResourcesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &TagResourcesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38656,15 +41102,26 @@ func (client *Client) UnInstallClusterAddonsWithOptions(ClusterId *string, reque
 		AuthType:    tea.String("AK"),
 		Style:       tea.String("ROA"),
 		ReqBodyType: tea.String("json"),
-		BodyType:    tea.String("none"),
+		BodyType:    tea.String("json"),
 	}
-	_result = &UnInstallClusterAddonsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UnInstallClusterAddonsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UnInstallClusterAddonsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38748,13 +41205,24 @@ func (client *Client) UntagResourcesWithOptions(tmpReq *UntagResourcesRequest, h
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UntagResourcesResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UntagResourcesResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UntagResourcesResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38782,7 +41250,7 @@ func (client *Client) UntagResources(request *UntagResourcesRequest) (_result *U
 //
 // Description:
 //
-// Before you call this operation, ensure that you understand the billing methods and pricing of [Simple Log Service](https://www.aliyun.com/price/product#/sls/detail/sls) (SLS).
+// Before you call this operation, ensure that you understand the billing methods and pricing of [Simple Log Service](https://www.alibabacloud.com/product/log-service/pricing) (SLS).
 //
 // @param request - UpdateClusterAuditLogConfigRequest
 //
@@ -38820,13 +41288,24 @@ func (client *Client) UpdateClusterAuditLogConfigWithOptions(clusterid *string, 
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpdateClusterAuditLogConfigResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateClusterAuditLogConfigResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateClusterAuditLogConfigResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38835,7 +41314,7 @@ func (client *Client) UpdateClusterAuditLogConfigWithOptions(clusterid *string, 
 //
 // Description:
 //
-// Before you call this operation, ensure that you understand the billing methods and pricing of [Simple Log Service](https://www.aliyun.com/price/product#/sls/detail/sls) (SLS).
+// Before you call this operation, ensure that you understand the billing methods and pricing of [Simple Log Service](https://www.alibabacloud.com/product/log-service/pricing) (SLS).
 //
 // @param request - UpdateClusterAuditLogConfigRequest
 //
@@ -38900,13 +41379,24 @@ func (client *Client) UpdateContactGroupForAlertWithOptions(ClusterId *string, r
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpdateContactGroupForAlertResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateContactGroupForAlertResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateContactGroupForAlertResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -38976,13 +41466,24 @@ func (client *Client) UpdateControlPlaneLogWithOptions(ClusterId *string, reques
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpdateControlPlaneLogResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateControlPlaneLogResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateControlPlaneLogResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39050,13 +41551,24 @@ func (client *Client) UpdateK8sClusterUserConfigExpireWithOptions(ClusterId *str
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &UpdateK8sClusterUserConfigExpireResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateK8sClusterUserConfigExpireResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateK8sClusterUserConfigExpireResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39132,13 +41644,24 @@ func (client *Client) UpdateResourcesDeleteProtectionWithOptions(ClusterId *stri
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpdateResourcesDeleteProtectionResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateResourcesDeleteProtectionResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateResourcesDeleteProtectionResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39212,13 +41735,24 @@ func (client *Client) UpdateTemplateWithOptions(TemplateId *string, request *Upd
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &UpdateTemplateResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateTemplateResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateTemplateResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39283,13 +41817,24 @@ func (client *Client) UpdateUserPermissionsWithOptions(uid *string, request *Upd
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("none"),
 	}
-	_result = &UpdateUserPermissionsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpdateUserPermissionsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpdateUserPermissionsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39381,13 +41926,24 @@ func (client *Client) UpgradeClusterWithOptions(ClusterId *string, request *Upgr
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpgradeClusterResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpgradeClusterResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpgradeClusterResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39452,13 +42008,24 @@ func (client *Client) UpgradeClusterAddonsWithOptions(ClusterId *string, request
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpgradeClusterAddonsResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpgradeClusterAddonsResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpgradeClusterAddonsResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:
@@ -39544,13 +42111,24 @@ func (client *Client) UpgradeClusterNodepoolWithOptions(ClusterId *string, Nodep
 		ReqBodyType: tea.String("json"),
 		BodyType:    tea.String("json"),
 	}
-	_result = &UpgradeClusterNodepoolResponse{}
-	_body, _err := client.CallApi(params, req, runtime)
-	if _err != nil {
+	if tea.BoolValue(util.IsUnset(client.SignatureVersion)) || !tea.BoolValue(util.EqualString(client.SignatureVersion, tea.String("v4"))) {
+		_result = &UpgradeClusterNodepoolResponse{}
+		_body, _err := client.CallApi(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
+		return _result, _err
+	} else {
+		_result = &UpgradeClusterNodepoolResponse{}
+		_body, _err := client.Execute(params, req, runtime)
+		if _err != nil {
+			return _result, _err
+		}
+		_err = tea.Convert(_body, &_result)
 		return _result, _err
 	}
-	_err = tea.Convert(_body, &_result)
-	return _result, _err
+
 }
 
 // Summary:

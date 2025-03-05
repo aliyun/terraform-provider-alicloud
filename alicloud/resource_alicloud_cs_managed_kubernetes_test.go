@@ -58,7 +58,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"slb_internet_enabled":    "true",
 					"cluster_spec":            "ack.pro.small",
 					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"security_group_id":       "${alicloud_security_group.default.id}",
+					"security_group_id":       "${alicloud_security_group.default.0.id}",
 					"deletion_protection":     "false",
 					"enable_rrsa":             "false",
 					"timezone":                "Asia/Shanghai",
@@ -66,7 +66,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"new_nat_gateway":         "true",
 					"api_audiences":           []string{"https://kubernetes.default.svc"},
 					"service_account_issuer":  "https://kubernetes.default.svc",
-					"cluster_domain":          "cluster.local",
+					"cluster_domain":          "cluster.test",
 					"custom_san":              "www.terraform.io",
 					"encryption_provider_key": "${data.alicloud_kms_keys.default.keys.0.id}",
 					"maintenance_window": []map[string]string{
@@ -105,7 +105,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"proxy_mode":                            "ipvs",
 						"new_nat_gateway":                       "true",
 						"nat_gateway_id":                        CHECKSET,
-						"cluster_domain":                        "cluster.local",
+						"cluster_domain":                        "cluster.test",
 						"custom_san":                            "www.terraform.io",
 						"maintenance_window.#":                  "1",
 						"maintenance_window.0.enable":           "true",
@@ -171,6 +171,15 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"rrsa_metadata.0.enabled": "true",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					})),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -454,6 +463,110 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependenceAuto)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"zone_ids":             []string{"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
+					"cluster_spec":         "ack.pro.small",
+					"new_nat_gateway":      "false",
+					"slb_internet_enabled": "false",
+					"deletion_protection":  "false",
+					"node_cidr_mask":       "26",
+					"service_cidr":         "172.23.0.0/16",
+					"proxy_mode":           "ipvs",
+					"ip_stack":             "ipv4",
+					"timezone":             "Asia/Shanghai",
+					"addons":               []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"vswitch_ids.#":        "1",
+						"cluster_spec":         "ack.pro.small",
+						"vpc_id":               CHECKSET,
+						"deletion_protection":  "false",
+						"new_nat_gateway":      "false",
+						"slb_internet_enabled": "false",
+						"ip_stack":             "ipv4",
+						"timezone":             "Asia/Shanghai",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"timezone": "Europe/London",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"timezone": "Europe/London",
+					})),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]interface{}{
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "ALB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "PrivateZone",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_Data",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_ControlPlane",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{})),
+			},
+		},
+	})
+}
+
 func resourceCSManagedKubernetesConfig(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -563,7 +676,7 @@ locals {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  count  = 2
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -626,6 +739,17 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   system_disk_category          = "cloud_essd"
   system_disk_performance_level = "PL0"
   desired_size                  = 1
+}
+`, name)
+}
+
+func resourceCSManagedKubernetesConfigDependenceAuto(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 `, name)
 }

@@ -1048,18 +1048,36 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 		updated = true
 	}
 
+	if d.HasChange("timezone") {
+		request.SetTimezone(d.Get("timezone").(string))
+		updated = true
+	}
+
+	if d.HasChange("security_group_id") {
+		request.SetSecurityGroupId(d.Get("security_group_id").(string))
+		updated = true
+	}
+
 	if updated == false {
 		return nil
 	}
 
+	var resp *roacs.ModifyClusterResponse
 	if err := invoker.Run(func() error {
-		_, err := csClient.ModifyCluster(tea.String(d.Id()), request)
+		resp, err = csClient.ModifyCluster(tea.String(d.Id()), request)
 		return err
 	}); err != nil && !IsExpectedErrors(err, []string{"ClusterNameAlreadyExist", "ErrorModifyDeletionProtectionFailed"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	taskId := tea.StringValue(resp.Body.TaskId)
+	c := CsClient{client: csClient}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, c.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyCluster", jobDetail)
+	}
+
+	stateConf = BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return err
 	}

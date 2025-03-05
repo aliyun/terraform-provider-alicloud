@@ -60,7 +60,7 @@ github.com/alibabacloud-go/alibabacloud-gateway-sls-util/client
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
-# github.com/alibabacloud-go/cs-20151215/v5 v5.8.1
+# github.com/alibabacloud-go/cs-20151215/v5 v5.8.12
 ## explicit; go 1.14
 github.com/alibabacloud-go/cs-20151215/v5/client
 # github.com/alibabacloud-go/darabonba-array v0.1.0

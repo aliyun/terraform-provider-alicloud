@@ -199,6 +199,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Removed:  "Field 'exclude_autoscaler_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
 			},
 			// global configurations
+			"zone_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				MinItems: 1,
+				MaxItems: 5,
+			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -209,7 +218,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				MinItems:     1,
 				MaxItems:     5,
-				ExactlyOneOf: []string{"worker_vswitch_ids", "vswitch_ids"},
+				ExactlyOneOf: []string{"worker_vswitch_ids", "vswitch_ids", "zone_ids"},
 			},
 			"pod_vswitch_ids": {
 				Type:     schema.TypeList,
@@ -364,7 +373,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"os_type": {
 				Type:         schema.TypeString,
@@ -559,7 +567,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"is_enterprise_security_group": {
 				Type:          schema.TypeBool,
@@ -879,6 +886,10 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		request.SetVpcid(v.(string))
 	}
 
+	if v, ok := d.GetOk("zone_ids"); ok {
+		request.SetZoneIds(tea.StringSlice(expandStringList(v.([]interface{}))))
+	}
+
 	if v, ok := d.GetOk("new_nat_gateway"); ok {
 		request.SetSnatEntry(v.(bool))
 	}
@@ -929,6 +940,10 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 
 	if v, ok := d.GetOk("cluster_spec"); ok {
 		request.SetClusterSpec(v.(string))
+	}
+
+	if v, ok := d.GetOk("cluster_domain"); ok {
+		request.SetClusterDomain(v.(string))
 	}
 
 	if v, ok := d.GetOk("service_account_issuer"); ok {
@@ -1110,7 +1125,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("proxy_mode", object.ProxyMode)
 	} else {
 		if v, ok := object.Parameters["ProxyMode"]; ok {
-			d.Set("proxy_mode", Interface2String(v))
+			d.Set("proxy_mode", v)
 		}
 	}
 
@@ -1122,7 +1137,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("pod_cidr", object.ContainerCidr)
 	} else {
 		if v, ok := object.Parameters["ContainerCIDR"]; ok {
-			d.Set("pod_cidr", Interface2String(tea.StringValue(v)))
+			d.Set("pod_cidr", v)
 		}
 	}
 
@@ -1225,7 +1240,8 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 	d.Partial(true)
 	invoker := NewInvoker()
 	// modifyCluster
-	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "vswitch_ids", "maintenance_window", "operation_policy", "enable_rrsa") {
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "maintenance_window", "operation_policy",
+		"custom_san", "vswitch_ids", "timezone", "security_group_id", "enable_rrsa") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}

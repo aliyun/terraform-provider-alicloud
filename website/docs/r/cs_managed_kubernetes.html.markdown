@@ -186,18 +186,27 @@ The following arguments are supported:
 *Global params*
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
-* `worker_vswitch_ids` - (Optional, Deprecated since v1.241.0) The vswitches used by control plane. Modification after creation will not take effect. Please use `vswitch_ids` to managed control plane vswtiches, which supports modifying control plane vswtiches.
+* `zone_ids` - (Optional, Available since v1.243.0) The IDs of the zone in which the cluster control plane is deployed. ACK automatically creates a VPC in the region and vSwitches in the specified zones. Only works for **Create** Operation. Do not specify this with `vswitch_ids` together.
+* `worker_vswitch_ids` - (Optional, Deprecated since v1.241.0) The vSwitches used by control plane. Modification after creation will not take effect. Please use `vswitch_ids` to managed control plane vSwitches, which supports modifying control plane vSwitches.
 * `vswitch_ids` - (Optional, Available since v1.241.0) The vSwitches of the control plane.
 -> **NOTE:** Please take of note before updating the `vswitch_ids`:
   * This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane. 
   * The control plane restarts during the change process. Exercise caution when you perform this operation. 
   * Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server. 
   * If the new vSwitches of the control plane are configured with an ACL, ensure that the ACL allows communication between the new vSwitches and CIDR blocks such as those of the cluster nodes and the container network.
-* `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `timezone` - (Optional, ForceNew, Available since v1.103.2) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
+* `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will use it to build the only cluster name. Default to "Terraform-Creation".
+* `timezone` - (Optional, Available since v1.103.2) Cluster timezone, works for control plane and Worker nodes.
+* -> **NOTE:** Please take of note before updating the `timezone`:
+  * After modifying the timezone, cluster inspection configurations will adopt the new timezone. 
+  * During timezone updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
+  * After updating the timezone: Newly scaled-out nodes will automatically apply the new timezone. Existing nodes remain unaffected. Reset the node to apply changes to existing nodes.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK. Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information. 
-* `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `security_group_id` - (Optional, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* -> **NOTE:** Please take of note before updating the `security_group_id`:
+  * If block rules are configured in the security group, ensure the security group rules allow traffic for protocols and ports required by the cluster. For recommended security group rules, see [Configure and manage security groups for an ACK cluster](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/configure-security-group-rules-to-enforce-access-control-on-ack-clusters).
+  * During security group updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
+  * After updating the control plane security group, the Elastic Network Interfaces (ENIs) used by the control plane and managed components will automatically join the new security group.
 * `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). 
 * `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
@@ -230,7 +239,7 @@ The following arguments are supported:
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice. Only works for **Create** Operation. 
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
-* `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
+* `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true. Only works for **Create** Operation.
 * `ip_stack` - (Optional, ForceNew, Available since v1.243.0) The IP address family that the cluster network uses. Valid values:
   * `ipv4`: IPv4 stack.
   * `dual`: IPv4/IPv6 dual stack. IPv4 addresses are used for communication between worker nodes and the control plane. The VPC used by the cluster must support IPv4 and IPv6 dual-stack. This feature is only supported for Kubernetes version 1.22 and later, and you must select `Terway` as CNI network plugin. If you use the shared ENI mode of `Terway`, the ECS instance type must support IPv6 addresses and the number of IPv4 addresses supported by the ECS instance type must be the same as the number of IPv6 addresses, for more information about ECS instance types, see [Overview of instance families](https://www.alibabacloud.com/help/zh/ecs/user-guide/overview-of-instance-families#concept-sx4-lxv-tdb). Dual stack is not supported if you want to use [Elastic Remote Direct Memory Access (eRDMA)](https://www.alibabacloud.com/help/zh/ack/ack-managed-and-ack-dedicated/user-guide/use-erdma-in-ack-clusters) in the cluster.
