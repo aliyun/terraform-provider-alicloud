@@ -18,7 +18,7 @@ func (s *QuotasService) DescribeQuotasQuotaAlarm(id string) (object map[string]i
 		"RegionId": s.client.RegionId,
 		"AlarmId":  id,
 	}
-	response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+	response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -41,7 +41,7 @@ func (s *QuotasService) DescribeQuotasQuotaApplication(id string) (object map[st
 		"RegionId":      s.client.RegionId,
 		"ApplicationId": id,
 	}
-	response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+	response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return

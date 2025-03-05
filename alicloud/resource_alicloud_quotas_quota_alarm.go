@@ -124,7 +124,7 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -212,7 +212,7 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+			response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -246,7 +246,7 @@ func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("quotas", rpc("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
 			if NeedRetry(err) {

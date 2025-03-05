@@ -64,7 +64,7 @@ func resourceAliCloudOssBucketVersioningCreate(d *schema.ResourceData, meta inte
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketVersioning", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketVersioning", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,7 +133,7 @@ func resourceAliCloudOssBucketVersioningUpdate(d *schema.ResourceData, meta inte
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.Do("Oss", genXmlParam("PUT", "2019-05-17", "PutBucketVersioning", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketVersioning", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

@@ -612,7 +612,7 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 	var basicMap = map[string]string{
 		"service":     CHECKSET,
 		"name":        name,
-		"runtime":     "python2.7",
+		"runtime":     "python3.9",
 		"description": "tf",
 		"handler":     "hello.handler",
 		"oss_bucket":  CHECKSET,
@@ -639,7 +639,7 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"service":     "${alicloud_fc_service.default.name}",
 					"name":        "${var.name}",
-					"runtime":     "python2.7",
+					"runtime":     "python3.9",
 					"description": "tf",
 					"handler":     "hello.handler",
 					"oss_bucket":  "${alicloud_oss_bucket.default.id}",

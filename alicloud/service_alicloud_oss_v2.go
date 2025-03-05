@@ -33,7 +33,7 @@ func (s *OssServiceV2) DescribeOssBucketAcl(id string) (object map[string]interf
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketAcl", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketAcl", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -103,7 +103,7 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketReferer", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketReferer", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -170,7 +170,7 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketHttpsConfig", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketHttpsConfig", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -238,7 +238,7 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketCors", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketCors", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -306,7 +306,7 @@ func (s *OssServiceV2) DescribeOssBucketPolicy(id string) (object map[string]int
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlJsonParam("GET", "2019-05-17", "GetBucketPolicy", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlJsonParam("GET", "2019-05-17", "GetBucketPolicy", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -367,7 +367,7 @@ func (s *OssServiceV2) DescribeOssBucketVersioning(id string) (object map[string
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketVersioning", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketVersioning", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -436,7 +436,7 @@ func (s *OssServiceV2) DescribeOssBucketArchiveDirectRead(id string) (object map
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketArchiveDirectRead", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketArchiveDirectRead", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -501,7 +501,7 @@ func (s *OssServiceV2) DescribeOssBucketRequestPayment(id string) (object map[st
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketRequestPayment", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketRequestPayment", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -566,7 +566,7 @@ func (s *OssServiceV2) DescribeOssBucketTransferAcceleration(id string) (object 
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketTransferAcceleration", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketTransferAcceleration", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -634,7 +634,7 @@ func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[str
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketAccessMonitor", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketAccessMonitor", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -701,7 +701,7 @@ func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]in
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketLogging", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketLogging", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -777,7 +777,7 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketEncryption", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketEncryption", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -844,7 +844,7 @@ func (s *OssServiceV2) DescribeOssBucketUserDefinedLogFields(id string) (object 
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketUserDefinedLogFieldsConfig", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketUserDefinedLogFieldsConfig", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -906,7 +906,7 @@ func (s *OssServiceV2) DescribeOssBucketMetaQuery(id string) (object map[string]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketMetaQueryStatus", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketMetaQueryStatus", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -977,7 +977,7 @@ func (s *OssServiceV2) DescribeOssBucketStyle(id string) (object map[string]inte
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketStyle", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketStyle", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1049,7 +1049,7 @@ func (s *OssServiceV2) DescribeOssBucketDataRedundancyTransition(id string) (obj
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketDataRedundancyTransition", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketDataRedundancyTransition", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1115,7 +1115,7 @@ func (s *OssServiceV2) DescribeOssAccountPublicAccessBlock(id string) (object ma
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetPublicAccessBlock", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetPublicAccessBlock", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1182,7 +1182,7 @@ func (s *OssServiceV2) DescribeOssBucketPublicAccessBlock(id string) (object map
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketPublicAccessBlock", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketPublicAccessBlock", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1250,7 +1250,7 @@ func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]inte
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "ListCname", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "ListCname", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1340,7 +1340,7 @@ func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("POST", "2019-05-17", "CreateCnameToken", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1407,7 +1407,7 @@ func (s *OssServiceV2) DescribeOssBucketWebsite(id string) (object map[string]in
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketWebsite", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketWebsite", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1485,7 +1485,7 @@ func (s *OssServiceV2) DescribeOssAccessPoint(id string) (object map[string]inte
 	hostMap["bucket"] = StringPointer(parts[0])
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetAccessPoint", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetAccessPoint", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1559,7 +1559,7 @@ func (s *OssServiceV2) DescribeOssBucketLifecycle(id string) (object map[string]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketLifecycle", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketLifecycle", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1636,7 +1636,7 @@ func (s *OssServiceV2) DescribeOssBucketWorm(id string) (object map[string]inter
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", genXmlParam("GET", "2019-05-17", "GetBucketWorm", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketWorm", action), query, nil, nil, hostMap, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

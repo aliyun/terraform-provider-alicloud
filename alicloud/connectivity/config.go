@@ -591,3 +591,12 @@ func (c *Config) needRefreshCredential() bool {
 
 	return !(*credential.Type == "sts" || *credential.Type == "access_key")
 }
+func (c *Config) GetRefreshCredential() (string, string, string) {
+	credential, err := c.Credential.GetCredential()
+	if err != nil || credential == nil {
+		log.Printf("[WARN] get credential failed. Error: %#v", err)
+		return c.AccessKey, c.SecretKey, c.SecurityToken
+	}
+
+	return *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
+}

@@ -270,178 +270,152 @@ func (c *Config) Client() (*AliyunClient, error) {
 }
 
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
-	if client.ecsconn == nil {
-		product := "ecs"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
-		}
-		ecs.SetClientProperty(ecsconn, "EndpointMap", map[string]string{
-			client.RegionId: endpoint,
-		})
-		ecs.SetEndpointDataToClient(ecsconn)
-		client.ecsconn = ecsconn
-	} else {
-		err := client.ecsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
-		}
+	if client.ecsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.ecsconn)
 	}
-	client.ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.ecsconn.SourceIp = client.config.SourceIp
-	client.ecsconn.SecureTransport = client.config.SecureTransport
+	product := "ecs"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
+	}
+	ecs.SetClientProperty(ecsconn, "EndpointMap", map[string]string{
+		client.RegionId: endpoint,
+	})
+	ecs.SetEndpointDataToClient(ecsconn)
+
+	ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	ecsconn.SourceIp = client.config.SourceIp
+	ecsconn.SecureTransport = client.config.SecureTransport
+	client.ecsconn = ecsconn
 	return do(client.ecsconn)
 }
 
 func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (interface{}, error)) (interface{}, error) {
-	if client.officalCSConn == nil {
-		product := "cs"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
-		}
-		client.officalCSConn = csconn
-	} else {
-		err := client.officalCSConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
-		}
+	if client.officalCSConn != nil && !client.config.needRefreshCredential() {
+		return do(client.officalCSConn)
 	}
-	client.officalCSConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.officalCSConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.officalCSConn.SourceIp = client.config.SourceIp
-	client.officalCSConn.SecureTransport = client.config.SecureTransport
-
+	product := "cs"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
+	}
+	csconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	csconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	csconn.SourceIp = client.config.SourceIp
+	csconn.SecureTransport = client.config.SecureTransport
+	client.officalCSConn = csconn
 	return do(client.officalCSConn)
 }
 
 func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interface{}, error)) (interface{}, error) {
-	if client.polarDBconn == nil {
-		product := "polardb"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
-
-		}
-		client.polarDBconn = polarDBconn
-	} else {
-		err := client.polarDBconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
-		}
+	if client.polarDBconn != nil && !client.config.needRefreshCredential() {
+		return do(client.polarDBconn)
 	}
+	product := "polardb"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
 
-	client.polarDBconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.polarDBconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.polarDBconn.SourceIp = client.config.SourceIp
-	client.polarDBconn.SecureTransport = client.config.SecureTransport
+	}
+	polarDBconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	polarDBconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	polarDBconn.SourceIp = client.config.SourceIp
+	polarDBconn.SecureTransport = client.config.SecureTransport
+	client.polarDBconn = polarDBconn
 	return do(client.polarDBconn)
 }
 
 func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, error)) (interface{}, error) {
-	if client.slbconn == nil {
-		product := "slb"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		slbconn, err := slb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
-		}
-		client.slbconn = slbconn
-	} else {
-		err := client.slbconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
-		}
+	if client.slbconn != nil && !client.config.needRefreshCredential() {
+		return do(client.slbconn)
 	}
-	client.slbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.slbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.slbconn.SourceIp = client.config.SourceIp
-	client.slbconn.SecureTransport = client.config.SecureTransport
+	product := "slb"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	slbconn, err := slb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
+	}
+	slbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	slbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	slbconn.SourceIp = client.config.SourceIp
+	slbconn.SecureTransport = client.config.SecureTransport
+	client.slbconn = slbconn
 	return do(client.slbconn)
 }
 
 func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, error)) (interface{}, error) {
-	if client.vpcconn == nil {
-		product := "vpc"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
-		}
-		client.vpcconn = vpcconn
-	} else {
-		err := client.vpcconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
-		}
+	if client.vpcconn != nil && !client.config.needRefreshCredential() {
+		return do(client.vpcconn)
 	}
-
-	client.vpcconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.vpcconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.vpcconn.SourceIp = client.config.SourceIp
-	client.vpcconn.SecureTransport = client.config.SecureTransport
+	product := "vpc"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
+	}
+	vpcconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	vpcconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	vpcconn.SourceIp = client.config.SourceIp
+	vpcconn.SecureTransport = client.config.SecureTransport
+	client.vpcconn = vpcconn
 	return do(client.vpcconn)
 }
 
 func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, error)) (interface{}, error) {
-	if client.essconn == nil {
-		product := "ess"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		essconn, err := ess.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
-		}
-		client.essconn = essconn
-	} else {
-		err := client.essconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
-		}
+	if client.essconn != nil && !client.config.needRefreshCredential() {
+		return do(client.essconn)
 	}
-	client.essconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.essconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.essconn.SourceIp = client.config.SourceIp
-	client.essconn.SecureTransport = client.config.SecureTransport
+	product := "ess"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	essconn, err := ess.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
+	}
+	essconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	essconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	essconn.SourceIp = client.config.SourceIp
+	essconn.SecureTransport = client.config.SecureTransport
+	client.essconn = essconn
 	return do(client.essconn)
 }
 
@@ -513,59 +487,59 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 }
 
 func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the DNS client if necessary
-	if client.dnsconn == nil {
-		endpoint := client.config.DnsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, DNSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
-		}
-
-		dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
-		}
-		dnsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		dnsconn.SourceIp = client.config.SourceIp
-		dnsconn.SecureTransport = client.config.SecureTransport
-		client.dnsconn = dnsconn
+	if client.dnsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.dnsconn)
+	}
+	product := "alidns"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
 	}
 
+	dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
+	}
+	dnsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	dnsconn.SourceIp = client.config.SourceIp
+	dnsconn.SecureTransport = client.config.SecureTransport
+	client.dnsconn = dnsconn
 	return do(client.dnsconn)
 }
 
 func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, error)) (interface{}, error) {
-	if client.ramconn == nil {
-		product := "ram"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
-		}
-		client.ramconn = ramconn
-	} else {
-		err := client.ramconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
-		}
+	if client.ramconn != nil && !client.config.needRefreshCredential() {
+		return do(client.ramconn)
 	}
-	client.ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.ramconn.SourceIp = client.config.SourceIp
-	client.ramconn.SecureTransport = client.config.SecureTransport
+	product := "ram"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
+	}
+	ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	ramconn.SourceIp = client.config.SourceIp
+	ramconn.SecureTransport = client.config.SecureTransport
+	client.ramconn = ramconn
+
 	return do(client.ramconn)
 }
 
 func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
+	if client.csconn != nil && !client.config.needRefreshCredential() {
+		return do(client.csconn)
+	}
 	product := "cs"
 	endpoint, err := client.loadApiEndpoint(product)
 	if err != nil {
@@ -626,55 +600,51 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 }
 
 func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the CR client if necessary
-	if client.crconn == nil {
-		endpoint := client.config.CrEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CRCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
-			}
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
-		}
-		crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
-		}
-		crconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		crconn.SourceIp = client.config.SourceIp
-		crconn.SecureTransport = client.config.SecureTransport
-		client.crconn = crconn
+	if client.crconn != nil && !client.config.needRefreshCredential() {
+		return do(client.crconn)
 	}
+	product := "cr"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+	}
+	crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
+	}
+	crconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	crconn.SourceIp = client.config.SourceIp
+	crconn.SecureTransport = client.config.SecureTransport
+	client.crconn = crconn
 
 	return do(client.crconn)
 }
 
 func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the CR EE client if necessary
-	if client.creeconn == nil {
-		endpoint := client.config.CrEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CRCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
-			}
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
-		}
-		creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
-		}
-		creeconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		creeconn.SourceIp = client.config.SourceIp
-		creeconn.SecureTransport = client.config.SecureTransport
-		client.creeconn = creeconn
+	if client.creeconn != nil && !client.config.needRefreshCredential() {
+		return do(client.creeconn)
 	}
+	product := "cr"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+	}
+	creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
+	}
+	creeconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	creeconn.SourceIp = client.config.SourceIp
+	creeconn.SecureTransport = client.config.SecureTransport
+	client.creeconn = creeconn
 
 	return do(client.creeconn)
 }
@@ -702,51 +672,53 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 }
 
 func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the CDN client if necessary
-	if client.cdnconn_new == nil {
-		endpoint := client.config.CdnEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CDNCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
-		}
-		cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
-		}
-		cdnconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		cdnconn.SourceIp = client.config.SourceIp
-		cdnconn.SecureTransport = client.config.SecureTransport
-		client.cdnconn_new = cdnconn
+	if client.cdnconn_new != nil && !client.config.needRefreshCredential() {
+		return do(client.cdnconn_new)
 	}
+	product := "cdn"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
+	}
+	cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
+	}
+	cdnconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	cdnconn.SourceIp = client.config.SourceIp
+	cdnconn.SecureTransport = client.config.SecureTransport
+	client.cdnconn_new = cdnconn
 
 	return do(client.cdnconn_new)
 }
 
 // WithOtsClient init ots openapi publish sdk client(if necessary), and exec do func by client
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the OTS client if necessary
-	if client.otsconn == nil {
-		endpoint := client.config.OtsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, OTSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(OTSCode), endpoint)
-		}
-		otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
-		}
-
-		otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		otsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		otsconn.SourceIp = client.config.SourceIp
-		otsconn.SecureTransport = client.config.SecureTransport
-		client.otsconn = otsconn
+	if client.otsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.otsconn)
 	}
+	product := "ots"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
+	}
+
+	otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	otsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	otsconn.SourceIp = client.config.SourceIp
+	otsconn.SecureTransport = client.config.SecureTransport
+	client.otsconn = otsconn
 
 	return do(client.otsconn)
 }
@@ -768,9 +740,12 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint", productCode)
 	}
-
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	accessKey, secretKey, securityToken := client.config.GetRefreshCredential()
+	sdkConfig.SetAccessKeyId(accessKey)
+	sdkConfig.SetAccessKeySecret(secretKey)
+	sdkConfig.SetSecurityToken(securityToken)
 
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
@@ -781,30 +756,27 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 }
 
 func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, error)) (interface{}, error) {
-	if client.cmsconn == nil {
-		product := "cms"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
-		}
-		client.cmsconn = cmsconn
-	} else {
-		err := client.cmsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
-		}
+	if client.cmsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.cmsconn)
 	}
-	client.cmsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.cmsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.cmsconn.SourceIp = client.config.SourceIp
-	client.cmsconn.SecureTransport = client.config.SecureTransport
+	product := "cms"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
+	}
+	cmsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	cmsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	cmsconn.SourceIp = client.config.SourceIp
+	cmsconn.SecureTransport = client.config.SecureTransport
+	client.cmsconn = cmsconn
+
 	return do(client.cmsconn)
 }
 
@@ -849,11 +821,12 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
 	}
+	accessKey, secretKey, securityToken := client.config.GetRefreshCredential()
 	client.logconn = &sls.Client{
-		AccessKeyID:     client.config.AccessKey,
-		AccessKeySecret: client.config.SecretKey,
+		AccessKeyID:     accessKey,
+		AccessKeySecret: secretKey,
 		Endpoint:        endpoint,
-		SecurityToken:   client.config.SecurityToken,
+		SecurityToken:   securityToken,
 		UserAgent:       client.getUserAgent(),
 	}
 
@@ -861,110 +834,94 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, error)) (interface{}, error) {
-	if client.drdsconn == nil {
-		product := "drds"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
-
-		}
-		client.drdsconn = drdsconn
-	} else {
-		err := client.drdsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
-		}
+	if client.drdsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.drdsconn)
 	}
-	client.drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.drdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.drdsconn.SourceIp = client.config.SourceIp
-	client.drdsconn.SecureTransport = client.config.SecureTransport
+	product := "drds"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
 
+	}
+	drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	drdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	drdsconn.SourceIp = client.config.SourceIp
+	drdsconn.SecureTransport = client.config.SecureTransport
+	client.drdsconn = drdsconn
 	return do(client.drdsconn)
 }
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
-	if client.ddsconn == nil {
-		product := "dds"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-
-		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
-		}
-		client.ddsconn = ddsconn
-	} else {
-		err := client.ddsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
-		}
+	if client.ddsconn != nil && !client.config.needRefreshCredential() {
+		return do(client.ddsconn)
 	}
-	client.ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.ddsconn.SourceIp = client.config.SourceIp
-	client.ddsconn.SecureTransport = client.config.SecureTransport
+	product := "dds"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+
+	ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
+	}
+	ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	ddsconn.SourceIp = client.config.SourceIp
+	ddsconn.SecureTransport = client.config.SecureTransport
+	client.ddsconn = ddsconn
+
 	return do(client.ddsconn)
 }
 
 func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the GPDB client if necessary
-	if client.gpdbconn == nil {
-		product := "gpdb"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-
-		gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
-		}
-		client.gpdbconn = gpdbconn
-	} else {
-		err := client.gpdbconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
-		}
+	if client.gpdbconn != nil && !client.config.needRefreshCredential() {
+		return do(client.gpdbconn)
 	}
-	client.gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.gpdbconn.SourceIp = client.config.SourceIp
-	client.gpdbconn.SecureTransport = client.config.SecureTransport
+	product := "gpdb"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+
+	gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
+	}
+	gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	gpdbconn.SourceIp = client.config.SourceIp
+	gpdbconn.SecureTransport = client.config.SecureTransport
+	client.gpdbconn = gpdbconn
 	return do(client.gpdbconn)
 }
 
 func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
-	endpoint := client.config.FcEndpoint
-	if endpoint == "" {
-		endpoint = loadEndpoint(client.config.RegionId, FCCode)
-		if endpoint == "" {
-			endpoint = fmt.Sprintf("%s.fc.aliyuncs.com", client.config.RegionId)
-		}
+	if client.fcconn != nil && !client.config.needRefreshCredential() {
+		return do(client.fcconn)
+	}
+	product := "fc"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
 	}
 	if strings.HasPrefix(endpoint, "http") {
 		endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
-	}
-	accountId, err := client.AccountId()
-	if err != nil {
-		return nil, err
 	}
 
 	config := client.getSdkConfig(0)
@@ -974,60 +931,55 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 	clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
 		fc.WithTimeout(30), fc.WithRetryCount(DefaultClientRetryCountSmall)}
 
-	// Initialize the FC client if necessary
-	if client.fcconn == nil {
-		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
-		}
-
-		fcconn.Config.UserAgent = client.config.getUserAgent()
-		fcconn.Config.SecurityToken = client.config.SecurityToken
-		client.fcconn = fcconn
-	} else {
-		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
-		}
-		fcconn.Config.UserAgent = client.config.getUserAgent()
-		fcconn.Config.SecurityToken = client.config.SecurityToken
-		client.fcconn = fcconn
+	accessKey, secretKey, secretToken := client.config.GetRefreshCredential()
+	fcconn, err := fc.NewClient(fmt.Sprintf("https://%s", endpoint), string(ApiVersion20160815), accessKey, secretKey, clientOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 	}
+
+	fcconn.Config.UserAgent = client.config.getUserAgent()
+	fcconn.Config.SecurityToken = secretToken
+	client.fcconn = fcconn
 
 	return do(client.fcconn)
 }
 
 func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the Cloud API client if necessary
-	if client.cloudapiconn == nil {
-		endpoint := client.config.ApigatewayEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.RegionId, CLOUDAPICode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.RegionId, "CLOUDAPI", endpoint)
-		}
-		cloudapiconn, err := cloudapi.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
-		}
-		client.cloudapiconn = cloudapiconn
-	} else {
-		err := client.cloudapiconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
-		}
+	if client.cloudapiconn != nil && !client.config.needRefreshCredential() {
+		return do(client.cloudapiconn)
 	}
-	client.cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.cloudapiconn.SourceIp = client.config.SourceIp
-	client.cloudapiconn.SecureTransport = client.config.SecureTransport
+	product := "cloudapi"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.RegionId, product, endpoint)
+	}
+	cloudapiconn, err := cloudapi.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
+	}
+	cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	cloudapiconn.SourceIp = client.config.SourceIp
+	cloudapiconn.SecureTransport = client.config.SecureTransport
+	client.cloudapiconn = cloudapiconn
+
 	return do(client.cloudapiconn)
 }
 
 func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, error) {
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err == nil && credential != nil {
+		sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+		sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+		sdkConfig.SetSecurityToken(client.config.SecurityToken)
+	} else {
+		log.Printf("get credential error: %#v", err)
+	}
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
@@ -1039,6 +991,14 @@ func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, er
 func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client, error) {
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err == nil && credential != nil {
+		sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+		sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+		sdkConfig.SetSecurityToken(client.config.SecurityToken)
+	} else {
+		log.Printf("get credential error: %#v", err)
+	}
 
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
@@ -1080,6 +1040,31 @@ func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (i
 	return do(client.dhconn)
 }
 
+func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
+	if client.elasticsearchconn != nil && !client.config.needRefreshCredential() {
+		return do(client.elasticsearchconn)
+	}
+	product := "elasticsearch"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
+	}
+	elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	elasticsearchconn.SourceIp = client.config.SourceIp
+	elasticsearchconn.SecureTransport = client.config.SecureTransport
+	client.elasticsearchconn = elasticsearchconn
+
+	return do(client.elasticsearchconn)
+}
+
 func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -1102,8 +1087,8 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 			endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
 		}
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
-
-		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
+		accessKey, secretKey, token := client.config.GetRefreshCredential()
+		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, accessKey, secretKey, token)
 		proxy, err := client.getHttpProxy()
 		if proxy != nil {
 			skip, err := client.skipProxy(endpoint)
@@ -1119,36 +1104,6 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 
 	return do(client.mnsconn)
 }
-
-func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the Elasticsearch client if necessary
-	if client.elasticsearchconn == nil {
-		product := "elasticsearch"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
-		}
-		client.elasticsearchconn = elasticsearchconn
-	} else {
-		err := client.elasticsearchconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
-		}
-	}
-	client.elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.elasticsearchconn.SourceIp = client.config.SourceIp
-	client.elasticsearchconn.SecureTransport = client.config.SecureTransport
-	return do(client.elasticsearchconn)
-}
-
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {
 	return client.WithMnsClient(func(mnsClient *ali_mns.MNSClient) (interface{}, error) {
 		queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
@@ -1176,27 +1131,29 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 
 	// Initialize the TABLESTORE client if necessary
 	tableStoreClient, ok := client.tablestoreconnByInstanceName[instanceName]
-	if !ok {
-		endpoint := client.config.OtsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.RegionId, OTSCode)
-		}
-		if endpoint == "" {
-			endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
-		}
-		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", endpoint)
-		}
-		externalHeaders := make(map[string]string)
-		if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
-			externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
-		}
-		if client.config.SourceIp != "" {
-			externalHeaders["x-ots-sourceip"] = client.config.SourceIp
-		}
-		tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, tablestore.NewDefaultTableStoreConfig(), externalHeaders)
-		client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
+	if ok && !client.config.needRefreshCredential() {
+		return do(tableStoreClient)
 	}
+	endpoint := client.config.OtsEndpoint
+	if endpoint == "" {
+		endpoint = loadEndpoint(client.RegionId, OTSCode)
+	}
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
+	}
+	if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("https://%s", endpoint)
+	}
+	externalHeaders := make(map[string]string)
+	if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
+		externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
+	}
+	if client.config.SourceIp != "" {
+		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
+	}
+	accessKey, secretKey, token := client.config.GetRefreshCredential()
+	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tablestore.NewDefaultTableStoreConfig(), externalHeaders)
+	client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 
 	return do(tableStoreClient)
 }
@@ -1207,28 +1164,30 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 
 	// Initialize the TABLESTORE tunnel client if necessary
 	tunnelClient, ok := client.otsTunnelConnByInstanceName[instanceName]
-	if !ok {
-		endpoint := client.config.OtsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.RegionId, OTSCode)
-		}
-		if endpoint == "" {
-			endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
-		}
-		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", endpoint)
-		}
-
-		externalHeaders := make(map[string]string)
-		if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
-			externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
-		}
-		if client.config.SourceIp != "" {
-			externalHeaders["x-ots-sourceip"] = client.config.SourceIp
-		}
-		tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, otsTunnel.DefaultTunnelConfig, externalHeaders)
-		client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
+	if ok && !client.config.needRefreshCredential() {
+		return do(tunnelClient)
 	}
+	endpoint := client.config.OtsEndpoint
+	if endpoint == "" {
+		endpoint = loadEndpoint(client.RegionId, OTSCode)
+	}
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
+	}
+	if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("https://%s", endpoint)
+	}
+
+	externalHeaders := make(map[string]string)
+	if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
+		externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
+	}
+	if client.config.SourceIp != "" {
+		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
+	}
+	accessKey, secretKey, token := client.config.GetRefreshCredential()
+	tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsTunnel.DefaultTunnelConfig, externalHeaders)
+	client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
 
 	return do(tunnelClient)
 }
@@ -1287,20 +1246,22 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 }
 
 func (client *AliyunClient) AccountId() (string, error) {
+	if client.accountId != "" {
+		return client.accountId, nil
+	}
+
 	client.accountIdMutex.Lock()
 	defer client.accountIdMutex.Unlock()
 
-	if client.accountId == "" {
-		log.Printf("[DEBUG] account_id not provided, attempting to retrieve it automatically...")
-		identity, err := client.GetCallerIdentity()
-		if err != nil {
-			return "", err
-		}
-		if identity.AccountId == "" {
-			return "", fmt.Errorf("caller identity doesn't contain any AccountId")
-		}
-		client.accountId = identity.AccountId
+	log.Printf("[DEBUG] account_id not provided, attempting to retrieve it automatically...")
+	identity, err := client.GetCallerIdentity()
+	if err != nil {
+		return "", err
 	}
+	if identity.AccountId == "" {
+		return "", fmt.Errorf("caller identity doesn't contain any AccountId")
+	}
+	client.accountId = identity.AccountId
 	return client.accountId, nil
 }
 
@@ -1467,408 +1428,355 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	return identity, err
 }
 func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interface{}, error)) (interface{}, error) {
-	if client.ddosbgpconn == nil {
-		product := "ddosbgp"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
-		}
-		client.ddosbgpconn = ddosbgpconn
-	} else {
-		err := client.ddosbgpconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DdosCoo client: %#v", err)
-		}
+	if client.ddosbgpconn != nil && !client.config.needRefreshCredential() {
+		return do(client.ddosbgpconn)
 	}
-	client.ddosbgpconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.ddosbgpconn.SourceIp = client.config.SourceIp
-	client.ddosbgpconn.SecureTransport = client.config.SecureTransport
+	product := "ddosbgp"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
+	}
+	ddosbgpconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	ddosbgpconn.SourceIp = client.config.SourceIp
+	ddosbgpconn.SecureTransport = client.config.SecureTransport
+	client.ddosbgpconn = ddosbgpconn
+
 	return do(client.ddosbgpconn)
 }
 func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interface{}, error)) (interface{}, error) {
-	productCode := "alikafka"
-	endpoint := client.config.AlikafkaEndpoint
-	if client.alikafkaconn == nil {
-		if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-			if err := client.loadEndpoint(productCode); err != nil {
-				return nil, err
-			}
-		}
-		if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-			endpoint = v.(string)
-		}
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ALIKAFKACode), endpoint)
-		}
-		alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
-		}
-		alikafkaconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		alikafkaconn.SourceIp = client.config.SourceIp
-		alikafkaconn.SecureTransport = client.config.SecureTransport
-		client.alikafkaconn = alikafkaconn
+	if client.alikafkaconn != nil && !client.config.needRefreshCredential() {
+		return do(client.alikafkaconn)
 	}
+	product := "alikafka"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
+	}
+	alikafkaconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	alikafkaconn.SourceIp = client.config.SourceIp
+	alikafkaconn.SecureTransport = client.config.SecureTransport
+	client.alikafkaconn = alikafkaconn
 
 	return do(client.alikafkaconn)
 }
 
 func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, error)) (interface{}, error) {
-	if client.emrconn == nil {
-		product := "emr"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
-		}
-		client.emrconn = emrConn
-	} else {
-		err := client.emrconn.InitWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
-		}
+	if client.emrconn != nil && !client.config.needRefreshCredential() {
+		return do(client.emrconn)
 	}
-	client.emrconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.emrconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.emrconn.SourceIp = client.config.SourceIp
-	client.emrconn.SecureTransport = client.config.SecureTransport
+	product := "emr"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
+	}
+	emrConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	emrConn.SourceIp = client.config.SourceIp
+	emrConn.SecureTransport = client.config.SecureTransport
+	client.emrconn = emrConn
 
 	return do(client.emrconn)
 }
 
 func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the SAG client if necessary
-	if client.sagconn == nil {
-		endpoint := client.config.SagEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, SAGCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(SAGCode), endpoint)
-		}
-		sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
-		}
-		sagconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		sagconn.SourceIp = client.config.SourceIp
-		sagconn.SecureTransport = client.config.SecureTransport
-		client.sagconn = sagconn
+	if client.sagconn != nil && !client.config.needRefreshCredential() {
+		return do(client.sagconn)
 	}
+	product := "smartag"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
+	}
+	sagconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	sagconn.SourceIp = client.config.SourceIp
+	sagconn.SecureTransport = client.config.SecureTransport
+	client.sagconn = sagconn
 
 	return do(client.sagconn)
 }
 
 func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the ddoscoo client if necessary
-	if client.dbauditconn == nil {
-		product := "yundun_dbaudit"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
-		}
-		client.dbauditconn = dbauditconn
-	} else {
-		err := client.dbauditconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
-		}
+	if client.dbauditconn != nil && !client.config.needRefreshCredential() {
+		return do(client.dbauditconn)
 	}
-	client.dbauditconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.dbauditconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.dbauditconn.SourceIp = client.config.SourceIp
-	client.dbauditconn.SecureTransport = client.config.SecureTransport
+	product := "yundun_dbaudit"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
+	}
+
+	dbauditconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	dbauditconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	dbauditconn.SourceIp = client.config.SourceIp
+	dbauditconn.SecureTransport = client.config.SecureTransport
+	client.dbauditconn = dbauditconn
+
 	return do(client.dbauditconn)
 }
 func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{}, error)) (interface{}, error) {
-	if client.marketconn == nil {
-		product := "market"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
-		}
-		client.marketconn = marketconn
-	} else {
-		err := client.marketconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
-		}
+	if client.marketconn != nil && !client.config.needRefreshCredential() {
+		return do(client.marketconn)
 	}
-	client.marketconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.marketconn.SourceIp = client.config.SourceIp
-	client.marketconn.SecureTransport = client.config.SecureTransport
+	product := "market"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
+	}
+
+	marketconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	marketconn.SourceIp = client.config.SourceIp
+	marketconn.SecureTransport = client.config.SecureTransport
+	client.marketconn = marketconn
 
 	return do(client.marketconn)
 }
 
 func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{}, error)) (interface{}, error) {
-	if client.hbaseconn == nil {
-		product := "hbase"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
-		}
-		client.hbaseconn = hbaseconn
-	} else {
-		err := client.hbaseconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the HBase client: %#v", err)
-		}
+	if client.hbaseconn != nil && !client.config.needRefreshCredential() {
+		return do(client.hbaseconn)
 	}
-	client.hbaseconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.hbaseconn.SourceIp = client.config.SourceIp
-	client.hbaseconn.SecureTransport = client.config.SecureTransport
+	product := "hbase"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
+	}
+	hbaseconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	hbaseconn.SourceIp = client.config.SourceIp
+	hbaseconn.SecureTransport = client.config.SecureTransport
+
+	client.hbaseconn = hbaseconn
 
 	return do(client.hbaseconn)
 }
 
 func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the adb client if necessary
-	if client.adbconn == nil {
-		endpoint := client.config.AdbEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ADBCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("%s.adb.aliyuncs.com", client.config.RegionId)
-			}
-		}
-
-		adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
-
-		}
-		adbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		adbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		adbconn.SourceIp = client.config.SourceIp
-		adbconn.SecureTransport = client.config.SecureTransport
-		client.adbconn = adbconn
+	if client.adbconn != nil && !client.config.needRefreshCredential() {
+		return do(client.adbconn)
 	}
+	product := "adb"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
+
+	}
+	adbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	adbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	adbconn.SourceIp = client.config.SourceIp
+	adbconn.SecureTransport = client.config.SecureTransport
+	client.adbconn = adbconn
 
 	return do(client.adbconn)
 }
 func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
-	if client.cbnConn == nil {
-		product := "cbn"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
-		}
-		client.cbnConn = cbnConn
-	} else {
-		err := client.cbnConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CBN client: %#v", err)
-		}
+	if client.cbnConn != nil && !client.config.needRefreshCredential() {
+		return do(client.cbnConn)
 	}
-	client.cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.cbnConn.SourceIp = client.config.SourceIp
-	client.cbnConn.SecureTransport = client.config.SecureTransport
+	product := "cbn"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
+	}
+
+	cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	cbnConn.SourceIp = client.config.SourceIp
+	cbnConn.SecureTransport = client.config.SecureTransport
+	client.cbnConn = cbnConn
+
 	return do(client.cbnConn)
 }
 
 func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, error)) (interface{}, error) {
-	if client.edasconn == nil {
-		product := "edas"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
-		}
-		edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
-		}
-		client.edasconn = edasconn
-	} else {
-		err := client.edasconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
-		}
+	if client.edasconn != nil && !client.config.needRefreshCredential() {
+		return do(client.edasconn)
 	}
-	client.edasconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.edasconn.SourceIp = client.config.SourceIp
-	client.edasconn.SecureTransport = client.config.SecureTransport
+	product := "edas"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
+	}
+	edasconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	edasconn.SourceIp = client.config.SourceIp
+	edasconn.SecureTransport = client.config.SecureTransport
+	client.edasconn = edasconn
 
 	return do(client.edasconn)
 }
 
 func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
-	if client.alidnsConn == nil {
-		endpoint := client.config.AlidnsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, AlidnsCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(AlidnsCode), endpoint)
-		}
-
-		alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
-		}
-		alidnsConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		alidnsConn.SourceIp = client.config.SourceIp
-		alidnsConn.SecureTransport = client.config.SecureTransport
-		client.alidnsConn = alidnsConn
+	if client.alidnsConn != nil && !client.config.needRefreshCredential() {
+		return do(client.alidnsConn)
 	}
+	product := "alidns"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+
+	alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
+	}
+	alidnsConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	alidnsConn.SourceIp = client.config.SourceIp
+	alidnsConn.SecureTransport = client.config.SecureTransport
+	client.alidnsConn = alidnsConn
 	return do(client.alidnsConn)
 }
 
 func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (interface{}, error)) (interface{}, error) {
-	if client.cassandraConn == nil {
-		endpoint := client.config.CassandraEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CassandraCode)
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CassandraCode), endpoint)
-		}
-		cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
-		}
-		cassandraConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		cassandraConn.SourceIp = client.config.SourceIp
-		cassandraConn.SecureTransport = client.config.SecureTransport
-		client.cassandraConn = cassandraConn
+	if client.cassandraConn != nil && !client.config.needRefreshCredential() {
+		return do(client.cassandraConn)
 	}
+	product := "cassandra"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+	cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
+	}
+	cassandraConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	cassandraConn.SourceIp = client.config.SourceIp
+	cassandraConn.SecureTransport = client.config.SecureTransport
+	client.cassandraConn = cassandraConn
 	return do(client.cassandraConn)
 }
 
 func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, error)) (interface{}, error) {
-	if client.eciConn == nil {
-		endpoint := client.config.EciEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, EciCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
-		}
-
-		eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
-		}
-		eciConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		eciConn.SourceIp = client.config.SourceIp
-		eciConn.SecureTransport = client.config.SecureTransport
-		client.eciConn = eciConn
+	if client.eciConn != nil && !client.config.needRefreshCredential() {
+		return do(client.eciConn)
 	}
+	product := "eci"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
+	}
+
+	eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
+	}
+	eciConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	eciConn.SourceIp = client.config.SourceIp
+	eciConn.SecureTransport = client.config.SecureTransport
+	client.eciConn = eciConn
 	return do(client.eciConn)
 }
-
-func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, error)) (interface{}, error) {
-	if client.dcdnConn == nil {
-		endpoint := client.config.DcdnEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, DcdnCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(DcdnCode), endpoint)
-		}
-
-		dcdnConn, err := dcdn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
-		}
-		dcdnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		dcdnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		dcdnConn.SourceIp = client.config.SourceIp
-		dcdnConn.SecureTransport = client.config.SecureTransport
-		client.dcdnConn = dcdnConn
-	}
-	return do(client.dcdnConn)
-}
-
 func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
-	if client.r_kvstoreConn == nil {
-		product := "r_kvstore"
-		endpoint, err := client.loadApiEndpoint(product)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, "r-kvstore", endpoint)
-		}
-		r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
-		}
-		client.r_kvstoreConn = r_kvstoreConn
-	} else {
-		err := client.r_kvstoreConn.InitWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Redis client: %#v", err)
-		}
+	if client.r_kvstoreConn != nil && !client.config.needRefreshCredential() {
+		return do(client.r_kvstoreConn)
 	}
-	client.r_kvstoreConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	client.r_kvstoreConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	client.r_kvstoreConn.SourceIp = client.config.SourceIp
-	client.r_kvstoreConn.SecureTransport = client.config.SecureTransport
+	product := "r_kvstore"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, "r-kvstore", endpoint)
+	}
+	r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
+	}
+
+	r_kvstoreConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+	r_kvstoreConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+	r_kvstoreConn.SourceIp = client.config.SourceIp
+	r_kvstoreConn.SecureTransport = client.config.SecureTransport
+	client.r_kvstoreConn = r_kvstoreConn
+
 	return do(client.r_kvstoreConn)
 }
 
@@ -1903,10 +1811,10 @@ func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) 
 			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
 		}
 	} else {
-		return v.(string), nil
+		return client.formatEndpointWithAccountID(productCode, v.(string))
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		return v.(string), nil
+		return client.formatEndpointWithAccountID(productCode, v.(string))
 	}
 	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 }
@@ -2270,6 +2178,24 @@ func formatError(response map[string]interface{}, err error) error {
 		})
 	}
 	return err
+}
+
+func (client *AliyunClient) formatEndpointWithAccountID(productCode string, endpoint string) (string, error) {
+	if endpoint == "" {
+		return endpoint, nil
+	}
+	switch productCode {
+	case "fc_open", "fc":
+		accountId, err := client.AccountId()
+		if err != nil {
+			return endpoint, err
+		}
+		if strings.HasPrefix(endpoint, accountId) {
+			return endpoint, nil
+		}
+		return fmt.Sprintf("%s.%s", accountId, endpoint), nil
+	}
+	return endpoint, nil
 }
 
 type ossCredentials struct {
