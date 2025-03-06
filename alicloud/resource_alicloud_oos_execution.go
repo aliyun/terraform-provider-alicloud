@@ -188,7 +188,7 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	responseExecution := response["Execution"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseExecution["ExecutionId"]))
 	oosService := OosService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, oosService.OosExecutionStateRefreshFunc(d.Id(), "Status", []string{"Failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Success", "Failed", "Cancelled"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, oosService.OosExecutionStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
