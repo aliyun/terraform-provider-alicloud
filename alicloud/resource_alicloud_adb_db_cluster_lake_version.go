@@ -48,24 +48,62 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"compute_resource": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"storage_resource": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
+			"product_form": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"product_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"compute_resource": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"storage_resource": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"reserved_node_size": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"reserved_node_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"disk_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"kms_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"security_ips": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"enable_ssl": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"db_cluster_description": {
 				Type:     schema.TypeString,
@@ -158,9 +196,39 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 	request["VPCId"] = d.Get("vpc_id")
 	request["VSwitchId"] = d.Get("vswitch_id")
 	request["ZoneId"] = d.Get("zone_id")
-	request["ComputeResource"] = d.Get("compute_resource")
-	request["StorageResource"] = d.Get("storage_resource")
 	request["PayType"] = convertAdbDbClusterLakeVersionPaymentTypeRequest(d.Get("payment_type"))
+
+	if v, ok := d.GetOk("product_form"); ok {
+		request["ProductForm"] = v
+	}
+
+	if v, ok := d.GetOk("product_version"); ok {
+		request["ProductVersion"] = v
+	}
+
+	if v, ok := d.GetOk("compute_resource"); ok {
+		request["ComputeResource"] = v
+	}
+
+	if v, ok := d.GetOk("storage_resource"); ok {
+		request["StorageResource"] = v
+	}
+
+	if v, ok := d.GetOk("reserved_node_size"); ok {
+		request["ReservedNodeSize"] = v
+	}
+
+	if v, ok := d.GetOkExists("reserved_node_count"); ok {
+		request["ReservedNodeCount"] = v
+	}
+
+	if v, ok := d.GetOkExists("disk_encryption"); ok {
+		request["DiskEncryption"] = v
+	}
+
+	if v, ok := d.GetOk("kms_id"); ok {
+		request["KmsId"] = v
+	}
 
 	if v, ok := d.GetOk("db_cluster_description"); ok {
 		request["DBClusterDescription"] = v
@@ -243,6 +311,12 @@ func resourceAliCloudAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta in
 	d.Set("compute_resource", object["ComputeResource"])
 	d.Set("storage_resource", object["StorageResource"])
 	d.Set("payment_type", convertAdbDbClusterLakeVersionPaymentTypeResponse(object["PayType"]))
+	d.Set("product_form", object["ProductForm"])
+	d.Set("product_version", object["ProductVersion"])
+	d.Set("reserved_node_size", object["ReservedNodeSize"])
+	d.Set("reserved_node_count", object["ReservedNodeCount"])
+	d.Set("disk_encryption", object["DiskEncryption"])
+	d.Set("kms_id", object["KmsId"])
 	d.Set("db_cluster_description", object["DBClusterDescription"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("engine", object["Engine"])
@@ -264,6 +338,13 @@ func resourceAliCloudAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta in
 
 	d.Set("security_ips", SecurityIPsObject["SecurityIPList"])
 
+	sslObject, err := adbService.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
+	if err != nil {
+		log.Printf("[WARN] Resource alicloud_adb_db_cluster_lake_version DescribeAdbDbClusterLakeVersionDBClusterSSL Failed!!! %s", err)
+	} else {
+		d.Set("enable_ssl", sslObject["SSLEnabled"])
+	}
+
 	return nil
 }
 
@@ -283,12 +364,32 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	if !d.IsNewResource() && d.HasChange("compute_resource") {
 		update = true
 	}
-	request["ComputeResource"] = d.Get("compute_resource")
+	if v, ok := d.GetOk("compute_resource"); ok {
+		request["ComputeResource"] = v
+	}
 
 	if !d.IsNewResource() && d.HasChange("storage_resource") {
 		update = true
 	}
-	request["StorageResource"] = d.Get("storage_resource")
+	if v, ok := d.GetOk("storage_resource"); ok {
+		request["StorageResource"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("reserved_node_size") {
+		update = true
+
+		if v, ok := d.GetOk("reserved_node_size"); ok {
+			request["ReservedNodeSize"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("reserved_node_count") {
+		update = true
+
+		if v, ok := d.GetOkExists("reserved_node_count"); ok {
+			request["ReservedNodeCount"] = v
+		}
+	}
 
 	if update {
 		action := "ModifyDBCluster"
@@ -296,7 +397,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -317,6 +418,9 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 		d.SetPartial("compute_resource")
 		d.SetPartial("storage_resource")
+		d.SetPartial("product_form")
+		d.SetPartial("reserved_node_size")
+		d.SetPartial("reserved_node_count")
 	}
 
 	update = false
@@ -357,6 +461,52 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("security_ips")
+	}
+
+	update = false
+	modifyDBClusterSSLReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("enable_ssl") {
+		update = true
+
+		if v, ok := d.GetOkExists("enable_ssl"); ok {
+			modifyDBClusterSSLReq["EnableSSL"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyDBClusterSSL"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterSSLReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBClusterSSLReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		sslEnabledStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(modifyDBClusterSSLReq["EnableSSL"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d, []string{}))
+		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("enable_ssl")
 	}
 
 	update = false
