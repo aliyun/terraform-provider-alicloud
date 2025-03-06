@@ -30,6 +30,7 @@ data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
+
 data "alicloud_instance_types" "default" {
   availability_zone = data.alicloud_zones.default.zones.0.id
 }
@@ -52,8 +53,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = "terraform-example"
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = "terraform-example"
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_ecs_launch_template" "default" {
@@ -144,16 +145,16 @@ The following arguments are supported:
 * `internet_max_bandwidth_out` - (Optional) Maximum outbound bandwidth from the Internet, its unit of measurement is Mbit/s. Value range: [0, 100].
 * `io_optimized` - (Optional) Whether it is an I/O-optimized instance or not. Valid values: `none`, `optimized`.
 * `key_pair_name` - (Optional) The name of the key pair.
-    - Ignore this parameter for Windows instances. It is null by default. Even if you enter this parameter, only the  Password content is used.
-    - The password logon method for Linux instances is set to forbidden upon initialization.
+  - Ignore this parameter for Windows instances. It is null by default. Even if you enter this parameter, only the  Password content is used.
+  - The password logon method for Linux instances is set to forbidden upon initialization.
 * `launch_template_name` - (Optional, ForceNew) The name of Launch Template.
 * `network_interfaces` - (Optional) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `network_type` - (Optional) Network type of the instance. Valid values: `classic`, `vpc`.
 * `password_inherit` - (Optional) Whether to use the password preset by the mirror.
-* `period_unit` - (Optional, ForceNew, Computed, Available since v1.226.0) The unit of the subscription period. Valid values: `Month` (default).
+* `period_unit` - (Optional, ForceNew, Computed, Available since v1.226.0) The unit of the subscription period. Default value: `Month`. Valid values: `Week`, `Month`.
 * `period` - (Optional, ForceNew, Computed) The subscription period of the instance. Unit: months. This parameter takes effect and is required only when InstanceChargeType is set to PrePaid. If the DedicatedHostId parameter is specified, the value of the Period parameter must be within the subscription period of the dedicated host.
-    - When the PeriodUnit parameter is set to `Week`, the valid values of the Period parameter are `1`, `2`, `3`, and `4`.
-    - When the PeriodUnit parameter is set to `Month`, the valid values of the Period parameter are `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `12`, `24`, `36`, `48`, and `60`.
+  - When the `period_unit` is set to `Week`, the valid values of the Period parameter are `1`, `2`, `3`.
+  - When the `period_unit` is set to `Month`, the valid values of the Period parameter are `1`, `2`, `3`, `6`, `12`, `24`, `36`, `48`, and `60`.
 * `private_ip_address` - (Optional) The private IP address of the instance.
 * `ram_role_name` - (Optional) The RAM role name of the instance. You can use the RAM API ListRoles to query instance RAM role names.
 * `resource_group_id` - (Optional) The ID of the resource group to which to assign the instance, Elastic Block Storage (EBS) device, and ENI.
@@ -212,6 +213,7 @@ The network_interfaces supports the following:
 * `primary_ip` - (Optional) The primary private IP address of the ENI.
 * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
 * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
+* `delete_on_release` - (Optional, Bool, Available since v1.245.0) Specifies whether to release ENI N when the instance is released. Valid values: `true`, `false`.
 
 ### `data_disks`
 
