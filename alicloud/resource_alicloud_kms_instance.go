@@ -275,12 +275,6 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	request["Parameter"] = parameterMapList
 
 	request["Period"] = d.Get("period")
-	if v, ok := d.GetOkExists("renew_period"); ok && v.(int) > 0 && request["SubscriptionType"] == "Subscription" {
-		request["RenewPeriod"] = v
-	}
-	if v, ok := d.GetOk("renew_status"); ok && request["SubscriptionType"] == "Subscription" {
-		request["RenewalStatus"] = v
-	}
 
 	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
@@ -294,6 +288,14 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 		if client.IsInternationalAccount() {
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
+	}
+
+	if v, ok := d.GetOkExists("renew_period"); ok && v.(int) > 0 && request["SubscriptionType"] == "Subscription" {
+		request["RenewPeriod"] = v
+	}
+
+	if v, ok := d.GetOk("renew_status"); ok && request["SubscriptionType"] == "Subscription" {
+		request["RenewalStatus"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
