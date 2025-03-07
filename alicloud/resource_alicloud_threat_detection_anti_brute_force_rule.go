@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -11,81 +12,76 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudThreatDetectionAntiBruteForceRule() *schema.Resource {
+func resourceAliCloudThreatDetectionAntiBruteForceRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudThreatDetectionAntiBruteForceRuleCreate,
-		Read:   resourceAlicloudThreatDetectionAntiBruteForceRuleRead,
-		Update: resourceAlicloudThreatDetectionAntiBruteForceRuleUpdate,
-		Delete: resourceAlicloudThreatDetectionAntiBruteForceRuleDelete,
+		Create: resourceAliCloudThreatDetectionAntiBruteForceRuleCreate,
+		Read:   resourceAliCloudThreatDetectionAntiBruteForceRuleRead,
+		Update: resourceAliCloudThreatDetectionAntiBruteForceRuleUpdate,
+		Delete: resourceAliCloudThreatDetectionAntiBruteForceRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"anti_brute_force_rule_id": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
 			"anti_brute_force_rule_name": {
-				Required: true,
 				Type:     schema.TypeString,
+				Required: true,
 			},
 			"default_rule": {
-				Optional: true,
-				Computed: true,
 				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"fail_count": {
-				Required: true,
 				Type:     schema.TypeInt,
+				Required: true,
 			},
 			"forbidden_time": {
-				Required: true,
 				Type:     schema.TypeInt,
+				Required: true,
 			},
 			"span": {
-				Required: true,
 				Type:     schema.TypeInt,
+				Required: true,
 			},
 			"uuid_list": {
+				Type:     schema.TypeSet,
 				Required: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
 }
 
-func resourceAlicloudThreatDetectionAntiBruteForceRuleCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	request := make(map[string]interface{})
-	var err error
+func resourceAliCloudThreatDetectionAntiBruteForceRuleCreate(d *schema.ResourceData, meta interface{}) error {
 
-	if v, ok := d.GetOk("anti_brute_force_rule_name"); ok {
-		request["Name"] = v
-	}
-	if v, ok := d.GetOk("default_rule"); ok {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateAntiBruteForceRule"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	if v, ok := d.GetOkExists("default_rule"); ok {
 		request["DefaultRule"] = v
 	}
-	if v, ok := d.GetOk("fail_count"); ok {
-		request["FailCount"] = v
-	}
-	if v, ok := d.GetOk("forbidden_time"); ok {
-		request["ForbiddenTime"] = v
-	}
-	if v, ok := d.GetOk("span"); ok {
-		request["Span"] = v
-	}
+	request["FailCount"] = d.Get("fail_count")
+	request["ForbiddenTime"] = d.Get("forbidden_time")
+	request["Name"] = d.Get("anti_brute_force_rule_name")
+	request["Span"] = d.Get("span")
 	if v, ok := d.GetOk("uuid_list"); ok {
-		request["UuidList"] = v.([]interface{})
+		uuidListMapsArray := v.(*schema.Set).List()
+		request["UuidList"] = uuidListMapsArray
 	}
 
-	var response map[string]interface{}
-	action := "CreateAntiBruteForceRule"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -93,98 +89,99 @@ func resourceAlicloudThreatDetectionAntiBruteForceRuleCreate(d *schema.ResourceD
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_anti_brute_force_rule", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if v, err := jsonpath.Get("$.CreateAntiBruteForceRule.RuleId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_threat_detection_anti_brute_force_rule")
-	} else {
-		d.SetId(fmt.Sprint(v))
-	}
+	id, _ := jsonpath.Get("$.CreateAntiBruteForceRule.RuleId", response)
+	d.SetId(fmt.Sprint(id))
 
-	return resourceAlicloudThreatDetectionAntiBruteForceRuleRead(d, meta)
+	return resourceAliCloudThreatDetectionAntiBruteForceRuleRead(d, meta)
 }
 
-func resourceAlicloudThreatDetectionAntiBruteForceRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionAntiBruteForceRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	sasService := SasService{client}
+	threatDetectionServiceV2 := ThreatDetectionServiceV2{client}
 
-	object, err := sasService.DescribeThreatDetectionAntiBruteForceRule(d.Id())
+	objectRaw, err := threatDetectionServiceV2.DescribeThreatDetectionAntiBruteForceRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_threat_detection_anti_brute_force_rule sasService.DescribeThreatDetectionAntiBruteForceRule Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_threat_detection_anti_brute_force_rule DescribeThreatDetectionAntiBruteForceRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("anti_brute_force_rule_name", object["Name"])
-	d.Set("default_rule", object["DefaultRule"])
-	d.Set("fail_count", object["FailCount"])
-	d.Set("forbidden_time", object["ForbiddenTime"])
-	d.Set("span", object["Span"])
-	uuidList, _ := jsonpath.Get("$.UuidList", object)
-	d.Set("uuid_list", uuidList)
+
+	d.Set("anti_brute_force_rule_name", objectRaw["Name"])
+	d.Set("default_rule", objectRaw["DefaultRule"])
+	d.Set("fail_count", objectRaw["FailCount"])
+	d.Set("forbidden_time", objectRaw["ForbiddenTime"])
+	d.Set("span", objectRaw["Span"])
+
+	uuidListRaw := make([]interface{}, 0)
+	if objectRaw["UuidList"] != nil {
+		uuidListRaw = objectRaw["UuidList"].([]interface{})
+	}
+
+	err = d.Set("uuid_list", uuidListRaw)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func resourceAlicloudThreatDetectionAntiBruteForceRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionAntiBruteForceRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
 
 	var err error
-	update := false
-	request := map[string]interface{}{
-		"Id": d.Id(),
-	}
+	action := "ModifyAntiBruteForceRule"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Id"] = d.Id()
 
-	if d.HasChange("anti_brute_force_rule_name") {
-		update = true
-		if v, ok := d.GetOk("anti_brute_force_rule_name"); ok {
-			request["Name"] = v
-		}
-	}
 	if d.HasChange("default_rule") {
 		update = true
-		if v, ok := d.GetOk("default_rule"); ok {
-			request["DefaultRule"] = v
-		}
+		request["DefaultRule"] = d.Get("default_rule")
 	}
+
 	if d.HasChange("fail_count") {
 		update = true
-		if v, ok := d.GetOk("fail_count"); ok {
-			request["FailCount"] = v
-		}
 	}
+	request["FailCount"] = d.Get("fail_count")
 	if d.HasChange("forbidden_time") {
 		update = true
-		if v, ok := d.GetOk("forbidden_time"); ok {
-			request["ForbiddenTime"] = v
-		}
 	}
+	request["ForbiddenTime"] = d.Get("forbidden_time")
+	if d.HasChange("anti_brute_force_rule_name") {
+		update = true
+	}
+	request["Name"] = d.Get("anti_brute_force_rule_name")
 	if d.HasChange("span") {
 		update = true
-		if v, ok := d.GetOk("span"); ok {
-			request["Span"] = v
-		}
 	}
+	request["Span"] = d.Get("span")
 	if d.HasChange("uuid_list") {
 		update = true
-		if v, ok := d.GetOk("uuid_list"); ok {
-			request["UuidList"] = v.([]interface{})
-		}
+	}
+	if v, ok := d.GetOk("uuid_list"); ok || d.HasChange("uuid_list") {
+		uuidListMapsArray := v.(*schema.Set).List()
+		request["UuidList"] = uuidListMapsArray
 	}
 
 	if update {
-		action := "ModifyAntiBruteForceRule"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -192,30 +189,32 @@ func resourceAlicloudThreatDetectionAntiBruteForceRuleUpdate(d *schema.ResourceD
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudThreatDetectionAntiBruteForceRuleRead(d, meta)
+	return resourceAliCloudThreatDetectionAntiBruteForceRuleRead(d, meta)
 }
 
-func resourceAlicloudThreatDetectionAntiBruteForceRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionAntiBruteForceRuleDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var err error
-
-	request := map[string]interface{}{
-
-		"Ids.1": d.Id(),
-	}
-
 	action := "DeleteAntiBruteForceRule"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Ids.1"] = d.Id()
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -223,14 +222,23 @@ func resourceAlicloudThreatDetectionAntiBruteForceRuleDelete(d *schema.ResourceD
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
+}
+
+func convertThreatDetectionAntiBruteForceRuleRulesIdResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	}
+	return source
 }
