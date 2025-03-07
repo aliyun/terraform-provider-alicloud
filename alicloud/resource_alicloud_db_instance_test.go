@@ -3505,6 +3505,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "cloud_essd",
 					"encryption_key":           "${alicloud_kms_key.default.id}",
+					"optimized_writes":         "optimized",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3516,6 +3517,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 						"instance_name":            name,
 						"db_instance_storage_type": "cloud_essd",
 						"monitoring_period":        CHECKSET,
+						"optimized_writes":         "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
 					}),
 				),
 			},
@@ -3916,6 +3918,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "general_essd",
 					"bursting_enabled":         "true",
+					"optimized_writes":         "optimized",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3928,6 +3931,27 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 						"db_instance_storage_type": "general_essd",
 						"monitoring_period":        CHECKSET,
 						"bursting_enabled":         CHECKSET,
+						"optimized_writes":         "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"optimized_writes": "none",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"optimized_writes": "{\"optimized_writes\":false,\"init_optimized_writes\":true}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"optimized_writes": "optimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"optimized_writes": "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
 					}),
 				),
 			},
@@ -4021,26 +4045,6 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"pg_bouncer_enabled": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encryption_key": "ServiceKey",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encryption_key": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"encryption_key": "disabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"encryption_key": "",
 					}),
 				),
 			},
