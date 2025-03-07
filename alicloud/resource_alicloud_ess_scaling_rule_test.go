@@ -458,26 +458,6 @@ func TestAccAliCloudEssScalingRule_step_rule_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				//	resource "alicloud_ess_scaling_rule" "default" {
-				//	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-				//	scaling_rule_type = "StepScalingRule"
-				//	adjustment_type = "TotalCapacity"
-				//	estimated_instance_warmup = 200
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "5.32"
-				//	metric_interval_upper_bound = "20.1"
-				//	scaling_adjustment = 1
-				//}
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "20.1"
-				//	metric_interval_upper_bound = "22.1"
-				//	scaling_adjustment = 2
-				//}
-				//	step_adjustment {
-				//	metric_interval_lower_bound = "22.1"
-				//	scaling_adjustment = 3
-				//}
-				//}
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
 					"scaling_rule_type":         "StepScalingRule",
