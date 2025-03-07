@@ -619,3 +619,17 @@ func (s *SelectDBService) SetResourceTags(id string, added map[string]interface{
 	}
 	return nil
 }
+
+func (s *SelectDBService) ModifySelectDBInstanceAdminPass(id string, adminpass string) (object map[string]interface{}, err error) {
+
+	action := "ResetAccountPassword"
+
+	request := map[string]interface{}{
+		"DBInstanceId":    id,
+		"RegionId":        s.client.RegionId,
+		"AccountName":     "admin",
+		"AccountPassword": adminpass,
+	}
+
+	return s.RequestProcessForSelectDB(request, action, "GET")
+}
