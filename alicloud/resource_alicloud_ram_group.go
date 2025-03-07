@@ -1,35 +1,52 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
+	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudRamGroup() *schema.Resource {
+func resourceAliCloudRamGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamGroupCreate,
-		Read:   resourceAlicloudRamGroupRead,
-		Update: resourceAlicloudRamGroupUpdate,
-		Delete: resourceAlicloudRamGroupDelete,
+		Create: resourceAliCloudRamGroupCreate,
+		Read:   resourceAliCloudRamGroupRead,
+		Update: resourceAliCloudRamGroupUpdate,
+		Delete: resourceAliCloudRamGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"comments": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"group_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				ForceNew:   true,
+				Deprecated: "Field `name` has been deprecated from provider version 1.245.0. New field `group_name` instead.",
 			},
 			"force": {
 				Type:     schema.TypeBool,
@@ -39,23 +56,28 @@ func resourceAlicloudRamGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRamGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	ramSercvice := RamService{client}
-	request := map[string]interface{}{
-		"RegionId":  client.RegionId,
-		"GroupName": d.Get("name").(string),
-	}
-	if v, ok := d.GetOk("comments"); ok {
-		request["Comments"] = v.(string)
-	}
 
 	action := "CreateGroup"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("group_name"); ok {
+		request["GroupName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["GroupName"] = v
+	}
+
+	if v, ok := d.GetOk("comments"); ok {
+		request["Comments"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -63,38 +85,66 @@ func resourceAlicloudRamGroupCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_group", action, AlibabaCloudSdkGoERROR)
 	}
 
-	groupName, _ := jsonpath.Get("$.Group.GroupName", response)
-	d.SetId(fmt.Sprint(groupName))
-	err = ramSercvice.WaitForRamGroup(d.Id(), Normal, DefaultTimeout)
-	if err != nil {
-		return WrapError(err)
-	}
-	return resourceAlicloudRamGroupRead(d, meta)
+	id, _ := jsonpath.Get("$.Group.GroupName", response)
+	d.SetId(fmt.Sprint(id))
+
+	return resourceAliCloudRamGroupRead(d, meta)
 }
 
-func resourceAlicloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ramServiceV2 := RamServiceV2{client}
 
-	request := ram.CreateUpdateGroupRequest()
-	request.RegionId = client.RegionId
-	request.GroupName = d.Id()
+	objectRaw, err := ramServiceV2.DescribeRamGroup(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_group DescribeRamGroup Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	d.Set("comments", objectRaw["Comments"])
+	d.Set("create_time", objectRaw["CreateDate"])
+	d.Set("group_name", objectRaw["GroupName"])
+	d.Set("name", objectRaw["GroupName"])
+
+	return nil
+}
+
+func resourceAliCloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	action := "UpdateGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["GroupName"] = d.Id()
 
 	if d.HasChange("comments") {
-		request.NewComments = d.Get("comments").(string)
+		update = true
+	}
+	if v, ok := d.GetOk("comments"); ok {
+		request["NewComments"] = v
+	}
 
-		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.UpdateGroup(request)
-			})
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -102,58 +152,37 @@ func resourceAlicloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
-
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudRamGroupRead(d, meta)
+	return resourceAliCloudRamGroupRead(d, meta)
 }
 
-func resourceAlicloudRamGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-
-	ramService := RamService{client}
-
-	object, err := ramService.DescribeRamGroup(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-
-	group := object.Group
-	d.Set("name", group.GroupName)
-	d.Set("comments", group.Comments)
-	return nil
-
-}
-
-func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := &RamService{client}
-	request := ram.CreateListUsersForGroupRequest()
-	request.RegionId = client.RegionId
-	request.GroupName = d.Id()
-	users := []ram.User{}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
 
 	if d.Get("force").(bool) {
 		// list and delete users which in this group
-		var raw interface{}
-		var err error
+		action := "ListUsersForGroup"
+		userNames := make([]string, 0)
+		listUsersForGroupReq := map[string]interface{}{
+			"GroupName": d.Id(),
+		}
 
 		for {
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-				raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.ListUsersForGroup(request)
-				})
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				response, err = client.RpcPost("Ram", "2015-05-01", action, query, listUsersForGroupReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -163,32 +192,42 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 				}
 				return nil
 			})
+			addDebug(action, response, listUsersForGroupReq)
 
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-			listUserResponse, _ := raw.(*ram.ListUsersForGroupResponse)
-			users = append(users, listUserResponse.Users.User...)
-			if !listUserResponse.IsTruncated {
+			resp, err := jsonpath.Get("$.Users.User", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Users.User", response)
+			}
+
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				userNames = append(userNames, fmt.Sprint(item["UserName"]))
+			}
+
+			if !response["IsTruncated"].(bool) {
 				break
 			}
-			request.Marker = listUserResponse.Marker
 
+			listUsersForGroupReq["Marker"] = response["Marker"]
 		}
 
-		if len(users) > 0 {
-			for _, v := range users {
-				request := ram.CreateRemoveUserFromGroupRequest()
-				request.UserName = v.UserName
-				request.GroupName = d.Id()
+		if len(userNames) > 0 {
+			for _, userName := range userNames {
+				action = "RemoveUserFromGroup"
+				removeUserFromGroupReq := map[string]interface{}{
+					"GroupName": d.Id(),
+					"UserName":  userName,
+				}
 
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-						return ramClient.RemoveUserFromGroup(request)
-					})
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = client.RpcPost("Ram", "2015-05-01", action, query, removeUserFromGroupReq, true)
+
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -198,24 +237,23 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 					}
 					return nil
 				})
+				addDebug(action, response, removeUserFromGroupReq)
 
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
 		// list and detach policies which attach this group
-		request := ram.CreateListPoliciesForGroupRequest()
-		request.RegionId = client.RegionId
-		request.GroupName = d.Id()
+		action = "ListPoliciesForGroup"
+		listPoliciesForGroupReq := map[string]interface{}{
+			"GroupName": d.Id(),
+		}
 
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.ListPoliciesForGroup(request)
-			})
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", action, query, listPoliciesForGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -225,26 +263,31 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
+		addDebug(action, response, listPoliciesForGroupReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		listPolicyResponse, _ := raw.(*ram.ListPoliciesForGroupResponse)
-		policies := listPolicyResponse.Policies.Policy
-		if len(policies) > 0 {
-			for _, v := range policies {
-				request := ram.CreateDetachPolicyFromGroupRequest()
-				request.RegionId = client.RegionId
-				request.PolicyType = v.PolicyType
-				request.PolicyName = v.PolicyName
-				request.GroupName = d.Id()
 
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-						return ramClient.DetachPolicyFromGroup(request)
-					})
+		resp, err := jsonpath.Get("$.Policies.Policy", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+		}
+
+		result, _ := resp.([]interface{})
+
+		if len(result) > 0 {
+			for _, v := range result {
+				action = "DetachPolicyFromGroup"
+				detachPolicyFromGroupReq := map[string]interface{}{
+					"GroupName":  d.Id(),
+					"PolicyName": v.(map[string]interface{})["PolicyName"],
+					"PolicyType": v.(map[string]interface{})["PolicyType"],
+				}
+
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = client.RpcPost("Ram", "2015-05-01", action, query, detachPolicyFromGroupReq, true)
+
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -254,37 +297,40 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 					}
 					return nil
 				})
+				addDebug(action, response, detachPolicyFromGroupReq)
 
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 	}
 
-	deleteGroupRequest := ram.CreateDeleteGroupRequest()
-	deleteGroupRequest.RegionId = client.RegionId
-	deleteGroupRequest.GroupName = d.Id()
+	action := "DeleteGroup"
+	request = make(map[string]interface{})
+	request["GroupName"] = d.Id()
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeleteGroup(deleteGroupRequest)
-		})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeleteConflict.Group.User", "DeleteConflict.Group.Policy"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(deleteGroupRequest.GetActionName(), raw, deleteGroupRequest.RpcRequest, deleteGroupRequest)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Group"}) || NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(ramService.WaitForRamGroup(d.Id(), Deleted, DefaultTimeout))
+
+	return nil
 }
