@@ -186,6 +186,33 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"compensate_with_on_demand": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"capacity_options_on_demand_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(0, 1000),
+			},
+			"capacity_options_on_demand_percentage_above_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(0, 100),
+			},
+			"capacity_options_compensate_with_on_demand": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"capacity_options_spot_auto_replace_on_demand": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -331,7 +358,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	if object["SpotInstancePools"] != nil {
 		d.Set("spot_instance_pools", object["SpotInstancePools"])
 	}
+
 	d.Set("spot_instance_remedy", object["SpotInstanceRemedy"])
+	d.Set("compensate_with_on_demand", object["CompensateWithOnDemand"])
 	d.Set("group_deletion_protection", object["GroupDeletionProtection"])
 	var polices []string
 	if len(object["RemovalPolicies"].(map[string]interface{})["RemovalPolicy"].([]interface{})) > 0 {
@@ -390,6 +419,22 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 		err := d.Set("launch_template_override", result)
 		if err != nil {
 			return WrapError(err)
+		}
+	}
+
+	if v := object["CapacityOptions"]; v != nil {
+		m := v.(map[string]interface{})
+		if m["OnDemandBaseCapacity"] != nil {
+			d.Set("capacity_options_on_demand_base_capacity", m["OnDemandBaseCapacity"])
+		}
+		if m["OnDemandPercentageAboveBaseCapacity"] != nil {
+			d.Set("capacity_options_on_demand_percentage_above_base_capacity", m["OnDemandPercentageAboveBaseCapacity"])
+		}
+		if m["CompensateWithOnDemand"] != nil {
+			d.Set("capacity_options_compensate_with_on_demand", m["CompensateWithOnDemand"])
+		}
+		if m["SpotAutoReplaceOnDemand"] != nil {
+			d.Set("capacity_options_spot_auto_replace_on_demand", m["SpotAutoReplaceOnDemand"])
 		}
 	}
 
@@ -540,8 +585,38 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request["SpotInstancePools"] = requests.NewInteger(d.Get("spot_instance_pools").(int))
 	}
 
+	if d.HasChange("capacity_options_on_demand_base_capacity") {
+		if v, ok := d.GetOkExists("capacity_options_on_demand_base_capacity"); ok {
+			request["CapacityOptions.OnDemandBaseCapacity"] = requests.NewInteger(v.(int))
+		}
+	}
+
+	if d.HasChange("capacity_options_on_demand_percentage_above_base_capacity") {
+		if v, ok := d.GetOkExists("capacity_options_on_demand_percentage_above_base_capacity"); ok {
+			request["CapacityOptions.OnDemandPercentageAboveBaseCapacity"] = requests.NewInteger(v.(int))
+		}
+	}
+
+	if d.HasChange("capacity_options_compensate_with_on_demand") {
+		if v, ok := d.GetOkExists("capacity_options_compensate_with_on_demand"); ok {
+			request["CapacityOptions.CompensateWithOnDemand"] = requests.NewBoolean(v.(bool))
+		}
+	}
+
+	if d.HasChange("capacity_options_spot_auto_replace_on_demand") {
+		if v, ok := d.GetOkExists("capacity_options_spot_auto_replace_on_demand"); ok {
+			request["CapacityOptions.SpotAutoReplaceOnDemand"] = requests.NewBoolean(v.(bool))
+		}
+	}
+
 	if d.HasChange("spot_instance_remedy") {
 		request["SpotInstanceRemedy"] = requests.NewBoolean(d.Get("spot_instance_remedy").(bool))
+	}
+
+	if d.HasChange("compensate_with_on_demand") {
+		if v, ok := d.GetOkExists("compensate_with_on_demand"); ok {
+			request["CompensateWithOnDemand"] = requests.NewBoolean(v.(bool))
+		}
 	}
 
 	if d.HasChange("az_balance") {
@@ -765,8 +840,27 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		request["SpotInstancePools"] = v
 	}
 
+	if v, ok := d.GetOkExists("capacity_options_on_demand_base_capacity"); ok {
+		request["CapacityOptions.OnDemandBaseCapacity"] = v
+	}
+	if v, ok := d.GetOkExists("capacity_options_on_demand_percentage_above_base_capacity"); ok {
+		request["CapacityOptions.OnDemandPercentageAboveBaseCapacity"] = v
+	}
+
+	if v, ok := d.GetOkExists("capacity_options_compensate_with_on_demand"); ok {
+		request["CapacityOptions.CompensateWithOnDemand"] = v
+	}
+
+	if v, ok := d.GetOkExists("capacity_options_spot_auto_replace_on_demand"); ok {
+		request["CapacityOptions.SpotAutoReplaceOnDemand"] = v
+	}
+
 	if v, ok := d.GetOk("spot_instance_remedy"); ok {
 		request["SpotInstanceRemedy"] = v
+	}
+
+	if v, ok := d.GetOkExists("compensate_with_on_demand"); ok {
+		request["CompensateWithOnDemand"] = v
 	}
 
 	if v, ok := d.GetOk("health_check_type"); ok {
