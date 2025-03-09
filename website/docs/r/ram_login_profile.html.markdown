@@ -2,28 +2,23 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_login_profile"
-sidebar_current: "docs-alicloud-resource-ram-login-profile"
 description: |-
-  Provides a Alicloud RAM User Login Profile resource.
+  Provides a Alicloud RAM Login Profile resource.
 ---
 
 # alicloud_ram_login_profile
 
-Provides a RAM User Login Profile resource.
+Provides a RAM Login Profile resource.
 
-For information about RAM User Login Profile and how to use it, see [What is Login Profile](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createloginprofile).
+
+
+For information about RAM Login Profile and how to use it, see [What is Login Profile](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createloginprofile).
 
 -> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_login_profile&exampleId=442ec83a-6fe5-90e2-17a2-351fa3abb6a2738d91e8&activeTab=example&spm=docs.r.ram_login_profile.0.442ec83a6f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "alicloud_ram_user" "user" {
@@ -53,12 +48,19 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - Creation time.
 
-* `id` - The resource ID in terraform of Login Profile. It same as the `user_name`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Login Profile.
+* `delete` - (Defaults to 5 mins) Used when delete the Login Profile.
+* `update` - (Defaults to 5 mins) Used when update the Login Profile.
 
 ## Import
 
-RAM login profile can be imported using the id, e.g.
+RAM Login Profile can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ram_login_profile.example <id>
