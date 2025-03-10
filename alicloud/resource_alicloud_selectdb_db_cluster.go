@@ -375,7 +375,7 @@ func resourceAliCloudSelectDBDbClusterDelete(d *schema.ResourceData, meta interf
 	instance_id := d.Get("db_instance_id").(string)
 	// cluster deleting cannot be checked, use instance from class changing to active instead.
 	// cluster deleting = related instance update
-	stateConf = BuildStateConf([]string{"CLASS_CHANGING"}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(instance_id, []string{"DELETING"}))
+	stateConf = BuildStateConf([]string{"CLASS_CHANGING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(instance_id, []string{"DELETING"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
