@@ -98,21 +98,21 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEBSDiskReplicaGroup_basic0(t *testing.T) {
+func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_disk_replica_group.default"
-	checkoutSupportedRegions(t, true, connectivity.EBSSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEbsDiskReplicaGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%sebsdiskreplicagroup%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccebs%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDiskReplicaGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -121,51 +121,150 @@ func TestAccAlicloudEBSDiskReplicaGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_region_id":      "${var.region}",
-					"source_zone_id":        "${data.alicloud_ebs_regions.default.regions[0].zones[0].zone_id}",
-					"destination_region_id": "${var.region}",
-					"destination_zone_id":   "${data.alicloud_ebs_regions.default.regions[0].zones[1].zone_id}",
-					"group_name":            name,
-					"description":           name,
-					"rpo":                   "900",
+					"rpo":                     "900",
+					"source_region_id":        "${var.disk-region}",
+					"description":             "cctest",
+					"destination_region_id":   "${var.disk-region}",
+					"destination_zone_id":     "${var.dst-disk-zone}",
+					"source_zone_id":          "${var.src-disk-zone}",
+					"disk_replica_group_name": name,
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source_zone_id":        CHECKSET,
-						"destination_region_id": CHECKSET,
-						"destination_zone_id":   CHECKSET,
-						"group_name":            name,
-						"description":           name,
-						"rpo":                   "900",
+						"rpo":                     "900",
+						"source_region_id":        CHECKSET,
+						"description":             "cctest",
+						"destination_region_id":   CHECKSET,
+						"destination_zone_id":     CHECKSET,
+						"source_zone_id":          CHECKSET,
+						"disk_replica_group_name": name,
+						"resource_group_id":       CHECKSET,
 					}),
 				),
-			}, {
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name": name + "update",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": name + "update",
+						"resource_group_id": CHECKSET,
 					}),
 				),
-			}, {
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": name + "update",
+					"description": "description-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name + "update",
+						"description": "description-update",
 					}),
 				),
-			}, {
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name":  name,
-					"description": name,
+					"disk_replica_group_name": name + "_update",
+					"pair_ids": []string{
+						"${alicloud_ebs_disk_replica_pair.defaultUCZMS9.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name":  name,
-						"description": name,
+						"disk_replica_group_name": name + "_update",
+						"pair_ids.#":              "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":   "normal",
+					"one_shot": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":   "normal",
+						"one_shot": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "failovered",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "failovered",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":            "stopped",
+					"reverse_replicate": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":            "stopped",
+						"reverse_replicate": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pair_ids": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pair_ids.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -173,7 +272,7 @@ func TestAccAlicloudEBSDiskReplicaGroup_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"one_shot", "reverse_replicate"},
 			},
 		},
 	})
@@ -184,16 +283,52 @@ var AlicloudEbsDiskReplicaGroupMap0 = map[string]string{}
 func AlicloudEbsDiskReplicaGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "%s"
+    default = "%s"
 }
 
-variable "region" {
-  default = "%s"
+variable "disk-region" {
+  default = "cn-hangzhou"
 }
 
-data "alicloud_ebs_regions" "default"{
-  region_id = var.region
+variable "dst-disk-zone" {
+  default = "cn-hangzhou-h"
 }
 
-`, name, defaultRegionToTest)
+variable "src-disk-zone" {
+  default = "cn-hangzhou-i"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_ecs_disk" "defaultOxDXka" {
+  zone_id   = var.src-disk-zone
+  size      = "20"
+  disk_name = "fg-tf-e-case3"
+  category  = "cloud_essd"
+  lifecycle {
+	ignore_changes = [tags]
+  }
+}
+
+resource "alicloud_ecs_disk" "defaultQkzwDg" {
+  zone_id   = var.dst-disk-zone
+  size      = "20"
+  disk_name = "fg-tf-b-case3"
+  category  = "cloud_essd"
+  lifecycle {
+	ignore_changes = [tags]
+  }
+}
+
+resource "alicloud_ebs_disk_replica_pair" "defaultUCZMS9" {
+  destination_disk_id   = alicloud_ecs_disk.defaultQkzwDg.id
+  destination_region_id = var.disk-region
+  destination_zone_id   = var.dst-disk-zone
+  payment_type          = "PayAsYouGo"
+  source_zone_id        = var.src-disk-zone
+  disk_id               = alicloud_ecs_disk.defaultOxDXka.id
+}
+
+
+`, name)
 }
