@@ -2,28 +2,23 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_saml_provider"
-sidebar_current: "docs-alicloud-resource-ram-saml-provider"
 description: |-
-  Provides a Alicloud RAM SAML Provider resource.
+  Provides a Alicloud RAM Saml Provider resource.
 ---
 
 # alicloud_ram_saml_provider
 
-Provides a RAM SAML Provider resource.
+Provides a RAM Saml Provider resource.
 
-For information about RAM SAML Provider and how to use it, see [What is SAML Provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createsamlprovider).
+
+
+For information about RAM Saml Provider and how to use it, see [What is Saml Provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createsamlprovider).
 
 -> **NOTE:** Available since v1.114.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_saml_provider&exampleId=9af45430-b5a5-519a-941f-47f2d84c5c512e0b4b1a&activeTab=example&spm=docs.r.ram_saml_provider.0.9af45430b5&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "alicloud_ram_saml_provider" "example" {
@@ -38,23 +33,28 @@ resource "alicloud_ram_saml_provider" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `saml_provider_name` - (Required, ForceNew) The name of SAML Provider.
-* `encodedsaml_metadata_document` - (Required) The metadata file, which is Base64 encoded. The file is provided by an IdP that supports SAML 2.0.
-* `description` - (Optional) The description of SAML Provider.
+* `description` - (Optional) Remarks.
+* `encodedsaml_metadata_document` - (Required) Metadata document. After Base64 encoding.
+* `saml_provider_name` - (Required, ForceNew) The identity provider name.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `arn` - The identity provider's ARN.
+* `update_date` - Update time.
 
-* `id` - The resource ID in terraform of SAML Provider. Value as `saml_provider_name`.
-* `arn` - The Alibaba Cloud Resource Name (ARN) of the IdP.
-* `update_date` - The update time.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Saml Provider.
+* `delete` - (Defaults to 5 mins) Used when delete the Saml Provider.
+* `update` - (Defaults to 5 mins) Used when update the Saml Provider.
 
 ## Import
 
-RAM SAML Provider can be imported using the id, e.g.
+RAM Saml Provider can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_saml_provider.example <saml_provider_name>
+$ terraform import alicloud_ram_saml_provider.example <id>
 ```
