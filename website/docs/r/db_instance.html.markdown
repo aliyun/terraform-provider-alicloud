@@ -642,6 +642,13 @@ The following arguments are supported:
 * `upgrade_db_instance_kernel_version` - (Deprecated from v1.198.0)  Whether to upgrade a minor version of the kernel. Valid values:
   - true: upgrade
   - false: not to upgrade
+
+-> **NOTE:** Database Engine and Version: Supports only MySQL 5.7 or 8.0 instances.
+-> **NOTE:** Storage Type: Supports only ESSD cloud disks and general-purpose cloud disks.
+-> **NOTE:** Activation Stage: Supports only during instance creation or when enabling write optimization features for existing  (high-availability/cluster series) instances.
+* `optimized_writes` - (Optional, Available since 1.245.0) Write optimization function switch. supported engine type: `MySQL`. Valid values:
+  - optimized: Enable
+  - none: Disable
 * `upgrade_time` - (Optional, Available since 1.126.0) The method to update the minor engine version. Default value: Immediate. It is valid only when `target_minor_version` is changed. Valid values:
   - Immediate: The minor engine version is immediately updated.
   - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
