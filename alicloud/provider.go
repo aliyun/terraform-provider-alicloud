@@ -1844,7 +1844,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_grant_rule_to_cen":                     resourceAlicloudExpressConnectGrantRuleToCen(),
 			"alicloud_express_connect_virtual_physical_connection":           resourceAlicloudExpressConnectVirtualPhysicalConnection(),
 			"alicloud_express_connect_vbr_pconn_association":                 resourceAlicloudExpressConnectVbrPconnAssociation(),
-			"alicloud_ebs_disk_replica_pair":                                 resourceAlicloudEbsDiskReplicaPair(),
+			"alicloud_ebs_disk_replica_pair":                                 resourceAliCloudEbsDiskReplicaPair(),
 			"alicloud_ga_domain":                                             resourceAlicloudGaDomain(),
 			"alicloud_ga_custom_routing_endpoint_group":                      resourceAliCloudGaCustomRoutingEndpointGroup(),
 			"alicloud_ga_custom_routing_endpoint_group_destination":          resourceAliCloudGaCustomRoutingEndpointGroupDestination(),
