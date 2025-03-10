@@ -613,11 +613,11 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		action := "ModifyDBCluster"
 		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(10*time.Second, 10*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
+			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing", "OperationDenied.DBClusterStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
