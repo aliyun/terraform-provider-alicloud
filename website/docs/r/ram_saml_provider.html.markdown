@@ -33,9 +33,11 @@ resource "alicloud_ram_saml_provider" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) Remarks.
-* `encodedsaml_metadata_document` - (Required) Metadata document. After Base64 encoding.
-* `saml_provider_name` - (Required, ForceNew) The identity provider name.
+* `description` - (Optional) The metadata file which is Base64-encoded.
+The file is provided by an IdP that supports Security Assertion Markup Language (SAML) 2.0.
+* `encodedsaml_metadata_document` - (Required) The new metadata file.
+* `saml_provider_name` - (Required, ForceNew) The name of the IdP.
+The name can be up to 128 characters in length. The name can contain letters, digits, `periods (.), hyphens (-), and underscores (_)`. The name cannot start or end with `periods (.), hyphens (-), or underscores (_)`.
 
 ## Attributes Reference
 
