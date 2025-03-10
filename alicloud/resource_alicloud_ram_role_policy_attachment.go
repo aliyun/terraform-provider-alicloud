@@ -1,34 +1,30 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
+func resourceAliCloudRamRolePolicyAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamRolePolicyAttachmentCreate,
-		Read:   resourceAlicloudRamRolePolicyAttachmentRead,
-		//Update: resourceAlicloudRamRolePolicyAttachmentUpdate,
-		Delete: resourceAlicloudRamRolePolicyAttachmentDelete,
+		Create: resourceAliCloudRamRolePolicyAttachmentCreate,
+		Read:   resourceAliCloudRamRolePolicyAttachmentRead,
+		Delete: resourceAliCloudRamRolePolicyAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"role_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"policy_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -40,23 +36,33 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
+			"role_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	request := ram.CreateAttachPolicyToRoleRequest()
-	request.RegionId = client.RegionId
-	request.RoleName = d.Get("role_name").(string)
-	request.PolicyType = d.Get("policy_type").(string)
-	request.PolicyName = d.Get("policy_name").(string)
+func resourceAliCloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.AttachPolicyToRole(request)
-		})
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "AttachPolicyToRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	request["PolicyType"] = d.Get("policy_type")
+	request["PolicyName"] = d.Get("policy_name")
+	request["RoleName"] = d.Get("role_name")
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -64,47 +70,60 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	// In order to be compatible with previous Id (before 1.9.6) which format to role:<policy_name>:<policy_type>:<role_name>
-	d.SetId(strings.Join([]string{"role", request.PolicyName, request.PolicyType, request.RoleName}, COLON_SEPARATED))
+	addDebug(action, response, request)
 
-	return resourceAlicloudRamRolePolicyAttachmentRead(d, meta)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role_policy_attachment", action, AlibabaCloudSdkGoERROR)
+	}
+
+	// In order to be compatible with previous Id (before 1.9.6) which format to role:<policy_name>:<policy_type>:<role_name>
+	d.SetId(fmt.Sprintf("%v:%v:%v:%v", "role", request["PolicyName"], request["PolicyType"], request["RoleName"]))
+
+	return resourceAliCloudRamRolePolicyAttachmentRead(d, meta)
 }
 
-func resourceAlicloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramServiceV2 := RamServiceV2{client}
 
 	if split := strings.Split(d.Id(), ":"); len(split) != 4 {
 		id := strings.Join([]string{"role", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("role_name").(string)}, COLON_SEPARATED)
 		d.SetId(id)
 	}
-	object, err := ramService.DescribeRamRolePolicyAttachment(d.Id())
+	objectRaw, err := ramServiceV2.DescribeRamRolePolicyAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_role_policy_attachment DescribeRamRolePolicyAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}
+
+	d.Set("policy_name", objectRaw["PolicyName"])
+	d.Set("policy_type", objectRaw["PolicyType"])
 	d.Set("role_name", parts[3])
-	d.Set("policy_name", object.PolicyName)
-	d.Set("policy_type", object.PolicyType)
+
 	return nil
 }
 
-func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	action := "DetachPolicyFromRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
 	id := strings.Join([]string{"role", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("role_name").(string)}, COLON_SEPARATED)
 
 	if d.Id() != id {
@@ -115,17 +134,15 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 	if err != nil {
 		return WrapError(err)
 	}
-	request := ram.CreateDetachPolicyFromRoleRequest()
-	request.RegionId = client.RegionId
-	request.PolicyName = parts[1]
-	request.PolicyType = parts[2]
-	request.RoleName = parts[3]
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["PolicyType"] = parts[2]
+	request["PolicyName"] = parts[1]
+	request["RoleName"] = parts[3]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DetachPolicyFromRole(request)
-		})
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,15 +150,16 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role", "EntityNotExist.Role.Policy"}) || NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(ramService.WaitForRamRolePolicyAttachment(d.Id(), Deleted, DefaultTimeout))
+	return nil
 }

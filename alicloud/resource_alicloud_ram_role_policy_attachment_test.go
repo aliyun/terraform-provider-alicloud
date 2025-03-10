@@ -4,70 +4,111 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRAMRolePolicyAttachment_basic(t *testing.T) {
-	var v *ram.Policy
+// Test Ram RolePolicyAttachment. >>> Resource test cases, automatically generated.
+// Case  RolePolicyAttachment测试 9050
+func TestAccAliCloudRamRolePolicyAttachment_basic9050(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_role_policy_attachment.default"
-	ra := resourceAttrInit(resourceId, ramPolicyForRoleMap)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudRamRolePolicyAttachmentMap9050)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRolePolicyAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sRamRolePolicyAttachmentConfig-%d", defaultRegionToTest, rand)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceRamRolePolicyAttachmentConfigDependence)
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRolePolicyAttachmentBasicDependence9050)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_name": "${alicloud_ram_policy.default.name}",
-					"role_name":   "${alicloud_ram_role.default.name}",
-					"policy_type": "${alicloud_ram_policy.default.type}",
+					"role_name":   "${alicloud_ram_role.default.id}",
+					"policy_name": "${alicloud_ram_policy.default.id}",
+					"policy_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"role_name":   CHECKSET,
+						"policy_name": CHECKSET,
+						"policy_type": "Custom",
+					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var ramPolicyForRoleMap = map[string]string{
-	"role_name":   CHECKSET,
-	"policy_name": CHECKSET,
-	"policy_type": "Custom",
+func TestAccAliCloudRamRolePolicyAttachment_basic9051(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRolePolicyAttachmentMap9050)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRolePolicyAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRolePolicyAttachmentBasicDependence9050)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":   "${alicloud_ram_role.default.id}",
+					"policy_name": "AliyunECSFullAccess",
+					"policy_type": "System",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":   CHECKSET,
+						"policy_name": "AliyunECSFullAccess",
+						"policy_type": "System",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func resourceRamRolePolicyAttachmentConfigDependence(name string) string {
+var AliCloudRamRolePolicyAttachmentMap9050 = map[string]string{}
+
+func AliCloudRamRolePolicyAttachmentBasicDependence9050(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
 	}
 
 	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -91,7 +132,7 @@ func resourceRamRolePolicyAttachmentConfigDependence(name string) string {
 	}
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -114,3 +155,5 @@ func resourceRamRolePolicyAttachmentConfigDependence(name string) string {
 	}
 `, name)
 }
+
+// Test Ram RolePolicyAttachment. <<< Resource test cases, automatically generated.
