@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_vpc_ipv6_address
 
-Provides a VPC Ipv6 Address resource. 
+Provides a VPC Ipv6 Address resource.
+
+
 
 For information about VPC Ipv6 Address and how to use it, see [What is Ipv6 Address](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/AllocateIpv6Address).
 
@@ -17,12 +19,6 @@ For information about VPC Ipv6 Address and how to use it, see [What is Ipv6 Addr
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_ipv6_address&exampleId=c9582809-2e3d-7803-c6d4-a671c13f0148fcf0355d&activeTab=example&spm=docs.r.vpc_ipv6_address.0.c95828092e&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -69,6 +65,10 @@ resource "alicloud_vpc_ipv6_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `address_type` - (Optional, ForceNew, Computed, Available since v1.245.0) The type of the IPv6 address. Value:
+  - `IPv6Address` (default): indicates that the current instance is a single IPv6 address.
+  - `IPv6Prefix`: indicates that the current instance is a contiguous block of IPv6 addresses.
+* `ipv6_address` - (Optional, ForceNew, Computed) IPv6 address
 * `ipv6_address_description` - (Optional, Computed) The description of the IPv6 Address. The description must be 2 to 256 characters in length. It cannot start with http:// or https://.
 * `ipv6_address_name` - (Optional) The name of the IPv6 Address. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs.
@@ -81,7 +81,6 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.  Available, Pending and Deleting.
-* `ipv6_address` - IPv6 address.
 
 ## Timeouts
 

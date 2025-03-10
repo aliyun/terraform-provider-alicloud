@@ -10,7 +10,7 @@ import (
 )
 
 // Test Vpc Ipv6Address. >>> Resource test cases, automatically generated.
-// Case 全生命周期 4694
+// Case IPv6Address生命周期 4694
 func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_address.default"
@@ -20,8 +20,8 @@ func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 	}, "DescribeVpcIpv6Address")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipv6address%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpv6AddressBasicDependence4694)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -33,110 +33,48 @@ func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":        "${alicloud_vswitch.vswich.id}",
-					"ipv6_address_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"ipv6_address_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_description": "create_description",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_description": "create_description",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_description": "modify_description",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_description": "modify_description",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_description": "create_description",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_description": "create_description",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"vswitch_id":               "${alicloud_vswitch.vswich.id}",
 					"ipv6_address_description": "create_description",
-					"ipv6_address_name":        name + "_update",
+					"ipv6_address_name":        name,
+					"address_type":             "Ipv6Address",
+					"ipv6_address":             "${cidrhost(alicloud_vswitch.vswich.ipv6_cidr_block, 128)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id":        CHECKSET,
 						"vswitch_id":               CHECKSET,
+						"ipv6_address":             CHECKSET,
 						"ipv6_address_description": "create_description",
+						"ipv6_address_name":        name,
+						"address_type":             "Ipv6Address",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"ipv6_address_description": "modify_description",
+					"ipv6_address_name":        name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id":        CHECKSET,
+						"ipv6_address_description": "modify_description",
 						"ipv6_address_name":        name + "_update",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -213,78 +151,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  ipv6_isp    = "BGP"
-  cidr_block  = "172.168.0.0/16"
+  cidr_block  = "172.16.0.0/12"
   enable_ipv6 = true
-  vpc_name    = var.name
-
 }
 
 resource "alicloud_vswitch" "vswich" {
-  vpc_id       = alicloud_vpc.vpc.id
-  cidr_block   = "172.168.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = var.name
-
+  vpc_id               = alicloud_vpc.vpc.id
+  cidr_block           = "172.16.0.0/24"
+  zone_id              = data.alicloud_zones.default.zones.0.id
+  vswitch_name         = "tf-testacc"
   ipv6_cidr_block_mask = "1"
 }
 
 
 `, name)
-}
-
-// Case 全生命周期 4694  twin
-func TestAccAliCloudVpcIpv6Address_basic4694_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_vpc_ipv6_address.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6AddressMap4694)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcIpv6Address")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipv6address%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpv6AddressBasicDependence4694)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vswitch_id":               "${alicloud_vswitch.vswich.id}",
-					"ipv6_address_description": "create_description",
-					"ipv6_address_name":        name,
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id":        CHECKSET,
-						"vswitch_id":               CHECKSET,
-						"ipv6_address_description": "create_description",
-						"ipv6_address_name":        name,
-						"tags.%":                   "2",
-						"tags.Created":             "TF",
-						"tags.For":                 "Test",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
 }
 
 // Test Vpc Ipv6Address. <<< Resource test cases, automatically generated.

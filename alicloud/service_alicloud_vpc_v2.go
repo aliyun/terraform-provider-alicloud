@@ -2214,6 +2214,7 @@ func (s *VpcServiceV2) VpcIpv4CidrBlockStateRefreshFunc(id string, field string,
 }
 
 // DescribeVpcIpv4CidrBlock >>> Encapsulated.
+
 // DescribeVpcIpv6Address <<< Encapsulated get interface for Vpc Ipv6Address.
 
 func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]interface{}, err error) {
@@ -2221,11 +2222,11 @@ func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeIpv6Addresses"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["Ipv6AddressId"] = id
-	query["RegionId"] = client.RegionId
+	request["Ipv6AddressId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeIpv6Addresses"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -2238,12 +2239,10 @@ func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -2276,6 +2275,13 @@ func (s *VpcServiceV2) VpcIpv6AddressStateRefreshFunc(id string, field string, f
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
