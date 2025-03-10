@@ -56,26 +56,21 @@ The following attributes are exported in addition to the arguments listed above:
   * `vpc_id` - The ID of VPC where the current cluster is located.
   * `security_group_id` - The ID of security group where the current cluster worker node is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-  * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-  * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+  * `worker_nodes` - List of cluster worker nodes.
+    * `id` - ID of the node.
+    * `name` - Node name.
+    * `private_ip` - The private IP address of node.
+  * `connections` - Map of kubernetes cluster connection information.
+    * `api_server_internet` - API Server Internet endpoint.
+    * `api_server_intranet` - API Server Intranet endpoint.
+    * `master_public_ip` - Master node SSH IP address.
+    * `service_domain` - Service Access Domain.
   * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
     * `type` - Type of collecting logs.
-    * `project` - Log Service project name. 
-  * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-  * `cluster_spec` - (Optional, ForceNew, Available in 1.101.0+) The cluster specifications of kubernetes cluster,which can be empty.Valid values:
-    - ack.standard: Standard managed clusters.
-    - ack.pro.small: Professional managed clusters.
-
-### Block Nodes
-
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
-* `role` - (Deprecated from version 1.9.4)
-
-### Block Connections
-
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
-* `service_domain` - Service Access Domain.
+    * `project` - Log Service project name.
+  * `state` - (Available since v1.245.0) The state of cluster.
+  * `rrsa_config` - (Available since v1.245.0) Nested attribute containing RRSA related data for your cluster.
+    * `enabled` - Whether the RRSA feature has been enabled.
+    * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+    * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+    * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.

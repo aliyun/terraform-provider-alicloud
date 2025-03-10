@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -45,8 +46,8 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 				Optional: true,
 			},
 			"kube_config_file_prefix": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
 				Deprecated: "Field 'kube_config_file_prefix' has been deprecated from provider version 1.243.0. From version 1.243.0, please use the attribute 'output_file' of new DataSource 'alicloud_cs_cluster_credential' to replace it.",
 			},
 			// Computed values
@@ -240,6 +241,35 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 										Computed: true,
 									},
 									"service_domain": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"state": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"rrsa_config": {
+							Type:     schema.TypeList,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"rrsa_oidc_issuer_url": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ram_oidc_provider_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ram_oidc_provider_arn": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -490,6 +520,20 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
 
 		mapping["connections"] = connection
+
+		mapping["state"] = ct.State
+		object, err := csClient.DescribeClusterDetail(ct.ClusterID)
+		if err != nil {
+			if NotFoundError(err) {
+				log.Printf("[DEBUG] Resource alicloud_cs_managed_kubernetes DescribeClusterDetail Failed!!! %s", err)
+				continue
+			}
+			return WrapError(err)
+		}
+		mapping["rrsa_config"], err = flattenRRSAMetadata(tea.StringValue(object.MetaData))
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "metadata", AlibabaCloudSdkGoERROR)
+		}
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VPCID

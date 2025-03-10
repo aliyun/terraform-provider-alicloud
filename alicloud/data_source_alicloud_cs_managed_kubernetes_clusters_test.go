@@ -54,18 +54,23 @@ func TestAccAliCloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 
 	var existCSManagedKubernetesClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        "1",
-			"ids.0":                        CHECKSET,
-			"names.#":                      "1",
-			"names.0":                      REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
-			"clusters.#":                   "1",
-			"clusters.0.id":                CHECKSET,
-			"clusters.0.name":              REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
-			"clusters.0.availability_zone": CHECKSET,
-			"clusters.0.security_group_id": CHECKSET,
-			"clusters.0.nat_gateway_id":    CHECKSET,
-			"clusters.0.vpc_id":            CHECKSET,
-			"clusters.0.connections.%":     CHECKSET,
+			"ids.#":                            "1",
+			"ids.0":                            CHECKSET,
+			"names.#":                          "1",
+			"names.0":                          REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.#":                       "1",
+			"clusters.0.id":                    CHECKSET,
+			"clusters.0.name":                  REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.0.availability_zone":     CHECKSET,
+			"clusters.0.security_group_id":     CHECKSET,
+			"clusters.0.nat_gateway_id":        CHECKSET,
+			"clusters.0.vpc_id":                CHECKSET,
+			"clusters.0.connections.%":         CHECKSET,
+			"clusters.0.state":                 CHECKSET,
+			"clusters.0.rrsa_config.0.enabled": "true",
+			"clusters.0.rrsa_config.0.rrsa_oidc_issuer_url":   CHECKSET,
+			"clusters.0.rrsa_config.0.ram_oidc_provider_name": CHECKSET,
+			"clusters.0.rrsa_config.0.ram_oidc_provider_arn":  CHECKSET,
 		}
 	}
 
@@ -127,6 +132,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = true
+  enable_rrsa          = true
 }
 `, name)
 }
