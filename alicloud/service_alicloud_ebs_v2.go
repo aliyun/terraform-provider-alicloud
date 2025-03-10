@@ -242,8 +242,8 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 // SetResourceTags <<< Encapsulated tag function for Ebs.
 func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -271,8 +271,6 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -280,9 +278,9 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -307,8 +305,6 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -316,15 +312,14 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -481,3 +476,77 @@ func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field stri
 }
 
 // DescribeEbsSolutionInstance >>> Encapsulated.
+
+// DescribeEbsDiskReplicaPair <<< Encapsulated get interface for Ebs DiskReplicaPair.
+
+func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PairIds"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeDiskReplicaPairs"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ReplicaPairs[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReplicaPairs[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DiskReplicaPair", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EbsServiceV2) EbsDiskReplicaPairStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEbsDiskReplicaPair(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEbsDiskReplicaPair >>> Encapsulated.
