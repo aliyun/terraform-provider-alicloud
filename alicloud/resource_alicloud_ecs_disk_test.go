@@ -793,7 +793,6 @@ func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8017)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -968,7 +967,6 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8017)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1118,7 +1116,6 @@ func TestAccAliCloudECSDisk_basic8018(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8018)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1285,7 +1282,6 @@ func TestAccAliCloudECSDisk_basic8018_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8018)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1358,7 +1354,6 @@ func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8018)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1521,6 +1516,78 @@ func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudECSDisk_basic8019_twin_excluding_kms_key_id(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_disk.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap8017)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDisk")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 100)
+	name := fmt.Sprintf("tf-testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8018)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bursting_enabled":     "true",
+					"category":             "cloud_auto",
+					"delete_auto_snapshot": "true",
+					"delete_with_instance": "true",
+					"description":          name,
+					"disk_name":            name,
+					"enable_auto_snapshot": "false",
+					"encrypted":            "true",
+					"payment_type":         "PayAsYouGo",
+					"provisioned_iops":     "100",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"size":    "500",
+					"zone_id": "${data.alicloud_zones.default.zones.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bursting_enabled":     "true",
+						"category":             "cloud_auto",
+						"delete_auto_snapshot": "true",
+						"delete_with_instance": "true",
+						"description":          name,
+						"disk_name":            name,
+						"enable_auto_snapshot": "false",
+						"encrypted":            "true",
+						"kms_key_id":           CHECKSET,
+						"payment_type":         "PayAsYouGo",
+						"provisioned_iops":     "100",
+						"resource_group_id":    CHECKSET,
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+						"size":                 "500",
+						"zone_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"advanced_features", "dry_run", "encrypt_algorithm", "type"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
@@ -1535,7 +1602,6 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8018)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1632,7 +1698,6 @@ func TestAccAliCloudECSDisk_basic8020(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8020)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1809,7 +1874,6 @@ func TestAccAliCloudECSDisk_basic8020_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence8020)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,

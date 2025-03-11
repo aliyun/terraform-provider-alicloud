@@ -92,6 +92,7 @@ func resourceAliCloudEcsDisk() *schema.Resource {
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"multi_attach": {
