@@ -208,21 +208,20 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionClientUserDefineRuleStateRefre
 }
 
 // DescribeThreatDetectionClientUserDefineRule >>> Encapsulated.
+
 // DescribeThreatDetectionLogMeta <<< Encapsulated get interface for ThreatDetection LogMeta.
 
 func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetLogMeta"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["LogStore"] = id
+	request["LogStore"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	action := "GetLogMeta"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
@@ -234,14 +233,10 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LogMeta", id)), NotFoundMsg, response)
-		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -270,6 +265,14 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionLogMetaStateRefreshFunc(id str
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
