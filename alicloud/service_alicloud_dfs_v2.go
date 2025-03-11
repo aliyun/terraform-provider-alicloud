@@ -227,6 +227,7 @@ func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeDfsFileSystem >>> Encapsulated.
+
 // DescribeDfsMountPoint <<< Encapsulated get interface for Dfs MountPoint.
 
 func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]interface{}, err error) {

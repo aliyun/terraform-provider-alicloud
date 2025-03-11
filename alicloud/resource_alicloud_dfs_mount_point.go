@@ -100,10 +100,9 @@ func resourceAliCloudDfsMountPointCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -138,35 +137,22 @@ func resourceAliCloudDfsMountPointRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	if objectRaw["AccessGroupId"] != nil {
-		d.Set("access_group_id", objectRaw["AccessGroupId"])
-	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["NetworkType"] != nil {
-		d.Set("network_type", objectRaw["NetworkType"])
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", objectRaw["RegionId"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["VSwitchId"] != nil {
-		d.Set("vswitch_id", objectRaw["VSwitchId"])
-	}
-	if objectRaw["VpcId"] != nil {
-		d.Set("vpc_id", objectRaw["VpcId"])
-	}
-	if objectRaw["FileSystemId"] != nil {
-		d.Set("file_system_id", objectRaw["FileSystemId"])
-	}
-	if objectRaw["MountPointId"] != nil {
-		d.Set("mount_point_id", objectRaw["MountPointId"])
+	d.Set("access_group_id", objectRaw["AccessGroupId"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("network_type", objectRaw["NetworkType"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("file_system_id", objectRaw["FileSystemId"])
+	d.Set("mount_point_id", objectRaw["MountPointId"])
+
+	if objectRaw["MountPointAlias"] != nil {
+		if fmt.Sprint(objectRaw["MountPointAlias"]) != "" {
+			aliasPrefix := strings.Split(fmt.Sprint(objectRaw["MountPointAlias"]), "--")[0]
+			d.Set("alias_prefix", aliasPrefix)
+		}
 	}
 
 	return nil
@@ -178,9 +164,43 @@ func resourceAliCloudDfsMountPointUpdate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	parts := strings.Split(d.Id(), ":")
-	action := "ModifyMountPoint"
+	d.Partial(true)
+
 	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "BindMountPointAlias"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["MountPointId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+	request["InputRegionId"] = client.RegionId
+	if d.HasChange("alias_prefix") {
+		update = true
+	}
+	if v, ok := d.GetOk("alias_prefix"); ok {
+		request["AliasPrefix"] = v
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	action = "ModifyMountPoint"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["MountPointId"] = parts[1]
@@ -203,7 +223,7 @@ func resourceAliCloudDfsMountPointUpdate(d *schema.ResourceData, meta interface{
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -239,7 +259,7 @@ func resourceAliCloudDfsMountPointDelete(d *schema.ResourceData, meta interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
