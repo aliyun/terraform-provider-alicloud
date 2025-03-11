@@ -646,6 +646,22 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"optimized_writes": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"optimized", "none"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					optimizedWrites := d.Get("optimized_writes").(string)
+					if optimizedWrites == "optimized" && old == "{\"optimized_writes\":true,\"init_optimized_writes\":true}" {
+						return true
+					}
+					if optimizedWrites == "none" && old == "{\"optimized_writes\":false,\"init_optimized_writes\":true}" {
+						return true
+					}
+					return false
+				},
+			},
 		},
 	}
 }
@@ -1499,6 +1515,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 	}
+	if d.HasChange("optimized_writes") && d.Get("engine").(string) == "MySQL" {
+		update = true
+		if optimizedWrites, ok := d.GetOk("optimized_writes"); ok && optimizedWrites.(string) != "" {
+			request["OptimizedWrites"] = optimizedWrites.(string)
+		}
+	}
 
 	if d.HasChange("db_instance_storage_type") {
 		update = true
@@ -1817,6 +1839,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
+	d.Set("optimized_writes", instance["OptimizedWritesInfo"])
 
 	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
 	payType := instance["PayType"]
@@ -2067,6 +2090,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOkExists("bursting_enabled"); ok {
 		request["BurstingEnabled"] = v
+	}
+	if v, ok := d.GetOk("optimized_writes"); ok && v.(string) != "" {
+		request["OptimizedWrites"] = v
 	}
 
 	if request["Engine"] == "MySQL" || request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {
