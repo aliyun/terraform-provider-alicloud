@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -52,7 +53,7 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"product_form": {
 				Type:     schema.TypeString,
@@ -115,6 +116,11 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+			},
 			"enable_default_resource_group": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -165,7 +171,7 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Computed: true,
 			},
 			"expired": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeBool,
 				Computed: true,
 			},
 			"create_time": {
@@ -236,6 +242,18 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
+	}
+
+	if request["PayType"] == string(Prepaid) {
+		if v, ok := d.GetOkExists("period"); ok {
+			usedTime := v.(int)
+			request["UsedTime"] = strconv.Itoa(usedTime)
+			request["Period"] = string(Month)
+			if usedTime > 9 {
+				request["UsedTime"] = strconv.Itoa(usedTime / 12)
+				request["Period"] = string(Year)
+			}
+		}
 	}
 
 	if v, ok := d.GetOkExists("enable_default_resource_group"); ok {
@@ -595,6 +613,12 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 }
 
 func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta interface{}) error {
+
+	if v, ok := d.GetOk("payment_type"); ok && fmt.Sprint(v) == "Subscription" {
+		log.Printf("[WARN] Cannot destroy resource alicloud_adb_db_cluster_lake_version which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBCluster"
 	var response map[string]interface{}
@@ -636,19 +660,23 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	return nil
 }
 
-func convertAdbDbClusterLakeVersionPaymentTypeResponse(source interface{}) interface{} {
+func convertAdbDbClusterLakeVersionPaymentTypeRequest(source interface{}) interface{} {
 	switch source {
-	case "Postpaid":
-		return "PayAsYouGo"
+	case "PayAsYouGo":
+		return "Postpaid"
+	case "Subscription":
+		return "Prepaid"
 	}
 
 	return source
 }
 
-func convertAdbDbClusterLakeVersionPaymentTypeRequest(source interface{}) interface{} {
+func convertAdbDbClusterLakeVersionPaymentTypeResponse(source interface{}) interface{} {
 	switch source {
-	case "PayAsYouGo":
-		return "Postpaid"
+	case "Postpaid":
+		return "PayAsYouGo"
+	case "Prepaid":
+		return "Subscription"
 	}
 
 	return source

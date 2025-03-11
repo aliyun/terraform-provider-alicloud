@@ -62,7 +62,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
-* `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`.
+* `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`.
 * `product_form` - (Optional, ForceNew, Available since v1.245.0) The product form of the cluster. Valid values:
   - `IntegrationForm`: Integrated.
   - `LegacyForm`: Data Lakehouse Edition.
@@ -82,6 +82,7 @@ The following arguments are supported:
 * `enable_ssl` - (Optional, Bool, Available since v1.245.0) Specifies whether to enable SSL encryption. Valid values: `true`, `false`.
 * `db_cluster_description` - (Optional, Available since v1.198.0) The description of the cluster.
 * `resource_group_id` - (Optional, Available since v1.211.1) The ID of the resource group.
+* `period` - (Optional, Int, Available since v1.245.0) The subscription period of the subscription cluster. Valid values: `1` to `9`, `12`, `24`, `36`.
 * `enable_default_resource_group` - (Optional, Bool) Whether to enable default allocation of resources to user_default resource groups.
 * `source_db_cluster_id` - (Optional, Available since v1.211.1) The ID of the source AnalyticDB for MySQL Data Warehouse Edition cluster.
 * `backup_set_id` - (Optional, Available since v1.211.1) The ID of the backup set that you want to use to restore data.
