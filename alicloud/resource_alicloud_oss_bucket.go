@@ -527,6 +527,19 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		req.AclTypeOption,
 	}
 
+	// server_side_encryption_rule
+	if encryption_rule, ok := d.Get("server_side_encryption_rule").([]interface{}); ok && encryption_rule != nil && len(encryption_rule) > 0 {
+		if sse_rule, ok := encryption_rule[0].(map[string]interface{}); ok {
+			if sse_algorithm, ok := sse_rule["sse_algorithm"].(string); ok {
+				options = append(options, oss.SetHeader("x-oss-server-side-encryption", sse_algorithm))
+			}
+
+			if sse_kms_id, ok := sse_rule["kms_master_key_id"].(string); ok {
+				options = append(options, oss.SetHeader("x-oss-server-side-encryption-key-id", sse_kms_id))
+			}
+		}
+	}
+
 	//resource_group_id
 	if resourceGroupId, ok := d.Get("resource_group_id").(string); ok {
 		if len(resourceGroupId) > 0 {
@@ -1037,7 +1050,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("policy")
 	}
 
-	if d.HasChange("server_side_encryption_rule") {
+	if !d.IsNewResource() && d.HasChange("server_side_encryption_rule") {
 		if err := resourceAlicloudOssBucketEncryptionUpdate(client, d); err != nil {
 			return WrapError(err)
 		}

@@ -774,6 +774,93 @@ func TestAccAliCloudOssBucketCheckSseRule(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOssBucketCreateWithSseRule(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket": name,
+					"server_side_encryption_rule": []map[string]interface{}{
+						{
+							"sse_algorithm":     "KMS",
+							"kms_master_key_id": "kms-id",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                                          name,
+						"access_monitor.#":                                "1",
+						"access_monitor.0.status":                         "Disabled",
+						"resource_group_id":                               CHECKSET,
+						"server_side_encryption_rule.#":                   "1",
+						"server_side_encryption_rule.0.sse_algorithm":     "KMS",
+						"server_side_encryption_rule.0.kms_master_key_id": "kms-id",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy", "lifecycle_rule_allow_same_action_overlap"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_side_encryption_rule": []map[string]interface{}{
+						{
+							"sse_algorithm":     "AES256",
+							"kms_master_key_id": "",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_side_encryption_rule.#":                   "1",
+						"server_side_encryption_rule.0.sse_algorithm":     "AES256",
+						"server_side_encryption_rule.0.kms_master_key_id": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_side_encryption_rule": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_side_encryption_rule.#":                   "0",
+						"server_side_encryption_rule.0.sse_algorithm":     REMOVEKEY,
+						"server_side_encryption_rule.0.kms_master_key_id": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudOssBucketCheckTransferAcc(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
