@@ -101,6 +101,7 @@ The following arguments are supported:
 * `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
 corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
 * `resource_group_id` - (Optional, Available since v1.245.0) The ID of the resource group.
+* `allocate_public_connection` - (Optional, Available since v1.245.0) Whether to enable public connection. Value options: `true`, `false`.
 
 ### `db_cluster_access_white_list`
 
@@ -124,6 +125,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of DBCluster.
 * `connection_string` (Available since v1.196.0) - The connection string of the cluster.
 * `port` - (Available since v1.196.0) The connection port of the cluster.
+* `public_connection_string` - (Available since v1.245.0) The public connection string of the cluster. Only valid when `allocate_public_connection` is `true`.
 
 ## Timeouts
 
