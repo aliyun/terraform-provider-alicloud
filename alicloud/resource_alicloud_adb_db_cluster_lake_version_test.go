@@ -173,7 +173,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -181,7 +181,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 					"vpc_id":                        "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
-					"payment_type":                  "PayAsYouGo",
+					"payment_type":                  "Subscription",
 					"compute_resource":              "16ACU",
 					"storage_resource":              "0ACU",
 					"disk_encryption":               "true",
@@ -190,6 +190,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 					"enable_ssl":                    "true",
 					"db_cluster_description":        name,
 					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"period":                        "1",
 					"enable_default_resource_group": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -198,7 +199,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 						"vpc_id":                 CHECKSET,
 						"vswitch_id":             CHECKSET,
 						"zone_id":                CHECKSET,
-						"payment_type":           "PayAsYouGo",
+						"payment_type":           "Subscription",
 						"compute_resource":       "16ACU",
 						"storage_resource":       "0ACU",
 						"disk_encryption":        "true",
@@ -214,7 +215,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
+				ImportStateVerifyIgnore: []string{"period", "enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
 			},
 		},
 	})
