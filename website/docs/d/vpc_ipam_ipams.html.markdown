@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_vpc_ipam_ipams
 
-This data source provides Vpc Ipam Ipam available to the user.[What is Ipam](https://www.alibabacloud.com/help/en/)
+This data source provides Vpc Ipam Ipam available to the user.[What is Ipam](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/CreateIpam)
 
 -> **NOTE:** Available since v1.241.0.
 

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_vpc_ipam_ipam_scopes
 
-This data source provides Vpc Ipam Ipam Scope available to the user.[What is Ipam Scope](https://www.alibabacloud.com/help/en/)
+This data source provides Vpc Ipam Ipam Scope available to the user.[What is Ipam Scope](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/CreateIpamScope)
 
 -> **NOTE:** Available since v1.241.0.
 
