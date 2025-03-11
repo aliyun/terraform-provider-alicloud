@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_vpc_ipam_ipam_pools
 
-This data source provides Vpc Ipam Ipam Pool available to the user.[What is Ipam Pool](https://www.alibabacloud.com/help/en/)
+This data source provides Vpc Ipam Ipam Pool available to the user.[What is Ipam Pool](https://next.api.alibabacloud.com/document/VpcIpam/2023-02-28/CreateIpamPool)
 
 -> **NOTE:** Available since v1.241.0.
 
