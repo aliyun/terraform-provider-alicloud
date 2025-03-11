@@ -326,21 +326,21 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "mountpoint RMC test case",
+					"alias_prefix": "MPAliasRMCTest39",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "mountpoint RMC test case",
+						"alias_prefix": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"status": "Active",
+					"description": "mountpoint RMC test case",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status": "Active",
+						"description": "mountpoint RMC test case",
 					}),
 				),
 			},
@@ -442,6 +442,7 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 					"vswitch_id":      "${alicloud_vswitch.DefaultVSwitch.id}",
 					"file_system_id":  "${alicloud_dfs_file_system.DefaultFs.id}",
 					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+					"alias_prefix":    "MPAliasRMCTest39",
 					"status":          "Active",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -452,15 +453,15 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 						"vswitch_id":      CHECKSET,
 						"file_system_id":  CHECKSET,
 						"access_group_id": CHECKSET,
+						"alias_prefix":    CHECKSET,
 						"status":          "Active",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"alias_prefix"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -569,10 +570,9 @@ func TestAccAliCloudDfsMountPoint_basic5564_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"alias_prefix"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
