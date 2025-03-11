@@ -200,7 +200,7 @@ github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/sql/dataprotocol
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/timeseries/flatbuffer
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel/protocol
-# github.com/aliyun/credentials-go v1.4.3
+# github.com/aliyun/credentials-go v1.4.5
 ## explicit; go 1.14
 github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/internal/http
