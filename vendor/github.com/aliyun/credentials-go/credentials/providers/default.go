@@ -46,7 +46,7 @@ func NewDefaultCredentialsProvider() (provider *DefaultCredentialsProvider) {
 
 	// credentials uri
 	if os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI") != "" {
-		credentialsUriProvider, err := NewURLCredentialsProviderBuilderBuilder().Build()
+		credentialsUriProvider, err := NewURLCredentialsProviderBuilder().Build()
 		if err == nil {
 			providers = append(providers, credentialsUriProvider)
 		}

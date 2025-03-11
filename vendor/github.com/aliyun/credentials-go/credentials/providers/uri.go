@@ -25,7 +25,7 @@ type URLCredentialsProviderBuilder struct {
 	provider *URLCredentialsProvider
 }
 
-func NewURLCredentialsProviderBuilderBuilder() *URLCredentialsProviderBuilder {
+func NewURLCredentialsProviderBuilder() *URLCredentialsProviderBuilder {
 	return &URLCredentialsProviderBuilder{
 		provider: &URLCredentialsProvider{},
 	}

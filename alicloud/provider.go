@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/aliyun/credentials-go/credentials/providers"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -1916,6 +1917,29 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	securityToken := getProviderConfig("security_token", "sts_token")
 
 	ecsRoleName := getProviderConfig("ecs_role_name", "ram_role_name")
+	var profileName string
+	var credential credentials.Credential
+	if v, ok := d.GetOk("profile"); ok && v != nil {
+		profileName = v.(string)
+	}
+
+	// TODO: supports all of profile modes after credentials supporting setting timeout
+	if (accessKey == "" || secretKey == "") && profileName != "" && fmt.Sprint(providerConfig["mode"]) == "ChainableRamRoleArn" {
+		var profileFile string
+		if v, ok := d.GetOk("profile_file"); ok && v.(string) != "" {
+			profileFile = v.(string)
+		}
+		provider, err := providers.NewCLIProfileCredentialsProviderBuilder().WithProfileName(profileName).WithProfileFile(profileFile).Build()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create profile credentials provider: %v", err)
+		}
+		credential = credentials.FromCredentialsProvider("cli_profile", provider)
+		creds, err := credential.GetCredential()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get credential from profile: %v", err)
+		}
+		accessKey, secretKey, securityToken = *creds.AccessKeyId, *creds.AccessKeySecret, *creds.SecurityToken
+	}
 
 	if accessKey == "" || secretKey == "" {
 		if v, ok := d.GetOk("credentials_uri"); ok && v.(string) != "" {
@@ -1932,6 +1956,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	config := &connectivity.Config{
 		AccessKey:            strings.TrimSpace(accessKey),
 		SecretKey:            strings.TrimSpace(secretKey),
+		SecurityToken:        strings.TrimSpace(securityToken),
 		EcsRoleName:          strings.TrimSpace(ecsRoleName),
 		Region:               connectivity.Region(strings.TrimSpace(region)),
 		RegionId:             strings.TrimSpace(region),
@@ -1946,11 +1971,24 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
 		TerraformVersion:     p.TerraformVersion,
 	}
+	if credential != nil {
+		config.Credential = credential
+	}
 	log.Println("alicloud provider trace id:", config.TerraformTraceId)
-	if accessKey != "" && secretKey != "" {
-		credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if accessKey != "" && secretKey != "" && credential == nil {
+		credentialConfig := new(credentials.Config).SetType("access_key").
+			SetAccessKeyId(accessKey).
+			SetAccessKeySecret(secretKey).
+			SetTimeout(config.ClientReadTimeout).
+			SetConnectTimeout(config.ClientConnectTimeout)
 		if v := strings.TrimSpace(securityToken); v != "" {
 			credentialConfig.SetType("sts").SetSecurityToken(v)
+		}
+		if config.ClientConnectTimeout != 0 {
+			credentialConfig.SetConnectTimeout(config.ClientConnectTimeout)
+		}
+		if config.ClientReadTimeout != 0 {
+			credentialConfig.SetTimeout(config.ClientReadTimeout)
 		}
 		credential, err := credentials.NewCredential(credentialConfig)
 		if err != nil {
@@ -1967,7 +2005,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}
-	config.SecurityToken = strings.TrimSpace(securityToken)
 
 	config.RamRoleArn = getProviderConfig("", "ram_role_arn")
 	config.RamRoleSessionName = getProviderConfig("", "ram_session_name")
@@ -3893,6 +3930,12 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 		mode = v.(string)
 	} else {
 		return v, nil
+	}
+	if ProfileKey == "region_id" {
+		return providerConfig["region_id"], nil
+	}
+	if mode == "ChainableRamRoleArn" {
+		return nil, nil
 	}
 	switch ProfileKey {
 	case "access_key_id", "access_key_secret":

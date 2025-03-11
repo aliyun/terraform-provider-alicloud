@@ -13,6 +13,7 @@ import (
 )
 
 type CLIProfileCredentialsProvider struct {
+	profileFile   string
 	profileName   string
 	innerProvider CredentialsProvider
 }
@@ -21,12 +22,24 @@ type CLIProfileCredentialsProviderBuilder struct {
 	provider *CLIProfileCredentialsProvider
 }
 
+func (b *CLIProfileCredentialsProviderBuilder) WithProfileFile(profileFile string) *CLIProfileCredentialsProviderBuilder {
+	b.provider.profileFile = profileFile
+	return b
+}
+
 func (b *CLIProfileCredentialsProviderBuilder) WithProfileName(profileName string) *CLIProfileCredentialsProviderBuilder {
 	b.provider.profileName = profileName
 	return b
 }
 
 func (b *CLIProfileCredentialsProviderBuilder) Build() (provider *CLIProfileCredentialsProvider, err error) {
+	// 优先级：
+	// 1. 使用显示指定的 profileFile
+	// 2. 使用环境变量（ALIBABA_CLOUD_CONFIG_FILE）指定的 profileFile
+	// 3. 兜底使用 path.Join(homeDir, ".aliyun/config") 作为 profileFile
+	if b.provider.profileFile == "" {
+		b.provider.profileFile = os.Getenv("ALIBABA_CLOUD_CONFIG_FILE")
+	}
 	// 优先级：
 	// 1. 使用显示指定的 profileName
 	// 2. 使用环境变量（ALIBABA_CLOUD_PROFILE）制定的 profileName
@@ -181,13 +194,16 @@ var getHomePath = utils.GetHomePath
 
 func (provider *CLIProfileCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
 	if provider.innerProvider == nil {
-		homedir := getHomePath()
-		if homedir == "" {
-			err = fmt.Errorf("cannot found home dir")
-			return
-		}
+		cfgPath := provider.profileFile
+		if cfgPath == "" {
+			homeDir := getHomePath()
+			if homeDir == "" {
+				err = fmt.Errorf("cannot found home dir")
+				return
+			}
 
-		cfgPath := path.Join(homedir, ".aliyun/config.json")
+			cfgPath = path.Join(homeDir, ".aliyun/config.json")
+		}
 
 		conf, err1 := newConfigurationFromPath(cfgPath)
 		if err1 != nil {

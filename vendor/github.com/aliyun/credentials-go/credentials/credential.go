@@ -232,7 +232,19 @@ func NewCredential(config *Config) (credential Credential, err error) {
 	}
 	switch tea.StringValue(config.Type) {
 	case "credentials_uri":
-		credential = newURLCredential(tea.StringValue(config.Url))
+		provider, err := providers.NewURLCredentialsProviderBuilder().
+			WithUrl(tea.StringValue(config.Url)).
+			WithHttpOptions(&providers.HttpOptions{
+				Proxy:          tea.StringValue(config.Proxy),
+				ReadTimeout:    tea.IntValue(config.Timeout),
+				ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+			}).
+			Build()
+
+		if err != nil {
+			return nil, err
+		}
+		credential = FromCredentialsProvider("credentials_uri", provider)
 	case "oidc_role_arn":
 		provider, err := providers.NewOIDCCredentialsProviderBuilder().
 			WithRoleArn(tea.StringValue(config.RoleArn)).
@@ -488,7 +500,8 @@ func (cp *credentialsProviderWrap) GetCredential() (cm *CredentialModel, err err
 		AccessKeyId:     &c.AccessKeyId,
 		AccessKeySecret: &c.AccessKeySecret,
 		SecurityToken:   &c.SecurityToken,
-		Type:            &c.ProviderName,
+		Type:            &cp.typeName,
+		ProviderName:    &c.ProviderName,
 	}
 	return
 }
