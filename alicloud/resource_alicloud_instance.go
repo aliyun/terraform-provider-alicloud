@@ -696,6 +696,23 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
+			"cpu_options": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"accelerators": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Computed: true,
+							MaxItems: 10,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1116,6 +1133,19 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 			imageOptionsArg := raw.(map[string]interface{})
 			if v, ok := imageOptionsArg["login_as_non_root"]; ok {
 				request["ImageOptions.LoginAsNonRoot"] = v
+			}
+		}
+	}
+
+	if v, ok := d.GetOk("cpu_options"); ok {
+		for _, raw := range v.(*schema.Set).List() {
+			cpuOptionsArg := raw.(map[string]interface{})
+			if v, ok := cpuOptionsArg["accelerators"]; ok {
+				count := 1
+				for _, accelerator := range v.(*schema.Set).List() {
+					request[fmt.Sprintf("CpuOptions.Accelerators.%d", count)] = accelerator
+					count++
+				}
 			}
 		}
 	}
