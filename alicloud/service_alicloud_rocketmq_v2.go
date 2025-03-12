@@ -23,14 +23,16 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 	var response map[string]interface{}
 	var query map[string]*string
 	instanceId := id
-	action := fmt.Sprintf("/instances/%s", instanceId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
+	action := fmt.Sprintf("/instances/%s", instanceId)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -38,9 +40,9 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
@@ -60,6 +62,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 
 	return v.(map[string]interface{}), nil
 }
+
 func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -111,6 +114,13 @@ func (s *RocketmqServiceV2) RocketmqInstanceStateRefreshFunc(id string, field st
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -118,6 +128,47 @@ func (s *RocketmqServiceV2) RocketmqInstanceStateRefreshFunc(id string, field st
 		}
 		return object, currentStatus, nil
 	}
+}
+
+func (s *RocketmqServiceV2) DescribeInstanceGetInstanceIpWhitelist(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	instanceId := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	request["instanceId"] = id
+
+	action := fmt.Sprintf("/instances/%s/ip/whitelists", instanceId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InstanceIpOrCidr.NotExisted", "Instance.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	return v.(map[string]interface{}), nil
 }
 
 // DescribeRocketmqInstance >>> Encapsulated.

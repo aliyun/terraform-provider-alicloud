@@ -16,7 +16,7 @@ import (
 func testSweepRocketMq(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "error getting Alicloud client.")
+		return WrapErrorf(err, "error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -83,7 +83,7 @@ func testSweepRocketMq(region string) error {
 func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4101)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4101)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -91,7 +91,7 @@ func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4101)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -172,7 +172,7 @@ func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4665)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4665)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -180,7 +180,7 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4665)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4665)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -205,8 +205,8 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 						{
 							"vpc_info": []map[string]interface{}{
 								{
-									"vpc_id":     "${alicloud_vpc.createVPC.id}",
-									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+									"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
+									"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 								},
 							},
 							"internet_info": []map[string]interface{}{
@@ -215,7 +215,7 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
 									"ip_whitelist": []string{
-										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
+										"192.168.0.0/16", "10.10.0.0/16"},
 								},
 							},
 						},
@@ -260,8 +260,8 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 						{
 							"vpc_info": []map[string]interface{}{
 								{
-									"vpc_id":     "${alicloud_vpc.createVPC.id}",
-									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+									"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
+									"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 								},
 							},
 							"internet_info": []map[string]interface{}{
@@ -314,8 +314,8 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 						{
 							"vpc_info": []map[string]interface{}{
 								{
-									"vpc_id":     "${alicloud_vpc.createVPC.id}",
-									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+									"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
+									"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 								},
 							},
 							"internet_info": []map[string]interface{}{
@@ -403,42 +403,56 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap4665 = map[string]string{
+var AliCloudRocketmqInstanceMap4665 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence4665(name string) string {
+func AliCloudRocketmqInstanceBasicDependence4665(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+    	default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
 
-resource "alicloud_vpc" "createVPC" {
-  description = "1111"
-  cidr_block  = "172.16.0.0/12"
-  vpc_name    = var.name
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
 
-}
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = "cn-hangzhou-j"
+	}
 
-resource "alicloud_vswitch" "createVSwitch" {
-  description  = "1111"
-  vpc_id       = alicloud_vpc.createVPC.id
-  cidr_block   = "172.16.0.0/24"
-  vswitch_name = var.name
+	resource "alicloud_kms_instance" "default" {
+  		product_version = "3"
+  		vpc_num         = "1"
+  		key_num         = "1000"
+  		secret_num      = "0"
+  		spec            = "1000"
+  		vpc_id          = data.alicloud_vpcs.default.ids.0
+  		vswitch_ids = [
+    		data.alicloud_vswitches.default.ids.0
+  		]
+  		zone_ids = [
+    		"cn-hangzhou-k",
+    		"cn-hangzhou-j"
+  		]
+  		timeouts {
+    		delete = "60m"
+  		}
+	}
 
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
-}
-
-
+	resource "alicloud_kms_key" "default" {
+  		description            = "Hello KMS"
+  		status                 = "Enabled"
+  		pending_window_in_days = "7"
+  		dkms_instance_id       = alicloud_kms_instance.default.id
+	}
 `, name)
 }
 
@@ -446,7 +460,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4652)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4652)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -454,7 +468,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4652)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4652)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -669,12 +683,13 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap4652 = map[string]string{
+var AliCloudRocketmqInstanceMap4652 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence4652(name string) string {
+func AliCloudRocketmqInstanceBasicDependence4652(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -712,7 +727,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4128)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4128)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -720,7 +735,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4128)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1020,12 +1035,13 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap4128 = map[string]string{
+var AliCloudRocketmqInstanceMap4128 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence4128(name string) string {
+func AliCloudRocketmqInstanceBasicDependence4128(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1056,7 +1072,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4101)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4101)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1064,7 +1080,7 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4101)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1099,8 +1115,6 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 									"internet_spec":      "enable",
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
-									"ip_whitelist": []string{
-										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
 								},
 							},
 						},
@@ -1116,6 +1130,22 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 						"payment_type":    "PayAsYouGo",
 						"sub_series_code": "cluster_ha",
 						"instance_name":   name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_info": []map[string]interface{}{
+						{
+							"acl_types": []string{
+								"default", "apache_acl", "aliyun_ram"},
+							"default_vpc_auth_free": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_info.#": "1",
 					}),
 				),
 			},
@@ -1162,8 +1192,6 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 									"internet_spec":      "enable",
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
-									"ip_whitelist": []string{
-										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
 								},
 							},
 						},
@@ -1208,8 +1236,6 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 									"internet_spec":      "enable",
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
-									"ip_whitelist": []string{
-										"10.10.0.0/16", "172.168.0.0/16", "192.168.0.0/16"},
 								},
 							},
 						},
@@ -1232,6 +1258,36 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelists": []string{"192.168.2.2", "192.168.1.1", "192.168.3.3"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelists.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelists": []string{"192.168.2.2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelists.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelists": []string{"192.168.2.2", "192.168.1.1", "192.168.3.3"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelists.#": "3",
+					}),
 				),
 			},
 			{
@@ -1259,8 +1315,6 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 									"internet_spec":      "enable",
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
-									"ip_whitelist": []string{
-										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
 								},
 							},
 						},
@@ -1297,12 +1351,13 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap4101 = map[string]string{
+var AliCloudRocketmqInstanceMap4101 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence4101(name string) string {
+func AliCloudRocketmqInstanceBasicDependence4101(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1339,7 +1394,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4665)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4665)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1347,11 +1402,10 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4665)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4665)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1365,6 +1419,8 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 							"msg_process_spec":       "rmq.u2.10xlarge",
 							"send_receive_ratio":     "0.3",
 							"message_retention_time": "70",
+							"storage_encryption":     "true",
+							"storage_secret_key":     "${alicloud_kms_key.default.id}",
 						},
 					},
 					"service_code": "rmq",
@@ -1373,8 +1429,8 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 						{
 							"vpc_info": []map[string]interface{}{
 								{
-									"vpc_id":     "${alicloud_vpc.createVPC.id}",
-									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+									"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
+									"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 								},
 							},
 							"internet_info": []map[string]interface{}{
@@ -1411,6 +1467,7 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 						"sub_series_code":   "cluster_ha",
 						"remark":            "自动化测试购买使用11",
 						"resource_group_id": CHECKSET,
+						"product_info.#":    "1",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "Test",
@@ -1431,7 +1488,7 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4652)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4652)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1439,7 +1496,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4652)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4652)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1516,7 +1573,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4128)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4128)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1524,7 +1581,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4128)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1650,7 +1707,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4101)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap4101)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1658,7 +1715,7 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4101)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1693,8 +1750,6 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 									"internet_spec":      "enable",
 									"flow_out_type":      "payByBandwidth",
 									"flow_out_bandwidth": "30",
-									"ip_whitelist": []string{
-										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
 								},
 							},
 						},
@@ -1708,6 +1763,13 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 							"maintain_time": "02:00-06:00",
 						},
 					},
+					"acl_info": []map[string]interface{}{
+						{
+							"acl_types":             []string{"default", "apache_acl", "aliyun_ram"},
+							"default_vpc_auth_free": "false",
+						},
+					},
+					"ip_whitelists": []string{"192.168.1.1", "192.168.2.2"},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1722,6 +1784,8 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 						"sub_series_code":   "cluster_ha",
 						"remark":            "自动化测试购买使用11",
 						"resource_group_id": CHECKSET,
+						"acl_info.#":        "1",
+						"ip_whitelists.#":   "2",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "Test",
@@ -1743,7 +1807,7 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap6747)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap6747)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1751,7 +1815,7 @@ func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence6747)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence6747)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1771,6 +1835,7 @@ func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 							"auto_scaling":           "true",
 							"message_retention_time": "72",
 							// "support_auto_scaling":   "true",
+							"trace_on": "false",
 						},
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1826,6 +1891,23 @@ func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_info": []map[string]interface{}{
+						{
+							"msg_process_spec":       "rmq.s3.nxlarge",
+							"auto_scaling":           "true",
+							"message_retention_time": "72",
+							"trace_on":               "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_info.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -1835,11 +1917,13 @@ func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap6747 = map[string]string{
+var AliCloudRocketmqInstanceMap6747 = map[string]string{
+	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence6747(name string) string {
+func AliCloudRocketmqInstanceBasicDependence6747(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1884,7 +1968,7 @@ resource "alicloud_vswitch" "createVSwitch2" {
 func SkipTestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rocketmq_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap7144)
+	ra := resourceAttrInit(resourceId, AliCloudRocketmqInstanceMap7144)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
@@ -1892,7 +1976,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence7144)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence7144)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1972,11 +2056,13 @@ func SkipTestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
 	})
 }
 
-var AlicloudRocketmqInstanceMap7144 = map[string]string{
+var AliCloudRocketmqInstanceMap7144 = map[string]string{
+	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AlicloudRocketmqInstanceBasicDependence7144(name string) string {
+func AliCloudRocketmqInstanceBasicDependence7144(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
