@@ -135,18 +135,30 @@ func TestAccAliCloudNlbLoadBalancer_basic0(t *testing.T) {
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"load_balancer_type":             "Network",
 					"address_type":                   "Internet",
-					"address_ip_version":             "Ipv4",
+					"address_ip_version":             "DualStack",
+					"payment_type":                   "PayAsYouGo",
+					"cps":                            "300",
 					"vpc_id":                         "${alicloud_vpc.default.id}",
-					"deletion_protection_enabled":    "true",
-					"modification_protection_status": "ConsoleProtection",
+					"deletion_protection_enabled":    "false",
+					"modification_protection_status": "NonProtection",
 					"tags": map[string]string{
 						"Created": "tfTestAcc0",
 						"For":     "Tftestacc 0",
 					},
 					"zone_mappings": []map[string]interface{}{
 						{
-							"vswitch_id": "${local.vswitch_id_1}",
-							"zone_id":    "${local.zone_id_1}",
+							"vswitch_id":           "${local.vswitch_id_1}",
+							"zone_id":              "${local.zone_id_1}",
+							"ipv6_address":         "${cidrhost(alicloud_vswitch.default.0.ipv6_cidr_block, 128)}",
+							"private_ipv4_address": "${cidrhost(alicloud_vswitch.default.0.cidr_block, 100)}",
+							"ipv6_local_addresses": []string{
+								"${cidrhost(alicloud_vswitch.default.0.ipv6_cidr_block, 32)}",
+								"${cidrhost(alicloud_vswitch.default.0.ipv6_cidr_block, 64)}",
+							},
+							"ipv4_local_addresses": []string{
+								"${cidrhost(alicloud_vswitch.default.0.cidr_block, 32)}",
+								"${cidrhost(alicloud_vswitch.default.0.cidr_block, 64)}",
+							},
 						},
 						{
 							"vswitch_id": "${local.vswitch_id_2}",
@@ -161,25 +173,69 @@ func TestAccAliCloudNlbLoadBalancer_basic0(t *testing.T) {
 						"resource_group_id":              CHECKSET,
 						"load_balancer_type":             "Network",
 						"address_type":                   "Internet",
-						"address_ip_version":             "Ipv4",
+						"address_ip_version":             "DualStack",
 						"vpc_id":                         CHECKSET,
-						"deletion_protection_enabled":    "true",
-						"modification_protection_status": "ConsoleProtection",
+						"deletion_protection_enabled":    "false",
+						"modification_protection_status": "NonProtection",
 						"tags.%":                         "2",
 						"tags.Created":                   "tfTestAcc0",
 						"tags.For":                       "Tftestacc 0",
 						"zone_mappings.#":                "2",
 						"cross_zone_enabled":             "false",
+						"cps":                            "300",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"cps": "400",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cps": "400",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_address_type": "Internet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_address_type": "Internet",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id":           "${local.vswitch_id_1}",
+							"zone_id":              "${local.zone_id_1}",
+							"allocation_id":        "${alicloud_eip.zone_b.id}",
+							"private_ipv4_address": "${cidrhost(alicloud_vswitch.default.0.cidr_block, 90)}",
+						},
+						{
+							"vswitch_id": "${local.vswitch_id_2}",
+							"zone_id":    "${local.zone_id_2}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled":    "true",
+					"modification_protection_status": "ConsoleProtection",
 					"deletion_protection_reason":     "tf-open",
 					"modification_protection_reason": "tf-open",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"deletion_protection_enabled":    "true",
+						"modification_protection_status": "ConsoleProtection",
 						"deletion_protection_reason":     "tf-open",
 						"modification_protection_reason": "tf-open",
 					}),
@@ -413,9 +469,26 @@ func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 
+	resource "alicloud_eip" "zone_a" {
+	  bandwidth            = "10"
+	  internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_eip" "zone_b" {
+	  bandwidth            = "10"
+	  internet_charge_type = "PayByTraffic"
+	}
+
 	resource "alicloud_vpc" "default" {
 	  name       = var.name
 	  cidr_block = "172.16.0.0/16"
+      enable_ipv6 = true
+	}
+
+	resource "alicloud_vpc_ipv6_gateway" "default" {
+	  description       = var.name
+	  ipv6_gateway_name = var.name
+	  vpc_id            = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_vswitch" "default" {
@@ -423,6 +496,8 @@ func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
 	  vpc_id     = alicloud_vpc.default.id
 	  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 3, count.index)
 	  zone_id    = data.alicloud_nlb_zones.default.zones[count.index].id
+      ipv6_cidr_block_mask = count.index + 60
+      enable_ipv6 = true
 	}
 
 	locals {
@@ -1205,7 +1280,23 @@ func TestAccAliCloudNlbLoadBalancer_basic3678(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection_config": []map[string]interface{}{
-						{},
+						{
+							"enabled": "true",
+							"reason":  "tf-open-update",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"modification_protection_config": []map[string]interface{}{
+						{
+							"status": "ConsoleProtection",
+							"reason": "tf-open-update",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1217,6 +1308,11 @@ func TestAccAliCloudNlbLoadBalancer_basic3678(t *testing.T) {
 					"modification_protection_config": []map[string]interface{}{
 						{
 							"status": "NonProtection",
+						},
+					},
+					"deletion_protection_config": []map[string]interface{}{
+						{
+							"enabled": "false",
 						},
 					},
 				}),
