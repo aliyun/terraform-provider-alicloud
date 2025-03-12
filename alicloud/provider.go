@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/credentials-go/credentials/providers"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/aliyun/credentials-go/credentials/providers"
 
 	"github.com/aliyun/credentials-go/credentials"
 
@@ -893,6 +894,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_nlb_load_balancer_zone_shifted_attachment":            resourceAliCloudNlbLoadBalancerZoneShiftedAttachment(),
 			"alicloud_threat_detection_log_meta":                            resourceAliCloudThreatDetectionLogMeta(),
 			"alicloud_threat_detection_asset_selection_config":              resourceAliCloudThreatDetectionAssetSelectionConfig(),
 			"alicloud_ram_user_group_attachment":                            resourceAliCloudRamUserGroupAttachment(),
