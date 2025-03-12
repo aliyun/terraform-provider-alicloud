@@ -1030,7 +1030,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"SourceIp":     client.SourceIp,
 		}
 
-		if "MySQL" == d.Get("engine").(string) {
+		if "MySQL" == d.Get("engine").(string) || string(PostgreSQL) == d.Get("engine").(string) {
 			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 				request["RoleARN"] = v.(string)
 			}
