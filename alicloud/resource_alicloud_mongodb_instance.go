@@ -2,7 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -329,6 +331,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"role_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -603,6 +609,22 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
+	replicaSetsObjects, err := ddsService.DescribeReplicaSetRole(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	replicaSets := transferToMongoReplicaSets(replicaSetsObjects, false)
+	// connection domain -> replica
+	allPrivateNetworkAddresses := lo.FilterSliceToMap(replicaSets, func(replica map[string]interface{}) (string, map[string]interface{}, bool) {
+		if networkType, ok := replica["network_type"]; ok && networkType.(string) == "VPC" {
+			if connectionDomain, ok := replica["connection_domain"]; ok {
+				return connectionDomain.(string), replica, true
+			}
+		}
+		return "", replica, false
+	})
+
 	if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
 		if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
 			replicaSetsMaps := make([]map[string]interface{}, 0)
@@ -632,6 +654,11 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 
 				if connectionDomain, ok := replicaSetsArg["ConnectionDomain"]; ok {
 					replicaSetsItemMap["connection_domain"] = connectionDomain
+					if replica, ok := allPrivateNetworkAddresses[connectionDomain.(string)]; ok {
+						if roleID, ok := replica["role_id"]; ok {
+							replicaSetsItemMap["role_id"] = roleID
+						}
+					}
 				}
 
 				if connectionPort, ok := replicaSetsArg["ConnectionPort"]; ok {
@@ -641,7 +668,21 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 				replicaSetsMaps = append(replicaSetsMaps, replicaSetsItemMap)
 			}
 
-			d.Set("replica_sets", replicaSetsMaps)
+			// make the output attributes more stable.
+			sort.Slice(replicaSetsMaps, func(i, j int) bool {
+				r1, ok := replicaSetsMaps[i]["role_id"]
+				if !ok {
+					return false
+				}
+				r2, ok := replicaSetsMaps[j]["role_id"]
+				if !ok {
+					return true
+				}
+				return strings.Compare(r1.(string), r2.(string)) >= 0
+			})
+			if err := d.Set("replica_sets", replicaSetsMaps); err != nil {
+				return WrapError(err)
+			}
 		}
 	}
 
