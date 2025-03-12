@@ -764,11 +764,11 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancer(id string) (object map[string]int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["LoadBalancerId"] = id
+	request["LoadBalancerId"] = id
 	request["RegionId"] = client.RegionId
+	action := "GetLoadBalancerAttribute"
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -783,46 +783,9 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancer(id string) (object map[string]int
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.loadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	return response, nil
-}
-func (s *NlbServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
-	client := s.client
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "ListTagResources"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["ResourceId.1"] = id
-	request["RegionId"] = client.RegionId
-
-	request["ResourceType"] = "loadbalancer"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(action, response, request)
-		return nil
-	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.loadBalancer"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
@@ -846,6 +809,13 @@ func (s *NlbServiceV2) NlbLoadBalancerStateRefreshFunc(id string, field string, 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -862,14 +832,23 @@ func (s *NlbServiceV2) DescribeAsyncNlbLoadBalancerStateRefreshFunc(d *schema.Re
 			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
