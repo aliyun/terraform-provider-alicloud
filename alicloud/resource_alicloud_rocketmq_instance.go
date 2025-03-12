@@ -26,6 +26,27 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(35 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"acl_info": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"default_vpc_auth_free": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"acl_types": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"auto_renew": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -55,6 +76,12 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 			"instance_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"ip_whitelists": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"network_info": {
 				Type:     schema.TypeList,
@@ -102,9 +129,10 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 										ForceNew: true,
 									},
 									"ip_whitelist": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem:     &schema.Schema{Type: schema.TypeString},
+										Type:       schema.TypeList,
+										Optional:   true,
+										Deprecated: "Field 'ip_whitelist' has been deprecated from provider version 1.245.0. New field 'ip_whitelists' instead.",
+										Elem:       &schema.Schema{Type: schema.TypeString},
 									},
 									"flow_out_bandwidth": {
 										Type:     schema.TypeInt,
@@ -127,10 +155,11 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 										ForceNew: true,
 									},
 									"vswitch_id": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-										ForceNew: true,
+										Type:       schema.TypeString,
+										Optional:   true,
+										Computed:   true,
+										ForceNew:   true,
+										Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.231.0. New field 'vswitches' instead.",
 									},
 									"vswitches": {
 										Type:     schema.TypeList,
@@ -182,6 +211,11 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"storage_secret_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
 						"send_receive_ratio": {
 							Type:     schema.TypeFloat,
 							Optional: true,
@@ -189,6 +223,11 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 						"message_retention_time": {
 							Type:     schema.TypeInt,
 							Optional: true,
+						},
+						"storage_encryption": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
 						},
 						"support_auto_scaling": {
 							Type:     schema.TypeBool,
@@ -198,6 +237,11 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"trace_on": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
 						"msg_process_spec": {
 							Type:     schema.TypeString,
 							Required: true,
@@ -205,6 +249,10 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 						},
 					},
 				},
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"remark": {
 				Type:     schema.TypeString,
@@ -271,23 +319,24 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	action := fmt.Sprintf("/instances")
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("network_info"); v != nil {
 		vpcInfo := make(map[string]interface{})
-		vpcId1, _ := jsonpath.Get("$[0].vpc_info[0].vpc_id", d.Get("network_info"))
+		vpcId1, _ := jsonpath.Get("$[0].vpc_info[0].vpc_id", v)
 		if vpcId1 != nil && vpcId1 != "" {
 			vpcInfo["vpcId"] = vpcId1
 		}
-		vSwitchId1, _ := jsonpath.Get("$[0].vpc_info[0].vswitch_id", d.Get("network_info"))
+		vSwitchId1, _ := jsonpath.Get("$[0].vpc_info[0].vswitch_id", v)
 		if vSwitchId1 != nil && vSwitchId1 != "" {
 			vpcInfo["vSwitchId"] = vSwitchId1
 		}
-		securityGroupIds1, _ := jsonpath.Get("$[0].vpc_info[0].security_group_ids", d.Get("network_info"))
+		securityGroupIds1, _ := jsonpath.Get("$[0].vpc_info[0].security_group_ids", v)
 		if securityGroupIds1 != nil && securityGroupIds1 != "" {
 			vpcInfo["securityGroupIds"] = securityGroupIds1
 		}
@@ -311,15 +360,15 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 
 		objectDataLocalMap["vpcInfo"] = vpcInfo
 		internetInfo := make(map[string]interface{})
-		internetSpec1, _ := jsonpath.Get("$[0].internet_info[0].internet_spec", d.Get("network_info"))
+		internetSpec1, _ := jsonpath.Get("$[0].internet_info[0].internet_spec", v)
 		if internetSpec1 != nil && internetSpec1 != "" {
 			internetInfo["internetSpec"] = internetSpec1
 		}
-		flowOutType1, _ := jsonpath.Get("$[0].internet_info[0].flow_out_type", d.Get("network_info"))
+		flowOutType1, _ := jsonpath.Get("$[0].internet_info[0].flow_out_type", v)
 		if flowOutType1 != nil && flowOutType1 != "" {
 			internetInfo["flowOutType"] = flowOutType1
 		}
-		flowOutBandwidth1, _ := jsonpath.Get("$[0].internet_info[0].flow_out_bandwidth", d.Get("network_info"))
+		flowOutBandwidth1, _ := jsonpath.Get("$[0].internet_info[0].flow_out_bandwidth", v)
 		// todo: property dependent
 		if flowOutBandwidth1 != nil && flowOutBandwidth1 != "" && internetInfo["internetSpec"] == "enable" {
 			internetInfo["flowOutBandwidth"] = flowOutBandwidth1
@@ -347,33 +396,41 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap1 := make(map[string]interface{})
 
 	if v := d.Get("product_info"); !IsNil(v) {
-		msgProcessSpec1, _ := jsonpath.Get("$[0].msg_process_spec", d.Get("product_info"))
+		msgProcessSpec1, _ := jsonpath.Get("$[0].msg_process_spec", v)
 		if msgProcessSpec1 != nil && msgProcessSpec1 != "" {
 			objectDataLocalMap1["msgProcessSpec"] = msgProcessSpec1
 		}
-		sendReceiveRatio1, _ := jsonpath.Get("$[0].send_receive_ratio", d.Get("product_info"))
+		sendReceiveRatio1, _ := jsonpath.Get("$[0].send_receive_ratio", v)
 		if sendReceiveRatio1 != nil && sendReceiveRatio1 != "" {
 			objectDataLocalMap1["sendReceiveRatio"] = sendReceiveRatio1
 		}
-		autoScaling1, _ := jsonpath.Get("$[0].auto_scaling", d.Get("product_info"))
+		autoScaling1, _ := jsonpath.Get("$[0].auto_scaling", v)
 		if autoScaling1 != nil && autoScaling1 != "" {
 			objectDataLocalMap1["autoScaling"] = autoScaling1
 		}
-		messageRetentionTime1, _ := jsonpath.Get("$[0].message_retention_time", d.Get("product_info"))
+		messageRetentionTime1, _ := jsonpath.Get("$[0].message_retention_time", v)
 		if messageRetentionTime1 != nil && messageRetentionTime1 != "" {
 			objectDataLocalMap1["messageRetentionTime"] = messageRetentionTime1
+		}
+		storageSecretKey1, _ := jsonpath.Get("$[0].storage_secret_key", v)
+		if storageSecretKey1 != nil && storageSecretKey1 != "" {
+			objectDataLocalMap1["storageSecretKey"] = storageSecretKey1
+		}
+		storageEncryption1, _ := jsonpath.Get("$[0].storage_encryption", v)
+		if storageEncryption1 != nil && storageEncryption1 != "" {
+			objectDataLocalMap1["storageEncryption"] = storageEncryption1
 		}
 
 		request["productInfo"] = objectDataLocalMap1
 	}
 
-	if v, ok := d.GetOk("period"); ok {
+	if v, ok := d.GetOkExists("period"); ok {
 		request["period"] = v
 	}
 	if v, ok := d.GetOk("period_unit"); ok {
 		request["periodUnit"] = v
 	}
-	if v, ok := d.GetOk("auto_renew_period"); ok {
+	if v, ok := d.GetOkExists("auto_renew_period"); ok {
 		request["autoRenewPeriod"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -385,9 +442,15 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("commodity_code"); ok {
 		request["commodityCode"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
+	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, request, false)
+		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -395,9 +458,9 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_instance", action, AlibabaCloudSdkGoERROR)
@@ -407,7 +470,7 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 	d.SetId(fmt.Sprint(id))
 
 	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 6*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -429,102 +492,103 @@ func resourceAliCloudRocketmqInstanceRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if objectRaw["commodityCode"] != nil {
-		d.Set("commodity_code", objectRaw["commodityCode"])
-	}
-	if objectRaw["createTime"] != nil {
-		d.Set("create_time", objectRaw["createTime"])
-	}
-	if objectRaw["instanceName"] != nil {
-		d.Set("instance_name", objectRaw["instanceName"])
-	}
-	if objectRaw["paymentType"] != nil {
-		d.Set("payment_type", objectRaw["paymentType"])
-	}
-	if objectRaw["remark"] != nil {
-		d.Set("remark", objectRaw["remark"])
-	}
-	if objectRaw["resourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["resourceGroupId"])
-	}
-	if objectRaw["seriesCode"] != nil {
-		d.Set("series_code", objectRaw["seriesCode"])
-	}
-	if objectRaw["serviceCode"] != nil {
-		d.Set("service_code", objectRaw["serviceCode"])
-	}
-	if objectRaw["status"] != nil {
-		d.Set("status", objectRaw["status"])
-	}
-	if objectRaw["subSeriesCode"] != nil {
-		d.Set("sub_series_code", objectRaw["subSeriesCode"])
-	}
+	d.Set("commodity_code", objectRaw["commodityCode"])
+	d.Set("create_time", objectRaw["createTime"])
+	d.Set("instance_name", objectRaw["instanceName"])
+	d.Set("payment_type", objectRaw["paymentType"])
+	d.Set("region_id", objectRaw["regionId"])
+	d.Set("remark", objectRaw["remark"])
+	d.Set("resource_group_id", objectRaw["resourceGroupId"])
+	d.Set("series_code", objectRaw["seriesCode"])
+	d.Set("service_code", objectRaw["serviceCode"])
+	d.Set("status", objectRaw["status"])
+	d.Set("sub_series_code", objectRaw["subSeriesCode"])
 
+	aclInfoMaps := make([]map[string]interface{}, 0)
+	aclInfoMap := make(map[string]interface{})
+	aclInfoRaw := make(map[string]interface{})
+	if objectRaw["aclInfo"] != nil {
+		aclInfoRaw = objectRaw["aclInfo"].(map[string]interface{})
+	}
+	if len(aclInfoRaw) > 0 {
+		aclInfoMap["default_vpc_auth_free"] = aclInfoRaw["defaultVpcAuthFree"]
+
+		aclTypesRaw := make([]interface{}, 0)
+		if aclInfoRaw["aclTypes"] != nil {
+			aclTypesRaw = aclInfoRaw["aclTypes"].([]interface{})
+		}
+
+		aclInfoMap["acl_types"] = aclTypesRaw
+		aclInfoMaps = append(aclInfoMaps, aclInfoMap)
+	}
+	if err := d.Set("acl_info", aclInfoMaps); err != nil {
+		return err
+	}
 	networkInfoMaps := make([]map[string]interface{}, 0)
 	networkInfoMap := make(map[string]interface{})
-	networkInfo1Raw := make(map[string]interface{})
+	networkInfoRaw := make(map[string]interface{})
 	if objectRaw["networkInfo"] != nil {
-		networkInfo1Raw = objectRaw["networkInfo"].(map[string]interface{})
+		networkInfoRaw = objectRaw["networkInfo"].(map[string]interface{})
 	}
-	if len(networkInfo1Raw) > 0 {
+	if len(networkInfoRaw) > 0 {
 
-		endpoints1Raw := networkInfo1Raw["endpoints"]
+		endpointsRaw := networkInfoRaw["endpoints"]
 		endpointsMaps := make([]map[string]interface{}, 0)
-		if endpoints1Raw != nil {
-			for _, endpointsChild1Raw := range endpoints1Raw.([]interface{}) {
+		if endpointsRaw != nil {
+			for _, endpointsChildRaw := range endpointsRaw.([]interface{}) {
 				endpointsMap := make(map[string]interface{})
-				endpointsChild1Raw := endpointsChild1Raw.(map[string]interface{})
-				endpointsMap["endpoint_type"] = endpointsChild1Raw["endpointType"]
-				endpointsMap["endpoint_url"] = endpointsChild1Raw["endpointUrl"]
+				endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
+				endpointsMap["endpoint_type"] = endpointsChildRaw["endpointType"]
+				endpointsMap["endpoint_url"] = endpointsChildRaw["endpointUrl"]
 
-				ipWhitelist2Raw := make([]interface{}, 0)
-				if endpointsChild1Raw["ipWhitelist"] != nil {
-					ipWhitelist2Raw = endpointsChild1Raw["ipWhitelist"].([]interface{})
+				ipWhitelistRaw := make([]interface{}, 0)
+				if endpointsChildRaw["ipWhitelist"] != nil {
+					ipWhitelistRaw = endpointsChildRaw["ipWhitelist"].([]interface{})
 				}
 
-				endpointsMap["ip_white_list"] = ipWhitelist2Raw
+				endpointsMap["ip_white_list"] = ipWhitelistRaw
 				endpointsMaps = append(endpointsMaps, endpointsMap)
 			}
 		}
 		networkInfoMap["endpoints"] = endpointsMaps
 		internetInfoMaps := make([]map[string]interface{}, 0)
 		internetInfoMap := make(map[string]interface{})
-		internetInfo1Raw := make(map[string]interface{})
-		if networkInfo1Raw["internetInfo"] != nil {
-			internetInfo1Raw = networkInfo1Raw["internetInfo"].(map[string]interface{})
+		internetInfoRaw := make(map[string]interface{})
+		if networkInfoRaw["internetInfo"] != nil {
+			internetInfoRaw = networkInfoRaw["internetInfo"].(map[string]interface{})
 		}
-		if len(internetInfo1Raw) > 0 {
-			internetInfoMap["flow_out_bandwidth"] = internetInfo1Raw["flowOutBandwidth"]
-			internetInfoMap["flow_out_type"] = internetInfo1Raw["flowOutType"]
-			internetInfoMap["internet_spec"] = internetInfo1Raw["internetSpec"]
+		if len(internetInfoRaw) > 0 {
+			internetInfoMap["flow_out_bandwidth"] = internetInfoRaw["flowOutBandwidth"]
+			internetInfoMap["flow_out_type"] = internetInfoRaw["flowOutType"]
+			internetInfoMap["internet_spec"] = internetInfoRaw["internetSpec"]
 
-			ipWhitelist3Raw := make([]interface{}, 0)
-			if internetInfo1Raw["ipWhitelist"] != nil {
-				ipWhitelist3Raw = internetInfo1Raw["ipWhitelist"].([]interface{})
+			ipWhitelistRaw := make([]interface{}, 0)
+			if internetInfoRaw["ipWhitelist"] != nil {
+				ipWhitelistRaw = internetInfoRaw["ipWhitelist"].([]interface{})
 			}
 
-			internetInfoMap["ip_whitelist"] = ipWhitelist3Raw
+			internetInfoMap["ip_whitelist"] = ipWhitelistRaw
 			internetInfoMaps = append(internetInfoMaps, internetInfoMap)
 		}
 		networkInfoMap["internet_info"] = internetInfoMaps
 		vpcInfoMaps := make([]map[string]interface{}, 0)
 		vpcInfoMap := make(map[string]interface{})
-		vpcInfo1Raw := make(map[string]interface{})
-		if networkInfo1Raw["vpcInfo"] != nil {
-			vpcInfo1Raw = networkInfo1Raw["vpcInfo"].(map[string]interface{})
+		vpcInfoRaw := make(map[string]interface{})
+		if networkInfoRaw["vpcInfo"] != nil {
+			vpcInfoRaw = networkInfoRaw["vpcInfo"].(map[string]interface{})
 		}
-		if len(vpcInfo1Raw) > 0 {
-			vpcInfoMap["security_group_ids"] = vpcInfo1Raw["securityGroupIds"]
-			vpcInfoMap["vswitch_id"] = vpcInfo1Raw["vSwitchId"]
-			vpcInfoMap["vpc_id"] = vpcInfo1Raw["vpcId"]
+		if len(vpcInfoRaw) > 0 {
+			vpcInfoMap["security_group_ids"] = vpcInfoRaw["securityGroupIds"]
+			vpcInfoMap["vswitch_id"] = vpcInfoRaw["vSwitchId"]
+			vpcInfoMap["vpc_id"] = vpcInfoRaw["vpcId"]
 
-			vSwitches1Raw := vpcInfo1Raw["vSwitches"]
+			vSwitchesRaw := vpcInfoRaw["vSwitches"]
 			vSwitchesMaps := make([]map[string]interface{}, 0)
-			if vSwitches1Raw != nil {
-				for _, vSwitchesChild1Raw := range vSwitches1Raw.([]interface{}) {
+			if vSwitchesRaw != nil {
+				for _, vSwitchesChildRaw := range vSwitchesRaw.([]interface{}) {
 					vSwitchesMap := make(map[string]interface{})
-					vSwitchesChild1Raw := vSwitchesChild1Raw.(map[string]interface{})
-					vSwitchesMap["vswitch_id"] = vSwitchesChild1Raw["vSwitchId"]
+					vSwitchesChildRaw := vSwitchesChildRaw.(map[string]interface{})
+					vSwitchesMap["vswitch_id"] = vSwitchesChildRaw["vSwitchId"]
 
 					vSwitchesMaps = append(vSwitchesMaps, vSwitchesMap)
 				}
@@ -535,48 +599,45 @@ func resourceAliCloudRocketmqInstanceRead(d *schema.ResourceData, meta interface
 		networkInfoMap["vpc_info"] = vpcInfoMaps
 		networkInfoMaps = append(networkInfoMaps, networkInfoMap)
 	}
-	if objectRaw["networkInfo"] != nil {
-		if err := d.Set("network_info", networkInfoMaps); err != nil {
-			return err
-		}
+	if err := d.Set("network_info", networkInfoMaps); err != nil {
+		return err
 	}
 	productInfoMaps := make([]map[string]interface{}, 0)
 	productInfoMap := make(map[string]interface{})
-	productInfo1Raw := make(map[string]interface{})
+	productInfoRaw := make(map[string]interface{})
 	if objectRaw["productInfo"] != nil {
-		productInfo1Raw = objectRaw["productInfo"].(map[string]interface{})
+		productInfoRaw = objectRaw["productInfo"].(map[string]interface{})
 	}
-	if len(productInfo1Raw) > 0 {
-		productInfoMap["auto_scaling"] = productInfo1Raw["autoScaling"]
-		productInfoMap["message_retention_time"] = productInfo1Raw["messageRetentionTime"]
-		productInfoMap["msg_process_spec"] = productInfo1Raw["msgProcessSpec"]
-		productInfoMap["send_receive_ratio"] = productInfo1Raw["sendReceiveRatio"]
-		productInfoMap["support_auto_scaling"] = productInfo1Raw["supportAutoScaling"]
+	if len(productInfoRaw) > 0 {
+		productInfoMap["auto_scaling"] = productInfoRaw["autoScaling"]
+		productInfoMap["message_retention_time"] = productInfoRaw["messageRetentionTime"]
+		productInfoMap["msg_process_spec"] = productInfoRaw["msgProcessSpec"]
+		productInfoMap["send_receive_ratio"] = productInfoRaw["sendReceiveRatio"]
+		productInfoMap["storage_encryption"] = productInfoRaw["storageEncryption"]
+		productInfoMap["storage_secret_key"] = productInfoRaw["storageSecretKey"]
+		productInfoMap["support_auto_scaling"] = productInfoRaw["supportAutoScaling"]
+		productInfoMap["trace_on"] = productInfoRaw["traceOn"]
 
 		productInfoMaps = append(productInfoMaps, productInfoMap)
 	}
-	if objectRaw["productInfo"] != nil {
-		if err := d.Set("product_info", productInfoMaps); err != nil {
-			return err
-		}
+	if err := d.Set("product_info", productInfoMaps); err != nil {
+		return err
 	}
 	softwareMaps := make([]map[string]interface{}, 0)
 	softwareMap := make(map[string]interface{})
-	software1Raw := make(map[string]interface{})
+	softwareRaw := make(map[string]interface{})
 	if objectRaw["software"] != nil {
-		software1Raw = objectRaw["software"].(map[string]interface{})
+		softwareRaw = objectRaw["software"].(map[string]interface{})
 	}
-	if len(software1Raw) > 0 {
-		softwareMap["maintain_time"] = software1Raw["maintainTime"]
-		softwareMap["software_version"] = software1Raw["softwareVersion"]
-		softwareMap["upgrade_method"] = software1Raw["upgradeMethod"]
+	if len(softwareRaw) > 0 {
+		softwareMap["maintain_time"] = softwareRaw["maintainTime"]
+		softwareMap["software_version"] = softwareRaw["softwareVersion"]
+		softwareMap["upgrade_method"] = softwareRaw["upgradeMethod"]
 
 		softwareMaps = append(softwareMaps, softwareMap)
 	}
-	if objectRaw["software"] != nil {
-		if err := d.Set("software", softwareMaps); err != nil {
-			return err
-		}
+	if err := d.Set("software", softwareMaps); err != nil {
+		return err
 	}
 	tagsMaps := objectRaw["tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
@@ -596,6 +657,19 @@ func resourceAliCloudRocketmqInstanceRead(d *schema.ResourceData, meta interface
 		d.Set("auto_renew_period", formatInt(v))
 	}
 	d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
+
+	objectRaw, err = rocketmqServiceV2.DescribeInstanceGetInstanceIpWhitelist(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	ipWhitelistsRaw := make([]interface{}, 0)
+	if objectRaw["ipWhitelists"] != nil {
+		ipWhitelistsRaw = objectRaw["ipWhitelists"].([]interface{})
+	}
+
+	d.Set("ip_whitelists", ipWhitelistsRaw)
+
 	return nil
 }
 
@@ -603,14 +677,17 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	var query map[string]*string
+	var body map[string]interface{}
 	update := false
 	d.Partial(true)
+
+	var err error
 	instanceId := d.Id()
 	action := fmt.Sprintf("/instances/%s", instanceId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("instance_name") {
@@ -630,7 +707,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("product_info"); !IsNil(v) || d.HasChange("product_info") {
+	if v := d.Get("product_info"); v != nil {
 		sendReceiveRatio1, _ := jsonpath.Get("$[0].send_receive_ratio", v)
 		if sendReceiveRatio1 != nil && (d.HasChange("product_info.0.send_receive_ratio") || sendReceiveRatio1 != "") {
 			objectDataLocalMap["sendReceiveRatio"] = sendReceiveRatio1
@@ -643,6 +720,11 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if messageRetentionTime1 != nil && (d.HasChange("product_info.0.message_retention_time") || messageRetentionTime1 != "") {
 			objectDataLocalMap["messageRetentionTime"] = messageRetentionTime1
 		}
+		traceOn1, _ := jsonpath.Get("$[0].trace_on", v)
+		if traceOn1 != nil && (d.HasChange("product_info.0.trace_on") || traceOn1 != "") {
+			update = true
+			objectDataLocalMap["traceOn"] = traceOn1
+		}
 
 		request["productInfo"] = objectDataLocalMap
 	}
@@ -654,7 +736,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	if v := d.Get("network_info"); v != nil {
 		internetInfo := make(map[string]interface{})
-		ipWhitelist1, _ := jsonpath.Get("$[0].internet_info[0].ip_whitelist", d.Get("network_info"))
+		ipWhitelist1, _ := jsonpath.Get("$[0].internet_info[0].ip_whitelist", v)
 		if ipWhitelist1 != nil && (d.HasChange("network_info.0.internet_info.0.ip_whitelist") || ipWhitelist1 != "") {
 			internetInfo["ipWhitelist"] = ipWhitelist1
 		}
@@ -663,10 +745,30 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 		request["networkInfo"] = objectDataLocalMap1
 	}
+
+	if d.HasChange("acl_info") {
+		update = true
+	}
+	objectDataLocalMap2 := make(map[string]interface{})
+
+	if v := d.Get("acl_info"); v != nil {
+		aclTypes1, _ := jsonpath.Get("$[0].acl_types", d.Get("acl_info"))
+		if aclTypes1 != nil && (d.HasChange("acl_info.0.acl_types") || aclTypes1 != "") {
+			objectDataLocalMap2["aclTypes"] = aclTypes1
+		}
+		defaultVpcAuthFree1, _ := jsonpath.Get("$[0].default_vpc_auth_free", v)
+		if defaultVpcAuthFree1 != nil && (d.HasChange("acl_info.0.default_vpc_auth_free") || defaultVpcAuthFree1 != "") {
+			objectDataLocalMap2["defaultVpcAuthFree"] = defaultVpcAuthFree1
+		}
+
+		request["aclInfo"] = objectDataLocalMap2
+	}
+
+	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, request, false)
+			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -674,9 +776,9 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -690,6 +792,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	action = fmt.Sprintf("/resourceGroup/change")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+	body = make(map[string]interface{})
 	query["resourceId"] = StringPointer(d.Id())
 	query["regionId"] = StringPointer(client.RegionId)
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
@@ -698,11 +801,13 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		query["resourceGroupId"] = StringPointer(v.(string))
 	}
+
 	query["resourceType"] = StringPointer("instance")
+	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, request, false)
+			response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -710,9 +815,9 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -722,6 +827,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 	action = fmt.Sprintf("/instances/%s/software/config", instanceId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("software.0.maintain_time") {
@@ -733,10 +839,11 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 			request["maintainTime"] = jsonPathResult
 		}
 	}
+	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, request, false)
+			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -744,9 +851,9 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -805,9 +912,81 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
+	if d.HasChange("ip_whitelists") {
+		oldEntry, newEntry := d.GetChange("ip_whitelists")
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
+
+		if removed.Len() > 0 {
+			instanceId := d.Id()
+			action := fmt.Sprintf("/instances/%s/ip/whitelist", instanceId)
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+			query["instanceId"] = StringPointer(d.Id())
+
+			localData := removed.List()
+			ipWhitelistsMapsArray := localData
+			query["ipWhitelists"] = StringPointer(convertListToCommaSeparate(ipWhitelistsMapsArray))
+
+			body = request
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if added.Len() > 0 {
+			instanceId := d.Id()
+			action := fmt.Sprintf("/instances/%s/ip/whitelist", instanceId)
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+			request["instanceId"] = d.Id()
+
+			localData := added.List()
+			ipWhitelistsMapsArray := localData
+			request["ipWhitelists"] = ipWhitelistsMapsArray
+
+			body = request
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
 	if d.HasChange("tags") {
 		rocketmqServiceV2 := RocketmqServiceV2{client}
-		if err := rocketmqServiceV2.SetResourceTags(d, ""); err != nil {
+		if err := rocketmqServiceV2.SetResourceTags(d, "instance"); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -825,12 +1004,16 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	instanceId := d.Id()
 	action := fmt.Sprintf("/instances/%s", instanceId)
+	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]*string)
+	var err error
+	request = make(map[string]interface{})
+	request["instanceId"] = d.Id()
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, false)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -839,19 +1022,19 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, nil)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "$.instanceId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

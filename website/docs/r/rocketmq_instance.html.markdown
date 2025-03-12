@@ -8,7 +8,8 @@ description: |-
 
 # alicloud_rocketmq_instance
 
-Provides a Rocket MQ Instance resource.
+Provides a RocketMQ Instance resource.
+
 
 For information about RocketMQ Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/developer-reference/api-rocketmq-2022-08-01-createinstance).
 
@@ -30,7 +31,11 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "cn-chengdu"
+  region = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 data "alicloud_zones" "default" {
@@ -48,12 +53,7 @@ resource "alicloud_vswitch" "createVSwitch" {
   vpc_id       = alicloud_vpc.createVPC.id
   cidr_block   = "172.16.0.0/24"
   vswitch_name = var.name
-
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_rocketmq_instance" "default" {
@@ -62,17 +62,16 @@ resource "alicloud_rocketmq_instance" "default" {
     send_receive_ratio     = "0.3"
     message_retention_time = "70"
   }
-
   service_code      = "rmq"
   payment_type      = "PayAsYouGo"
   instance_name     = var.name
   sub_series_code   = "cluster_ha"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
+  ip_whitelist      = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
   software {
     maintain_time = "02:00-06:00"
   }
-
   tags = {
     Created = "TF"
     For     = "example"
@@ -80,19 +79,15 @@ resource "alicloud_rocketmq_instance" "default" {
   series_code = "ultimate"
   network_info {
     vpc_info {
-      vpc_id     = alicloud_vpc.createVPC.id
-      vswitch_id = alicloud_vswitch.createVSwitch.id
+      vpc_id = alicloud_vpc.createVPC.id
+      vswitches {
+        vswitch_id = alicloud_vswitch.createVSwitch.id
+      }
     }
-
     internet_info {
       internet_spec      = "enable"
       flow_out_type      = "payByBandwidth"
       flow_out_bandwidth = "30"
-      ip_whitelist = [
-        "192.168.0.0/16",
-        "10.10.0.0/16",
-        "172.168.0.0/16"
-      ]
     }
   }
 }
@@ -107,6 +102,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+* `acl_info` - (Optional, Set, Available since v1.245.0) The access control list for the instance. See [`acl_info`](#acl_info) below.
 * `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal. This parameter is only applicable when the payment type for the instance is Subscription (prepaid).
   - true: Enable auto-renewal
   - false: Disable auto-renewal
@@ -114,7 +110,7 @@ The following arguments are supported:
 
   The values can be as follows:
   - Monthly renewal: 1, 2, 3, 6, 12
-* `auto_renew_period_unit` - (Optional, Computed) The minimum periodic unit for the duration of auto-renewal. This parameter is only valid when auto-renewal is enabled. Valid values: `Month`, `Year`.
+* `auto_renew_period_unit` - (Optional) The minimum periodic unit for the duration of auto-renewal. This parameter is only valid when auto-renewal is enabled. Valid values: `Month`, `Year`.
 * `commodity_code` - (Optional, ForceNew, Available since v1.231.0) Commodity code
 
   ons_rmqsub_public_cn: Package year and month instance
@@ -123,7 +119,8 @@ The following arguments are supported:
 
   Next: Serverless instances
 * `instance_name` - (Optional) The name of instance
-* `network_info` - (Required, List) Instance network configuration information See [`network_info`](#network_info) below.
+* `ip_whitelists` - (Optional, List, Available since v1.245.0) The ip whitelist.
+* `network_info` - (Required, Set) Instance network configuration information See [`network_info`](#network_info) below.
 * `payment_type` - (Required, ForceNew) The payment type for the instance. Alibaba Cloud Message Queue RocketMQ version supports two types of payment:
 
   The parameter values are as follows:
@@ -143,7 +140,7 @@ The following arguments are supported:
   - Year: Purchase on an annual basis
 * `product_info` - (Optional, ForceNew, List) product info See [`product_info`](#product_info) below.
 * `remark` - (Optional) Custom description
-* `resource_group_id` - (Optional, Computed) The ID of the resource group
+* `resource_group_id` - (Optional) The ID of the resource group
 * `series_code` - (Required, ForceNew) The primary series encoding for the instance. For specific differences between the primary series, please refer to [Product Selection](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-selection).
 
   The parameter values are as follows:
@@ -157,15 +154,26 @@ The following arguments are supported:
   The parameter values are as follows:
   - cluster_ha: Cluster High Availability Edition
   - single_node: Single Node Testing Edition
-
+  - serverless：Serverless instance
+ **NOTE:** From version 1.245.0, `sub_series_code` can be set to `serverless`.
   When selecting the primary series as ultimate (Platinum Edition), the sub-series can only be chosen as cluster_ha (Cluster High Availability Edition).
 * `tags` - (Optional, Map) The resource label.
+
+### `acl_info`
+
+The acl_info supports the following:
+* `acl_types` - (Optional, List) The authentication type of the instance. Valid values:
+  - `default`: Intelligent identity authentication.
+  - `apache_acl`: Access control list (ACL) identity authentication.
+* `default_vpc_auth_free` - (Optional, Bool) Indicates whether the authentication-free in VPCs feature is enabled. Indicates whether the authentication-free in VPCs feature is enabled. Valid values:
+  - `true`: Enable secret-free access.
+  - `false`: Turn off secret-free access.
 
 ### `network_info`
 
 The network_info supports the following:
-* `internet_info` - (Required, ForceNew, List) instance internet info. See [`internet_info`](#network_info-internet_info) below.
-* `vpc_info` - (Required, ForceNew, List) Proprietary network information. See [`vpc_info`](#network_info-vpc_info) below.
+* `internet_info` - (Required, ForceNew, Set) instance internet info. See [`internet_info`](#network_info-internet_info) below.
+* `vpc_info` - (Required, ForceNew, Set) Proprietary network information. See [`vpc_info`](#network_info-vpc_info) below.
 
 ### `network_info-internet_info`
 
@@ -177,14 +185,14 @@ The network_info-internet_info supports the following:
 * `internet_spec` - (Required, ForceNew) Whether to enable public network access.  The parameter values are as follows:
   - enable: Enable public network access
   - disable: Disable public network access   Instances by default support VPC access. If public network access is enabled, Alibaba Cloud Message Queue RocketMQ version will incur charges for public network outbound bandwidth. For specific billing information, please refer to [Public Network Access Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/internet-access-fee).
-* `ip_whitelist` - (Optional, List) internet ip whitelist.
+* `ip_whitelist` - (Optional, List, Deprecated since v1.245.0) Field `ip_whitelist` has been deprecated from provider version 1.245.0. New field `ip_whitelists` instead.
 
 ### `network_info-vpc_info`
 
 The network_info-vpc_info supports the following:
 * `security_group_ids` - (Optional, ForceNew, Available since v1.231.0) Security group id.
-* `vswitch_id` - (Optional, ForceNew) VPC network switch.
-* `vswitches` - (Optional, ForceNew, List, Available since v1.231.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
+* `vswitch_id` - (Optional, ForceNew, Deprecated since v1.231.0) Field `vswitch_id` has been deprecated from provider version 1.245.0. New field `vswitches` instead.
+* `vswitches` - (Optional, ForceNew, Set, Available since v1.231.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
 * `vpc_id` - (Required, ForceNew) Proprietary Network.
 
 ### `network_info-vpc_info-vswitches`
@@ -199,6 +207,9 @@ The product_info supports the following:
 * `message_retention_time` - (Optional, Int) Duration of message retention. Unit: hours.  For the range of values, please refer to [Usage Limits](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/usage-limits)>Resource Quotas>Limitations on Message Retention.  The message storage in AlibabaCloud RocketMQ is fully implemented in a serverless and elastic manner, with charges based on the actual storage space. You can control the storage capacity of messages by adjusting the duration of message retention. For more information, please see [Storage Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/storage-fees).
 * `msg_process_spec` - (Required, ForceNew) Message sending and receiving calculation specifications. For details about the upper limit for sending and receiving messages, see [Instance Specifications](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-specifications).
 * `send_receive_ratio` - (Optional, Float) message send receive ratio.  Value range: [0.2, 0.5].
+* `storage_encryption` - (Optional, ForceNew, Bool, Available since v1.245.0) Specifies whether to enable the encryption at rest feature. Valid values: `true`, `false`.
+* `storage_secret_key` - (Optional, ForceNew, Available since v1.245.0) The key for encryption at rest.
+* `trace_on` - (Optional, Bool, Available since v1.245.0) Whether to enable the message trace function. Valid values: `true`, `false`.
 
 ### `software`
 
@@ -217,6 +228,7 @@ The following attributes are exported:
     * `ip_white_list` - White list of access addresses.
 * `product_info` - product info
   * `support_auto_scaling` - is support auto scaling.
+* `region_id` - (Available since v1.245.0) The ID of the region in which the instance resides.
 * `software` - Instance software information.
   * `software_version` - Software version.
   * `upgrade_method` - Upgrade method.
