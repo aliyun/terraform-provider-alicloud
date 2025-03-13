@@ -1872,7 +1872,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_er":                                               resourceAlicloudDcdnEr(),
 			"alicloud_actiontrail_global_events_storage_region":              resourceAlicloudActiontrailGlobalEventsStorageRegion(),
 			"alicloud_dbfs_auto_snap_shot_policy":                            resourceAlicloudDbfsAutoSnapShotPolicy(),
-			"alicloud_cen_transit_route_table_aggregation":                   resourceAlicloudCenTransitRouteTableAggregation(),
+			"alicloud_cen_transit_route_table_aggregation":                   resourceAliCloudCenTransitRouteTableAggregation(),
 			"alicloud_arms_prometheus":                                       resourceAlicloudArmsPrometheus(),
 			"alicloud_oos_default_patch_baseline":                            resourceAlicloudOosDefaultPatchBaseline(),
 			"alicloud_ocean_base_instance":                                   resourceAliCloudOceanBaseInstance(),
