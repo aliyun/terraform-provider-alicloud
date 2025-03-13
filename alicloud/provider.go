@@ -894,6 +894,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_rocketmq_acl":                                         resourceAliCloudRocketmqAcl(),
 			"alicloud_rocketmq_account":                                     resourceAliCloudRocketmqAccount(),
 			"alicloud_nlb_load_balancer_zone_shifted_attachment":            resourceAliCloudNlbLoadBalancerZoneShiftedAttachment(),
 			"alicloud_threat_detection_log_meta":                            resourceAliCloudThreatDetectionLogMeta(),
