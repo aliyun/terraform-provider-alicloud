@@ -2223,9 +2223,9 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 		return object, WrapError(err)
 	}
 
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		return nil, WrapError(err)
+	parts, _ := ParseResourceId(id, 2)
+	if strings.Contains(id, "#") {
+		parts = strings.Split(id, "#")
 	}
 
 	request := map[string]interface{}{
