@@ -573,16 +573,20 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	parts := strings.Split(id, ":")
-	if len(parts) != 4 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 4, len(parts)))
+	parts := strings.Split(id, "_")
+	if len(parts) != 5 {
+		objectRaw, _err := GetNlbServerGroupServerAttachment(client, id)
+		return objectRaw, _err
 	}
-	action := "ListServerGroupServers"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = parts[0]
 	request["ServerIds.1"] = parts[1]
-	query["RegionId"] = client.RegionId
+	if parts[2] != "" {
+		request["ServerIps.1"] = parts[2]
+	}
+	request["RegionId"] = client.RegionId
+	action := "ListServerGroupServers"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -595,11 +599,10 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -615,16 +618,10 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if fmt.Sprint(item["Port"]) != parts[3] {
+		if fmt.Sprint(item["Port"]) != parts[4] {
 			continue
 		}
-		if item["ServerGroupId"] != parts[0] {
-			continue
-		}
-		if item["ServerId"] != parts[1] {
-			continue
-		}
-		if item["ServerType"] != parts[2] {
+		if fmt.Sprint(item["ServerType"]) != parts[3] {
 			continue
 		}
 		return item, nil
@@ -644,6 +641,13 @@ func (s *NlbServiceV2) NlbServerGroupServerAttachmentStateRefreshFunc(id string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
