@@ -71,25 +71,23 @@ resource "alicloud_esa_record" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auth_conf` - (Optional, List) The origin authentication information of the CNAME record. See [`auth_conf`](#auth_conf) below.
+* `record_type` - (Required, ForceNew) The DNS record type.
+* `record_name` - (Required, ForceNew) The record name. This parameter specifies a filter condition for the query.
+* `proxied` - (Optional) Filters by whether the record is proxied. Valid values:
+
+  - `true`
+  - `false`
 * `biz_name` - (Optional) The business scenario of the record for acceleration. Valid values:
 
   - `image_video`: video and image.
   - `api`: API.
   - `web`: web page.
 * `comment` - (Optional) The comments of the record.
-* `data` - (Required, List) The DNS record information. The format of this field varies based on the record type. For more information, see [Add DNS records](https://www.alibabacloud.com/help/doc-detail/2708761.html). See [`data`](#data) below.
+* `ttl` - (Optional, Int) The TTL of the record. Unit: seconds. The range is 30 to 86,400, or 1. If the value is 1, the TTL of the record is determined by the system.
 * `host_policy` - (Optional) The origin host policy. This policy takes effect when the record type is CNAME. You can set the policy in two modes:
 
   - `follow_hostname`: match the requested domain name.
   - `follow_origin_domain`: match the origin's domain name.
-* `proxied` - (Optional) Filters by whether the record is proxied. Valid values:
-
-  - `true`
-  - `false`
-* `record_name` - (Required, ForceNew) The record name. This parameter specifies a filter condition for the query.
-* `record_type` - (Required, ForceNew) The DNS record type.
-* `site_id` - (Required, ForceNew, Int) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 * `source_type` - (Optional) The origin type of the record. Only CNAME records can be filtered by using this field. Valid values:
 
   - `OSS`: OSS bucket.
@@ -97,29 +95,31 @@ The following arguments are supported:
   - `LB`: load balancer.
   - `OP`: origin pool.
   - `Domain`: domain name.
-* `ttl` - (Optional, Int) The TTL of the record. Unit: seconds. The range is 30 to 86,400, or 1. If the value is 1, the TTL of the record is determined by the system.
+* `data` - (Required, List) The DNS record information. The format of this field varies based on the record type. For more information, see [Add DNS records](https://www.alibabacloud.com/help/doc-detail/2708761.html). See [`data`](#data) below.
+* `auth_conf` - (Optional, List) The origin authentication information of the CNAME record. See [`auth_conf`](#auth_conf) below.
+* `site_id` - (Required, ForceNew, Int) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 
 ### `auth_conf`
 
-The auth_conf supports the following:
-* `access_key` - (Optional) The access key of the account to which the origin server belongs. This parameter is required when the SourceType is OSS, and AuthType is private_same_account, or when the SourceType is S3 and AuthType is private.
+Origin server authentication configuration needs to be set when the origin server type is OSS or AWS S3. The auth_conf supports the following:
 * `auth_type` - (Optional) The authentication type of the origin server. Different origins support different authentication types. The type of origin refers to the SourceType parameter in this operation. If the type of origin is OSS or S3, you must specify the authentication type of the origin. Valid values:
 
   - `public`: public read. Select this value when the origin type is OSS or S3 and the origin access is public read.
   - `private`: private read. Select this value when the origin type is S3 and the origin access is private read.
   - `private_same_account`: private read under the same account. Select this value when the origin type is OSS, the origins belong to the same Alibaba Cloud account, and the origins have private read access.
-* `region` - (Optional) The version of the signature algorithm. This parameter is required when the origin type is S3 and AuthType is private. The following two types are supported:
+* `version` - (Optional) The version of the signature algorithm. This parameter is required when the origin type is S3 and AuthType is private. The following two types are supported:
 
   - `v2`
   - `v4`
 
   If you leave this parameter empty, the default value v4 is used.
+* `region` - (Optional) The region of the origin. If the origin type is S3, you must specify this value. You can get the region information from the official website of S3.
+* `access_key` - (Optional) The access key of the account to which the origin server belongs. This parameter is required when the SourceType is OSS, and AuthType is private_same_account, or when the SourceType is S3 and AuthType is private.
 * `secret_key` - (Optional) The secret access key of the account to which the origin server belongs. This parameter is required when the SourceType is OSS, and AuthType is private_same_account, or when the SourceType is S3 and AuthType is private.
-* `version` - (Optional) The region of the origin. If the origin type is S3, you must specify this value. You can get the region information from the official website of S3.
 
 ### `data`
 
-The data supports the following:
+Detailed configuration of DNS records, different types of DNS records require different parameters. The data supports the following:
 * `algorithm` - (Optional, Int) The encryption algorithm used for the record, specified within the range from 0 to 255. This parameter is required when you add CERT or SSHFP records.
 * `certificate` - (Optional) The public key of the certificate. This parameter is required when you add CERT, SMIMEA, or TLSA records.
 * `fingerprint` - (Optional) The public key fingerprint of the record. This parameter is required when you add a SSHFP record.
