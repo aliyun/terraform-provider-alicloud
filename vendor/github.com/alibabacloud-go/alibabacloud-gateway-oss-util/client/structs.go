@@ -16344,3 +16344,3228 @@ func (s *WriteGetObjectResponseResponse) SetStatusCode(v int32) *WriteGetObjectR
 	s.StatusCode = &v
 	return s
 }
+
+// for hcs-mgw
+type AddressDetail struct {
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_access_id
+	AccessId *string `json:"AccessId,omitempty" xml:"AccessId,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_secret_key
+	AccessSecret *string `json:"AccessSecret,omitempty" xml:"AccessSecret,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ossinv
+	AddressType *string `json:"AddressType,omitempty" xml:"AddressType,omitempty"`
+	AgentList   *string `json:"AgentList,omitempty" xml:"AgentList,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_bucket
+	Bucket *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_domain
+	Domain *string `json:"Domain,omitempty" xml:"Domain,omitempty"`
+	// example:
+	//
+	// test_inv_access_id
+	InvAccessId *string `json:"InvAccessId,omitempty" xml:"InvAccessId,omitempty"`
+	// example:
+	//
+	// test_inv_secret_key
+	InvAccessSecret *string `json:"InvAccessSecret,omitempty" xml:"InvAccessSecret,omitempty"`
+	// example:
+	//
+	// test_inv_bucket
+	InvBucket *string `json:"InvBucket,omitempty" xml:"InvBucket,omitempty"`
+	// example:
+	//
+	// test_inv_domain
+	InvDomain *string `json:"InvDomain,omitempty" xml:"InvDomain,omitempty"`
+	// example:
+	//
+	// oss
+	InvLocation *string `json:"InvLocation,omitempty" xml:"InvLocation,omitempty"`
+	// example:
+	//
+	// manifest.json
+	InvPath *string `json:"InvPath,omitempty" xml:"InvPath,omitempty"`
+	// example:
+	//
+	// test_inv_region_id
+	InvRegionId *string `json:"InvRegionId,omitempty" xml:"InvRegionId,omitempty"`
+	// example:
+	//
+	// test_inv_role
+	InvRole *string `json:"InvRole,omitempty" xml:"InvRole,omitempty"`
+	// example:
+	//
+	// test_prefix
+	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	// example:
+	//
+	// test_region_id
+	RegionId *string `json:"RegionId,omitempty" xml:"RegionId,omitempty"`
+	// example:
+	//
+	// test_role
+	Role *string `json:"Role,omitempty" xml:"Role,omitempty"`
+}
+
+func (s AddressDetail) String() string {
+	return tea.Prettify(s)
+}
+
+func (s AddressDetail) GoString() string {
+	return s.String()
+}
+
+func (s *AddressDetail) SetAccessId(v string) *AddressDetail {
+	s.AccessId = &v
+	return s
+}
+
+func (s *AddressDetail) SetAccessSecret(v string) *AddressDetail {
+	s.AccessSecret = &v
+	return s
+}
+
+func (s *AddressDetail) SetAddressType(v string) *AddressDetail {
+	s.AddressType = &v
+	return s
+}
+
+func (s *AddressDetail) SetAgentList(v string) *AddressDetail {
+	s.AgentList = &v
+	return s
+}
+
+func (s *AddressDetail) SetBucket(v string) *AddressDetail {
+	s.Bucket = &v
+	return s
+}
+
+func (s *AddressDetail) SetDomain(v string) *AddressDetail {
+	s.Domain = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvAccessId(v string) *AddressDetail {
+	s.InvAccessId = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvAccessSecret(v string) *AddressDetail {
+	s.InvAccessSecret = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvBucket(v string) *AddressDetail {
+	s.InvBucket = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvDomain(v string) *AddressDetail {
+	s.InvDomain = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvLocation(v string) *AddressDetail {
+	s.InvLocation = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvPath(v string) *AddressDetail {
+	s.InvPath = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvRegionId(v string) *AddressDetail {
+	s.InvRegionId = &v
+	return s
+}
+
+func (s *AddressDetail) SetInvRole(v string) *AddressDetail {
+	s.InvRole = &v
+	return s
+}
+
+func (s *AddressDetail) SetPrefix(v string) *AddressDetail {
+	s.Prefix = &v
+	return s
+}
+
+func (s *AddressDetail) SetRegionId(v string) *AddressDetail {
+	s.RegionId = &v
+	return s
+}
+
+func (s *AddressDetail) SetRole(v string) *AddressDetail {
+	s.Role = &v
+	return s
+}
+
+type Audit struct {
+	// example:
+	//
+	// off
+	LogMode *string `json:"LogMode,omitempty" xml:"LogMode,omitempty"`
+}
+
+func (s Audit) String() string {
+	return tea.Prettify(s)
+}
+
+func (s Audit) GoString() string {
+	return s.String()
+}
+
+func (s *Audit) SetLogMode(v string) *Audit {
+	s.LogMode = &v
+	return s
+}
+
+type CreateAddressInfo struct {
+	// This parameter is required.
+	AddressDetail *AddressDetail `json:"AddressDetail,omitempty" xml:"AddressDetail,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+}
+
+func (s CreateAddressInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAddressInfo) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAddressInfo) SetAddressDetail(v *AddressDetail) *CreateAddressInfo {
+	s.AddressDetail = v
+	return s
+}
+
+func (s *CreateAddressInfo) SetName(v string) *CreateAddressInfo {
+	s.Name = &v
+	return s
+}
+
+func (s *CreateAddressInfo) SetTags(v string) *CreateAddressInfo {
+	s.Tags = &v
+	return s
+}
+
+type CreateAgentInfo struct {
+	// This parameter is required.
+	//
+	// example:
+	//
+	// vpc
+	AgentEndpoint *string `json:"AgentEndpoint,omitempty" xml:"AgentEndpoint,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// default
+	DeployMethod *string `json:"DeployMethod,omitempty" xml:"DeployMethod,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_tunnel_id
+	TunnelId *string `json:"TunnelId,omitempty" xml:"TunnelId,omitempty"`
+}
+
+func (s CreateAgentInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAgentInfo) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAgentInfo) SetAgentEndpoint(v string) *CreateAgentInfo {
+	s.AgentEndpoint = &v
+	return s
+}
+
+func (s *CreateAgentInfo) SetDeployMethod(v string) *CreateAgentInfo {
+	s.DeployMethod = &v
+	return s
+}
+
+func (s *CreateAgentInfo) SetName(v string) *CreateAgentInfo {
+	s.Name = &v
+	return s
+}
+
+func (s *CreateAgentInfo) SetTags(v string) *CreateAgentInfo {
+	s.Tags = &v
+	return s
+}
+
+func (s *CreateAgentInfo) SetTunnelId(v string) *CreateAgentInfo {
+	s.TunnelId = &v
+	return s
+}
+
+type CreateJobInfo struct {
+	Audit *Audit `json:"Audit,omitempty" xml:"Audit,omitempty"`
+	// example:
+	//
+	// false
+	ConvertSymlinkTarget *bool `json:"ConvertSymlinkTarget,omitempty" xml:"ConvertSymlinkTarget,omitempty"`
+	CreateReport         *bool `json:"CreateReport,omitempty" xml:"CreateReport,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_dest_address
+	DestAddress           *string     `json:"DestAddress,omitempty" xml:"DestAddress,omitempty"`
+	EnableMultiVersioning *bool       `json:"EnableMultiVersioning,omitempty" xml:"EnableMultiVersioning,omitempty"`
+	FilterRule            *FilterRule `json:"FilterRule,omitempty" xml:"FilterRule,omitempty"`
+	ImportQos             *ImportQos  `json:"ImportQos,omitempty" xml:"ImportQos,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// always
+	OverwriteMode *string       `json:"OverwriteMode,omitempty" xml:"OverwriteMode,omitempty"`
+	ParentVersion *string       `json:"ParentVersion,omitempty" xml:"ParentVersion,omitempty"`
+	ScheduleRule  *ScheduleRule `json:"ScheduleRule,omitempty" xml:"ScheduleRule,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_src_address
+	SrcAddress *string `json:"SrcAddress,omitempty" xml:"SrcAddress,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// all
+	TransferMode *string `json:"TransferMode,omitempty" xml:"TransferMode,omitempty"`
+}
+
+func (s CreateJobInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateJobInfo) GoString() string {
+	return s.String()
+}
+
+func (s *CreateJobInfo) SetAudit(v *Audit) *CreateJobInfo {
+	s.Audit = v
+	return s
+}
+
+func (s *CreateJobInfo) SetConvertSymlinkTarget(v bool) *CreateJobInfo {
+	s.ConvertSymlinkTarget = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetCreateReport(v bool) *CreateJobInfo {
+	s.CreateReport = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetDestAddress(v string) *CreateJobInfo {
+	s.DestAddress = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetEnableMultiVersioning(v bool) *CreateJobInfo {
+	s.EnableMultiVersioning = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetFilterRule(v *FilterRule) *CreateJobInfo {
+	s.FilterRule = v
+	return s
+}
+
+func (s *CreateJobInfo) SetImportQos(v *ImportQos) *CreateJobInfo {
+	s.ImportQos = v
+	return s
+}
+
+func (s *CreateJobInfo) SetName(v string) *CreateJobInfo {
+	s.Name = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetOverwriteMode(v string) *CreateJobInfo {
+	s.OverwriteMode = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetParentVersion(v string) *CreateJobInfo {
+	s.ParentVersion = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetScheduleRule(v *ScheduleRule) *CreateJobInfo {
+	s.ScheduleRule = v
+	return s
+}
+
+func (s *CreateJobInfo) SetSrcAddress(v string) *CreateJobInfo {
+	s.SrcAddress = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetTags(v string) *CreateJobInfo {
+	s.Tags = &v
+	return s
+}
+
+func (s *CreateJobInfo) SetTransferMode(v string) *CreateJobInfo {
+	s.TransferMode = &v
+	return s
+}
+
+type CreateReportInfo struct {
+	// example:
+	//
+	// test_job_name
+	JobName *string `json:"JobName,omitempty" xml:"JobName,omitempty"`
+	// example:
+	//
+	// 1
+	RuntimeId *int32 `json:"RuntimeId,omitempty" xml:"RuntimeId,omitempty"`
+	// example:
+	//
+	// test_job_id
+	Version *string `json:"Version,omitempty" xml:"Version,omitempty"`
+}
+
+func (s CreateReportInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateReportInfo) GoString() string {
+	return s.String()
+}
+
+func (s *CreateReportInfo) SetJobName(v string) *CreateReportInfo {
+	s.JobName = &v
+	return s
+}
+
+func (s *CreateReportInfo) SetRuntimeId(v int32) *CreateReportInfo {
+	s.RuntimeId = &v
+	return s
+}
+
+func (s *CreateReportInfo) SetVersion(v string) *CreateReportInfo {
+	s.Version = &v
+	return s
+}
+
+type CreateTunnelInfo struct {
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags      *string    `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	TunnelQos *TunnelQos `json:"TunnelQos,omitempty" xml:"TunnelQos,omitempty"`
+}
+
+func (s CreateTunnelInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateTunnelInfo) GoString() string {
+	return s.String()
+}
+
+func (s *CreateTunnelInfo) SetTags(v string) *CreateTunnelInfo {
+	s.Tags = &v
+	return s
+}
+
+func (s *CreateTunnelInfo) SetTunnelQos(v *TunnelQos) *CreateTunnelInfo {
+	s.TunnelQos = v
+	return s
+}
+
+type FileTypeFilters struct {
+	// example:
+	//
+	// fasle
+	ExcludeDir *bool `json:"ExcludeDir,omitempty" xml:"ExcludeDir,omitempty"`
+	// example:
+	//
+	// fasle
+	ExcludeSymlink *bool `json:"ExcludeSymlink,omitempty" xml:"ExcludeSymlink,omitempty"`
+}
+
+func (s FileTypeFilters) String() string {
+	return tea.Prettify(s)
+}
+
+func (s FileTypeFilters) GoString() string {
+	return s.String()
+}
+
+func (s *FileTypeFilters) SetExcludeDir(v bool) *FileTypeFilters {
+	s.ExcludeDir = &v
+	return s
+}
+
+func (s *FileTypeFilters) SetExcludeSymlink(v bool) *FileTypeFilters {
+	s.ExcludeSymlink = &v
+	return s
+}
+
+type FilterRule struct {
+	FileTypeFilters     *FileTypeFilters     `json:"FileTypeFilters,omitempty" xml:"FileTypeFilters,omitempty"`
+	KeyFilters          *KeyFilters          `json:"KeyFilters,omitempty" xml:"KeyFilters,omitempty"`
+	LastModifiedFilters *LastModifiedFilters `json:"LastModifiedFilters,omitempty" xml:"LastModifiedFilters,omitempty"`
+}
+
+func (s FilterRule) String() string {
+	return tea.Prettify(s)
+}
+
+func (s FilterRule) GoString() string {
+	return s.String()
+}
+
+func (s *FilterRule) SetFileTypeFilters(v *FileTypeFilters) *FilterRule {
+	s.FileTypeFilters = v
+	return s
+}
+
+func (s *FilterRule) SetKeyFilters(v *KeyFilters) *FilterRule {
+	s.KeyFilters = v
+	return s
+}
+
+func (s *FilterRule) SetLastModifiedFilters(v *LastModifiedFilters) *FilterRule {
+	s.LastModifiedFilters = v
+	return s
+}
+
+type GetAddressResp struct {
+	AddressDetail *AddressDetail `json:"AddressDetail,omitempty" xml:"AddressDetail,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	CreateTime *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ModifyTime *string `json:"ModifyTime,omitempty" xml:"ModifyTime,omitempty"`
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// test_owner
+	Owner *string `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	// example:
+	//
+	// avaliable
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags         *string     `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	VerifyResult *VerifyResp `json:"VerifyResult,omitempty" xml:"VerifyResult,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	VerifyTime *string `json:"VerifyTime,omitempty" xml:"VerifyTime,omitempty"`
+	// example:
+	//
+	// test_id
+	Version *string `json:"Version,omitempty" xml:"Version,omitempty"`
+}
+
+func (s GetAddressResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAddressResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetAddressResp) SetAddressDetail(v *AddressDetail) *GetAddressResp {
+	s.AddressDetail = v
+	return s
+}
+
+func (s *GetAddressResp) SetCreateTime(v string) *GetAddressResp {
+	s.CreateTime = &v
+	return s
+}
+
+func (s *GetAddressResp) SetModifyTime(v string) *GetAddressResp {
+	s.ModifyTime = &v
+	return s
+}
+
+func (s *GetAddressResp) SetName(v string) *GetAddressResp {
+	s.Name = &v
+	return s
+}
+
+func (s *GetAddressResp) SetOwner(v string) *GetAddressResp {
+	s.Owner = &v
+	return s
+}
+
+func (s *GetAddressResp) SetStatus(v string) *GetAddressResp {
+	s.Status = &v
+	return s
+}
+
+func (s *GetAddressResp) SetTags(v string) *GetAddressResp {
+	s.Tags = &v
+	return s
+}
+
+func (s *GetAddressResp) SetVerifyResult(v *VerifyResp) *GetAddressResp {
+	s.VerifyResult = v
+	return s
+}
+
+func (s *GetAddressResp) SetVerifyTime(v string) *GetAddressResp {
+	s.VerifyTime = &v
+	return s
+}
+
+func (s *GetAddressResp) SetVersion(v string) *GetAddressResp {
+	s.Version = &v
+	return s
+}
+
+type GetAgentResp struct {
+	ActivationKey *string `json:"ActivationKey,omitempty" xml:"ActivationKey,omitempty"`
+	// example:
+	//
+	// vpc
+	AgentEndpoint *string `json:"AgentEndpoint,omitempty" xml:"AgentEndpoint,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	CreateTime *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
+	// example:
+	//
+	// default
+	DeployMethod *string `json:"DeployMethod,omitempty" xml:"DeployMethod,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ModifyTime *string `json:"ModifyTime,omitempty" xml:"ModifyTime,omitempty"`
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// test_owner
+	Owner *string `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	// example:
+	//
+	// test_tunnel_id
+	TunnelId *string `json:"TunnelId,omitempty" xml:"TunnelId,omitempty"`
+	// example:
+	//
+	// test_agent_id
+	Version *string `json:"Version,omitempty" xml:"Version,omitempty"`
+}
+
+func (s GetAgentResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentResp) SetActivationKey(v string) *GetAgentResp {
+	s.ActivationKey = &v
+	return s
+}
+
+func (s *GetAgentResp) SetAgentEndpoint(v string) *GetAgentResp {
+	s.AgentEndpoint = &v
+	return s
+}
+
+func (s *GetAgentResp) SetCreateTime(v string) *GetAgentResp {
+	s.CreateTime = &v
+	return s
+}
+
+func (s *GetAgentResp) SetDeployMethod(v string) *GetAgentResp {
+	s.DeployMethod = &v
+	return s
+}
+
+func (s *GetAgentResp) SetModifyTime(v string) *GetAgentResp {
+	s.ModifyTime = &v
+	return s
+}
+
+func (s *GetAgentResp) SetName(v string) *GetAgentResp {
+	s.Name = &v
+	return s
+}
+
+func (s *GetAgentResp) SetOwner(v string) *GetAgentResp {
+	s.Owner = &v
+	return s
+}
+
+func (s *GetAgentResp) SetTags(v string) *GetAgentResp {
+	s.Tags = &v
+	return s
+}
+
+func (s *GetAgentResp) SetTunnelId(v string) *GetAgentResp {
+	s.TunnelId = &v
+	return s
+}
+
+func (s *GetAgentResp) SetVersion(v string) *GetAgentResp {
+	s.Version = &v
+	return s
+}
+
+type GetAgentStatusResp struct {
+	// example:
+	//
+	// OK
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+func (s GetAgentStatusResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentStatusResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentStatusResp) SetStatus(v string) *GetAgentStatusResp {
+	s.Status = &v
+	return s
+}
+
+type GetJobResp struct {
+	Audit *Audit `json:"Audit,omitempty" xml:"Audit,omitempty"`
+	// example:
+	//
+	// false
+	ConvertSymlinkTarget *bool `json:"ConvertSymlinkTarget,omitempty" xml:"ConvertSymlinkTarget,omitempty"`
+	// example:
+	//
+	// false
+	CreateReport *bool `json:"CreateReport,omitempty" xml:"CreateReport,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	CreateTime *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
+	// example:
+	//
+	// test_dest_address
+	DestAddress *string `json:"DestAddress,omitempty" xml:"DestAddress,omitempty"`
+	// example:
+	//
+	// false
+	EnableMultiVersioning *bool       `json:"EnableMultiVersioning,omitempty" xml:"EnableMultiVersioning,omitempty"`
+	FilterRule            *FilterRule `json:"FilterRule,omitempty" xml:"FilterRule,omitempty"`
+	ImportQos             *ImportQos  `json:"ImportQos,omitempty" xml:"ImportQos,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ModifyTime *string `json:"ModifyTime,omitempty" xml:"ModifyTime,omitempty"`
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// always
+	OverwriteMode *string       `json:"OverwriteMode,omitempty" xml:"OverwriteMode,omitempty"`
+	Owner         *string       `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	ParentName    *string       `json:"ParentName,omitempty" xml:"ParentName,omitempty"`
+	ParentVersion *string       `json:"ParentVersion,omitempty" xml:"ParentVersion,omitempty"`
+	ScheduleRule  *ScheduleRule `json:"ScheduleRule,omitempty" xml:"ScheduleRule,omitempty"`
+	// example:
+	//
+	// test_src_address
+	SrcAddress *string `json:"SrcAddress,omitempty" xml:"SrcAddress,omitempty"`
+	// example:
+	//
+	// IMPORT_JOB_DOING
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	// example:
+	//
+	// all
+	TransferMode *string `json:"TransferMode,omitempty" xml:"TransferMode,omitempty"`
+	// example:
+	//
+	// test_id
+	Version *string `json:"Version,omitempty" xml:"Version,omitempty"`
+}
+
+func (s GetJobResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResp) SetAudit(v *Audit) *GetJobResp {
+	s.Audit = v
+	return s
+}
+
+func (s *GetJobResp) SetConvertSymlinkTarget(v bool) *GetJobResp {
+	s.ConvertSymlinkTarget = &v
+	return s
+}
+
+func (s *GetJobResp) SetCreateReport(v bool) *GetJobResp {
+	s.CreateReport = &v
+	return s
+}
+
+func (s *GetJobResp) SetCreateTime(v string) *GetJobResp {
+	s.CreateTime = &v
+	return s
+}
+
+func (s *GetJobResp) SetDestAddress(v string) *GetJobResp {
+	s.DestAddress = &v
+	return s
+}
+
+func (s *GetJobResp) SetEnableMultiVersioning(v bool) *GetJobResp {
+	s.EnableMultiVersioning = &v
+	return s
+}
+
+func (s *GetJobResp) SetFilterRule(v *FilterRule) *GetJobResp {
+	s.FilterRule = v
+	return s
+}
+
+func (s *GetJobResp) SetImportQos(v *ImportQos) *GetJobResp {
+	s.ImportQos = v
+	return s
+}
+
+func (s *GetJobResp) SetModifyTime(v string) *GetJobResp {
+	s.ModifyTime = &v
+	return s
+}
+
+func (s *GetJobResp) SetName(v string) *GetJobResp {
+	s.Name = &v
+	return s
+}
+
+func (s *GetJobResp) SetOverwriteMode(v string) *GetJobResp {
+	s.OverwriteMode = &v
+	return s
+}
+
+func (s *GetJobResp) SetOwner(v string) *GetJobResp {
+	s.Owner = &v
+	return s
+}
+
+func (s *GetJobResp) SetParentName(v string) *GetJobResp {
+	s.ParentName = &v
+	return s
+}
+
+func (s *GetJobResp) SetParentVersion(v string) *GetJobResp {
+	s.ParentVersion = &v
+	return s
+}
+
+func (s *GetJobResp) SetScheduleRule(v *ScheduleRule) *GetJobResp {
+	s.ScheduleRule = v
+	return s
+}
+
+func (s *GetJobResp) SetSrcAddress(v string) *GetJobResp {
+	s.SrcAddress = &v
+	return s
+}
+
+func (s *GetJobResp) SetStatus(v string) *GetJobResp {
+	s.Status = &v
+	return s
+}
+
+func (s *GetJobResp) SetTags(v string) *GetJobResp {
+	s.Tags = &v
+	return s
+}
+
+func (s *GetJobResp) SetTransferMode(v string) *GetJobResp {
+	s.TransferMode = &v
+	return s
+}
+
+func (s *GetJobResp) SetVersion(v string) *GetJobResp {
+	s.Version = &v
+	return s
+}
+
+type GetJobResultResp struct {
+	// example:
+	//
+	// ossinv
+	AddressType *string `json:"AddressType,omitempty" xml:"AddressType,omitempty"`
+	// example:
+	//
+	// 800
+	CopiedObjectCount *int64 `json:"CopiedObjectCount,omitempty" xml:"CopiedObjectCount,omitempty"`
+	// example:
+	//
+	// 800
+	CopiedObjectSize *int64 `json:"CopiedObjectSize,omitempty" xml:"CopiedObjectSize,omitempty"`
+	// example:
+	//
+	// 200
+	FailedObjectCount *int64 `json:"FailedObjectCount,omitempty" xml:"FailedObjectCount,omitempty"`
+	// example:
+	//
+	// test_access_id
+	InvAccessId *string `json:"InvAccessId,omitempty" xml:"InvAccessId,omitempty"`
+	// example:
+	//
+	// test_secret_key
+	InvAccessSecret *string `json:"InvAccessSecret,omitempty" xml:"InvAccessSecret,omitempty"`
+	// example:
+	//
+	// test_sys_bucket
+	InvBucket *string `json:"InvBucket,omitempty" xml:"InvBucket,omitempty"`
+	// example:
+	//
+	// test_domain
+	InvDomain *string `json:"InvDomain,omitempty" xml:"InvDomain,omitempty"`
+	// example:
+	//
+	// oss
+	InvLocation *string `json:"InvLocation,omitempty" xml:"InvLocation,omitempty"`
+	// example:
+	//
+	// mainfest.json
+	InvPath *string `json:"InvPath,omitempty" xml:"InvPath,omitempty"`
+	// example:
+	//
+	// test_region_id
+	InvRegionId *string `json:"InvRegionId,omitempty" xml:"InvRegionId,omitempty"`
+	// example:
+	//
+	// Ready
+	ReadyRetry *string `json:"ReadyRetry,omitempty" xml:"ReadyRetry,omitempty"`
+	// example:
+	//
+	// 1000
+	TotalObjectCount *int64 `json:"TotalObjectCount,omitempty" xml:"TotalObjectCount,omitempty"`
+	// example:
+	//
+	// 1000
+	TotalObjectSize *int64 `json:"TotalObjectSize,omitempty" xml:"TotalObjectSize,omitempty"`
+	// example:
+	//
+	// test_job_id
+	Version *string `json:"Version,omitempty" xml:"Version,omitempty"`
+}
+
+func (s GetJobResultResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResultResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResultResp) SetAddressType(v string) *GetJobResultResp {
+	s.AddressType = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetCopiedObjectCount(v int64) *GetJobResultResp {
+	s.CopiedObjectCount = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetCopiedObjectSize(v int64) *GetJobResultResp {
+	s.CopiedObjectSize = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetFailedObjectCount(v int64) *GetJobResultResp {
+	s.FailedObjectCount = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvAccessId(v string) *GetJobResultResp {
+	s.InvAccessId = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvAccessSecret(v string) *GetJobResultResp {
+	s.InvAccessSecret = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvBucket(v string) *GetJobResultResp {
+	s.InvBucket = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvDomain(v string) *GetJobResultResp {
+	s.InvDomain = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvLocation(v string) *GetJobResultResp {
+	s.InvLocation = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvPath(v string) *GetJobResultResp {
+	s.InvPath = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetInvRegionId(v string) *GetJobResultResp {
+	s.InvRegionId = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetReadyRetry(v string) *GetJobResultResp {
+	s.ReadyRetry = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetTotalObjectCount(v int64) *GetJobResultResp {
+	s.TotalObjectCount = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetTotalObjectSize(v int64) *GetJobResultResp {
+	s.TotalObjectSize = &v
+	return s
+}
+
+func (s *GetJobResultResp) SetVersion(v string) *GetJobResultResp {
+	s.Version = &v
+	return s
+}
+
+type GetReportResp struct {
+	// example:
+	//
+	// 800
+	CopiedCount  *int64  `json:"CopiedCount,omitempty" xml:"CopiedCount,omitempty"`
+	ErrorMessage *string `json:"ErrorMessage,omitempty" xml:"ErrorMessage,omitempty"`
+	// example:
+	//
+	// 100
+	FailedCount *int64 `json:"FailedCount,omitempty" xml:"FailedCount,omitempty"`
+	// example:
+	//
+	// test_failed_prefix/
+	FailedListPrefix *string `json:"FailedListPrefix,omitempty" xml:"FailedListPrefix,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	JobCreateTime *string `json:"JobCreateTime,omitempty" xml:"JobCreateTime,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	JobEndTime *string `json:"JobEndTime,omitempty" xml:"JobEndTime,omitempty"`
+	// example:
+	//
+	// 1000
+	JobExecuteTime *string `json:"JobExecuteTime,omitempty" xml:"JobExecuteTime,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ReportCreateTime *string `json:"ReportCreateTime,omitempty" xml:"ReportCreateTime,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ReportEndTime *string `json:"ReportEndTime,omitempty" xml:"ReportEndTime,omitempty"`
+	// example:
+	//
+	// 100
+	SkippedCount *int64 `json:"SkippedCount,omitempty" xml:"SkippedCount,omitempty"`
+	// example:
+	//
+	// test_skipped_prefix/
+	SkippedListPrefix *string `json:"SkippedListPrefix,omitempty" xml:"SkippedListPrefix,omitempty"`
+	// example:
+	//
+	// Running
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	// example:
+	//
+	// 1000
+	TotalCount *int64 `json:"TotalCount,omitempty" xml:"TotalCount,omitempty"`
+	// example:
+	//
+	// test_total_prefix/
+	TotalListPrefix *string `json:"TotalListPrefix,omitempty" xml:"TotalListPrefix,omitempty"`
+}
+
+func (s GetReportResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetReportResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetReportResp) SetCopiedCount(v int64) *GetReportResp {
+	s.CopiedCount = &v
+	return s
+}
+
+func (s *GetReportResp) SetErrorMessage(v string) *GetReportResp {
+	s.ErrorMessage = &v
+	return s
+}
+
+func (s *GetReportResp) SetFailedCount(v int64) *GetReportResp {
+	s.FailedCount = &v
+	return s
+}
+
+func (s *GetReportResp) SetFailedListPrefix(v string) *GetReportResp {
+	s.FailedListPrefix = &v
+	return s
+}
+
+func (s *GetReportResp) SetJobCreateTime(v string) *GetReportResp {
+	s.JobCreateTime = &v
+	return s
+}
+
+func (s *GetReportResp) SetJobEndTime(v string) *GetReportResp {
+	s.JobEndTime = &v
+	return s
+}
+
+func (s *GetReportResp) SetJobExecuteTime(v string) *GetReportResp {
+	s.JobExecuteTime = &v
+	return s
+}
+
+func (s *GetReportResp) SetReportCreateTime(v string) *GetReportResp {
+	s.ReportCreateTime = &v
+	return s
+}
+
+func (s *GetReportResp) SetReportEndTime(v string) *GetReportResp {
+	s.ReportEndTime = &v
+	return s
+}
+
+func (s *GetReportResp) SetSkippedCount(v int64) *GetReportResp {
+	s.SkippedCount = &v
+	return s
+}
+
+func (s *GetReportResp) SetSkippedListPrefix(v string) *GetReportResp {
+	s.SkippedListPrefix = &v
+	return s
+}
+
+func (s *GetReportResp) SetStatus(v string) *GetReportResp {
+	s.Status = &v
+	return s
+}
+
+func (s *GetReportResp) SetTotalCount(v int64) *GetReportResp {
+	s.TotalCount = &v
+	return s
+}
+
+func (s *GetReportResp) SetTotalListPrefix(v string) *GetReportResp {
+	s.TotalListPrefix = &v
+	return s
+}
+
+type GetTunnelResp struct {
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	CreateTime *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	ModifyTime *string `json:"ModifyTime,omitempty" xml:"ModifyTime,omitempty"`
+	// example:
+	//
+	// test_owner
+	Owner *string `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	// example:
+	//
+	// K1:V1,K2:V2
+	Tags *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	// example:
+	//
+	// test_tunnel_id
+	TunnelId  *string    `json:"TunnelId,omitempty" xml:"TunnelId,omitempty"`
+	TunnelQos *TunnelQos `json:"TunnelQos,omitempty" xml:"TunnelQos,omitempty"`
+}
+
+func (s GetTunnelResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetTunnelResp) GoString() string {
+	return s.String()
+}
+
+func (s *GetTunnelResp) SetCreateTime(v string) *GetTunnelResp {
+	s.CreateTime = &v
+	return s
+}
+
+func (s *GetTunnelResp) SetModifyTime(v string) *GetTunnelResp {
+	s.ModifyTime = &v
+	return s
+}
+
+func (s *GetTunnelResp) SetOwner(v string) *GetTunnelResp {
+	s.Owner = &v
+	return s
+}
+
+func (s *GetTunnelResp) SetTags(v string) *GetTunnelResp {
+	s.Tags = &v
+	return s
+}
+
+func (s *GetTunnelResp) SetTunnelId(v string) *GetTunnelResp {
+	s.TunnelId = &v
+	return s
+}
+
+func (s *GetTunnelResp) SetTunnelQos(v *TunnelQos) *GetTunnelResp {
+	s.TunnelQos = v
+	return s
+}
+
+type ImportQos struct {
+	// example:
+	//
+	// 1073741824
+	MaxBandWidth *int64 `json:"MaxBandWidth,omitempty" xml:"MaxBandWidth,omitempty"`
+	// example:
+	//
+	// 1000
+	MaxImportTaskQps *int64 `json:"MaxImportTaskQps,omitempty" xml:"MaxImportTaskQps,omitempty"`
+}
+
+func (s ImportQos) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ImportQos) GoString() string {
+	return s.String()
+}
+
+func (s *ImportQos) SetMaxBandWidth(v int64) *ImportQos {
+	s.MaxBandWidth = &v
+	return s
+}
+
+func (s *ImportQos) SetMaxImportTaskQps(v int64) *ImportQos {
+	s.MaxImportTaskQps = &v
+	return s
+}
+
+type JobHistory struct {
+	// example:
+	//
+	// 2
+	CommitId *string `json:"CommitId,omitempty" xml:"CommitId,omitempty"`
+	// example:
+	//
+	// 900
+	CopiedCount *int64 `json:"CopiedCount,omitempty" xml:"CopiedCount,omitempty"`
+	// example:
+	//
+	// 1000
+	CopiedSize *int64 `json:"CopiedSize,omitempty" xml:"CopiedSize,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	EndTime *string `json:"EndTime,omitempty" xml:"EndTime,omitempty"`
+	// example:
+	//
+	// 100
+	FailedCount *int64 `json:"FailedCount,omitempty" xml:"FailedCount,omitempty"`
+	// example:
+	//
+	// test_id
+	JobVersion *string `json:"JobVersion,omitempty" xml:"JobVersion,omitempty"`
+	// example:
+	//
+	// Listing
+	ListStatus *string `json:"ListStatus,omitempty" xml:"ListStatus,omitempty"`
+	Message    *string `json:"Message,omitempty" xml:"Message,omitempty"`
+	// example:
+	//
+	// test_name
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	// example:
+	//
+	// user
+	Operator *string `json:"Operator,omitempty" xml:"Operator,omitempty"`
+	// example:
+	//
+	// 1
+	RuntimeId *string `json:"RuntimeId,omitempty" xml:"RuntimeId,omitempty"`
+	// example:
+	//
+	// Normal
+	RuntimeState *string `json:"RuntimeState,omitempty" xml:"RuntimeState,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	StartTime *string `json:"StartTime,omitempty" xml:"StartTime,omitempty"`
+	// example:
+	//
+	// IMPORT_JOB_DOING
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	// example:
+	//
+	// 1000
+	TotalCount *int64 `json:"TotalCount,omitempty" xml:"TotalCount,omitempty"`
+	// example:
+	//
+	// 1000
+	TotalSize *int64 `json:"TotalSize,omitempty" xml:"TotalSize,omitempty"`
+}
+
+func (s JobHistory) String() string {
+	return tea.Prettify(s)
+}
+
+func (s JobHistory) GoString() string {
+	return s.String()
+}
+
+func (s *JobHistory) SetCommitId(v string) *JobHistory {
+	s.CommitId = &v
+	return s
+}
+
+func (s *JobHistory) SetCopiedCount(v int64) *JobHistory {
+	s.CopiedCount = &v
+	return s
+}
+
+func (s *JobHistory) SetCopiedSize(v int64) *JobHistory {
+	s.CopiedSize = &v
+	return s
+}
+
+func (s *JobHistory) SetEndTime(v string) *JobHistory {
+	s.EndTime = &v
+	return s
+}
+
+func (s *JobHistory) SetFailedCount(v int64) *JobHistory {
+	s.FailedCount = &v
+	return s
+}
+
+func (s *JobHistory) SetJobVersion(v string) *JobHistory {
+	s.JobVersion = &v
+	return s
+}
+
+func (s *JobHistory) SetListStatus(v string) *JobHistory {
+	s.ListStatus = &v
+	return s
+}
+
+func (s *JobHistory) SetMessage(v string) *JobHistory {
+	s.Message = &v
+	return s
+}
+
+func (s *JobHistory) SetName(v string) *JobHistory {
+	s.Name = &v
+	return s
+}
+
+func (s *JobHistory) SetOperator(v string) *JobHistory {
+	s.Operator = &v
+	return s
+}
+
+func (s *JobHistory) SetRuntimeId(v string) *JobHistory {
+	s.RuntimeId = &v
+	return s
+}
+
+func (s *JobHistory) SetRuntimeState(v string) *JobHistory {
+	s.RuntimeState = &v
+	return s
+}
+
+func (s *JobHistory) SetStartTime(v string) *JobHistory {
+	s.StartTime = &v
+	return s
+}
+
+func (s *JobHistory) SetStatus(v string) *JobHistory {
+	s.Status = &v
+	return s
+}
+
+func (s *JobHistory) SetTotalCount(v int64) *JobHistory {
+	s.TotalCount = &v
+	return s
+}
+
+func (s *JobHistory) SetTotalSize(v int64) *JobHistory {
+	s.TotalSize = &v
+	return s
+}
+
+type KeyFilterItem struct {
+	Regex []*string `json:"Regex,omitempty" xml:"Regex,omitempty" type:"Repeated"`
+}
+
+func (s KeyFilterItem) String() string {
+	return tea.Prettify(s)
+}
+
+func (s KeyFilterItem) GoString() string {
+	return s.String()
+}
+
+func (s *KeyFilterItem) SetRegex(v []*string) *KeyFilterItem {
+	s.Regex = v
+	return s
+}
+
+type KeyFilters struct {
+	Excludes *KeyFilterItem `json:"Excludes,omitempty" xml:"Excludes,omitempty"`
+	Includes *KeyFilterItem `json:"Includes,omitempty" xml:"Includes,omitempty"`
+}
+
+func (s KeyFilters) String() string {
+	return tea.Prettify(s)
+}
+
+func (s KeyFilters) GoString() string {
+	return s.String()
+}
+
+func (s *KeyFilters) SetExcludes(v *KeyFilterItem) *KeyFilters {
+	s.Excludes = v
+	return s
+}
+
+func (s *KeyFilters) SetIncludes(v *KeyFilterItem) *KeyFilters {
+	s.Includes = v
+	return s
+}
+
+type LastModifiedFilters struct {
+	Excludes *LastModifyFilterItem `json:"Excludes,omitempty" xml:"Excludes,omitempty"`
+	Includes *LastModifyFilterItem `json:"Includes,omitempty" xml:"Includes,omitempty"`
+}
+
+func (s LastModifiedFilters) String() string {
+	return tea.Prettify(s)
+}
+
+func (s LastModifiedFilters) GoString() string {
+	return s.String()
+}
+
+func (s *LastModifiedFilters) SetExcludes(v *LastModifyFilterItem) *LastModifiedFilters {
+	s.Excludes = v
+	return s
+}
+
+func (s *LastModifiedFilters) SetIncludes(v *LastModifyFilterItem) *LastModifiedFilters {
+	s.Includes = v
+	return s
+}
+
+type LastModifyFilterItem struct {
+	TimeFilter []*TimeFilter `json:"TimeFilter,omitempty" xml:"TimeFilter,omitempty" type:"Repeated"`
+}
+
+func (s LastModifyFilterItem) String() string {
+	return tea.Prettify(s)
+}
+
+func (s LastModifyFilterItem) GoString() string {
+	return s.String()
+}
+
+func (s *LastModifyFilterItem) SetTimeFilter(v []*TimeFilter) *LastModifyFilterItem {
+	s.TimeFilter = v
+	return s
+}
+
+type ListAddressResp struct {
+	ImportAddress []*GetAddressResp `json:"ImportAddress,omitempty" xml:"ImportAddress,omitempty" type:"Repeated"`
+	// example:
+	//
+	// test_marker
+	NextMarker *string `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	// example:
+	//
+	// true
+	Truncated *bool `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListAddressResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAddressResp) GoString() string {
+	return s.String()
+}
+
+func (s *ListAddressResp) SetImportAddress(v []*GetAddressResp) *ListAddressResp {
+	s.ImportAddress = v
+	return s
+}
+
+func (s *ListAddressResp) SetNextMarker(v string) *ListAddressResp {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListAddressResp) SetTruncated(v bool) *ListAddressResp {
+	s.Truncated = &v
+	return s
+}
+
+type ListAgentResp struct {
+	ImportAgent []*GetAgentResp `json:"ImportAgent,omitempty" xml:"ImportAgent,omitempty" type:"Repeated"`
+	// example:
+	//
+	// test_next_marker
+	NextMarker *string `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	// example:
+	//
+	// true
+	Truncated *bool `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListAgentResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAgentResp) GoString() string {
+	return s.String()
+}
+
+func (s *ListAgentResp) SetImportAgent(v []*GetAgentResp) *ListAgentResp {
+	s.ImportAgent = v
+	return s
+}
+
+func (s *ListAgentResp) SetNextMarker(v string) *ListAgentResp {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListAgentResp) SetTruncated(v bool) *ListAgentResp {
+	s.Truncated = &v
+	return s
+}
+
+type ListJobHistoryResp struct {
+	JobHistory []*JobHistory `json:"JobHistory,omitempty" xml:"JobHistory,omitempty" type:"Repeated"`
+	// example:
+	//
+	// test_next_marker
+	NextMarker *string `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	// example:
+	//
+	// true
+	Truncated *string `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListJobHistoryResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobHistoryResp) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobHistoryResp) SetJobHistory(v []*JobHistory) *ListJobHistoryResp {
+	s.JobHistory = v
+	return s
+}
+
+func (s *ListJobHistoryResp) SetNextMarker(v string) *ListJobHistoryResp {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListJobHistoryResp) SetTruncated(v string) *ListJobHistoryResp {
+	s.Truncated = &v
+	return s
+}
+
+type ListJobInfo struct {
+	ImportJob []*CreateJobInfo `json:"ImportJob,omitempty" xml:"ImportJob,omitempty" type:"Repeated"`
+	// example:
+	//
+	// test_next_marker
+	NextMarker *string `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	// example:
+	//
+	// true
+	Truncated *bool `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListJobInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobInfo) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobInfo) SetImportJob(v []*CreateJobInfo) *ListJobInfo {
+	s.ImportJob = v
+	return s
+}
+
+func (s *ListJobInfo) SetNextMarker(v string) *ListJobInfo {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListJobInfo) SetTruncated(v bool) *ListJobInfo {
+	s.Truncated = &v
+	return s
+}
+
+type ListJobResp struct {
+	ImportJob  []*GetJobResp `json:"ImportJob,omitempty" xml:"ImportJob,omitempty" type:"Repeated"`
+	NextMarker *string       `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	Truncated  *bool         `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListJobResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobResp) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobResp) SetImportJob(v []*GetJobResp) *ListJobResp {
+	s.ImportJob = v
+	return s
+}
+
+func (s *ListJobResp) SetNextMarker(v string) *ListJobResp {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListJobResp) SetTruncated(v bool) *ListJobResp {
+	s.Truncated = &v
+	return s
+}
+
+type ListTunnelResp struct {
+	ImportTunnel []*GetTunnelResp `json:"ImportTunnel,omitempty" xml:"ImportTunnel,omitempty" type:"Repeated"`
+	NextMarker   *string          `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	Truncated    *bool            `json:"Truncated,omitempty" xml:"Truncated,omitempty"`
+}
+
+func (s ListTunnelResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListTunnelResp) GoString() string {
+	return s.String()
+}
+
+func (s *ListTunnelResp) SetImportTunnel(v []*GetTunnelResp) *ListTunnelResp {
+	s.ImportTunnel = v
+	return s
+}
+
+func (s *ListTunnelResp) SetNextMarker(v string) *ListTunnelResp {
+	s.NextMarker = &v
+	return s
+}
+
+func (s *ListTunnelResp) SetTruncated(v bool) *ListTunnelResp {
+	s.Truncated = &v
+	return s
+}
+
+type ScheduleRule struct {
+	MaxScheduleCount      *int64  `json:"MaxScheduleCount,omitempty" xml:"MaxScheduleCount,omitempty"`
+	StartCronExpression   *string `json:"StartCronExpression,omitempty" xml:"StartCronExpression,omitempty"`
+	SuspendCronExpression *string `json:"SuspendCronExpression,omitempty" xml:"SuspendCronExpression,omitempty"`
+}
+
+func (s ScheduleRule) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ScheduleRule) GoString() string {
+	return s.String()
+}
+
+func (s *ScheduleRule) SetMaxScheduleCount(v int64) *ScheduleRule {
+	s.MaxScheduleCount = &v
+	return s
+}
+
+func (s *ScheduleRule) SetStartCronExpression(v string) *ScheduleRule {
+	s.StartCronExpression = &v
+	return s
+}
+
+func (s *ScheduleRule) SetSuspendCronExpression(v string) *ScheduleRule {
+	s.SuspendCronExpression = &v
+	return s
+}
+
+type TimeFilter struct {
+	EndTime   *string `json:"EndTime,omitempty" xml:"EndTime,omitempty"`
+	StartTime *string `json:"StartTime,omitempty" xml:"StartTime,omitempty"`
+}
+
+func (s TimeFilter) String() string {
+	return tea.Prettify(s)
+}
+
+func (s TimeFilter) GoString() string {
+	return s.String()
+}
+
+func (s *TimeFilter) SetEndTime(v string) *TimeFilter {
+	s.EndTime = &v
+	return s
+}
+
+func (s *TimeFilter) SetStartTime(v string) *TimeFilter {
+	s.StartTime = &v
+	return s
+}
+
+type TunnelQos struct {
+	// example:
+	//
+	// 1073741824
+	MaxBandwidth *int64 `json:"MaxBandwidth,omitempty" xml:"MaxBandwidth,omitempty"`
+	// example:
+	//
+	// 100
+	MaxQps *int32 `json:"MaxQps,omitempty" xml:"MaxQps,omitempty"`
+}
+
+func (s TunnelQos) String() string {
+	return tea.Prettify(s)
+}
+
+func (s TunnelQos) GoString() string {
+	return s.String()
+}
+
+func (s *TunnelQos) SetMaxBandwidth(v int64) *TunnelQos {
+	s.MaxBandwidth = &v
+	return s
+}
+
+func (s *TunnelQos) SetMaxQps(v int32) *TunnelQos {
+	s.MaxQps = &v
+	return s
+}
+
+type UpdateAddressInfo struct {
+	AgentList *string `json:"AgentList,omitempty" xml:"AgentList,omitempty"`
+}
+
+func (s UpdateAddressInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateAddressInfo) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateAddressInfo) SetAgentList(v string) *UpdateAddressInfo {
+	s.AgentList = &v
+	return s
+}
+
+type UpdateJobInfo struct {
+	ImportQos *ImportQos `json:"ImportQos,omitempty" xml:"ImportQos,omitempty"`
+	// example:
+	//
+	// IMPORT_JOB_LAUNCHING
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+func (s UpdateJobInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateJobInfo) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateJobInfo) SetImportQos(v *ImportQos) *UpdateJobInfo {
+	s.ImportQos = v
+	return s
+}
+
+func (s *UpdateJobInfo) SetStatus(v string) *UpdateJobInfo {
+	s.Status = &v
+	return s
+}
+
+type UpdateTunnelInfo struct {
+	Tags      *string    `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	TunnelQos *TunnelQos `json:"TunnelQos,omitempty" xml:"TunnelQos,omitempty"`
+}
+
+func (s UpdateTunnelInfo) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateTunnelInfo) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateTunnelInfo) SetTags(v string) *UpdateTunnelInfo {
+	s.Tags = &v
+	return s
+}
+
+func (s *UpdateTunnelInfo) SetTunnelQos(v *TunnelQos) *UpdateTunnelInfo {
+	s.TunnelQos = v
+	return s
+}
+
+type VerifyAddressResp struct {
+	ErrorCode    *string `json:"ErrorCode,omitempty" xml:"ErrorCode,omitempty"`
+	ErrorMessage *string `json:"ErrorMessage,omitempty" xml:"ErrorMessage,omitempty"`
+	// example:
+	//
+	// avaliable
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	// example:
+	//
+	// 2024-05-01 12:00:00
+	VerifyTime *string `json:"VerifyTime,omitempty" xml:"VerifyTime,omitempty"`
+}
+
+func (s VerifyAddressResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s VerifyAddressResp) GoString() string {
+	return s.String()
+}
+
+func (s *VerifyAddressResp) SetErrorCode(v string) *VerifyAddressResp {
+	s.ErrorCode = &v
+	return s
+}
+
+func (s *VerifyAddressResp) SetErrorMessage(v string) *VerifyAddressResp {
+	s.ErrorMessage = &v
+	return s
+}
+
+func (s *VerifyAddressResp) SetStatus(v string) *VerifyAddressResp {
+	s.Status = &v
+	return s
+}
+
+func (s *VerifyAddressResp) SetVerifyTime(v string) *VerifyAddressResp {
+	s.VerifyTime = &v
+	return s
+}
+
+type VerifyResp struct {
+	ErrorCode *string `json:"ErrorCode,omitempty" xml:"ErrorCode,omitempty"`
+	ErrorMsg  *string `json:"ErrorMsg,omitempty" xml:"ErrorMsg,omitempty"`
+	// example:
+	//
+	// 200
+	HttpCode *string `json:"HttpCode,omitempty" xml:"HttpCode,omitempty"`
+}
+
+func (s VerifyResp) String() string {
+	return tea.Prettify(s)
+}
+
+func (s VerifyResp) GoString() string {
+	return s.String()
+}
+
+func (s *VerifyResp) SetErrorCode(v string) *VerifyResp {
+	s.ErrorCode = &v
+	return s
+}
+
+func (s *VerifyResp) SetErrorMsg(v string) *VerifyResp {
+	s.ErrorMsg = &v
+	return s
+}
+
+func (s *VerifyResp) SetHttpCode(v string) *VerifyResp {
+	s.HttpCode = &v
+	return s
+}
+
+type CreateAddressRequest struct {
+	ImportAddress *CreateAddressInfo `json:"ImportAddress,omitempty" xml:"ImportAddress,omitempty"`
+}
+
+func (s CreateAddressRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAddressRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAddressRequest) SetImportAddress(v *CreateAddressInfo) *CreateAddressRequest {
+	s.ImportAddress = v
+	return s
+}
+
+type CreateAddressResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s CreateAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAddressResponse) SetHeaders(v map[string]*string) *CreateAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateAddressResponse) SetStatusCode(v int32) *CreateAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type CreateAgentRequest struct {
+	ImportAgent *CreateAgentInfo `json:"ImportAgent,omitempty" xml:"ImportAgent,omitempty"`
+}
+
+func (s CreateAgentRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAgentRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAgentRequest) SetImportAgent(v *CreateAgentInfo) *CreateAgentRequest {
+	s.ImportAgent = v
+	return s
+}
+
+type CreateAgentResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s CreateAgentResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAgentResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAgentResponse) SetHeaders(v map[string]*string) *CreateAgentResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateAgentResponse) SetStatusCode(v int32) *CreateAgentResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type CreateJobRequest struct {
+	// This parameter is required.
+	ImportJob *CreateJobInfo `json:"ImportJob,omitempty" xml:"ImportJob,omitempty"`
+}
+
+func (s CreateJobRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateJobRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateJobRequest) SetImportJob(v *CreateJobInfo) *CreateJobRequest {
+	s.ImportJob = v
+	return s
+}
+
+type CreateJobResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s CreateJobResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateJobResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateJobResponse) SetHeaders(v map[string]*string) *CreateJobResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateJobResponse) SetStatusCode(v int32) *CreateJobResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type CreateReportRequest struct {
+	CreateReport *CreateReportInfo `json:"CreateReport,omitempty" xml:"CreateReport,omitempty"`
+}
+
+func (s CreateReportRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateReportRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateReportRequest) SetCreateReport(v *CreateReportInfo) *CreateReportRequest {
+	s.CreateReport = v
+	return s
+}
+
+type CreateReportResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s CreateReportResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateReportResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateReportResponse) SetHeaders(v map[string]*string) *CreateReportResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateReportResponse) SetStatusCode(v int32) *CreateReportResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type CreateTunnelRequest struct {
+	ImportTunnel *CreateTunnelInfo `json:"ImportTunnel,omitempty" xml:"ImportTunnel,omitempty"`
+}
+
+func (s CreateTunnelRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateTunnelRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateTunnelRequest) SetImportTunnel(v *CreateTunnelInfo) *CreateTunnelRequest {
+	s.ImportTunnel = v
+	return s
+}
+
+type CreateTunnelResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s CreateTunnelResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateTunnelResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateTunnelResponse) SetHeaders(v map[string]*string) *CreateTunnelResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateTunnelResponse) SetStatusCode(v int32) *CreateTunnelResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteAddressResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteAddressResponse) SetHeaders(v map[string]*string) *DeleteAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteAddressResponse) SetStatusCode(v int32) *DeleteAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteAgentResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteAgentResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteAgentResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteAgentResponse) SetHeaders(v map[string]*string) *DeleteAgentResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteAgentResponse) SetStatusCode(v int32) *DeleteAgentResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteJobRequest struct {
+	// example:
+	//
+	// true
+	ForceDelete *bool `json:"forceDelete,omitempty" xml:"forceDelete,omitempty"`
+}
+
+func (s DeleteJobRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteJobRequest) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteJobRequest) SetForceDelete(v bool) *DeleteJobRequest {
+	s.ForceDelete = &v
+	return s
+}
+
+type DeleteJobResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteJobResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteJobResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteJobResponse) SetHeaders(v map[string]*string) *DeleteJobResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteJobResponse) SetStatusCode(v int32) *DeleteJobResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteTunnelResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteTunnelResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteTunnelResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteTunnelResponse) SetHeaders(v map[string]*string) *DeleteTunnelResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteTunnelResponse) SetStatusCode(v int32) *DeleteTunnelResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type GetAddressResponseBody struct {
+	// 222
+	ImportAddress *GetAddressResp `json:"ImportAddress,omitempty" xml:"ImportAddress,omitempty"`
+}
+
+func (s GetAddressResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAddressResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetAddressResponseBody) SetImportAddress(v *GetAddressResp) *GetAddressResponseBody {
+	s.ImportAddress = v
+	return s
+}
+
+type GetAddressResponse struct {
+	Headers    map[string]*string      `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                  `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetAddressResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetAddressResponse) SetHeaders(v map[string]*string) *GetAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetAddressResponse) SetStatusCode(v int32) *GetAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetAddressResponse) SetBody(v *GetAddressResponseBody) *GetAddressResponse {
+	s.Body = v
+	return s
+}
+
+type GetAgentResponseBody struct {
+	// 2
+	ImportAgent *GetAgentResp `json:"ImportAgent,omitempty" xml:"ImportAgent,omitempty"`
+}
+
+func (s GetAgentResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentResponseBody) SetImportAgent(v *GetAgentResp) *GetAgentResponseBody {
+	s.ImportAgent = v
+	return s
+}
+
+type GetAgentResponse struct {
+	Headers    map[string]*string    `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetAgentResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetAgentResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentResponse) SetHeaders(v map[string]*string) *GetAgentResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetAgentResponse) SetStatusCode(v int32) *GetAgentResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetAgentResponse) SetBody(v *GetAgentResponseBody) *GetAgentResponse {
+	s.Body = v
+	return s
+}
+
+type GetAgentStatusResponseBody struct {
+	// 2
+	ImportAgentStatus *GetAgentStatusResp `json:"ImportAgentStatus,omitempty" xml:"ImportAgentStatus,omitempty"`
+}
+
+func (s GetAgentStatusResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentStatusResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentStatusResponseBody) SetImportAgentStatus(v *GetAgentStatusResp) *GetAgentStatusResponseBody {
+	s.ImportAgentStatus = v
+	return s
+}
+
+type GetAgentStatusResponse struct {
+	Headers    map[string]*string          `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                      `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetAgentStatusResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetAgentStatusResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetAgentStatusResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetAgentStatusResponse) SetHeaders(v map[string]*string) *GetAgentStatusResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetAgentStatusResponse) SetStatusCode(v int32) *GetAgentStatusResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetAgentStatusResponse) SetBody(v *GetAgentStatusResponseBody) *GetAgentStatusResponse {
+	s.Body = v
+	return s
+}
+
+type GetJobRequest struct {
+	// example:
+	//
+	// false
+	ByVersion *string `json:"byVersion,omitempty" xml:"byVersion,omitempty"`
+}
+
+func (s GetJobRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobRequest) SetByVersion(v string) *GetJobRequest {
+	s.ByVersion = &v
+	return s
+}
+
+type GetJobResponseBody struct {
+	ImportJob *GetJobResp `json:"ImportJob,omitempty" xml:"ImportJob,omitempty"`
+}
+
+func (s GetJobResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResponseBody) SetImportJob(v *GetJobResp) *GetJobResponseBody {
+	s.ImportJob = v
+	return s
+}
+
+type GetJobResponse struct {
+	Headers    map[string]*string  `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32              `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetJobResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetJobResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResponse) SetHeaders(v map[string]*string) *GetJobResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetJobResponse) SetStatusCode(v int32) *GetJobResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetJobResponse) SetBody(v *GetJobResponseBody) *GetJobResponse {
+	s.Body = v
+	return s
+}
+
+type GetJobResultRequest struct {
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 2
+	RuntimeId *int32 `json:"runtimeId,omitempty" xml:"runtimeId,omitempty"`
+}
+
+func (s GetJobResultRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResultRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResultRequest) SetRuntimeId(v int32) *GetJobResultRequest {
+	s.RuntimeId = &v
+	return s
+}
+
+type GetJobResultResponseBody struct {
+	// 1
+	ImportJobResult *GetJobResultResp `json:"ImportJobResult,omitempty" xml:"ImportJobResult,omitempty"`
+}
+
+func (s GetJobResultResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResultResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResultResponseBody) SetImportJobResult(v *GetJobResultResp) *GetJobResultResponseBody {
+	s.ImportJobResult = v
+	return s
+}
+
+type GetJobResultResponse struct {
+	Headers    map[string]*string        `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                    `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetJobResultResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetJobResultResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetJobResultResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetJobResultResponse) SetHeaders(v map[string]*string) *GetJobResultResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetJobResultResponse) SetStatusCode(v int32) *GetJobResultResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetJobResultResponse) SetBody(v *GetJobResultResponseBody) *GetJobResultResponse {
+	s.Body = v
+	return s
+}
+
+type GetReportRequest struct {
+	// example:
+	//
+	// 1
+	RuntimeId *int32 `json:"runtimeId,omitempty" xml:"runtimeId,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// test_job_id
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
+}
+
+func (s GetReportRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetReportRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetReportRequest) SetRuntimeId(v int32) *GetReportRequest {
+	s.RuntimeId = &v
+	return s
+}
+
+func (s *GetReportRequest) SetVersion(v string) *GetReportRequest {
+	s.Version = &v
+	return s
+}
+
+type GetReportResponseBody struct {
+	GetReportResponse *GetReportResp `json:"GetReportResponse,omitempty" xml:"GetReportResponse,omitempty"`
+}
+
+func (s GetReportResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetReportResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetReportResponseBody) SetGetReportResponse(v *GetReportResp) *GetReportResponseBody {
+	s.GetReportResponse = v
+	return s
+}
+
+type GetReportResponse struct {
+	Headers    map[string]*string     `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                 `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetReportResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetReportResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetReportResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetReportResponse) SetHeaders(v map[string]*string) *GetReportResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetReportResponse) SetStatusCode(v int32) *GetReportResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetReportResponse) SetBody(v *GetReportResponseBody) *GetReportResponse {
+	s.Body = v
+	return s
+}
+
+type GetTunnelResponseBody struct {
+	ImportTunnel *GetTunnelResp `json:"ImportTunnel,omitempty" xml:"ImportTunnel,omitempty"`
+}
+
+func (s GetTunnelResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetTunnelResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetTunnelResponseBody) SetImportTunnel(v *GetTunnelResp) *GetTunnelResponseBody {
+	s.ImportTunnel = v
+	return s
+}
+
+type GetTunnelResponse struct {
+	Headers    map[string]*string     `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                 `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetTunnelResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetTunnelResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetTunnelResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetTunnelResponse) SetHeaders(v map[string]*string) *GetTunnelResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetTunnelResponse) SetStatusCode(v int32) *GetTunnelResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetTunnelResponse) SetBody(v *GetTunnelResponseBody) *GetTunnelResponse {
+	s.Body = v
+	return s
+}
+
+type ListAddressRequest struct {
+	// example:
+	//
+	// 100
+	Count *int32 `json:"count,omitempty" xml:"count,omitempty"`
+	// example:
+	//
+	// test_marker
+	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
+}
+
+func (s ListAddressRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAddressRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListAddressRequest) SetCount(v int32) *ListAddressRequest {
+	s.Count = &v
+	return s
+}
+
+func (s *ListAddressRequest) SetMarker(v string) *ListAddressRequest {
+	s.Marker = &v
+	return s
+}
+
+type ListAddressResponseBody struct {
+	ImportAddressList *ListAddressResp `json:"ImportAddressList,omitempty" xml:"ImportAddressList,omitempty"`
+}
+
+func (s ListAddressResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAddressResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListAddressResponseBody) SetImportAddressList(v *ListAddressResp) *ListAddressResponseBody {
+	s.ImportAddressList = v
+	return s
+}
+
+type ListAddressResponse struct {
+	Headers    map[string]*string       `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                   `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListAddressResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListAddressResponse) SetHeaders(v map[string]*string) *ListAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListAddressResponse) SetStatusCode(v int32) *ListAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListAddressResponse) SetBody(v *ListAddressResponseBody) *ListAddressResponse {
+	s.Body = v
+	return s
+}
+
+type ListAgentRequest struct {
+	// example:
+	//
+	// 100
+	Count *int32 `json:"count,omitempty" xml:"count,omitempty"`
+	// example:
+	//
+	// test_agent
+	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
+}
+
+func (s ListAgentRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAgentRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListAgentRequest) SetCount(v int32) *ListAgentRequest {
+	s.Count = &v
+	return s
+}
+
+func (s *ListAgentRequest) SetMarker(v string) *ListAgentRequest {
+	s.Marker = &v
+	return s
+}
+
+type ListAgentResponseBody struct {
+	ImportAgentList *ListAgentResp `json:"ImportAgentList,omitempty" xml:"ImportAgentList,omitempty"`
+}
+
+func (s ListAgentResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAgentResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListAgentResponseBody) SetImportAgentList(v *ListAgentResp) *ListAgentResponseBody {
+	s.ImportAgentList = v
+	return s
+}
+
+type ListAgentResponse struct {
+	Headers    map[string]*string     `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                 `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListAgentResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListAgentResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListAgentResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListAgentResponse) SetHeaders(v map[string]*string) *ListAgentResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListAgentResponse) SetStatusCode(v int32) *ListAgentResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListAgentResponse) SetBody(v *ListAgentResponseBody) *ListAgentResponse {
+	s.Body = v
+	return s
+}
+
+type ListJobRequest struct {
+	// example:
+	//
+	// true
+	All *bool `json:"all,omitempty" xml:"all,omitempty"`
+	// example:
+	//
+	// 1000
+	Count *int32 `json:"count,omitempty" xml:"count,omitempty"`
+	// example:
+	//
+	// test_marker
+	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
+	// example:
+	//
+	// test_parent_job_name
+	ParentName *string `json:"parentName,omitempty" xml:"parentName,omitempty"`
+}
+
+func (s ListJobRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobRequest) SetAll(v bool) *ListJobRequest {
+	s.All = &v
+	return s
+}
+
+func (s *ListJobRequest) SetCount(v int32) *ListJobRequest {
+	s.Count = &v
+	return s
+}
+
+func (s *ListJobRequest) SetMarker(v string) *ListJobRequest {
+	s.Marker = &v
+	return s
+}
+
+func (s *ListJobRequest) SetParentName(v string) *ListJobRequest {
+	s.ParentName = &v
+	return s
+}
+
+type ListJobResponseBody struct {
+	ImportJobList *ListJobResp `json:"ImportJobList,omitempty" xml:"ImportJobList,omitempty"`
+}
+
+func (s ListJobResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobResponseBody) SetImportJobList(v *ListJobResp) *ListJobResponseBody {
+	s.ImportJobList = v
+	return s
+}
+
+type ListJobResponse struct {
+	Headers    map[string]*string   `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32               `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListJobResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListJobResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobResponse) SetHeaders(v map[string]*string) *ListJobResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListJobResponse) SetStatusCode(v int32) *ListJobResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListJobResponse) SetBody(v *ListJobResponseBody) *ListJobResponse {
+	s.Body = v
+	return s
+}
+
+type ListJobHistoryRequest struct {
+	// example:
+	//
+	// 100
+	Count  *int32  `json:"count,omitempty" xml:"count,omitempty"`
+	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
+	// example:
+	//
+	// 1
+	RuntimeId *int32 `json:"runtimeId,omitempty" xml:"runtimeId,omitempty"`
+}
+
+func (s ListJobHistoryRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobHistoryRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobHistoryRequest) SetCount(v int32) *ListJobHistoryRequest {
+	s.Count = &v
+	return s
+}
+
+func (s *ListJobHistoryRequest) SetMarker(v string) *ListJobHistoryRequest {
+	s.Marker = &v
+	return s
+}
+
+func (s *ListJobHistoryRequest) SetRuntimeId(v int32) *ListJobHistoryRequest {
+	s.RuntimeId = &v
+	return s
+}
+
+type ListJobHistoryResponseBody struct {
+	JobHistoryList *ListJobHistoryResp `json:"JobHistoryList,omitempty" xml:"JobHistoryList,omitempty"`
+}
+
+func (s ListJobHistoryResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobHistoryResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobHistoryResponseBody) SetJobHistoryList(v *ListJobHistoryResp) *ListJobHistoryResponseBody {
+	s.JobHistoryList = v
+	return s
+}
+
+type ListJobHistoryResponse struct {
+	Headers    map[string]*string          `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                      `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListJobHistoryResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListJobHistoryResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListJobHistoryResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListJobHistoryResponse) SetHeaders(v map[string]*string) *ListJobHistoryResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListJobHistoryResponse) SetStatusCode(v int32) *ListJobHistoryResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListJobHistoryResponse) SetBody(v *ListJobHistoryResponseBody) *ListJobHistoryResponse {
+	s.Body = v
+	return s
+}
+
+type ListTunnelRequest struct {
+	// example:
+	//
+	// 2
+	Count *int32 `json:"count,omitempty" xml:"count,omitempty"`
+	// example:
+	//
+	// 1
+	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
+}
+
+func (s ListTunnelRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListTunnelRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListTunnelRequest) SetCount(v int32) *ListTunnelRequest {
+	s.Count = &v
+	return s
+}
+
+func (s *ListTunnelRequest) SetMarker(v string) *ListTunnelRequest {
+	s.Marker = &v
+	return s
+}
+
+type ListTunnelResponseBody struct {
+	// 2
+	ImportTunnelList *ListTunnelResp `json:"ImportTunnelList,omitempty" xml:"ImportTunnelList,omitempty"`
+}
+
+func (s ListTunnelResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListTunnelResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListTunnelResponseBody) SetImportTunnelList(v *ListTunnelResp) *ListTunnelResponseBody {
+	s.ImportTunnelList = v
+	return s
+}
+
+type ListTunnelResponse struct {
+	Headers    map[string]*string      `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                  `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListTunnelResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListTunnelResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListTunnelResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListTunnelResponse) SetHeaders(v map[string]*string) *ListTunnelResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListTunnelResponse) SetStatusCode(v int32) *ListTunnelResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListTunnelResponse) SetBody(v *ListTunnelResponseBody) *ListTunnelResponse {
+	s.Body = v
+	return s
+}
+
+type UpdateAddressRequest struct {
+	ImportAddress *UpdateAddressInfo `json:"ImportAddress,omitempty" xml:"ImportAddress,omitempty"`
+}
+
+func (s UpdateAddressRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateAddressRequest) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateAddressRequest) SetImportAddress(v *UpdateAddressInfo) *UpdateAddressRequest {
+	s.ImportAddress = v
+	return s
+}
+
+type UpdateAddressResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s UpdateAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateAddressResponse) SetHeaders(v map[string]*string) *UpdateAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *UpdateAddressResponse) SetStatusCode(v int32) *UpdateAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type UpdateJobRequest struct {
+	ImportJob *UpdateJobInfo `json:"ImportJob,omitempty" xml:"ImportJob,omitempty"`
+}
+
+func (s UpdateJobRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateJobRequest) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateJobRequest) SetImportJob(v *UpdateJobInfo) *UpdateJobRequest {
+	s.ImportJob = v
+	return s
+}
+
+type UpdateJobResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s UpdateJobResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateJobResponse) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateJobResponse) SetHeaders(v map[string]*string) *UpdateJobResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *UpdateJobResponse) SetStatusCode(v int32) *UpdateJobResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type UpdateTunnelRequest struct {
+	ImportTunnel *UpdateTunnelInfo `json:"ImportTunnel,omitempty" xml:"ImportTunnel,omitempty"`
+}
+
+func (s UpdateTunnelRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateTunnelRequest) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateTunnelRequest) SetImportTunnel(v *UpdateTunnelInfo) *UpdateTunnelRequest {
+	s.ImportTunnel = v
+	return s
+}
+
+type UpdateTunnelResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s UpdateTunnelResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s UpdateTunnelResponse) GoString() string {
+	return s.String()
+}
+
+func (s *UpdateTunnelResponse) SetHeaders(v map[string]*string) *UpdateTunnelResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *UpdateTunnelResponse) SetStatusCode(v int32) *UpdateTunnelResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type VerifyAddressResponseBody struct {
+	// 1
+	VerifyAddressResponse *VerifyAddressResp `json:"VerifyAddressResponse,omitempty" xml:"VerifyAddressResponse,omitempty"`
+}
+
+func (s VerifyAddressResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s VerifyAddressResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *VerifyAddressResponseBody) SetVerifyAddressResponse(v *VerifyAddressResp) *VerifyAddressResponseBody {
+	s.VerifyAddressResponse = v
+	return s
+}
+
+type VerifyAddressResponse struct {
+	Headers    map[string]*string         `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                     `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *VerifyAddressResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s VerifyAddressResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s VerifyAddressResponse) GoString() string {
+	return s.String()
+}
+
+func (s *VerifyAddressResponse) SetHeaders(v map[string]*string) *VerifyAddressResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *VerifyAddressResponse) SetStatusCode(v int32) *VerifyAddressResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *VerifyAddressResponse) SetBody(v *VerifyAddressResponseBody) *VerifyAddressResponse {
+	s.Body = v
+	return s
+}
