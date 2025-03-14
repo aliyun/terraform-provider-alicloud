@@ -16,6 +16,7 @@ import (
 var typeRegistry = make(map[string]reflect.Type)
 
 func init() {
+	// for oss
 	typeRegistry["CompleteMultipartUpload"] = reflect.TypeOf(CompleteMultipartUploadResponseBody{})
 	typeRegistry["CopyObject"] = reflect.TypeOf(CopyObjectResponseBody{})
 	typeRegistry["CreateAccessPoint"] = reflect.TypeOf(CreateAccessPointResponseBody{})
@@ -85,6 +86,21 @@ func init() {
 	typeRegistry["ListStyle"] = reflect.TypeOf(ListStyleResponseBody{})
 	typeRegistry["PutLiveChannel"] = reflect.TypeOf(PutLiveChannelResponseBody{})
 	typeRegistry["UploadPartCopy"] = reflect.TypeOf(UploadPartCopyResponseBody{})
+
+	// for hcs-mgw
+	typeRegistry["GetAddress"] = reflect.TypeOf(GetAddressResponseBody{})
+	typeRegistry["GetAgent"] = reflect.TypeOf(GetAgentResponseBody{})
+	typeRegistry["GetAgentStatus"] = reflect.TypeOf(GetAgentStatusResponseBody{})
+	typeRegistry["GetJob"] = reflect.TypeOf(GetJobResponseBody{})
+	typeRegistry["GetJobResult"] = reflect.TypeOf(GetJobResultResponseBody{})
+	typeRegistry["GetReport"] = reflect.TypeOf(GetReportResponseBody{})
+	typeRegistry["GetTunnel"] = reflect.TypeOf(GetTunnelResponseBody{})
+	typeRegistry["ListAddress"] = reflect.TypeOf(ListAddressResponseBody{})
+	typeRegistry["ListAgent"] = reflect.TypeOf(ListAgentResponseBody{})
+	typeRegistry["ListJob"] = reflect.TypeOf(ListJobResponseBody{})
+	typeRegistry["ListJobHistory"] = reflect.TypeOf(ListJobHistoryResponseBody{})
+	typeRegistry["ListTunnel"] = reflect.TypeOf(ListTunnelResponseBody{})
+	typeRegistry["VerifyAddress"] = reflect.TypeOf(VerifyAddressResponseBody{})
 }
 
 func ParseXml(bodyStr *string, apiName *string) (_result interface{}, _err error) {
