@@ -55,26 +55,26 @@ resource "alicloud_esa_network_optimization" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `grpc` - (Optional) Indicates whether to enable GRPC, disabled by default. Possible values:
-  - on: Enable
-  - off: Disable
-* `http2_origin` - (Optional) Indicates whether to enable HTTP2 origin, disabled by default. Possible values:
-  - on: Enable
-  - off: Disable
+* `grpc` - (Optional) Whether to enable GRPC, default is disabled. Value range:
+  - `on`: Enabled
+  - `off`: Disabled
+* `http2_origin` - (Optional) Whether to enable HTTP2 origin, default is disabled. Value range:
+  - `on`: Enabled
+  - `off`: Disabled
 * `rule` - (Optional) Rule content.
-* `rule_enable` - (Optional) Rule switch. Possible values:
-  - on: Enable
-  - off: Disable
-* `rule_name` - (Optional) Rule name, which can be used to find the rule with the specified name.
-* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
-* `site_version` - (Optional, ForceNew, Int) Version number of the site configuration. For sites with version management enabled, this parameter specifies the version to which the configuration applies, defaulting to version 0.
-* `smart_routing` - (Optional) Indicates whether to enable smart routing service, disabled by default. Possible values:
-  - on: Enable
-  - off: Disable
+* `rule_enable` - (Optional) Rule switch. Values:
+  - `on`: Enabled
+  - `off`: Disabled
+* `rule_name` - (Optional) Rule name.
+* `site_id` - (Required, ForceNew, Int) Site ID.
+* `site_version` - (Optional, ForceNew, Int) Site version number.
+* `smart_routing` - (Optional) Whether to enable smart routing service, default is disabled. Value range:
+  - `on`: Enabled
+  - `off`: Disabled
 * `upload_max_filesize` - (Optional) Maximum upload file size, in MB, value range: 100～500.
-* `websocket` - (Optional) Indicates whether to enable Websocket, enabled by default. Possible values:
-  - on: Enable
-  - off: Disable
+* `websocket` - (Optional) Whether to enable Websocket, default is enabled. Value range:
+  - `on`: Enabled
+  - `off`: Disabled
 
 ## Attributes Reference
 

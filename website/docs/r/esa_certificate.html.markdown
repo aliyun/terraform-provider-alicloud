@@ -44,21 +44,22 @@ resource "alicloud_esa_certificate" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cas_id` - (Optional) The certificate ID on Certificate Management Service.
-* `cert_id` - (Optional, ForceNew, Computed) The certificate ID on ESA.
+* `cas_id` - (Optional) Cloud certificate ID.
+* `cert_id` - (Optional, ForceNew, Computed) The certificate Id.
 * `cert_name` - (Optional) The certificate name.
-* `certificate` - (Optional) The certificate content.
-* `created_type` - (Required) The certificate ID on Certificate Management Service. Valid values:
-  - free: a free certificate.
+* `certificate` - (Optional) The certificate type. Valid values:
+
   - cas: a certificate purchased by using Certificate Management Service.
   - upload: a custom certificate that you upload.
-* `domains` - (Optional, ForceNew) The Subject Alternative Name (SAN) of the certificate.
-* `private_key` - (Optional) The certificate content.
-* `region` - (Optional) The private key of the certificate.
-* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) interface.
-* `type` - (Optional, ForceNew) The certificate type. Valid values:
-  - cas: a certificate purchased by using Certificate Management Service.
-  - upload: a custom certificate that you upload.
+* `created_type` - (Required) The certificate type.
+  - cas (Certificate Center Certificate)
+  - upload (custom upload certificate)
+  - free( Free certificate).
+* `domains` - (Optional, ForceNew) A list of domain names. Multiple domain names are separated by commas.
+* `private_key` - (Optional) The certificate private key.
+* `region` - (Optional) Geographical information.
+* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites interface.
+* `type` - (Optional, ForceNew) Certificate type. Possible values: lets_encrypt: Let's Encrypt certificate; 
 
 ## Attributes Reference
 

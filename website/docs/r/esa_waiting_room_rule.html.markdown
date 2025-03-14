@@ -74,20 +74,19 @@ resource "alicloud_esa_waiting_room_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `rule` - (Required) Specifies whether to enable the rule. Valid values:
-
-  - on
-  - off
-* `rule_name` - (Required) Optional. The rule ID, which can be used to query a specific rule.
+* `rule` - (Required) The content of the rule, the implemented policy or conditional expression.
+* `rule_name` - (Required) Rule name, optional, used to query by waiting room bypass rule name.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
-* `status` - (Required) The rule name.
-* `waiting_room_id` - (Required, ForceNew) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
+* `status` - (Required) Rule enabled status, supporting:
+  -'on': means enabled.
+  -'off': means disabled.
+* `waiting_room_id` - (Required, ForceNew) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_rule_id>`.
-* `waiting_room_rule_id` - WaitingRoomRuleId Id
+* `waiting_room_rule_id` - The rule ID, which can be used to query a specific rule.
 
 ## Timeouts
 

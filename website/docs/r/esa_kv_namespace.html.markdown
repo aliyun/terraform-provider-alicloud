@@ -37,13 +37,13 @@ resource "alicloud_esa_kv_namespace" "default" {
 
 The following arguments are supported:
 * `description` - (Optional, ForceNew) The description of the namespace.
-* `kv_namespace` - (Required, ForceNew) KV storage space name
+* `kv_namespace` - (Required, ForceNew) The name of the namespace.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `status` - KV storage space State
+* `status` - The status of the namespace. 
 
 ## Timeouts
 

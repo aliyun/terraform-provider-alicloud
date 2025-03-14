@@ -77,7 +77,7 @@ The following arguments are supported:
 
   - `on`
   - `off`
-* `rule_name` - (Optional) 规则名，可以查出规则名为所传字段的那条规则，只有传了functionName才生效
+* `rule_name` - (Optional) The name of the rule.
 * `site_id` - (Required, ForceNew, Int) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 * `site_version` - (Optional, ForceNew, Int) The version of the website configurations.
 * `status_code` - (Required) The response code that you want to use to indicate URL redirection. Valid values:

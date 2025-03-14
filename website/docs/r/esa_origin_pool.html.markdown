@@ -104,8 +104,8 @@ The following arguments are supported:
   - `true`: Enabled;
   - `false`: Not enabled.
 * `origin_pool_name` - (Required, ForceNew) The source address pool name.
-* `origins` - (Optional, List) The Source station information added to the source address pool. Multiple Source stations use arrays to transfer values. See [`origins`](#origins) below.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
+* `origins` - (Optional, Set) The Source station information added to the source address pool. Multiple Source stations use arrays to transfer values. See [`origins`](#origins) below.
+* `site_id` - (Required, ForceNew, Int) The site ID.
 
 ### `origins`
 
@@ -118,7 +118,7 @@ The origins supports the following:
 * `header` - (Optional) The request header that is sent when returning to the source. Only Host is supported.
 * `name` - (Optional) Origin Name.
 * `type` - (Optional) Source station type:
-  - `ip_domain`: ip or domain name type origin station;
+ip_domain: ip or domain name type origin station;
   - `OSS`:OSS address source station;
   - `S3`:AWS S3 Source station.
 * `weight` - (Optional, Int) Weight, 0-100.

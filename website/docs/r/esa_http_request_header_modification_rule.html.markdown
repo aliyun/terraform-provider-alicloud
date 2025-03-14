@@ -74,10 +74,10 @@ The following arguments are supported:
 * `request_header_modification` - (Required, List) The configurations of modifying request headers. You can add, delete, or modify a request header. See [`request_header_modification`](#request_header_modification) below.
 * `rule` - (Optional) The rule content.
 * `rule_enable` - (Optional) Rule switch. Value range:
-on: Open.
-off: off.
+  - `on`: Open.
+  - `off`: off.
 * `rule_name` - (Optional) Rule Name.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
+* `site_id` - (Required, ForceNew, Int) The site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the website configurations.
 
 ### `request_header_modification`
@@ -85,9 +85,9 @@ off: off.
 The request_header_modification supports the following:
 * `name` - (Required) Request Header Name.
 * `operation` - (Required) Mode of operation. Value range:
-add: add.
-del: delete
-modify: change.
+  - `add`: add.
+  - `del`: delete
+  - `modify`: change.
 * `value` - (Optional) Request header value
 
 ## Attributes Reference

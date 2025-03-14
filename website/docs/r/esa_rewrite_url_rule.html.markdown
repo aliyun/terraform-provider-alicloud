@@ -69,12 +69,12 @@ resource "alicloud_esa_rewrite_url_rule" "default" {
 
 The following arguments are supported:
 * `query_string` - (Optional) The desired query string to which you want to rewrite the query string in the original request.
-* `rewrite_query_string_type` - (Optional) The query string rewrite method. Valid value:
-
-  - static
-* `rewrite_uri_type` - (Optional) The path rewrite method. Valid value:
-
-  - static
+* `rewrite_query_string_type` - (Optional) Query string rewrite type. Value range:
+  - `static`: Static mode.
+  - `dynamic`: Dynamic mode.
+* `rewrite_uri_type` - (Optional) URI rewrite type. Value range:
+  - `static`: Static mode.
+  - `dynamic`: Dynamic mode.
 * `rule` - (Optional) The rule content.
 * `rule_enable` - (Optional) Indicates whether the rule is enabled. Valid values:
 

@@ -77,52 +77,43 @@ resource "alicloud_esa_waiting_room" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cookie_name` - (Required) The name of the custom cookie.
-* `custom_page_html` - (Optional) The HTML content or identifier of the custom queuing page. This parameter is valid only when `WaitingRoomType` is set to `custom`. The content must be URL-encoded.
-* `description` - (Optional) Specifies whether to enable JSON response. If you set this parameter to on, a JSON body is returned for requests to the waiting room with the header Accept: application/json. Valid values:
-
-  - on
-  - off
-* `disable_session_renewal_enable` - (Optional) The maximum duration for which a session remains valid after a user leaves the origin. Unit: minutes.
-* `host_name_and_path` - (Required, List) The details of the hostname and path. See [`host_name_and_path`](#host_name_and_path) below.
-* `json_response_enable` - (Optional) Indicates whether JSON response is enabled. If you set this parameter to on, a JSON body is returned for requests to the waiting room with the header Accept: application/json. Valid values:
-
-  - on
-  - off
-* `language` - (Optional) The language of the waiting room page. This parameter is returned when the waiting room type is set to default. Valid values:
-
-  - enus: English.
-  - zhcn: Simplified Chinese.
-  - zhhk: Traditional Chinese.
-* `new_users_per_minute` - (Required) The maximum number of new users per minute.
-* `queue_all_enable` - (Optional) Indicates whether all requests must be queued. Valid values:
-
-  - on
-  - off
-* `queuing_method` - (Required) The queuing method. Valid values:
-
-  - random: Users gain access to the origin randomly, regardless of the arrival time.
-  - fifo: Users gain access to the origin in order of arrival.
-  - passthrough: Users pass through the waiting room and go straight to the origin.
-  - reject-all: Users are blocked from reaching the origin.
-* `queuing_status_code` - (Required) The queuing method. Valid values:
-
-  - random: Users gain access to the origin randomly, regardless of the arrival time.
-  - fifo: Users gain access to the origin in order of arrival.
-  - passthrough: Users pass through the waiting room and go straight to the origin.
-  - reject-all: Users are blocked from reaching the origin.
-* `session_duration` - (Required) The maximum duration for which a session remains valid after a user leaves the origin. Unit: minutes.
-* `site_id` - (Required, ForceNew, Int) 
-* `status` - (Required) The ID of the waiting room, which can be obtained by calling the [ListWaitingRooms](https://www.alibabacloud.com/help/en/doc-detail/2850279.html) operation.
-* `total_active_users` - (Required) The maximum number of active users.
-* `waiting_room_name` - (Required) Specifies whether to enable the waiting room. Valid values:
-
-  - on
-  - off
-* `waiting_room_type` - (Required) The type of the waiting room. Valid values:
-
-  - default
-  - custom
+* `cookie_name` - (Required) Custom Cookie name.
+* `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
+* `description` - (Optional) Waiting room description.
+* `disable_session_renewal_enable` - (Optional) Disable session renewal. Value:
+  -'on': open.
+  -'off': closed.
+* `host_name_and_path` - (Required, List) Host name and path. See [`host_name_and_path`](#host_name_and_path) below.
+* `json_response_enable` - (Optional) The JSON response. If the accept request header contains "application/json", JSON data is returned. Value:
+  -'on': open.
+  -'off': closed.
+* `language` - (Optional) The language of the waiting room page. When the waiting room type is the default type, it needs to be passed in. The following types are supported:
+  -'enus': English.
+  -'zhcn': Simplified Chinese.
+  -'zhhk': Traditional Chinese.
+* `new_users_per_minute` - (Required) Number of new users per minute.
+* `queue_all_enable` - (Optional) All in line. Value:
+  -'on': open.
+  -'off': closed.
+* `queuing_method` - (Required) Way of queuing. Value:
+  -'random': random.
+  -'fifo': first in, first out.
+  -'Passthrough ': through.
+  -'Reject-all': reject all.
+* `queuing_status_code` - (Required) Waiting room status code. Value:
+  -'200'
+  -'202'
+  -'429'
+* `session_duration` - (Required) Session duration in minutes.
+* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
+* `status` - (Required) Waiting room enabled status. Value:
+  -'on': Enable waiting room
+  -'off': disabled waiting room
+* `total_active_users` - (Required) Total number of active users.
+* `waiting_room_name` - (Required) The name of the waiting room.
+* `waiting_room_type` - (Required) Waiting room type, support:
+  -'default': Indicates the default type.
+  -'custom': indicates a custom type.
 
 ### `host_name_and_path`
 
@@ -135,7 +126,7 @@ The host_name_and_path supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>`.
-* `waiting_room_id` - The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
+* `waiting_room_id` - The waiting room ID, which can be obtained by calling the [ListWaitingRooms](https://help.aliyun.com/document_detail/2850279.html) API.
 
 ## Timeouts
 
