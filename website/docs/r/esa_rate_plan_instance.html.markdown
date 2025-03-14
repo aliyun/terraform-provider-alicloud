@@ -50,47 +50,36 @@ resource "alicloud_esa_rate_plan_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auto_pay` - (Optional) Whether to pay automatically.
-* `auto_renew` - (Optional) Auto Renew:
-
-  true: Automatic renewal.
-
-  false: Do not renew automatically.
-* `coverage` - (Optional) Acceleration area:
-
-  domestic: Mainland China only.
-
-  global: global.
-
-  overseas: Global (excluding Mainland China).
-* `payment_type` - (Optional, ForceNew, Computed) The payment type of the resource
-* `period` - (Optional, Int) Purchase cycle (in months).
-* `plan_name` - (Optional) The plan name, which is obtained from the DescribeRatePlanPrice interface.
-* `type` - (Optional) Site access type:
-
-  NS:NS access.
-
-  CNAME:CNAME access.
+* `payment_type` - (Optional, ForceNew) The payment type of the resource. Valid values:
+  - `Subscription`: subscription.
+* `auto_pay` - (Optional) Specifies whether to enable auto payment.
+* `auto_renew` - (Optional) Auto-renewal:
+  - `true`: Enable auto-renewal.
+  - `false`: Disable auto-renewal.
+* `coverage` - (Optional) The service locations for the websites that can be associated with the plan. Multiple values are separated by commas (,). Valid values:
+  - `domestic`: the Chinese mainland.
+  - `overseas`: outside the Chinese mainland.
+  - `global`: global.
+* `period` - (Optional, Int) Subscription period (in months).
+* `plan_name` - (Optional) Package name.
+* `type` - (Optional) The DNS setup option for the website. Valid values:
+  - `NS`
+  - `CNAME`
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The new purchase time of the package instance.
-* `instance_status` - Renewing: renewing
-
-  upgrading: upgrading
-
-  releasePrepaidService: Prepaid overdue release
-
-  creating: creating
-
-  downgrading: downgrading
-
-  ceasePrepaidService: prepaid service
-
-  running: running
-* `status` - The status of the resource
+* `create_time` - The time when the plan was purchased.
+* `status` - The status of the resource.
+* `instance_status` - The plan instance status.
+  - `Renewing`: renewing
+  - `upgrading`: upgrading
+  - `releasePrepaidService`: Prepaid overdue release
+  - `creating`: creating
+  - `downgrading`: downgrading
+  - `ceasePrepaidService`: prepaid service
+  - `running`: running
 
 ## Timeouts
 

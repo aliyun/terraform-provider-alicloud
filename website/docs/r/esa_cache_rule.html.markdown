@@ -63,66 +63,66 @@ resource "alicloud_esa_cache_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `additional_cacheable_ports` - (Optional) Enable caching on the specified port. value: 8880, 2052, 2082, 2086, 2095, 2053, 2083, 2087, 2096.
-* `browser_cache_mode` - (Optional) Browser cache mode. value:
-  -`no_cache`: Not cached.
-  -`follow_origin`: follows the Origin cache policy.
-  -`override_origin`: replaces the Origin cache policy.
-* `browser_cache_ttl` - (Optional) The browser cache expiration time, in seconds.
-* `bypass_cache` - (Optional) Set the cache bypass mode. value:
-  -`cache_all`: All requests are cached.
-  -`bypass_all`: All requests bypass the cache.
-* `cache_deception_armor` - (Optional) Cache spoofing defense. Used to defend against Web cache spoofing attacks, the cached content that passes the check is cached. value:
-  -`on`: open.
-  -`off`: off.
-* `cache_reserve_eligibility` - (Optional) Cache retention eligibility. Used to control whether the user request bypasses the cache retention node when returning to the source. value:
- -`bypass_cache_reserve`: Request to bypass cache hold.
- -`eligible_for_cache_reserve`: Eligible for cache retention.
-* `check_presence_cookie` - (Optional) When generating the cache key, check whether the cookie exists, and if so, add the cookie name to the cache key (the cookie name is not case sensitive). Multiple cookie names are supported, with multiple values separated by spaces.
-* `check_presence_header` - (Optional) When the cache key is generated, check whether the header exists. If the header exists, add the header name to the cache key (the header name is not case sensitive). You can enter multiple header names, with multiple values separated by spaces.
-* `edge_cache_mode` - (Optional) Node cache mode. value:
-  -`follow_origin`: follows the Origin cache policy (if it exists), otherwise the default cache policy is used.
-  -`no_cache`: Not cached.
-  -`override_origin`: replaces the Origin cache policy.
-  -`follow_origin_bypass`: follows the Origin cache policy (if it exists), otherwise it is not cached.
-* `edge_cache_ttl` - (Optional) The node cache expiration time, in seconds.
-* `edge_status_code_cache_ttl` - (Optional) Status code cache expiration time, in seconds.
-* `include_cookie` - (Optional) When generating a cache key, it includes the specified cookie name and its value. You can enter multiple values separated by spaces.
-* `include_header` - (Optional) When generating a cache key, it includes the specified header name and its value. You can enter multiple values separated by spaces.
-* `query_string` - (Optional) The query string to be retained or deleted. You can enter multiple values separated by spaces.
-* `query_string_mode` - (Optional) The processing mode for the query string when the cache key is generated. value:
-  -`ignore_all`: Ignore all.
-  -`exclude_query_string`: deletes the specified query string.
-  -`reserve_all`: default value, all reserved.
-  -`include_query_string`: Retains the specified query string.
+* `additional_cacheable_ports` - (Optional) Enable caching on specified ports. Value range: 8880, 2052, 2082, 2086, 2095, 2053, 2083, 2087, 2096
+* `browser_cache_mode` - (Optional) Browser cache mode. Possible values:
+  - `no_cache`no_cache: Do not cache.
+  - `follow_origin`: Follow the origin server's cache policy.
+  - `override_origin`: Override the origin server's cache policy.
+* `browser_cache_ttl` - (Optional) Browser cache expiration time in seconds.
+* `bypass_cache` - (Optional) Set the bypass cache mode. Possible values:
+  - `cache_all`: Cache all requests.
+  - `bypass_all`: Bypass cache for all requests.
+* `cache_deception_armor` - (Optional) Cache deception protection. Used to defend against web cache deception attacks, only the cache content that passes the validation will be cached. Value range:
+  - `on`: Enabled.
+  - `off`: Disabled.
+* `cache_reserve_eligibility` - (Optional) Cache retention eligibility. Used to control whether user requests bypass the cache retention node when returning to the origin. Possible values:
+  - `bypass_cache_reserve`: Requests bypass cache retention.
+  - `eligible_for_cache_reserve`: Eligible for cache retention.
+* `check_presence_cookie` - (Optional) When generating the cache key, check if the cookie exists. If it does, add the cookie name (case-insensitive) to the cache key. Multiple cookie names are supported, separated by spaces.
+* `check_presence_header` - (Optional) When generating the cache key, check if the header exists. If it does, add the header name (case-insensitive) to the cache key. Multiple header names are supported, separated by spaces.
+* `edge_cache_mode` - (Optional) Edge cache mode. Possible values:
+  - `follow_origin`: Follow the origin server's cache policy (if it exists), otherwise use the default cache policy.
+  - `no_cache`: Do not cache.
+  - `override_origin`: Override the origin server's cache policy.
+  - `follow_origin_bypass`: Follow the origin server's cache policy (if it exists), otherwise do not cache.
+* `edge_cache_ttl` - (Optional) Edge cache expiration time in seconds.
+* `edge_status_code_cache_ttl` - (Optional) Status code cache expiration time in seconds.
+* `include_cookie` - (Optional) When generating the cache key, add the specified cookie names and their values. Multiple values are supported, separated by spaces.
+* `include_header` - (Optional) When generating the cache key, add the specified header names and their values. Multiple values are supported, separated by spaces.
+* `query_string` - (Optional) Query strings to be reserved or excluded. Multiple values are supported, separated by spaces.
+* `query_string_mode` - (Optional) The processing mode for query strings when generating the cache key. Possible values:
+  - `ignore_all`: Ignore all.
+  - `exclude_query_string`: Exclude specified query strings.
+  - `reserve_all`: Default, reserve all.
+  - `include_query_string`: Include specified query strings.
 * `rule` - (Optional) The rule content.
-* `rule_enable` - (Optional) Rule switch. value:
-  - `on`: open.
-  - `off`: off.
+* `rule_enable` - (Optional) Rule switch. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
 * `rule_name` - (Optional) Rule name, you can find out the rule whose rule name is the passed field.
-* `serve_stale` - (Optional) Response expiration cache. After enabling, nodes can still use cached expired files to respond to user requests even if the source server is unavailable. value:
-  -`on`: open.
-  -`off`: off.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the [ListSites](~~ ListSites ~~) API.
-* `site_version` - (Optional, ForceNew, Int) Version number of the site configuration. For a site with configuration version management enabled, you can use this parameter to specify the site version in which the configuration takes effect. The default version is 0.
-* `sort_query_string_for_cache` - (Optional) Query string sorting, which is disabled by default. value:
-  -`on`: open.
-  -`off`: off.
-* `user_device_type` - (Optional) When generating the cache key, add the client device type. value:
-  -`on`: open.
-  -`off`: off.
-* `user_geo` - (Optional) When generating the cache key, add the client geographic location. value:
-  -`on`: open.
-  -`off`: off.
-* `user_language` - (Optional) When generating the cache key, add the client language type. value:
-  -`on`: open.
-  -`off`: off.
+* `serve_stale` - (Optional) Serve stale cache. When enabled, the node can still respond to user requests with expired cached files when the origin server is unavailable. Value range:
+  - `on`: Enabled.
+  - `off`: Disabled.
+* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the [ListSites] API.
+* `site_version` - (Optional, ForceNew, Int) Version number of the site configuration. For sites with version management enabled, you can use this parameter to specify the version for the configuration to take effect. The default is version 0.
+* `sort_query_string_for_cache` - (Optional) Query string sorting, disabled by default. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
+* `user_device_type` - (Optional) When generating the cache key, add the client device type. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
+* `user_geo` - (Optional) When generating the cache key, add the client's geographic location. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
+* `user_language` - (Optional) When generating cache keys, include the client's language type. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<cache_rule_id>`.
-* `cache_rule_id` - The configured ConfigId. You can call the [ListCacheRules](~~ ListCacheRules ~~) operation to obtain the ConfigId.
+* `cache_rule_id` - Cache Rule Id.
 
 ## Timeouts
 

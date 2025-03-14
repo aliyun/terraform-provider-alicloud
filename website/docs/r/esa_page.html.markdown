@@ -46,13 +46,10 @@ resource "alicloud_esa_page" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `content` - (Optional) The Content-Type field in the HTTP header. Valid values:
-
-  - text/html
-  - application/json
-* `content_type` - (Required) The description of the custom error page.
-* `description` - (Optional) The name of the custom error page.
-* `page_name` - (Required) The ID of the custom error page, which can be obtained by calling the [ListPages](https://www.alibabacloud.com/help/en/doc-detail/2850223.html) operation.
+* `content` - (Optional) The Base64-encoded content of the error page. The content type is specified by the Content-Type field.
+* `content_type` - (Required) The Content-Type field in the HTTP header.
+* `description` - (Optional) The description of the custom error page.
+* `page_name` - (Required) The name of the custom response page.
 
 ## Attributes Reference
 

@@ -50,10 +50,10 @@ resource "alicloud_esa_list" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) The new description of the list.
-* `items` - (Optional, List) The items in the updated list. The value is a JSON array.
-* `kind` - (Optional, ForceNew) The type of the list that you want to create.
-* `name` - (Required) The new name of the list.
+* `description` - (Optional) The description of the custom list.
+* `items` - (Optional, List) The items in the custom list, which are displayed as an array.
+* `kind` - (Optional, ForceNew) The type of the custom list.
+* `name` - (Required) The name of the custom list.
 
 ## Attributes Reference
 

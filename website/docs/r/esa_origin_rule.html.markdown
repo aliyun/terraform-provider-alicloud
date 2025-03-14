@@ -68,14 +68,14 @@ The following arguments are supported:
   - `on`: Open.
   - `off`: off.
 * `rule_name` - (Optional) Rule Name.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
+* `site_id` - (Required, ForceNew, Int) The site ID.
 * `site_version` - (Optional, ForceNew, Int) Version number of the site.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
-* `config_id` - Config Id
+* `config_id` - Back-to-source rule configuration ID
 
 ## Timeouts
 

@@ -65,33 +65,38 @@ resource "alicloud_esa_site" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_type` - (Optional, ForceNew) Site Access Type
-* `add_client_geolocation_header` - (Optional, Available since v1.244.0) Add the Visitor geolocation header. Value range:
-  - on
-  - off
+* `access_type` - (Optional, ForceNew) The DNS setup. Valid values:
+  - `NS`
+  - `CNAME`
+* `add_client_geolocation_header` - (Optional, Available since v1.244.0) Add visitor geolocation header. Value range:
+  - `on`: Enable.
+  - `off`: Disable.
 * `add_real_client_ip_header` - (Optional, Available since v1.244.0) Add the "ali-real-client-ip" header containing the real client IP. Value range:
-  - on
-  - off
-* `cache_architecture_mode` - (Optional, Available since v1.244.0) Multi-level cache architecture pattern. Value range:
-edge: edge caching layer.
-edge_smart: Edge Cache layer + Smart Cache layer.
-edge_regional: Edge Cache layer + regional cache layer.
-edge_regional_smart: Edge Cache layer + regional cache layer + intelligent cache layer.
-* `coverage` - (Optional) Acceleration area
+  - `on`: Enable.
+  - `off`: Disable.
+* `cache_architecture_mode` - (Optional, Computed, Available since v1.244.0) Multi-level cache architecture mode. Possible values:
+  - `edge`: Edge cache layer.
+  - `edge_smart`: Edge cache layer + intelligent cache layer.
+  - `edge_regional`: Edge cache layer + regional cache layer.
+  - `edge_regional_smart`: Edge cache layer + regional cache layer + intelligent cache layer.
+* `coverage` - (Optional) The service location. Valid values:
+  - `domestic`: the Chinese mainland
+  - `global`: global
+  - `overseas`: outside the Chinese mainland
 * `instance_id` - (Required, ForceNew) The ID of the associated package instance.
-* `ipv6_enable` - (Optional, Available since v1.244.0) IPv6 switch. Value:
-  - on
-  - off
+* `ipv6_enable` - (Optional, Computed, Available since v1.244.0) Specifies whether to enable IPv6. Valid values:
+  - `on`
+  - `off`
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group
-* `site_name` - (Required, ForceNew) Site Name
-* `site_version` - (Optional, Int, Available since v1.244.0) The version number of the site. For a site with version management enabled, you can use this parameter to specify the effective site version. The default version is 0.
+* `site_name` - (Required, ForceNew) The website name.
+* `site_version` - (Optional, Int, Available since v1.244.0) The version number of the site. For sites with version management enabled, you can use this parameter to specify the site version for which the configuration will take effect, defaulting to version 0.
 * `tags` - (Optional, Map) Resource tags
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - Creation time
+* `create_time` - The time when the website was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `status` - The status of the resource
 
 ## Timeouts

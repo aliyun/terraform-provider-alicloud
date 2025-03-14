@@ -89,59 +89,54 @@ resource "alicloud_esa_waiting_room_event" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `custom_page_html` - (Optional) The type of the waiting room. Valid values:
-
-  - default
-  - custom
-* `description` - (Optional) Specifies whether to enable JSON response. Valid values:
-
-  - on
-  - off
-* `disable_session_renewal_enable` - (Optional) The maximum duration for which a session remains valid after a user leaves the origin. Unit: minutes.
-* `end_time` - (Required) The start time of the event. This value is a UNIX timestamp.
-* `json_response_enable` - (Optional) The HTTP status code to return while a user is in the queue. Valid values:
-
-  - 200
-  - 202
-  - 429
-* `language` - (Optional) Specifies whether to enable random queuing.
-
-  - on
-  - off
-* `new_users_per_minute` - (Required) The maximum number of active users.
-* `pre_queue_enable` - (Optional) The end time of the event. This value is a UNIX timestamp.
-* `pre_queue_start_time` - (Optional) Specifies whether to enable pre-queuing.
-
-  - on
-  - off
-* `queuing_method` - (Required) Specifies whether to disable session renewal. Valid values:
-
-  - on
-  - off
-* `queuing_status_code` - (Required) The queuing method. Valid values:
-
-  - random: Users gain access to the origin randomly, regardless of the arrival time.
-  - fifo: Users gain access to the origin in order of arrival.
-  - passthrough: Users pass through the waiting room and go straight to the origin.
-  - reject-all: All requests are blocked from accessing the origin.
-* `random_pre_queue_enable` - (Optional) The start time for pre-queuing.
-* `session_duration` - (Required) The maximum number of new users per minute.
+* `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
+* `description` - (Optional) Waiting room description.
+* `disable_session_renewal_enable` - (Optional) Disable session renewal. Value:
+  -'on': open.
+  -'off': closed.
+* `end_time` - (Required) The timestamp of the end time of the event.
+* `json_response_enable` - (Optional) JSON response switch. Value:
+  -'on': open.
+  -'off': closed.
+* `language` - (Optional) Default language setting. Values include:
+  -'enus': English.
+  -'zhcn': Simplified Chinese.
+  -'zhhk': Traditional Chinese.
+* `new_users_per_minute` - (Required) Number of new users per minute.
+* `pre_queue_enable` - (Optional) Pre-queue switch.
+  -'on': open.
+  -'off': closed.
+* `pre_queue_start_time` - (Optional) Pre-queue start time.
+* `queuing_method` - (Required) Way of queuing. Value:
+  -'random': random.
+  -'fifo': first in, first out.
+  -'passthrough ': through.
+  -'reject-all': reject all.
+* `queuing_status_code` - (Required) Waiting room status code. Value:
+  -'200'
+  -'202'
+  -'429'
+* `random_pre_queue_enable` - (Optional) Random queue switch.
+  -'on': open.
+  -'off': closed.
+* `session_duration` - (Required) User session duration in minutes.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
-* `start_time` - (Required) The content of the custom waiting room page. You must specify this parameter if you set WaitingRoomType to custom. The content must be Base64-encoded.
-* `status` - (Required) The ID of the waiting room event, which can be obtained by calling the [ListWaitingRoomEvents](https://www.alibabacloud.com/help/en/doc-detail/2850279.html) operation.
-* `total_active_users` - (Required) The name of the waiting room event.
-* `waiting_room_event_name` - (Required) Specifies whether to enable the waiting room event. Valid values:
-
-  -   `on`
-  -   `off`
-* `waiting_room_id` - (Optional, ForceNew, Computed) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
-* `waiting_room_type` - (Required) The description of the waiting room.
+* `start_time` - (Required) The timestamp of the event start time.
+* `status` - (Required) Enabled status. Value:
+  -'on': Enable waiting room events
+  -'off': Disable waiting room events
+* `total_active_users` - (Required) Total number of active users.
+* `waiting_room_event_name` - (Required) Event name, custom event description.
+* `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
+* `waiting_room_type` - (Required) Waiting room type. The following types are supported:
+  -'default': the default type.
+  -'custom': custom type.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_event_id>`.
-* `waiting_room_event_id` - The unique ID of the waiting room, which can be obtained by calling the [ListWaitingRooms](https://www.alibabacloud.com/help/en/doc-detail/2850279.html) operation.
+* `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://help.aliyun.com/document_detail/2850279.html) operation.
 
 ## Timeouts
 

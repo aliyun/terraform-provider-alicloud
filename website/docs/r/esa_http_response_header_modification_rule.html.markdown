@@ -79,21 +79,23 @@ resource "alicloud_esa_http_response_header_modification_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `response_header_modification` - (Required, List) The configurations of modifying response headers. You can add, delete, or modify a response header. See [`response_header_modification`](#response_header_modification) below.
-* `rule` - (Optional) The rule content.
-* `rule_enable` - (Optional) Indicates whether the rule is enabled. Valid values:
-
-  - on
-  - off
-* `rule_name` - (Optional) The rule name.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
+* `response_header_modification` - (Required, List) Modify response headers, supporting add, delete, and modify operations. See [`response_header_modification`](#response_header_modification) below.
+* `rule` - (Optional) Rule content.
+* `rule_enable` - (Optional) Rule switch. Possible values:
+  - `on`: Enable.
+  - `off`: Disable.
+* `rule_name` - (Optional) Rule name.
+* `site_id` - (Required, ForceNew, Int) The site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the website configurations.
 
 ### `response_header_modification`
 
 The response_header_modification supports the following:
 * `name` - (Required) The response header name.
-* `operation` - (Required) Mode of operation.
+* `operation` - (Required) Operation method. Possible values:
+  - `add`: Add
+  - `del`: Delete
+  - `modify`: Modify
 * `value` - (Optional) The response header value.
 
 ## Attributes Reference

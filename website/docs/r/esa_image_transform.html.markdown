@@ -52,12 +52,12 @@ resource "alicloud_esa_image_transform" "default" {
 
 The following arguments are supported:
 * `enable` - (Optional) Indicates whether the image transformations feature is enabled. Valid values:
-  - `on`: on
-  - `off`: off
+  -   `on`: on
+  -   `off`: off
 * `rule` - (Optional) The rule content, which is a policy or conditional expression.
 * `rule_enable` - (Optional) Indicates whether the rule is enabled. Valid values:
-  - `on`: on
-  - `off`: off
+  -   `on`: on
+  -   `off`: off
 * `rule_name` - (Optional) Rule name, you can find out the rule whose rule name is the passed field.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) The version number of the website.
