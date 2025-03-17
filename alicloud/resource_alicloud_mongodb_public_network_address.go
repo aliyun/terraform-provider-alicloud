@@ -112,7 +112,7 @@ func resourceAlicloudMongoDBPublicNetworkAddressDelete(d *schema.ResourceData, m
 		return err
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{}, []string{"NotExist"}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongoDBPublicNetworkAddressStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}

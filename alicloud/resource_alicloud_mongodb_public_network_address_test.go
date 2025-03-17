@@ -2,14 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
@@ -27,42 +25,7 @@ func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBPublicNetworkAddressBasicDependence0)
 
 	checkDestroy := func(state *terraform.State) error {
-		strs := strings.Split(rc.resourceId, ".")
-		var resourceType string
-		for _, str := range strs {
-			if strings.Contains(str, "alicloud_") {
-				resourceType = strings.Trim(str, " ")
-				break
-			}
-		}
-		assert.NotEmpty(t, resourceType, "resourceType is empty")
-
-		ddsService := serverFunc().(*MongoDBService)
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type == resourceType {
-				continue
-			}
-
-			object, err := ddsService.DescribeReplicaSetRole(rs.Primary.ID)
-			if err != nil && NotFoundError(err) {
-				continue
-			} else if err != nil {
-				return WrapError(err)
-			}
-
-			if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
-				if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
-					for _, replicaSets := range replicaSetsList.([]interface{}) {
-						replicaSetsArg := replicaSets.(map[string]interface{})
-						networkType, ok := replicaSetsArg["NetworkType"]
-						if ok && networkType == "Public" {
-							return WrapError(Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
-						}
-					}
-				}
-			}
-		}
-
+		// already covered by RdsMongoDBPublicNetworkAddressStateRefreshFunc
 		return nil
 	}
 
@@ -103,13 +66,7 @@ variable "name" {
     default = "%s"
 }
 
-variable "zone_id" {
-  default = "cn-beijing-h"
-}
-
-variable "region_id" {
-  default = "cn-beijing"
-}
+data "alicloud_mongodb_zones" "zones_ids" {}
 
 resource "alicloud_vpc" "default" {
   cidr_block = "10.0.0.0/8"
@@ -118,7 +75,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default" {
   vpc_id     = alicloud_vpc.default.id
-  zone_id    = var.zone_id
+  zone_id    = data.alicloud_mongodb_zones.zones_ids.ids[0]
   cidr_block = "10.0.0.0/24"
 }
 
@@ -131,7 +88,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_class   = "mdb.shard.4x.large.d"
   storage_engine      = "WiredTiger"
   network_type        = "VPC"
-  zone_id             = var.zone_id
+  zone_id             = data.alicloud_mongodb_zones.zones_ids.ids[0]
 }
 
 `, name)

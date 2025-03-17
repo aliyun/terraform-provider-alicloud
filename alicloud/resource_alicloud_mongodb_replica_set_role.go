@@ -2,10 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/samber/lo"
 )
@@ -23,24 +23,34 @@ func resourceAlicloudMongoDBReplicaSetRole() *schema.Resource {
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"role_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"connection_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"connection_port": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(1000, 65535),
 			},
 			"network_type": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+				ValidateFunc: StringInSlice([]string{
+					"Public",
+					"VPC",
+					// "Classic",
+				}, false),
 			},
 			"replica_set_role": {
 				Type:     schema.TypeString,
@@ -51,25 +61,14 @@ func resourceAlicloudMongoDBReplicaSetRole() *schema.Resource {
 				Computed: true,
 			},
 		},
-		CustomizeDiff: customdiff.Sequence(
-			customdiff.ForceNewIfChange("role_id", func(old, new, meta interface{}) bool {
-				return old.(string) != new.(string)
-			}),
-			customdiff.ForceNewIfChange("connection_prefix", func(old, new, meta interface{}) bool {
-				return old.(string) != new.(string)
-			}),
-			customdiff.ForceNewIfChange("network_type", func(old, new, meta interface{}) bool {
-				return old.(string) != new.(string)
-			}),
-		),
 	}
 }
 
-func makeKeyOfMongoReplica(instanceId, roleId string, networkType string) string {
-	return fmt.Sprintf("%s:%s:%s", instanceId, roleId, networkType)
+func makeKeyOfMongoReplica(instanceId, networkType, roleId string) string {
+	return fmt.Sprintf("%s:%s:%s", instanceId, networkType, roleId)
 }
 
-func parseKeyOfMongoReplica(key string) (instanceId, roleId, networkType string) {
+func parseKeyOfMongoReplica(key string) (instanceId, networkType, roleId string) {
 	parts := strings.Split(key, ":")
 	return parts[0], parts[1], parts[2]
 }
@@ -111,7 +110,7 @@ func resourceAlicloudMongoDBReplicaSetRoleUpdate(d *schema.ResourceData, meta in
 		return WrapError(fmt.Errorf("connection address not found, roleId: %s, network type: %s", roleId, networkType))
 	}
 
-	d.SetId(makeKeyOfMongoReplica(instanceId, roleId, networkType))
+	d.SetId(makeKeyOfMongoReplica(instanceId, networkType, roleId))
 
 	currentConnectionDomain, ok := replica["connection_domain"]
 	if !ok {
@@ -137,8 +136,8 @@ func resourceAlicloudMongoDBReplicaSetRoleUpdate(d *schema.ResourceData, meta in
 	}
 
 	if d.HasChange("connection_port") {
-		if connectionPort, ok := d.GetOk("connection_port"); ok && connectionPort.(string) != newPort {
-			newPort = connectionPort.(string)
+		if connectionPort, ok := d.GetOk("connection_port"); ok && fmt.Sprint(connectionPort) != newPort {
+			newPort = fmt.Sprint(connectionPort)
 			connectionChanged = true
 		}
 	}
@@ -154,7 +153,7 @@ func resourceAlicloudMongoDBReplicaSetRoleUpdate(d *schema.ResourceData, meta in
 }
 
 func resourceAlicloudMongoDBReplicaSetRoleRead(d *schema.ResourceData, meta interface{}) error {
-	instanceId, roleId, networkType := parseKeyOfMongoReplica(d.Id())
+	instanceId, networkType, roleId := parseKeyOfMongoReplica(d.Id())
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
@@ -188,7 +187,11 @@ func resourceAlicloudMongoDBReplicaSetRoleRead(d *schema.ResourceData, meta inte
 	}
 
 	if connectionPort, ok := replica["connection_port"]; ok {
-		if err := d.Set("connection_port", connectionPort); err != nil {
+		port, err := strconv.Atoi(fmt.Sprint(connectionPort))
+		if err != nil {
+			return WrapError(err)
+		}
+		if err := d.Set("connection_port", port); err != nil {
 			return WrapError(err)
 		}
 	}

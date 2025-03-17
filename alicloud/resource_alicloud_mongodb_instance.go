@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/samber/lo"
 	"log"
 	"sort"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/samber/lo"
 )
 
 func resourceAliCloudMongoDBInstance() *schema.Resource {

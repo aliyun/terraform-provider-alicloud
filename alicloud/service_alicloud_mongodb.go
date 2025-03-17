@@ -2,15 +2,16 @@ package alicloud
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -18,70 +19,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
-
-type lockWithRefCount struct {
-	refCount int
-	m        *sync.Mutex
-}
-
-type KeyLock struct {
-	locks sync.Map
-	mu    sync.Mutex
-}
-
-func NewKeyLock() *KeyLock {
-	return &KeyLock{}
-}
-
-type UnlockFn func()
-
-func (kl *KeyLock) acquireLock(key string) *sync.Mutex {
-	kl.mu.Lock()
-	defer kl.mu.Unlock()
-
-	v, _ := kl.locks.LoadOrStore(key, &lockWithRefCount{refCount: 0, m: &sync.Mutex{}})
-	r := v.(*lockWithRefCount)
-	r.refCount++
-
-	return r.m
-}
-
-func (kl *KeyLock) releaseLock(key string) *sync.Mutex {
-	kl.mu.Lock()
-	defer kl.mu.Unlock()
-
-	v, _ := kl.locks.LoadOrStore(key, &lockWithRefCount{refCount: 0, m: &sync.Mutex{}})
-	r := v.(*lockWithRefCount)
-	r.refCount--
-	if r.refCount <= 0 {
-		kl.locks.Delete(key)
-	}
-
-	return r.m
-}
-
-func (kl *KeyLock) Lock(key string) {
-	l := kl.acquireLock(key)
-	l.Lock()
-}
-
-func (kl *KeyLock) Unlock(key string) {
-	l := kl.releaseLock(key)
-	l.Unlock()
-}
-
-var (
-	// make "ModifyDBInstanceConnectionString" executed by tf in-sequence per instance, otherwise users can't modify
-	// multiple connection string in a same tf scripts.
-	globalMongoServiceLock     *KeyLock
-	initGlobalMongoServiceLock sync.Once
-)
-
-func init() {
-	initGlobalMongoServiceLock.Do(func() {
-		globalMongoServiceLock = NewKeyLock()
-	})
-}
 
 type MongoDBService struct {
 	client *connectivity.AliyunClient
@@ -177,6 +114,30 @@ func (s *MongoDBService) RdsMongodbDBInstanceOrderStateRefreshFunc(id string, fa
 			}
 		}
 		return object, fmt.Sprint(object["DBInstanceOrderStatus"]), nil
+	}
+}
+
+func (s *MongoDBService) RdsMongoDBPublicNetworkAddressStateRefreshFunc(id string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeReplicaSetRole(id)
+		if err != nil {
+			// regard public network address not exist if any error occurred.
+			return nil, "NotExist", nil
+		}
+
+		if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+			if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
+				for _, replicaSets := range replicaSetsList.([]interface{}) {
+					replicaSetsArg := replicaSets.(map[string]interface{})
+					networkType, ok := replicaSetsArg["NetworkType"]
+					if ok && networkType == "Public" {
+						return object, "Running", nil
+					}
+				}
+			}
+		}
+
+		return object, "NotExist", nil
 	}
 }
 
@@ -1677,17 +1638,12 @@ func (s *MongoDBService) ReleasePublicNetworkAddress(id string) error {
 		"DBInstanceId": id,
 	}
 
-	log.Printf("[INFO] acquiring lock to release public network address, instance id: %s", id)
-
-	globalMongoServiceLock.Lock(id)
-	log.Printf("[INFO] lock of %s acquired, trying to release public network address", id)
-	defer globalMongoServiceLock.Unlock(id)
-
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		log.Printf("[INFO] trying to release public network address, instance id: %s", id)
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if needRetryOnConnectionChanged(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1705,6 +1661,17 @@ func getPrefixOfConnectionDomain(domain string) string {
 	return parts[0]
 }
 
+func needRetryOnConnectionChanged(err error) bool {
+	if NeedRetry(err) {
+		return true
+	}
+	var e *tea.SDKError
+	if errors.As(err, &e) && *(e.Code) == "OperationDenied.DBInstanceStatus" {
+		return true
+	}
+	return false
+}
+
 func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData, instanceId string, currentConnectionString, newConnectionStringPrefix string, port string) error {
 	client := s.client
 	var response map[string]interface{}
@@ -1718,20 +1685,13 @@ func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData
 		"NewPort":                 port,
 	}
 
-	log.Printf("[INFO] trying to modify connection string of mongodb, acquiring lock, instance: %s, currentConnectionString: %s, newConnectionStringPrefix: %s, port: %s",
-		instanceId, currentConnectionString, newConnectionStringPrefix, port)
-
-	globalMongoServiceLock.Lock(instanceId)
-	log.Printf("[INFO] lock acquired, instance: %s", instanceId)
-
-	// release the lock after the instance become running.
-	defer globalMongoServiceLock.Unlock(instanceId)
-
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		log.Printf("[INFO] trying to modify connection string of mongodb, instance: %s, currentConnectionString: %s, newConnectionStringPrefix: %s, port: %s",
+			instanceId, currentConnectionString, newConnectionStringPrefix, port)
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if needRetryOnConnectionChanged(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

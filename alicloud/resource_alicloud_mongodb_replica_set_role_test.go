@@ -73,43 +73,42 @@ func TestAccAliCloudMongoDBReplicaSetRole_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"connection_port": "3719",
+					"connection_port": "3729",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_port": "3719",
+						"connection_port": "3729",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"network_type": "Public",
+					"connection_port": "3739",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_prefix": CHECKSET,
-						"connection_port":   CHECKSET,
-						"replica_set_role":  CHECKSET,
-						"connection_domain": CHECKSET,
+						"connection_port": "3739",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_id": "${alicloud_mongodb_public_network_address.default[1].role_id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"connection_prefix": CHECKSET,
-						"connection_port":   CHECKSET,
-						"replica_set_role":  CHECKSET,
-						"connection_domain": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"network_type":      "Public",
 					"connection_prefix": "test-mongodb-connection-modification-public",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_prefix": CHECKSET,
+						"connection_port":   CHECKSET,
+						"replica_set_role":  CHECKSET,
+						"connection_domain": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_id":           "${alicloud_mongodb_public_network_address.default[1].role_id}",
+					"connection_prefix": "test-mongodb-connection-modification-public-1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -142,13 +141,7 @@ variable "name" {
     default = "%s"
 }
 
-variable "zone_id" {
-  default = "cn-beijing-h"
-}
-
-variable "region_id" {
-  default = "cn-beijing"
-}
+data "alicloud_mongodb_zones" "zones_ids" {}
 
 resource "alicloud_vpc" "default" {
   cidr_block = "10.0.0.0/8"
@@ -157,7 +150,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default" {
   vpc_id     = alicloud_vpc.default.id
-  zone_id    = var.zone_id
+  zone_id    = data.alicloud_mongodb_zones.zones_ids.ids[0]
   cidr_block = "10.0.0.0/24"
 }
 
@@ -170,7 +163,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_class   = "mdb.shard.4x.large.d"
   storage_engine      = "WiredTiger"
   network_type        = "VPC"
-  zone_id             = var.zone_id
+  zone_id             = data.alicloud_mongodb_zones.zones_ids.ids[0]
 }
 
 resource "alicloud_mongodb_public_network_address" "default" {
