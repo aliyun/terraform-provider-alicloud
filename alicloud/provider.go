@@ -1238,7 +1238,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_login_profile":             resourceAliCloudRamLoginProfile(),
 			"alicloud_ram_group":                     resourceAliCloudRamGroup(),
 			"alicloud_ram_role":                      resourceAlicloudRamRole(),
-			"alicloud_ram_policy":                    resourceAlicloudRamPolicy(),
+			"alicloud_ram_policy":                    resourceAliCloudRamPolicy(),
 			// alicloud_ram_alias has been deprecated
 			"alicloud_ram_alias":                                             resourceAlicloudRamAccountAlias(),
 			"alicloud_ram_account_alias":                                     resourceAlicloudRamAccountAlias(),

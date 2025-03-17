@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type RamServiceV2 struct {
@@ -483,3 +485,254 @@ func (s *RamServiceV2) RamSystemPolicyStateRefreshFunc(id string, field string, 
 }
 
 // DescribeRamSystemPolicy >>> Encapsulated.
+
+// DescribeRamPolicy <<< Encapsulated get interface for Ram Policy.
+
+func (s *RamServiceV2) DescribeRamPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PolicyName"] = id
+
+	request["PolicyType"] = "Custom"
+	action := "GetPolicy"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *RamServiceV2) DescribePolicyListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	request["ResourceType"] = "policy"
+	request["ResourceNames"] = "[\"" + id + "\"]"
+
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *RamServiceV2) RamPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeRamPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *RamServiceV2) AssemblePolicyDocument(document []interface{}, version string) (string, error) {
+	var statements []PolicyStatement
+
+	for _, v := range document {
+		doc := v.(map[string]interface{})
+
+		actions := expandStringList(doc["action"].([]interface{}))
+		resources := expandStringList(doc["resource"].([]interface{}))
+
+		statement := PolicyStatement{
+			Effect:   Effect(doc["effect"].(string)),
+			Action:   actions,
+			Resource: resources,
+		}
+		statements = append(statements, statement)
+	}
+
+	policy := Policy{
+		Version:   version,
+		Statement: statements,
+	}
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(data), nil
+}
+
+func (s *RamServiceV2) ParsePolicyDocument(policyDocument string) (statement []map[string]interface{}, version string, err error) {
+	policy := Policy{}
+	err = json.Unmarshal([]byte(policyDocument), &policy)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+
+	version = policy.Version
+	statement = make([]map[string]interface{}, 0, len(policy.Statement))
+	for _, v := range policy.Statement {
+		item := make(map[string]interface{})
+
+		item["effect"] = v.Effect
+		if val, ok := v.Action.([]interface{}); ok {
+			item["action"] = val
+		} else {
+			item["action"] = []interface{}{v.Action}
+		}
+
+		if val, ok := v.Resource.([]interface{}); ok {
+			item["resource"] = val
+		} else {
+			item["resource"] = []interface{}{v.Resource}
+		}
+		statement = append(statement, item)
+	}
+	return
+}
+
+// DescribeRamPolicy >>> Encapsulated.
+
+// SetResourceTags <<< Encapsulated tag function for Ram.
+func (s *RamServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceNames"] = "[\"" + d.Id() + "\"]"
+			request["ResourceType"] = resourceType
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+			request["TagKeys"] = convertListToJsonString(convertListStringToListInterface(removedTagKeys))
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceNames"] = "[\"" + d.Id() + "\"]"
+			request["ResourceType"] = resourceType
+			tagMaps := make([]map[string]interface{}, 0)
+			for key, value := range added {
+				tagMap := map[string]interface{}{}
+				tagMap["Key"] = key
+				tagMap["Value"] = value
+				tagMaps = append(tagMaps, tagMap)
+			}
+			tagMapsJSON, err := convertListMapToJsonString(tagMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Tag"] = tagMapsJSON
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.
