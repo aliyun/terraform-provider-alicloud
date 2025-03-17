@@ -325,7 +325,7 @@ func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAcl
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"BIZ_SUBSCRIPTION_NOT_FOUND", "BIZ_TOPIC_NOT_FOUND"}) {
+		if IsExpectedErrors(err, []string{"BIZ_SUBSCRIPTION_NOT_FOUND", "BIZ_TOPIC_NOT_FOUND", "BIZ.INSTANCE.STATUS.ERROR"}) {
 			return alikafkaSaslAcl, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return alikafkaSaslAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -335,7 +335,7 @@ func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAcl
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	for _, v := range aclListResp.KafkaAclList.KafkaAclVO {
-		if v.AclResourcePatternType == aclResourcePatternType && v.AclOperationType == aclOperationType {
+		if v.Username == username && v.AclResourceType == aclResourceType && v.AclResourceName == aclResourceName && v.AclResourcePatternType == aclResourcePatternType && v.AclOperationType == aclOperationType {
 			return &v, nil
 		}
 	}
