@@ -2084,6 +2084,9 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 	if apiParams.Style != nil && *apiParams.Style == "RPC" {
 		sdkConfig = client.teaRpcOpenapiConfig
 	}
+	if apiProductCode == "sls" {
+		sdkConfig = openapi.Config{}
+	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
 		apiParams.Protocol = tea.String(client.config.Protocol)
 	}
