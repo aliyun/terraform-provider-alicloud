@@ -118,7 +118,7 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `egress_ipv6_enable` - (Optional) Specifies whether IPv6 egress capability is enabled.
 * `https_policy` - (Required) Https policy.
 * `instance_name` - (Required) Instance name.
-* `instance_spec` - (Required, ForceNew) Instance type.
+* `instance_spec` - (Required) Instance spec.
 * `instance_type` - (Optional, ForceNew, Computed) The type of the instance. Valid values are:
   - `normal`: traditional dedicated instance (default).
   - `vpc_connect`: Vpc integration instance. When this type is selected, `instance_cidr`, `user_vpc_id` and `zone_vswitch_security_group` must be specified.
@@ -137,6 +137,9 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `to_connect_vpc_ip_block` - (Optional, Available since v1.228.0) The additional IP block that the VPC integration instance can access, conflict with `delete_vpc_ip_block`. See [`to_connect_vpc_ip_block`](#to_connect_vpc_ip_block) below.
 * `delete_vpc_ip_block` - (Optional, Available since v1.228.0) Indicates whether to delete the IP block that the VPC can access, conflict with `to_connect_vpc_ip_block`.
 * `skip_wait_switch` - (Optional, Available since v1.244.0) Specifies whether to skip the WAIT_SWITCH status of instance when modifying instance spec. Works only when instance spec change.
+* `ingress_vpc_id` - (Optional, Available since v1.246.0) The VpcID which the client at.
+* `ingress_vpc_owner_id` - (Optional, Available since v1.246.0) The user ID that the VpcID of `ingress_vpc_id` belongs to.
+* `ingress_vswitch_id` - (Optional, Available since v1.246.0) The VSwitch ID that belongs to the Vpc of `ingress_vpc_id`.
 
 ### `zone_vswitch_security_group`
 

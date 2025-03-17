@@ -32,6 +32,14 @@ resource "alicloud_api_gateway_group" "default" {
   name        = "tf_example"
   description = "tf_example"
   base_path   = "/"
+  user_log_config {
+    request_body     = true
+    response_body    = true
+    query_string     = "*"
+    request_headers  = "*"
+    response_headers = "*"
+    jwt_claims       = "*"
+  }
 }
 ```
 ## Argument Reference
@@ -42,6 +50,18 @@ The following arguments are supported:
 * `description` - (Optional) The description of the api gateway group. Defaults to null.
 * `instance_id` - (Optional, ForceNew, Available in 1.179.0+)	The id of the api gateway.
 * `base_path` - (Optional, Computed, Available since v1.228.0) The base path of the api gateway group. Defaults to `/`.
+* `user_log_config` - (Optional, Available since v1.246.0) user_log_config defines the config of user log of the group. See [`user_log_config`](#user_log_config) below.
+
+### `user_log_config`
+
+The user_log_config mapping supports the following:
+
+* `request_body` - (Optional, Type: bool) Whether to record the request body.
+* `response_body` - (Optional, Type: bool) Whether to record the response body.
+* `query_string` - (Optional) The query params to be record, support multi query params split by `,`. Set `*` to record all.
+* `request_headers` - (Optional) The request headers to be record, support multi request headers split by `,`. Set `*` to record all.
+* `response_headers` - (Optional) The response headers to be record, support multi response headers split by `,`. Set `*` to record all.
+* `jwt_claims` - (Optional) The jwt claims to be record, support multi jwt claims split by `,`. Set `*` to record all.
 
 ## Attributes Reference
 

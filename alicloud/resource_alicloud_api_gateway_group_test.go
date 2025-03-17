@@ -187,6 +187,28 @@ func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_log_config": []map[string]string{{
+						"request_body":     "true",
+						"response_body":    "true",
+						"query_string":     "*",
+						"request_headers":  "*",
+						"response_headers": "*",
+						"jwt_claims":       "*",
+					},
+					}}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_log_config.0.request_body":     "true",
+						"user_log_config.0.response_body":    "true",
+						"user_log_config.0.query_string":     "*",
+						"user_log_config.0.request_headers":  "*",
+						"user_log_config.0.response_headers": "*",
+						"user_log_config.0.jwt_claims":       "*",
+					}),
+				),
+			},
 		},
 	})
 }

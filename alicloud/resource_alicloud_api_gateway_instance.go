@@ -169,6 +169,18 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"ingress_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vpc_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -291,6 +303,9 @@ func resourceAliCloudApiGatewayInstanceRead(d *schema.ResourceData, meta interfa
 	} else {
 		d.Set("ipv6_enabled", false)
 	}
+	d.Set("ingress_vpc_id", objectRaw["UserVpcId"])
+	d.Set("ingress_vpc_owner_id", objectRaw["VpcOwnerId"])
+	d.Set("ingress_vswitch_id", objectRaw["UserVswitchId"])
 
 	return nil
 }
@@ -389,6 +404,50 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 		if v, ok := d.GetOk("skip_wait_switch"); ok {
 			request["SkipWaitSwitch"] = v
 		}
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+			request["Token"] = buildClientToken(action)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		apiGatewayServiceV2 := ApiGatewayServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, apiGatewayServiceV2.ApiGatewayInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	action = "ModifyInstanceVpcAttributeForConsole"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Token"] = buildClientToken(action)
+	request["InstanceId"] = d.Id()
+	if d.HasChanges("ingress_vpc_id", "ingress_vpc_owner_id", "ingress_vswitch_id") {
+		oldVal, newVal := d.GetChange("ingress_vpc_id")
+		if (newVal == nil || newVal.(string) == "") && (oldVal != nil && oldVal.(string) != "") {
+			request["VpcId"] = oldVal
+			request["DeleteVpcAccess"] = true
+		} else {
+			request["VpcId"] = newVal
+		}
+		request["VpcOwnerId"] = d.Get("ingress_vpc_owner_id")
+		request["VswitchId"] = d.Get("ingress_vswitch_id")
+		update = true
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
