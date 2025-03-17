@@ -64,6 +64,15 @@ type ApiGatewayParameterMap struct {
 	ServiceParamName string `json:"serviceParameterName"`
 }
 
+type ApiGatewayUserLogConfig struct {
+	RequestBody     bool   `json:"requestBody"`
+	ResponseBody    bool   `json:"responseBody"`
+	QueryString     string `json:"queryString"`
+	RequestHeaders  string `json:"requestHeaders"`
+	ResponseHeaders string `json:"responseHeaders"`
+	JwtClaims       string `json:"jwtClaims"`
+}
+
 const (
 	CatalogRequest           = "REQUEST"
 	CatalogConstant          = "CONSTANT"

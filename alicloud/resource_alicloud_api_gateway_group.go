@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -46,6 +47,39 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"user_log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"request_body": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"response_body": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"query_string": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"request_headers": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"response_headers": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"jwt_claims": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -79,7 +113,7 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return resourceAliyunApigatewayGroupRead(d, meta)
+	return resourceAliyunApigatewayGroupUpdate(d, meta)
 }
 
 func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -100,6 +134,23 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("vpc_domain", apiGroup.VpcDomain)
 	d.Set("instance_id", apiGroup.InstanceId)
 	d.Set("base_path", apiGroup.BasePath)
+	if apiGroup.UserLogConfig != "" {
+		var logConfig ApiGatewayUserLogConfig
+		err := json.Unmarshal([]byte(apiGroup.UserLogConfig), &logConfig)
+		if err != nil {
+			return WrapError(err)
+		}
+		userLogConfig := map[string]interface{}{}
+		userLogConfig["request_body"] = logConfig.RequestBody
+		userLogConfig["response_body"] = logConfig.ResponseBody
+		userLogConfig["query_string"] = logConfig.QueryString
+		userLogConfig["request_headers"] = logConfig.RequestHeaders
+		userLogConfig["response_headers"] = logConfig.ResponseHeaders
+		userLogConfig["jwt_claims"] = logConfig.JwtClaims
+		if err := d.Set("user_log_config", []map[string]interface{}{userLogConfig}); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	return nil
 }
@@ -107,13 +158,27 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	if d.HasChanges("name", "description", "base_path") {
-		request := cloudapi.CreateModifyApiGroupRequest()
-		request.RegionId = client.RegionId
+	update := false
+	request := cloudapi.CreateModifyApiGroupRequest()
+	request.RegionId = client.RegionId
+	request.GroupId = d.Id()
+
+	if !d.IsNewResource() && d.HasChanges("name", "description", "base_path") {
 		request.Description = d.Get("description").(string)
 		request.GroupName = d.Get("name").(string)
 		request.BasePath = d.Get("base_path").(string)
-		request.GroupId = d.Id()
+		update = true
+	}
+	if d.HasChanges("user_log_config") {
+		logConfig, err := userLogConfigToJsonStr(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.UserLogConfig = logConfig
+		update = true
+	}
+
+	if update {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.ModifyApiGroup(request)
 		})
@@ -141,4 +206,38 @@ func resourceAliyunApigatewayGroupDelete(d *schema.ResourceData, meta interface{
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(cloudApiService.WaitForApiGatewayGroup(d.Id(), Deleted, DefaultTimeout))
 
+}
+
+func userLogConfigToJsonStr(d *schema.ResourceData) (string, error) {
+	var logConfig ApiGatewayUserLogConfig
+	var l []interface{}
+	v, ok := d.GetOk("user_log_config")
+	if ok {
+		l = v.([]interface{})
+		config := l[0].(map[string]interface{})
+		if val, exist := config["request_body"]; exist {
+			logConfig.RequestBody = val.(bool)
+		}
+		if val, exist := config["response_body"]; exist {
+			logConfig.ResponseBody = val.(bool)
+		}
+		if val, exist := config["query_string"]; exist {
+			logConfig.QueryString = val.(string)
+		}
+		if val, exist := config["request_headers"]; exist {
+			logConfig.RequestHeaders = val.(string)
+		}
+		if val, exist := config["response_headers"]; exist {
+			logConfig.ResponseHeaders = val.(string)
+		}
+		if val, exist := config["jwt_claims"]; exist {
+			logConfig.JwtClaims = val.(string)
+		}
+	}
+
+	configStr, err := json.Marshal(logConfig)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(configStr), nil
 }

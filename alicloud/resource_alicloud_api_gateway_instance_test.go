@@ -386,13 +386,16 @@ resource "alicloud_vswitch" "vswitch_2" {
 }
 
 resource "alicloud_security_group" "security_group_1" {
-    vpc_id = alicloud_vpc.vpc.id
-    name   = "${var.name}_1"
+    vpc_id              = alicloud_vpc.vpc.id
+    security_group_name = "${var.name}_1"
 }
 
 resource "alicloud_security_group" "security_group_2" {
-    vpc_id = alicloud_vpc.vpc.id
-    name   = "${var.name}_2"
+    vpc_id              = alicloud_vpc.vpc.id
+    security_group_name = "${var.name}_2"
+}
+
+data "alicloud_account" "current" {
 }
 `, name)
 }
@@ -515,6 +518,20 @@ func TestAccAliCloudApiGatewayVpcConnectInstance(t *testing.T) {
 						"vpc_slb_intranet_enable": "true",
 						"ipv6_enabled":            "true",
 						"connect_cidr_blocks":     `["172.16.0.0/16","172.17.0.0/16"]`,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ingress_vpc_id":       "${alicloud_vpc.vpc.id}",
+					"ingress_vpc_owner_id": "${data.alicloud_account.current.id}",
+					"ingress_vswitch_id":   "${alicloud_vswitch.vswitch_1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ingress_vpc_id":       CHECKSET,
+						"ingress_vpc_owner_id": CHECKSET,
+						"ingress_vswitch_id":   CHECKSET,
 					}),
 				),
 			},
