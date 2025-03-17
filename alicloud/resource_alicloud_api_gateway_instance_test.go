@@ -519,6 +519,20 @@ func TestAccAliCloudApiGatewayVpcConnectInstance(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"ingress_vpc_id":       "${alicloud_vpc.vpc.id}",
+					"ingress_vpc_owner_id": "${data.alicloud_account.current.id}",
+					"ingress_vswitch_id":   "${alicloud_vswitch.vswitch_1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ingress_vpc_id":       "${alicloud_vpc.vpc.id}",
+						"ingress_vpc_owner_id": "${data.alicloud_account.current.id}",
+						"ingress_vswitch_id":   "${alicloud_vswitch.vswitch_1.id}",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
