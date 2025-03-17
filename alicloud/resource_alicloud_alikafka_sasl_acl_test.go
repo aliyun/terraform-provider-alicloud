@@ -208,7 +208,6 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithAlikafkaAclEnable(t)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -309,7 +308,6 @@ func TestAccAlicloudAlikafkaSaslAcl_multi(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithAlikafkaAclEnable(t)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -346,27 +344,38 @@ variable "name" {
 	default = "%v"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = "${var.name}"
-  partition_num = "50"
-  disk_type = "1"
-  disk_size = "500"
-  deploy_type = "5"
-  io_max = "20"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  security_group = alicloud_security_group.default.id
+  name            = var.name
+  partition_num   = 50
+  disk_type       = "1"
+  disk_size       = "500"
+  deploy_type     = "5"
+  io_max          = "20"
+  spec_type       = "professional"
+  service_version = "2.2.0"
+  config          = "{\"enable.acl\":\"true\"}"
+  vswitch_id      = alicloud_vswitch.default.id
+  security_group  = alicloud_security_group.default.id
 }
 
 resource "alicloud_alikafka_topic" "default" {
@@ -398,27 +407,114 @@ variable "operation" {
   default = ["Write", "Read"]
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = "${var.name}"
-  partition_num = "50"
-  disk_type = "1"
-  disk_size = "500"
-  deploy_type = "5"
-  io_max = "20"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  security_group = alicloud_security_group.default.id
+  name            = var.name
+  partition_num   = 50
+  disk_type       = "1"
+  disk_size       = "500"
+  deploy_type     = "5"
+  io_max          = "20"
+  spec_type       = "professional"
+  service_version = "2.2.0"
+  config          = "{\"enable.acl\":\"true\"}"
+  vswitch_id      = alicloud_vswitch.default.id
+  security_group  = alicloud_security_group.default.id
+}
+
+
+locals {
+  kafka_acl_map   = { for idx, acl in var.kafka_acl_info : idx => acl }
+  kafka_user_set  = toset(distinct([ for idx, acl in var.kafka_acl_info : acl[0] if acl[0] != "*" ]))
+#  kafka_topic_map = { for idx, acl in var.kafka_acl_info : format("s-s-s", acl[0], acl[2], acl[4]) => acl if acl[1] == "Topic" && acl[2] != "*" }
+    kafka_topic_set = toset(distinct([ for idx, acl in var.kafka_acl_info : acl[2] if acl[1] == "Topic" && acl[2] != "*" ]))
+
+}
+
+variable "kafka_acl_info" {
+  type = list(list(string))
+  default = [
+    ["user1", "Topic", "*", "LITERAL", "Read"],
+    ["user1", "Topic", "*", "LITERAL", "Write"],
+    ["user2", "Topic", "*", "LITERAL", "Read"],
+    ["user2", "Topic", "*", "LITERAL", "Write"],
+    ["user3", "Topic", "*", "LITERAL", "Read"],
+    ["user3", "Topic", "*", "LITERAL", "Write"],
+    ["user4", "Topic", "*", "LITERAL", "Read"],
+    ["user4", "Topic", "*", "LITERAL", "Write"],
+    ["user5", "Topic", "*", "LITERAL", "Read"],
+    ["user2", "Group", "*", "LITERAL", "Read"],
+    ["user4", "Group", "*", "LITERAL", "Read"],
+    ["user6", "Group", "*", "LITERAL", "Read"],
+    ["*", "Group", "*", "LITERAL", "Read"],
+    ["user5", "Topic", "topic_0", "PREFIXED", "Write"],
+    ["user5", "Topic", "topic_1", "LITERAL", "Write"],
+    ["user5", "Topic", "topic_2", "LITERAL", "Write"],
+    ["user5", "Topic", "topic_3", "LITERAL", "Write"],
+    ["user7", "Topic", "topic_4", "LITERAL", "Write"],
+    ["user7", "Topic", "topic_4", "LITERAL", "Read"],
+    ["user6", "Topic", "topic_5", "LITERAL", "Read"],
+    ["user6", "Topic", "topic_5", "LITERAL", "Write"],
+    ["user5", "Topic", "topic_6", "LITERAL", "Write"],
+    ["user7", "Topic", "topic_7", "LITERAL", "Read"],
+    ["user8", "Topic", "topic_7", "LITERAL", "Read"]
+  ]
+}
+
+resource "alicloud_alikafka_sasl_user" "kafka_user" {
+  for_each    = local.kafka_user_set
+  instance_id = alicloud_alikafka_instance.default.id
+  username    = each.key
+  password    = "tf_example123"
+}
+resource "alicloud_alikafka_topic" "kafka_topic" {
+  for_each      = local.kafka_topic_set
+  instance_id   = alicloud_alikafka_instance.default.id
+  topic         = each.key
+  local_topic   = "false"
+  compact_topic = "false"
+  partition_num = "12"
+  remark        = "dafault_kafka_topic_remark"
+}
+#
+resource "alicloud_alikafka_sasl_acl" "kafka_acl" {
+  for_each = local.kafka_acl_map
+  #Required, ForceNew
+  instance_id = alicloud_alikafka_instance.default.id
+  #Required, ForceNew
+  username = each.value[0]
+  #Required, ForceNew
+  acl_resource_type = each.value[1]
+  #Required, ForceNew
+  acl_resource_name = each.value[2]
+  #Required, ForceNew
+  acl_resource_pattern_type = each.value[3]
+  #Required, ForceNew
+  acl_operation_type = each.value[4]
+  depends_on = [
+    alicloud_alikafka_topic.kafka_topic,
+    alicloud_alikafka_sasl_user.kafka_user
+  ]
 }
 
 resource "alicloud_alikafka_topic" "default" {

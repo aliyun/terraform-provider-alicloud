@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
@@ -123,7 +124,8 @@ func resourceAlicloudAlikafkaSaslAclRead(d *schema.ResourceData, meta interface{
 	object, err := alikafkaService.DescribeAlikafkaSaslAcl(d.Id())
 	if err != nil {
 		// Handle exceptions
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alikafka_sasl_acl alikafkaService.DescribeAlikafkaSaslAcl Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
