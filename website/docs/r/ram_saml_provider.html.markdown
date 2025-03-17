@@ -20,6 +20,12 @@ For information about RAM Saml Provider and how to use it, see [What is Saml Pro
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_saml_provider&exampleId=9af45430-b5a5-519a-941f-47f2d84c5c512e0b4b1a&activeTab=example&spm=docs.r.ram_saml_provider.0.9af45430b5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_ram_saml_provider" "example" {
   saml_provider_name            = "terraform-example"

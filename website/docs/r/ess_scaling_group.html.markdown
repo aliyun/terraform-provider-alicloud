@@ -22,7 +22,7 @@ For information about ess scaling rule, see [CreateScalingGroup](https://www.ali
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_scaling_group&exampleId=4a6b8acb-d806-488b-ed9d-c86af1d0fecf7b505e44&activeTab=example&spm=docs.r.ess_scaling_group.0.4a6b8acbd8&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_scaling_group&exampleId=4e5fd0ed-2555-7bf7-862a-260b88252787575ca4c6&activeTab=example&spm=docs.r.ess_scaling_group.0.4e5fd0ed25&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

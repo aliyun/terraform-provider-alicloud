@@ -20,6 +20,12 @@ For information about Threat Detection Asset Selection Config and how to use it,
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_threat_detection_asset_selection_config&exampleId=73c06543-fe96-80fa-0987-84a880aa8bd43cfc3322&activeTab=example&spm=docs.r.threat_detection_asset_selection_config.0.73c06543fe&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

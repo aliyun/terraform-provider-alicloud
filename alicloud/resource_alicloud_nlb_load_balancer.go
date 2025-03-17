@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -177,7 +176,7 @@ func resourceAliCloudNlbLoadBalancer() *schema.Resource {
 						"ipv6_local_addresses": {
 							Type:     schema.TypeSet,
 							Optional: true,
-							ForceNew: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"zone_id": {
@@ -191,7 +190,7 @@ func resourceAliCloudNlbLoadBalancer() *schema.Resource {
 						"ipv4_local_addresses": {
 							Type:     schema.TypeSet,
 							Optional: true,
-							ForceNew: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"vswitch_id": {
@@ -210,7 +209,7 @@ func resourceAliCloudNlbLoadBalancer() *schema.Resource {
 						"ipv6_address": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
+							Computed: true,
 						},
 						"private_ipv4_address": {
 							Type:     schema.TypeString,

@@ -20,6 +20,12 @@ For information about Network Load Balancer (NLB) Load Balancer and how to use i
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_load_balancer&exampleId=ada6281a-e49c-7006-e3a0-ae8127c7c4adab8a3626&activeTab=example&spm=docs.r.nlb_load_balancer.0.ada6281ae4&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example"
