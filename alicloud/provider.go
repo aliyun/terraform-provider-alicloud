@@ -895,6 +895,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_resource_manager_auto_grouping_rule":                  resourceAliCloudResourceManagerAutoGroupingRule(),
 			"alicloud_oss_bucket_style":                                     resourceAliCloudOssBucketStyle(),
 			"alicloud_rocketmq_acl":                                         resourceAliCloudRocketmqAcl(),
 			"alicloud_rocketmq_account":                                     resourceAliCloudRocketmqAccount(),
