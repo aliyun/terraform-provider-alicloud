@@ -404,11 +404,20 @@ func resourceAlicloudOssBucket() *schema.Resource {
 							ValidateFunc: StringInSlice([]string{
 								ServerSideEncryptionAes256,
 								ServerSideEncryptionKMS,
+								ServerSideEncryptionSM4,
 							}, false),
 						},
 						"kms_master_key_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"kms_data_encryption": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: StringInSlice([]string{
+								ServerSideEncryptionSM4,
+								"",
+							}, false),
 						},
 					},
 				},
@@ -534,8 +543,12 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 				options = append(options, oss.SetHeader("x-oss-server-side-encryption", sse_algorithm))
 			}
 
-			if sse_kms_id, ok := sse_rule["kms_master_key_id"].(string); ok {
+			if sse_kms_id, ok := sse_rule["kms_master_key_id"].(string); ok && sse_kms_id != "" {
 				options = append(options, oss.SetHeader("x-oss-server-side-encryption-key-id", sse_kms_id))
+			}
+
+			if kms_data_encryption, ok := sse_rule["kms_data_encryption"].(string); ok && kms_data_encryption != "" {
+				options = append(options, oss.SetHeader("x-oss-server-side-data-encryption", kms_data_encryption))
 			}
 		}
 	}
@@ -609,6 +622,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			rule["sse_algorithm"] = object.BucketInfo.SseRule.SSEAlgorithm
 			if object.BucketInfo.SseRule.KMSMasterKeyID != "" {
 				rule["kms_master_key_id"] = object.BucketInfo.SseRule.KMSMasterKeyID
+			}
+			if object.BucketInfo.SseRule.KMSDataEncryption != "" {
+				rule["kms_data_encryption"] = object.BucketInfo.SseRule.KMSDataEncryption
 			}
 			data := make([]map[string]interface{}, 0)
 			data = append(data, rule)
@@ -1575,6 +1591,10 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 
 	if v, ok := c["kms_master_key_id"]; ok {
 		sseRule.SSEDefault.KMSMasterKeyID = v.(string)
+	}
+
+	if v, ok := c["kms_data_encryption"]; ok {
+		sseRule.SSEDefault.KMSDataEncryption = v.(string)
 	}
 
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {

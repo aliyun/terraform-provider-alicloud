@@ -563,6 +563,7 @@ func IntMin(x, y int) int {
 
 const ServerSideEncryptionAes256 = "AES256"
 const ServerSideEncryptionKMS = "KMS"
+const ServerSideEncryptionSM4 = "SM4"
 
 type OptimizedType string
 
