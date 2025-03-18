@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -121,8 +119,11 @@ func (s *MongoDBService) RdsMongoDBPublicNetworkAddressStateRefreshFunc(id strin
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeReplicaSetRole(id)
 		if err != nil {
-			// regard public network address not exist if any error occurred.
-			return nil, "NotExist", nil
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
 		}
 
 		if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
@@ -1643,7 +1644,7 @@ func (s *MongoDBService) ReleasePublicNetworkAddress(id string) error {
 		log.Printf("[INFO] trying to release public network address, instance id: %s", id)
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
-			if needRetryOnConnectionChanged(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1659,17 +1660,6 @@ func getPrefixOfConnectionDomain(domain string) string {
 	parts := strings.Split(domain, ".")
 	// in fact, len(parts) should be equal to 5
 	return parts[0]
-}
-
-func needRetryOnConnectionChanged(err error) bool {
-	if NeedRetry(err) {
-		return true
-	}
-	var e *tea.SDKError
-	if errors.As(err, &e) && *(e.Code) == "OperationDenied.DBInstanceStatus" {
-		return true
-	}
-	return false
 }
 
 func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData, instanceId string, currentConnectionString, newConnectionStringPrefix string, port string) error {
@@ -1691,7 +1681,7 @@ func (s *MongoDBService) ModifyDBInstanceConnectionString(d *schema.ResourceData
 			instanceId, currentConnectionString, newConnectionStringPrefix, port)
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 		if err != nil {
-			if needRetryOnConnectionChanged(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -7,8 +7,32 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
+
+// TestDescribeMongoDBPublicNetworkAddress should be visible, which can be reflected by the test framework.
+func (s *MongoDBService) TestDescribeMongoDBPublicNetworkAddress(id string) (interface{}, error) {
+	object, err := s.DescribeReplicaSetRole(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+		if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
+			for _, replicaSets := range replicaSetsList.([]interface{}) {
+				replicaSetsArg := replicaSets.(map[string]interface{})
+				networkType, ok := replicaSetsArg["NetworkType"]
+				if ok && networkType == "Public" {
+					return object, nil
+				}
+			}
+		}
+	}
+
+	// simulate NotFoundError.
+	return nil, &ComplexError{
+		Err: fmt.Errorf("%s: public network address of %s", ResourceNotfound, id),
+	}
+}
 
 func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -17,17 +41,12 @@ func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	ra := resourceAttrInit(resourceId, AlicloudMongoDBPublicNetworkAddressMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeReplicaSetRole")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "TestDescribeMongoDBPublicNetworkAddress")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBPublicNetworkAddress%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBPublicNetworkAddressBasicDependence0)
-
-	checkDestroy := func(state *terraform.State) error {
-		// already covered by RdsMongoDBPublicNetworkAddressStateRefreshFunc
-		return nil
-	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -35,7 +54,7 @@ func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  checkDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -49,10 +68,9 @@ func TestAccAliCloudMongoDBPublicNetworkAddress_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"db_instance_id"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

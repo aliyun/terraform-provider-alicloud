@@ -97,6 +97,10 @@ func resourceAlicloudMongoDBPublicNetworkAddressRead(d *schema.ResourceData, met
 		return false
 	})
 
+	if err := d.Set("db_instance_id", d.Id()); err != nil {
+		return WrapError(err)
+	}
+
 	if err := d.Set("replica_sets", allPublicNetworkAddresses); err != nil {
 		return WrapError(err)
 	}

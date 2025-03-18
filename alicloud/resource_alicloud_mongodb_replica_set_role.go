@@ -34,7 +34,6 @@ func resourceAlicloudMongoDBReplicaSetRole() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"connection_port": {
 				Type:         schema.TypeInt,
