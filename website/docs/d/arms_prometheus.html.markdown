@@ -7,7 +7,7 @@ description: |-
   Provides a list of Arms Prometheus to the user.
 ---
 
-# alicloud\_arms\_prometheus
+# alicloud_arms_prometheus
 
 This data source provides the Arms Prometheus of the current Alibaba Cloud user.
 
@@ -30,9 +30,6 @@ data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {
-}
-
 resource "alicloud_security_group" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
@@ -44,7 +41,6 @@ resource "alicloud_arms_prometheus" "default" {
   vswitch_id          = data.alicloud_vswitches.default.ids.0
   security_group_id   = alicloud_security_group.default.id
   cluster_name        = "${var.name}-${data.alicloud_vpcs.default.ids.0}"
-  resource_group_id   = data.alicloud_resource_manager_resource_groups.default.groups.1.id
   tags = {
     Created = "TF"
     For     = "Prometheus"
@@ -64,11 +60,11 @@ output "arms_prometheus_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Prometheus IDs.
+* `ids` - (Optional, ForceNew, List) A list of Prometheus IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Prometheus name.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
-* `enable_details` - (Optional) Whether to query details about the instance.
+* `enable_details` - (Optional, Bool, Available since v1.214.0) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -87,14 +83,14 @@ The following attributes are exported in addition to the arguments listed above:
   * `sub_clusters_json` - The child instance json string of the globalView instance.
   * `grafana_instance_id` - The ID of the Grafana workspace.
   * `resource_group_id` - The ID of the resource group.
-  * `remote_read_intra_url` - RemoteRead intranet Url.
-  * `remote_read_inter_url` - Public Url of remoteRead.
-  * `remote_write_intra_url` - RemoteWrite Intranet Url.
-  * `remote_write_inter_url` - RemoteWrite public Url.
-  * `push_gate_way_intra_url` - PushGateway intranet Url.
-  * `push_gate_way_inter_url` - PushGateway public network Url.
-  * `http_api_intra_url` - Http api intranet address.
-  * `http_api_inter_url` - Http api public network address.
-  * `auth_token` - The token used to access the data source.
+  * `remote_read_intra_url` - (Available since v1.214.0) The internal URL for remote read. **Note:** `remote_read_intra_url` takes effect only if `enable_details` is set to `true`.
+  * `remote_read_inter_url` - (Available since v1.214.0) The public URL for remote read. **Note:** `remote_read_inter_url` takes effect only if `enable_details` is set to `true`.
+  * `remote_write_intra_url` - (Available since v1.214.0) The internal URL for remote write. **Note:** `remote_write_intra_url` takes effect only if `enable_details` is set to `true`.
+  * `remote_write_inter_url` - (Available since v1.214.0) The public URL for remote write. **Note:** `remote_write_inter_url` takes effect only if `enable_details` is set to `true`.
+  * `push_gate_way_intra_url` - (Available since v1.214.0) The internal URL for Pushgateway. **Note:** `push_gate_way_intra_url` takes effect only if `enable_details` is set to `true`.
+  * `push_gate_way_inter_url` - (Available since v1.214.0) The public URL for Pushgateway. **Note:** `push_gate_way_inter_url` takes effect only if `enable_details` is set to `true`.
+  * `http_api_intra_url` - (Available since v1.214.0) The internal URL for the HTTP API. **Note:** `http_api_intra_url` takes effect only if `enable_details` is set to `true`.
+  * `http_api_inter_url` - (Available since v1.214.0) The public URL for the HTTP API. **Note:** `http_api_inter_url` takes effect only if `enable_details` is set to `true`.
+  * `auth_token` - (Available since v1.214.0) The authorization token. **Note:** `auth_token` takes effect only if `enable_details` is set to `true`.
   * `tags` - The tag of the Prometheus.
   

@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudArmsPrometheis() *schema.Resource {
+func dataSourceAliCloudArmsPrometheis() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudArmsPrometheisRead,
+		Read: dataSourceAliCloudArmsPrometheisRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -35,12 +35,12 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchemaForceNew(),
 			"enable_details": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"tags": tagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -91,6 +91,10 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"remote_read_intra_url": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -127,10 +131,6 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"resource_group_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -142,7 +142,7 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudArmsPrometheisRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudArmsPrometheisRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListPrometheusInstanceByTagAndResourceGroupId"
@@ -195,7 +195,7 @@ func dataSourceAlicloudArmsPrometheisRead(d *schema.ResourceData, meta interface
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_prometheis", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_prometheus", action, AlibabaCloudSdkGoERROR)
 	}
 
 	resp, err := jsonpath.Get("$.Data.PrometheusInstances", response)
@@ -244,22 +244,25 @@ func dataSourceAlicloudArmsPrometheisRead(d *schema.ResourceData, meta interface
 			s = append(s, mapping)
 			continue
 		}
+
 		id := fmt.Sprint(fmt.Sprint(object["ClusterId"]))
-		client := meta.(*connectivity.AliyunClient)
 		armsService := ArmsService{client}
-		object, err := armsService.DescribeArmsPrometheus(id)
+
+		armsPrometheus, err := armsService.DescribeArmsPrometheus(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["remote_read_intra_url"] = object["RemoteReadIntraUrl"]
-		mapping["remote_read_inter_url"] = object["RemoteReadInterUrl"]
-		mapping["remote_write_intra_url"] = object["RemoteWriteIntraUrl"]
-		mapping["remote_write_inter_url"] = object["RemoteWriteInterUrl"]
-		mapping["push_gate_way_intra_url"] = object["PushGateWayIntraUrl"]
-		mapping["push_gate_way_inter_url"] = object["PushGateWayInterUrl"]
-		mapping["http_api_intra_url"] = object["HttpApiIntraUrl"]
-		mapping["http_api_inter_url"] = object["HttpApiInterUrl"]
-		mapping["auth_token"] = object["AuthToken"]
+
+		mapping["remote_read_intra_url"] = armsPrometheus["RemoteReadIntraUrl"]
+		mapping["remote_read_inter_url"] = armsPrometheus["RemoteReadInterUrl"]
+		mapping["remote_write_intra_url"] = armsPrometheus["RemoteWriteIntraUrl"]
+		mapping["remote_write_inter_url"] = armsPrometheus["RemoteWriteInterUrl"]
+		mapping["push_gate_way_intra_url"] = armsPrometheus["PushGatewayIntraUrl"]
+		mapping["push_gate_way_inter_url"] = armsPrometheus["PushGatewayInterUrl"]
+		mapping["http_api_intra_url"] = armsPrometheus["HttpApiIntraUrl"]
+		mapping["http_api_inter_url"] = armsPrometheus["HttpApiInterUrl"]
+		mapping["auth_token"] = armsPrometheus["AuthToken"]
+
 		s = append(s, mapping)
 	}
 
