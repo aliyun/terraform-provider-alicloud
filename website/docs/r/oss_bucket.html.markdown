@@ -702,6 +702,7 @@ The server_side_encryption_rule configuration block supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
 * `kms_master_key_id` - (Optional, Available since 1.92.0) The alibaba cloud KMS master key ID used for the SSE-KMS encryption.
+* `kms_data_encryption` - (Optional, Available since 1.246.0) The algorithm used to encrypt objects. If this element is not specified, objects are encrypted with AES256. This element is valid only when the value of SSEAlgorithm is set to KMS. Valid values: `SM4`.
 
 ### `versioning`
 
