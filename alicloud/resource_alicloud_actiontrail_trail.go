@@ -68,6 +68,14 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"max_compute_project_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"max_compute_write_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -133,6 +141,14 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 		request["SlsWriteRoleArn"] = v
 	}
 
+	if v, ok := d.GetOk("max_compute_project_arn"); ok {
+		request["MaxComputeProjectArn"] = v
+	}
+
+	if v, ok := d.GetOk("max_compute_write_role_arn"); ok {
+		request["MaxComputeWriteRoleArn"] = v
+	}
+
 	if v, ok := d.GetOk("trail_name"); ok {
 		request["Name"] = v
 	} else if v, ok := d.GetOk("name"); ok {
@@ -192,6 +208,8 @@ func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 	d.Set("oss_write_role_arn", object["OssWriteRoleArn"])
 	d.Set("sls_project_arn", object["SlsProjectArn"])
 	d.Set("sls_write_role_arn", object["SlsWriteRoleArn"])
+	d.Set("max_compute_project_arn", object["MaxComputeProjectArn"])
+	d.Set("max_compute_write_role_arn", object["MaxComputeWriteRoleArn"])
 	d.Set("status", object["Status"])
 	d.Set("trail_region", object["TrailRegion"])
 	return nil
@@ -231,6 +249,14 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 	if !d.IsNewResource() && d.HasChange("sls_write_role_arn") {
 		update = true
 		request["SlsWriteRoleArn"] = d.Get("sls_write_role_arn")
+	}
+	if !d.IsNewResource() && d.HasChange("max_compute_project_arn") {
+		update = true
+		request["MaxComputeProjectArn"] = d.Get("max_compute_project_arn")
+	}
+	if !d.IsNewResource() && d.HasChange("max_compute_write_role_arn") {
+		update = true
+		request["MaxComputeWriteRoleArn"] = d.Get("max_compute_write_role_arn")
 	}
 	if !d.IsNewResource() && d.HasChange("trail_region") {
 		update = true
@@ -274,6 +300,8 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("oss_write_role_arn")
 		d.SetPartial("sls_project_arn")
 		d.SetPartial("sls_write_role_arn")
+		d.SetPartial("max_compute_project_arn")
+		d.SetPartial("max_compute_write_role_arn")
 		d.SetPartial("trail_region")
 	}
 	if d.HasChange("status") {
