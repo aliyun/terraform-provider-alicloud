@@ -2,20 +2,24 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_access_key"
-sidebar_current: "docs-alicloud-resource-ram-access-key"
 description: |-
-  Provides a RAM User access key resource.
+  Provides a Alicloud RAM Access Key resource.
 ---
 
 # alicloud_ram_access_key
 
 Provides a RAM User access key resource.
 
+
+
+For information about RAM Access Key and how to use it, see [What is Access Key](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createaccesskey).
+
+-> **NOTE:** Available since v1.0.0.
+
 -> **NOTE:**  You should set the `secret_file` if you want to get the access key.  
 
 -> **NOTE:**  From version 1.98.0, if not set `pgp_key`, the resource will output the access key secret to field `secret` and please protect your backend state file judiciously
 
--> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -103,7 +107,7 @@ OIu60YPNE4+h7u2CfYyFPu3AlUaGNMBlvy6PEpU=
 	  EOF
 }
 
-output "secret" {
+output "encrypted_secret" {
   value = alicloud_ram_access_key.encrypt.encrypted_secret
 }
 ```
@@ -111,20 +115,28 @@ output "secret" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `user_name` - (Optional, ForceNew) Name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
+* `status` - (Optional) The status of the AccessKey pair. Default value: `Active`. Valid values: `Active` and `Inactive`.
+* `user_name` - (Optional, ForceNew) The name of the RAM user.
 * `secret_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
-* `status` - (Optional) Status of access key. It must be `Active` or `Inactive`. Default value is `Active`.
-* `pgp_key` - (Optional, ForceNew, Available since 1.47.0+) Either a base-64 encoded PGP public key, or a keybase username in the form `keybase:some_person_that_exists`
+* `pgp_key` - (Optional, ForceNew, Available since v1.47.0) Either a base-64 encoded PGP public key, or a keybase username in the form `keybase:some_person_that_exists`
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The access key ID.
-* `secret` (Available since 1.98.0+) - The secret access key. Note that this will be written to the state file. 
+* `id` - The resource ID in terraform of Access Key.
+* `create_time` - (Available since v1.246.0) The time when the AccessKey pair was created.
+* `secret` - (Available since v1.98.0) The secret access key. Note that this will be written to the state file. 
 If you use this, please protect your backend state file judiciously. 
 Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext, 
 at the cost of preventing the use of the secret key in automation.
-* `key_fingerprint` - The fingerprint of the PGP key used to encrypt the secret
-* `encrypted_secret` - The encrypted secret, base64 encoded. ~> NOTE: The encrypted secret may be decrypted using the command line, for example: `terraform output encrypted_secret | base64 --decode | keybase pgp decrypt`.
+* `key_fingerprint` - (Available since v1.47.0) The fingerprint of the PGP key used to encrypt the secret
+* `encrypted_secret` - (Available since v1.47.0) The encrypted secret, base64 encoded. ~> NOTE: The encrypted secret may be decrypted using the command line, for example: `terraform output encrypted_secret | base64 --decode | keybase pgp decrypt`.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.246.0.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Access Key.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Key.
+* `update` - (Defaults to 5 mins) Used when update the Access Key.
