@@ -87,9 +87,10 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 							},
 						},
 					},
-					"cluster_ca_cert": clusterCaCertFile.Name(),
-					"client_key":      clientKeyFile.Name(),
-					"client_cert":     clientCertFile.Name(),
+					"cluster_ca_cert":           clusterCaCertFile.Name(),
+					"client_key":                clientKeyFile.Name(),
+					"client_cert":               clientCertFile.Name(),
+					"set_certificate_authority": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -116,6 +117,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"operation_policy.0.cluster_auto_upgrade.#":         "1",
 						"operation_policy.0.cluster_auto_upgrade.0.enabled": "true",
 						"operation_policy.0.cluster_auto_upgrade.0.channel": "patch",
+						"set_certificate_authority":                         "true",
 					}),
 				),
 			},
@@ -123,7 +125,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences",
 					"service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert", "worker_vswitch_ids",
 				},
 			},
@@ -263,21 +265,23 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
+					"set_certificate_authority": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						// cluster args
-						"name":                name,
-						"version":             CHECKSET,
-						"pod_cidr":            "10.94.0.0/16",
-						"service_cidr":        "172.22.0.0/16",
-						"deletion_protection": "false",
-						"cluster_spec":        "ack.standard",
-						"new_nat_gateway":     "true",
-						"nat_gateway_id":      CHECKSET,
-						"proxy_mode":          "ipvs",
-						"tags.%":              "1",
-						"tags.Platform":       "TF",
+						"name":                      name,
+						"version":                   CHECKSET,
+						"pod_cidr":                  "10.94.0.0/16",
+						"service_cidr":              "172.22.0.0/16",
+						"deletion_protection":       "false",
+						"cluster_spec":              "ack.standard",
+						"new_nat_gateway":           "true",
+						"nat_gateway_id":            CHECKSET,
+						"proxy_mode":                "ipvs",
+						"tags.%":                    "1",
+						"tags.Platform":             "TF",
+						"set_certificate_authority": "true",
 					}),
 				),
 			},
@@ -322,7 +326,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled"},
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled"},
 			},
 		},
 	})
@@ -384,6 +388,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					"control_plane_log_project":    "",
 					"user_ca":                      tmpCAFile.Name(),
 					"addons":                       []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"set_certificate_authority":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -401,6 +406,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"control_plane_log_components.1": "kcm",
 						"control_plane_log_components.2": "scheduler",
 						"control_plane_log_project":      CHECKSET,
+						"set_certificate_authority":      "true",
 					}),
 				),
 			},
@@ -440,7 +446,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "addons",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "addons",
 					"is_enterprise_security_group", "pod_vswitch_ids", "slb_internet_enabled", "load_balancer_spec"},
 			},
 			{
@@ -731,7 +737,7 @@ locals {
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_managed_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
   password                      = "Test12345"
@@ -774,4 +780,5 @@ var csManagedKubernetesBasicMap = map[string]string{
 	"slb_intranet":                       CHECKSET,
 	"cluster_spec":                       CHECKSET,
 	"slb_id":                             CHECKSET,
+	"set_certificate_authority":          "true",
 }
