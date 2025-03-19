@@ -6,6 +6,7 @@ import (
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -72,11 +73,15 @@ func Serve(opts *ServeOpts) {
 			}
 		}
 	}
-
+        maxSize := 256 << 20
+	grpcOpts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(maxSize),
+		grpc.MaxSendMsgSize(maxSize),
+	}
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig:  Handshake,
 		VersionedPlugins: pluginSet(opts),
-		GRPCServer:       plugin.DefaultGRPCServer,
+		GRPCServer:       func(opts []grpc.ServerOption) *grpc.Server { return grpc.NewServer(append(opts, grpcOpts...)...) },
 		Logger:           opts.Logger,
 		Test:             opts.TestConfig,
 	})
