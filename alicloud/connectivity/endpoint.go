@@ -308,6 +308,7 @@ var productCodeToLocationCode = map[string]string{
 	"live":                 "live",            // Live
 	"eds_aic":              "wycloudphone",    // CloudPhone
 	"cloudcontrol":         "cloudcontrol",    // CloudControl
+	"eflo_controller":      "efloctrl",        // Eflo
 }
 
 // irregularProductEndpoint specially records those product codes that

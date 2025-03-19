@@ -896,6 +896,10 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_resource_manager_auto_grouping_rule":                  resourceAliCloudResourceManagerAutoGroupingRule(),
+			"alicloud_eflo_invocation":                                      resourceAliCloudEfloInvocation(),
+			"alicloud_eflo_cluster":                                         resourceAliCloudEfloCluster(),
+			"alicloud_eflo_node_group":                                      resourceAliCloudEfloNodeGroup(),
+			"alicloud_eflo_node":                                            resourceAliCloudEfloNode(),
 			"alicloud_oss_bucket_style":                                     resourceAliCloudOssBucketStyle(),
 			"alicloud_rocketmq_acl":                                         resourceAliCloudRocketmqAcl(),
 			"alicloud_rocketmq_account":                                     resourceAliCloudRocketmqAccount(),
@@ -2583,6 +2587,8 @@ func init() {
 
 		"eflo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eflo endpoints.",
 
+		"eflo_controller_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom efloctrl endpoints.",
+
 		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 
 		"beebot_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom beebot endpoints.",
@@ -2736,6 +2742,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["eflo_endpoint"],
+				},
+
+				"eflo_controller": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eflo_controller_endpoint"],
 				},
 
 				"srvcatalog": {
