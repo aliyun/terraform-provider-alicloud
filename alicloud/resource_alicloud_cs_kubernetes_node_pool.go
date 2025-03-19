@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -141,10 +140,9 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				ForceNew: true,
 			},
 			"desired_size": {
-				Type:          schema.TypeInt,
+				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"instances", "node_count"},
-				ValidateFunc:  IntAtLeast(0),
 			},
 			"force_delete": {
 				Type:     schema.TypeBool,
@@ -492,12 +490,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Computed:     true,
 			},
 			"on_demand_base_capacity": {
-				Type:         schema.TypeInt,
+				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: IntBetween(0, 1000),
 			},
 			"on_demand_percentage_above_base_capacity": {
-				Type:         schema.TypeInt,
+				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: IntBetween(0, 100),
 			},
@@ -983,7 +981,8 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := d.GetOk("desired_size"); ok {
-		objectDataLocalMap1["desired_size"] = v
+		desiredSize, _ := strconv.ParseInt(v.(string), 10, 64)
+		objectDataLocalMap1["desired_size"] = desiredSize
 	}
 
 	if v, ok := d.GetOk("image_id"); ok {
@@ -1015,11 +1014,13 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
-		objectDataLocalMap1["on_demand_base_capacity"] = v
+		onDemandBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+		objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
 	}
 
 	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
-		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = v
+		onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
 	}
 
 	if v, ok := d.GetOk("period_unit"); ok {
@@ -1609,77 +1610,82 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	kubernetes_config1RawObj, _ := jsonpath.Get("$.kubernetes_config", objectRaw)
-	kubernetes_config1Raw := make(map[string]interface{})
-	if kubernetes_config1RawObj != nil {
-		kubernetes_config1Raw = kubernetes_config1RawObj.(map[string]interface{})
+	kubernetes_configRawObj, _ := jsonpath.Get("$.kubernetes_config", objectRaw)
+	kubernetes_configRaw := make(map[string]interface{})
+	if kubernetes_configRawObj != nil {
+		kubernetes_configRaw = kubernetes_configRawObj.(map[string]interface{})
 	}
-	d.Set("cpu_policy", kubernetes_config1Raw["cpu_policy"])
-	d.Set("install_cloud_monitor", kubernetes_config1Raw["cms_enabled"])
-	d.Set("node_name_mode", kubernetes_config1Raw["node_name_mode"])
-	d.Set("pre_user_data", kubernetes_config1Raw["pre_user_data"])
-	d.Set("runtime_name", kubernetes_config1Raw["runtime"])
-	d.Set("runtime_version", kubernetes_config1Raw["runtime_version"])
-	d.Set("unschedulable", kubernetes_config1Raw["unschedulable"])
-	d.Set("user_data", kubernetes_config1Raw["user_data"])
+	d.Set("cpu_policy", kubernetes_configRaw["cpu_policy"])
+	d.Set("install_cloud_monitor", kubernetes_configRaw["cms_enabled"])
+	d.Set("node_name_mode", kubernetes_configRaw["node_name_mode"])
+	d.Set("pre_user_data", kubernetes_configRaw["pre_user_data"])
+	d.Set("runtime_name", kubernetes_configRaw["runtime"])
+	d.Set("runtime_version", kubernetes_configRaw["runtime_version"])
+	d.Set("unschedulable", kubernetes_configRaw["unschedulable"])
+	d.Set("user_data", kubernetes_configRaw["user_data"])
 
-	nodepool_info1RawObj, _ := jsonpath.Get("$.nodepool_info", objectRaw)
-	nodepool_info1Raw := make(map[string]interface{})
-	if nodepool_info1RawObj != nil {
-		nodepool_info1Raw = nodepool_info1RawObj.(map[string]interface{})
+	nodepool_infoRawObj, _ := jsonpath.Get("$.nodepool_info", objectRaw)
+	nodepool_infoRaw := make(map[string]interface{})
+	if nodepool_infoRawObj != nil {
+		nodepool_infoRaw = nodepool_infoRawObj.(map[string]interface{})
 	}
-	d.Set("node_pool_name", nodepool_info1Raw["name"])
-	d.Set("resource_group_id", nodepool_info1Raw["resource_group_id"])
-	d.Set("node_pool_id", nodepool_info1Raw["nodepool_id"])
+	d.Set("node_pool_name", nodepool_infoRaw["name"])
+	d.Set("resource_group_id", nodepool_infoRaw["resource_group_id"])
+	d.Set("node_pool_id", nodepool_infoRaw["nodepool_id"])
 
-	scaling_group1RawObj, _ := jsonpath.Get("$.scaling_group", objectRaw)
-	scaling_group1Raw := make(map[string]interface{})
-	if scaling_group1RawObj != nil {
-		scaling_group1Raw = scaling_group1RawObj.(map[string]interface{})
+	scaling_groupRawObj, _ := jsonpath.Get("$.scaling_group", objectRaw)
+	scaling_groupRaw := make(map[string]interface{})
+	if scaling_groupRawObj != nil {
+		scaling_groupRaw = scaling_groupRawObj.(map[string]interface{})
 	}
-	d.Set("auto_renew", scaling_group1Raw["auto_renew"])
-	d.Set("auto_renew_period", scaling_group1Raw["auto_renew_period"])
-	d.Set("cis_enabled", scaling_group1Raw["cis_enabled"])
-	d.Set("compensate_with_on_demand", scaling_group1Raw["compensate_with_on_demand"])
-	d.Set("deployment_set_id", scaling_group1Raw["deploymentset_id"])
-	d.Set("desired_size", scaling_group1Raw["desired_size"])
-	d.Set("image_id", scaling_group1Raw["image_id"])
-	d.Set("image_type", scaling_group1Raw["image_type"])
-	d.Set("instance_charge_type", scaling_group1Raw["instance_charge_type"])
-	d.Set("internet_charge_type", scaling_group1Raw["internet_charge_type"])
-	d.Set("internet_max_bandwidth_out", scaling_group1Raw["internet_max_bandwidth_out"])
-	d.Set("key_name", scaling_group1Raw["key_pair"])
-	d.Set("login_as_non_root", scaling_group1Raw["login_as_non_root"])
-	d.Set("multi_az_policy", scaling_group1Raw["multi_az_policy"])
-	d.Set("on_demand_base_capacity", scaling_group1Raw["on_demand_base_capacity"])
-	d.Set("on_demand_percentage_above_base_capacity", scaling_group1Raw["on_demand_percentage_above_base_capacity"])
+	d.Set("auto_renew", scaling_groupRaw["auto_renew"])
+	d.Set("auto_renew_period", scaling_groupRaw["auto_renew_period"])
+	d.Set("cis_enabled", scaling_groupRaw["cis_enabled"])
+	d.Set("compensate_with_on_demand", scaling_groupRaw["compensate_with_on_demand"])
+	d.Set("deployment_set_id", scaling_groupRaw["deploymentset_id"])
+	if v, ok := scaling_groupRaw["desired_size"].(json.Number); ok {
+		d.Set("desired_size", v.String())
+	}
+
+	d.Set("image_id", scaling_groupRaw["image_id"])
+	d.Set("image_type", scaling_groupRaw["image_type"])
+	d.Set("instance_charge_type", scaling_groupRaw["instance_charge_type"])
+	d.Set("internet_charge_type", scaling_groupRaw["internet_charge_type"])
+	d.Set("internet_max_bandwidth_out", scaling_groupRaw["internet_max_bandwidth_out"])
+	d.Set("key_name", scaling_groupRaw["key_pair"])
+	d.Set("login_as_non_root", scaling_groupRaw["login_as_non_root"])
+	d.Set("multi_az_policy", scaling_groupRaw["multi_az_policy"])
+	if v, ok := scaling_groupRaw["on_demand_base_capacity"].(json.Number); ok {
+		d.Set("on_demand_base_capacity", v.String())
+	}
+
+	if v, ok := scaling_groupRaw["on_demand_percentage_above_base_capacity"].(json.Number); ok {
+		d.Set("on_demand_percentage_above_base_capacity", v.String())
+	}
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
 		d.Set("password", passwd)
 	}
-	d.Set("period", scaling_group1Raw["period"])
-	d.Set("period_unit", scaling_group1Raw["period_unit"])
-	d.Set("platform", scaling_group1Raw["platform"])
-	if scaling_group1Raw["ram_role_name"] != nil {
-		d.Set("ram_role_name", scaling_group1Raw["ram_role_name"])
-	}
-	d.Set("scaling_group_id", scaling_group1Raw["scaling_group_id"])
-	d.Set("scaling_policy", scaling_group1Raw["scaling_policy"])
-	d.Set("security_group_id", scaling_group1Raw["security_group_id"])
-	d.Set("security_hardening_os", scaling_group1Raw["security_hardening_os"])
-	d.Set("soc_enabled", scaling_group1Raw["soc_enabled"])
-	d.Set("spot_instance_pools", scaling_group1Raw["spot_instance_pools"])
-	d.Set("spot_instance_remedy", scaling_group1Raw["spot_instance_remedy"])
-	d.Set("spot_strategy", scaling_group1Raw["spot_strategy"])
-	d.Set("system_disk_bursting_enabled", scaling_group1Raw["system_disk_bursting_enabled"])
-	d.Set("system_disk_category", scaling_group1Raw["system_disk_category"])
-	d.Set("system_disk_encrypt_algorithm", scaling_group1Raw["system_disk_encrypt_algorithm"])
-	d.Set("system_disk_encrypted", scaling_group1Raw["system_disk_encrypted"])
-	d.Set("system_disk_kms_key", scaling_group1Raw["system_disk_kms_key_id"])
-	d.Set("system_disk_performance_level", scaling_group1Raw["system_disk_performance_level"])
-	d.Set("system_disk_provisioned_iops", scaling_group1Raw["system_disk_provisioned_iops"])
-	d.Set("system_disk_size", scaling_group1Raw["system_disk_size"])
-	d.Set("system_disk_snapshot_policy_id", scaling_group1Raw["worker_system_disk_snapshot_policy_id"])
-
+	d.Set("period", scaling_groupRaw["period"])
+	d.Set("period_unit", scaling_groupRaw["period_unit"])
+	d.Set("platform", scaling_groupRaw["platform"])
+	d.Set("ram_role_name", scaling_groupRaw["ram_role_name"])
+	d.Set("scaling_group_id", scaling_groupRaw["scaling_group_id"])
+	d.Set("scaling_policy", scaling_groupRaw["scaling_policy"])
+	d.Set("security_group_id", scaling_groupRaw["security_group_id"])
+	d.Set("security_hardening_os", scaling_groupRaw["security_hardening_os"])
+	d.Set("soc_enabled", scaling_groupRaw["soc_enabled"])
+	d.Set("spot_instance_pools", scaling_groupRaw["spot_instance_pools"])
+	d.Set("spot_instance_remedy", scaling_groupRaw["spot_instance_remedy"])
+	d.Set("spot_strategy", scaling_groupRaw["spot_strategy"])
+	d.Set("system_disk_bursting_enabled", scaling_groupRaw["system_disk_bursting_enabled"])
+	d.Set("system_disk_category", scaling_groupRaw["system_disk_category"])
+	d.Set("system_disk_encrypt_algorithm", scaling_groupRaw["system_disk_encrypt_algorithm"])
+	d.Set("system_disk_encrypted", scaling_groupRaw["system_disk_encrypted"])
+	d.Set("system_disk_kms_key", scaling_groupRaw["system_disk_kms_key_id"])
+	d.Set("system_disk_performance_level", scaling_groupRaw["system_disk_performance_level"])
+	d.Set("system_disk_provisioned_iops", scaling_groupRaw["system_disk_provisioned_iops"])
+	d.Set("system_disk_size", scaling_groupRaw["system_disk_size"])
+	d.Set("system_disk_snapshot_policy_id", scaling_groupRaw["worker_system_disk_snapshot_policy_id"])
 	status1RawObj, _ := jsonpath.Get("$.status", objectRaw)
 	status1Raw := make(map[string]interface{})
 	if status1RawObj != nil {
@@ -1687,133 +1693,131 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("node_count", status1Raw["total_nodes"])
 
-	data_disks1Raw, _ := jsonpath.Get("$.scaling_group.data_disks", objectRaw)
+	data_disksRaw, _ := jsonpath.Get("$.scaling_group.data_disks", objectRaw)
 	dataDisksMaps := make([]map[string]interface{}, 0)
-	if data_disks1Raw != nil {
-		for _, data_disksChild1Raw := range data_disks1Raw.([]interface{}) {
+	if data_disksRaw != nil {
+		for _, data_disksChildRaw := range data_disksRaw.([]interface{}) {
 			dataDisksMap := make(map[string]interface{})
-			data_disksChild1Raw := data_disksChild1Raw.(map[string]interface{})
-			if v, ok := data_disksChild1Raw["auto_format"].(bool); ok {
+			data_disksChildRaw := data_disksChildRaw.(map[string]interface{})
+			if v, ok := data_disksChildRaw["auto_format"].(bool); ok {
 				dataDisksMap["auto_format"] = strconv.FormatBool(v)
 			}
 
-			dataDisksMap["auto_snapshot_policy_id"] = data_disksChild1Raw["auto_snapshot_policy_id"]
-			dataDisksMap["bursting_enabled"] = data_disksChild1Raw["bursting_enabled"]
-			dataDisksMap["category"] = data_disksChild1Raw["category"]
-			dataDisksMap["device"] = data_disksChild1Raw["device"]
-			dataDisksMap["encrypted"] = data_disksChild1Raw["encrypted"]
-			dataDisksMap["file_system"] = data_disksChild1Raw["file_system"]
-			dataDisksMap["kms_key_id"] = data_disksChild1Raw["kms_key_id"]
-			dataDisksMap["mount_target"] = data_disksChild1Raw["mount_target"]
-			dataDisksMap["name"] = data_disksChild1Raw["disk_name"]
-			dataDisksMap["performance_level"] = data_disksChild1Raw["performance_level"]
-			dataDisksMap["provisioned_iops"] = data_disksChild1Raw["provisioned_iops"]
-			dataDisksMap["size"] = data_disksChild1Raw["size"]
-			dataDisksMap["snapshot_id"] = data_disksChild1Raw["snapshot_id"]
+			dataDisksMap["auto_snapshot_policy_id"] = data_disksChildRaw["auto_snapshot_policy_id"]
+			dataDisksMap["bursting_enabled"] = data_disksChildRaw["bursting_enabled"]
+			dataDisksMap["category"] = data_disksChildRaw["category"]
+			dataDisksMap["device"] = data_disksChildRaw["device"]
+			dataDisksMap["encrypted"] = data_disksChildRaw["encrypted"]
+			dataDisksMap["file_system"] = data_disksChildRaw["file_system"]
+			dataDisksMap["kms_key_id"] = data_disksChildRaw["kms_key_id"]
+			dataDisksMap["mount_target"] = data_disksChildRaw["mount_target"]
+			dataDisksMap["name"] = data_disksChildRaw["disk_name"]
+			dataDisksMap["performance_level"] = data_disksChildRaw["performance_level"]
+			dataDisksMap["provisioned_iops"] = data_disksChildRaw["provisioned_iops"]
+			dataDisksMap["size"] = data_disksChildRaw["size"]
+			dataDisksMap["snapshot_id"] = data_disksChildRaw["snapshot_id"]
 
 			dataDisksMaps = append(dataDisksMaps, dataDisksMap)
 		}
 	}
-	if data_disks1Raw != nil {
-		if err := d.Set("data_disks", dataDisksMaps); err != nil {
-			return err
-		}
+	if err := d.Set("data_disks", dataDisksMaps); err != nil {
+		return err
 	}
-	instance_types1Raw, _ := jsonpath.Get("$.scaling_group.instance_types", objectRaw)
-	d.Set("instance_types", instance_types1Raw)
+	instance_typesRaw, _ := jsonpath.Get("$.scaling_group.instance_types", objectRaw)
+	d.Set("instance_types", instance_typesRaw)
 	kubeletConfigurationMaps := make([]map[string]interface{}, 0)
 	kubeletConfigurationMap := make(map[string]interface{})
-	kubelet_configuration1RawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration", objectRaw)
-	kubelet_configuration1Raw := make(map[string]interface{})
-	if kubelet_configuration1RawObj != nil {
-		kubelet_configuration1Raw = kubelet_configuration1RawObj.(map[string]interface{})
+	kubelet_configurationRawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration", objectRaw)
+	kubelet_configurationRaw := make(map[string]interface{})
+	if kubelet_configurationRawObj != nil {
+		kubelet_configurationRaw = kubelet_configurationRawObj.(map[string]interface{})
 	}
-	if len(kubelet_configuration1Raw) > 0 {
-		if v, ok := kubelet_configuration1Raw["containerLogMaxFiles"].(json.Number); ok {
+	if len(kubelet_configurationRaw) > 0 {
+		if v, ok := kubelet_configurationRaw["containerLogMaxFiles"].(json.Number); ok {
 			kubeletConfigurationMap["container_log_max_files"] = v.String()
 		}
 
-		kubeletConfigurationMap["container_log_max_size"] = kubelet_configuration1Raw["containerLogMaxSize"]
-		if v, ok := kubelet_configuration1Raw["containerLogMaxWorkers"].(json.Number); ok {
+		kubeletConfigurationMap["container_log_max_size"] = kubelet_configurationRaw["containerLogMaxSize"]
+		if v, ok := kubelet_configurationRaw["containerLogMaxWorkers"].(json.Number); ok {
 			kubeletConfigurationMap["container_log_max_workers"] = v.String()
 		}
 
-		kubeletConfigurationMap["container_log_monitor_interval"] = kubelet_configuration1Raw["containerLogMonitorInterval"]
-		if v, ok := kubelet_configuration1Raw["cpuCFSQuota"].(bool); ok {
+		kubeletConfigurationMap["container_log_monitor_interval"] = kubelet_configurationRaw["containerLogMonitorInterval"]
+		if v, ok := kubelet_configurationRaw["cpuCFSQuota"].(bool); ok {
 			kubeletConfigurationMap["cpu_cfs_quota"] = strconv.FormatBool(v)
 		}
 
-		kubeletConfigurationMap["cpu_cfs_quota_period"] = kubelet_configuration1Raw["cpuCFSQuotaPeriod"]
-		kubeletConfigurationMap["cpu_manager_policy"] = kubelet_configuration1Raw["cpuManagerPolicy"]
-		if v, ok := kubelet_configuration1Raw["eventBurst"].(json.Number); ok {
+		kubeletConfigurationMap["cpu_cfs_quota_period"] = kubelet_configurationRaw["cpuCFSQuotaPeriod"]
+		kubeletConfigurationMap["cpu_manager_policy"] = kubelet_configurationRaw["cpuManagerPolicy"]
+		if v, ok := kubelet_configurationRaw["eventBurst"].(json.Number); ok {
 			kubeletConfigurationMap["event_burst"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["eventRecordQPS"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["eventRecordQPS"].(json.Number); ok {
 			kubeletConfigurationMap["event_record_qps"] = v.String()
 		}
 
-		kubeletConfigurationMap["eviction_hard"] = kubelet_configuration1Raw["evictionHard"]
-		kubeletConfigurationMap["eviction_soft"] = kubelet_configuration1Raw["evictionSoft"]
-		kubeletConfigurationMap["eviction_soft_grace_period"] = kubelet_configuration1Raw["evictionSoftGracePeriod"]
-		kubeletConfigurationMap["feature_gates"] = kubelet_configuration1Raw["featureGates"]
-		if v, ok := kubelet_configuration1Raw["imageGCHighThresholdPercent"].(json.Number); ok {
+		kubeletConfigurationMap["eviction_hard"] = kubelet_configurationRaw["evictionHard"]
+		kubeletConfigurationMap["eviction_soft"] = kubelet_configurationRaw["evictionSoft"]
+		kubeletConfigurationMap["eviction_soft_grace_period"] = kubelet_configurationRaw["evictionSoftGracePeriod"]
+		kubeletConfigurationMap["feature_gates"] = kubelet_configurationRaw["featureGates"]
+		if v, ok := kubelet_configurationRaw["imageGCHighThresholdPercent"].(json.Number); ok {
 			kubeletConfigurationMap["image_gc_high_threshold_percent"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["imageGCLowThresholdPercent"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["imageGCLowThresholdPercent"].(json.Number); ok {
 			kubeletConfigurationMap["image_gc_low_threshold_percent"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["kubeAPIBurst"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["kubeAPIBurst"].(json.Number); ok {
 			kubeletConfigurationMap["kube_api_burst"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["kubeAPIQPS"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["kubeAPIQPS"].(json.Number); ok {
 			kubeletConfigurationMap["kube_api_qps"] = v.String()
 		}
 
-		kubeletConfigurationMap["kube_reserved"] = kubelet_configuration1Raw["kubeReserved"]
-		if v, ok := kubelet_configuration1Raw["maxPods"].(json.Number); ok {
+		kubeletConfigurationMap["kube_reserved"] = kubelet_configurationRaw["kubeReserved"]
+		if v, ok := kubelet_configurationRaw["maxPods"].(json.Number); ok {
 			kubeletConfigurationMap["max_pods"] = v.String()
 		}
 
-		kubeletConfigurationMap["memory_manager_policy"] = kubelet_configuration1Raw["memoryManagerPolicy"]
-		if v, ok := kubelet_configuration1Raw["podPidsLimit"].(json.Number); ok {
+		kubeletConfigurationMap["memory_manager_policy"] = kubelet_configurationRaw["memoryManagerPolicy"]
+		if v, ok := kubelet_configurationRaw["podPidsLimit"].(json.Number); ok {
 			kubeletConfigurationMap["pod_pids_limit"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["readOnlyPort"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["readOnlyPort"].(json.Number); ok {
 			kubeletConfigurationMap["read_only_port"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["registryBurst"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["registryBurst"].(json.Number); ok {
 			kubeletConfigurationMap["registry_burst"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["registryPullQPS"].(json.Number); ok {
+		if v, ok := kubelet_configurationRaw["registryPullQPS"].(json.Number); ok {
 			kubeletConfigurationMap["registry_pull_qps"] = v.String()
 		}
 
-		if v, ok := kubelet_configuration1Raw["serializeImagePulls"].(bool); ok {
+		if v, ok := kubelet_configurationRaw["serializeImagePulls"].(bool); ok {
 			kubeletConfigurationMap["serialize_image_pulls"] = strconv.FormatBool(v)
 		}
 
-		kubeletConfigurationMap["system_reserved"] = kubelet_configuration1Raw["systemReserved"]
-		kubeletConfigurationMap["topology_manager_policy"] = kubelet_configuration1Raw["topologyManagerPolicy"]
+		kubeletConfigurationMap["system_reserved"] = kubelet_configurationRaw["systemReserved"]
+		kubeletConfigurationMap["topology_manager_policy"] = kubelet_configurationRaw["topologyManagerPolicy"]
 
-		allowedUnsafeSysctls1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.allowedUnsafeSysctls", objectRaw)
-		kubeletConfigurationMap["allowed_unsafe_sysctls"] = allowedUnsafeSysctls1Raw
-		clusterDNS1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.clusterDNS", objectRaw)
-		kubeletConfigurationMap["cluster_dns"] = clusterDNS1Raw
-		reservedMemory1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.reservedMemory", objectRaw)
+		allowedUnsafeSysctlsRaw, _ := jsonpath.Get("$.node_config.kubelet_configuration.allowedUnsafeSysctls", objectRaw)
+		kubeletConfigurationMap["allowed_unsafe_sysctls"] = allowedUnsafeSysctlsRaw
+		clusterDNSRaw, _ := jsonpath.Get("$.node_config.kubelet_configuration.clusterDNS", objectRaw)
+		kubeletConfigurationMap["cluster_dns"] = clusterDNSRaw
+		reservedMemoryRaw, _ := jsonpath.Get("$.node_config.kubelet_configuration.reservedMemory", objectRaw)
 		reservedMemoryMaps := make([]map[string]interface{}, 0)
-		if reservedMemory1Raw != nil {
-			for _, reservedMemoryChild1Raw := range reservedMemory1Raw.([]interface{}) {
+		if reservedMemoryRaw != nil {
+			for _, reservedMemoryChildRaw := range reservedMemoryRaw.([]interface{}) {
 				reservedMemoryMap := make(map[string]interface{})
-				reservedMemoryChild1Raw := reservedMemoryChild1Raw.(map[string]interface{})
-				reservedMemoryMap["limits"] = reservedMemoryChild1Raw["limits"]
-				reservedMemoryMap["numa_node"] = reservedMemoryChild1Raw["numaNode"]
+				reservedMemoryChildRaw := reservedMemoryChildRaw.(map[string]interface{})
+				reservedMemoryMap["limits"] = reservedMemoryChildRaw["limits"]
+				reservedMemoryMap["numa_node"] = reservedMemoryChildRaw["numaNode"]
 
 				reservedMemoryMaps = append(reservedMemoryMaps, reservedMemoryMap)
 			}
@@ -1821,14 +1825,14 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMap["reserved_memory"] = reservedMemoryMaps
 		tracingMaps := make([]map[string]interface{}, 0)
 		tracingMap := make(map[string]interface{})
-		tracing1RawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration.tracing", objectRaw)
-		tracing1Raw := make(map[string]interface{})
-		if tracing1RawObj != nil {
-			tracing1Raw = tracing1RawObj.(map[string]interface{})
+		tracingRawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration.tracing", objectRaw)
+		tracingRaw := make(map[string]interface{})
+		if tracingRawObj != nil {
+			tracingRaw = tracingRawObj.(map[string]interface{})
 		}
-		if len(tracing1Raw) > 0 {
-			tracingMap["endpoint"] = tracing1Raw["endpoint"]
-			if v, ok := tracing1Raw["samplingRatePerMillion"].(json.Number); ok {
+		if len(tracingRaw) > 0 {
+			tracingMap["endpoint"] = tracingRaw["endpoint"]
+			if v, ok := tracingRaw["samplingRatePerMillion"].(json.Number); ok {
 				tracingMap["sampling_rate_per_million"] = v.String()
 			}
 
@@ -1837,83 +1841,79 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMap["tracing"] = tracingMaps
 		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
 	}
-	if kubelet_configuration1RawObj != nil {
-		if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
-			return err
-		}
+	if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
+		return err
 	}
-	labels1Raw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
+	labelsRaw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
 	labelsMaps := make([]map[string]interface{}, 0)
-	if labels1Raw != nil {
-		for _, labelsChild1Raw := range labels1Raw.([]interface{}) {
+	if labelsRaw != nil {
+		for _, labelsChildRaw := range labelsRaw.([]interface{}) {
 			labelsMap := make(map[string]interface{})
-			labelsChild1Raw := labelsChild1Raw.(map[string]interface{})
-			labelsMap["key"] = labelsChild1Raw["key"]
-			labelsMap["value"] = labelsChild1Raw["value"]
+			labelsChildRaw := labelsChildRaw.(map[string]interface{})
+			labelsMap["key"] = labelsChildRaw["key"]
+			labelsMap["value"] = labelsChildRaw["value"]
 
 			labelsMaps = append(labelsMaps, labelsMap)
 		}
 	}
-	if labels1Raw != nil {
-		if err := d.Set("labels", labelsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("labels", labelsMaps); err != nil {
+		return err
 	}
 	managementMaps := make([]map[string]interface{}, 0)
 	managementMap := make(map[string]interface{})
-	management1Raw := make(map[string]interface{})
+	managementRaw := make(map[string]interface{})
 	if objectRaw["management"] != nil {
-		management1Raw = objectRaw["management"].(map[string]interface{})
+		managementRaw = objectRaw["management"].(map[string]interface{})
 	}
-	if len(management1Raw) > 0 {
-		managementMap["auto_repair"] = management1Raw["auto_repair"]
-		managementMap["auto_upgrade"] = management1Raw["auto_upgrade"]
-		managementMap["auto_vul_fix"] = management1Raw["auto_vul_fix"]
-		managementMap["enable"] = management1Raw["enable"]
+	if len(managementRaw) > 0 {
+		managementMap["auto_repair"] = managementRaw["auto_repair"]
+		managementMap["auto_upgrade"] = managementRaw["auto_upgrade"]
+		managementMap["auto_vul_fix"] = managementRaw["auto_vul_fix"]
+		managementMap["enable"] = managementRaw["enable"]
 
-		upgrade_config1RawObj, _ := jsonpath.Get("$.management.upgrade_config", objectRaw)
-		upgrade_config1Raw := make(map[string]interface{})
-		if upgrade_config1RawObj != nil {
-			upgrade_config1Raw = upgrade_config1RawObj.(map[string]interface{})
+		upgrade_configRawObj, _ := jsonpath.Get("$.management.upgrade_config", objectRaw)
+		upgrade_configRaw := make(map[string]interface{})
+		if upgrade_configRawObj != nil {
+			upgrade_configRaw = upgrade_configRawObj.(map[string]interface{})
 		}
-		if len(upgrade_config1Raw) > 0 {
-			managementMap["max_unavailable"] = upgrade_config1Raw["max_unavailable"]
-			managementMap["surge"] = upgrade_config1Raw["surge"]
-			managementMap["surge_percentage"] = upgrade_config1Raw["surge_percentage"]
+		if len(upgrade_configRaw) > 0 {
+			managementMap["max_unavailable"] = upgrade_configRaw["max_unavailable"]
+			managementMap["surge"] = upgrade_configRaw["surge"]
+			managementMap["surge_percentage"] = upgrade_configRaw["surge_percentage"]
 		}
 		autoRepairPolicyMaps := make([]map[string]interface{}, 0)
 		autoRepairPolicyMap := make(map[string]interface{})
-		auto_repair_policy1Raw := make(map[string]interface{})
-		if management1Raw["auto_repair_policy"] != nil {
-			auto_repair_policy1Raw = management1Raw["auto_repair_policy"].(map[string]interface{})
+		auto_repair_policyRaw := make(map[string]interface{})
+		if managementRaw["auto_repair_policy"] != nil {
+			auto_repair_policyRaw = managementRaw["auto_repair_policy"].(map[string]interface{})
 		}
-		if len(auto_repair_policy1Raw) > 0 {
-			autoRepairPolicyMap["restart_node"] = auto_repair_policy1Raw["restart_node"]
+		if len(auto_repair_policyRaw) > 0 {
+			autoRepairPolicyMap["restart_node"] = auto_repair_policyRaw["restart_node"]
 
 			autoRepairPolicyMaps = append(autoRepairPolicyMaps, autoRepairPolicyMap)
 		}
 		managementMap["auto_repair_policy"] = autoRepairPolicyMaps
 		autoUpgradePolicyMaps := make([]map[string]interface{}, 0)
 		autoUpgradePolicyMap := make(map[string]interface{})
-		auto_upgrade_policy1Raw := make(map[string]interface{})
-		if management1Raw["auto_upgrade_policy"] != nil {
-			auto_upgrade_policy1Raw = management1Raw["auto_upgrade_policy"].(map[string]interface{})
+		auto_upgrade_policyRaw := make(map[string]interface{})
+		if managementRaw["auto_upgrade_policy"] != nil {
+			auto_upgrade_policyRaw = managementRaw["auto_upgrade_policy"].(map[string]interface{})
 		}
-		if len(auto_upgrade_policy1Raw) > 0 {
-			autoUpgradePolicyMap["auto_upgrade_kubelet"] = auto_upgrade_policy1Raw["auto_upgrade_kubelet"]
+		if len(auto_upgrade_policyRaw) > 0 {
+			autoUpgradePolicyMap["auto_upgrade_kubelet"] = auto_upgrade_policyRaw["auto_upgrade_kubelet"]
 
 			autoUpgradePolicyMaps = append(autoUpgradePolicyMaps, autoUpgradePolicyMap)
 		}
 		managementMap["auto_upgrade_policy"] = autoUpgradePolicyMaps
 		autoVulFixPolicyMaps := make([]map[string]interface{}, 0)
 		autoVulFixPolicyMap := make(map[string]interface{})
-		auto_vul_fix_policy1Raw := make(map[string]interface{})
-		if management1Raw["auto_vul_fix_policy"] != nil {
-			auto_vul_fix_policy1Raw = management1Raw["auto_vul_fix_policy"].(map[string]interface{})
+		auto_vul_fix_policyRaw := make(map[string]interface{})
+		if managementRaw["auto_vul_fix_policy"] != nil {
+			auto_vul_fix_policyRaw = managementRaw["auto_vul_fix_policy"].(map[string]interface{})
 		}
-		if len(auto_vul_fix_policy1Raw) > 0 {
-			autoVulFixPolicyMap["restart_node"] = auto_vul_fix_policy1Raw["restart_node"]
-			autoVulFixPolicyMap["vul_level"] = auto_vul_fix_policy1Raw["vul_level"]
+		if len(auto_vul_fix_policyRaw) > 0 {
+			autoVulFixPolicyMap["restart_node"] = auto_vul_fix_policyRaw["restart_node"]
+			autoVulFixPolicyMap["vul_level"] = auto_vul_fix_policyRaw["vul_level"]
 
 			autoVulFixPolicyMaps = append(autoVulFixPolicyMaps, autoVulFixPolicyMap)
 		}
@@ -1925,105 +1925,95 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	}
 	privatePoolOptionsMaps := make([]map[string]interface{}, 0)
 	privatePoolOptionsMap := make(map[string]interface{})
-	private_pool_options1RawObj, _ := jsonpath.Get("$.scaling_group.private_pool_options", objectRaw)
-	private_pool_options1Raw := make(map[string]interface{})
-	if private_pool_options1RawObj != nil {
-		private_pool_options1Raw = private_pool_options1RawObj.(map[string]interface{})
+	private_pool_optionsRawObj, _ := jsonpath.Get("$.scaling_group.private_pool_options", objectRaw)
+	private_pool_optionsRaw := make(map[string]interface{})
+	if private_pool_optionsRawObj != nil {
+		private_pool_optionsRaw = private_pool_optionsRawObj.(map[string]interface{})
 	}
-	if len(private_pool_options1Raw) > 0 {
-		privatePoolOptionsMap["private_pool_options_id"] = private_pool_options1Raw["id"]
-		privatePoolOptionsMap["private_pool_options_match_criteria"] = private_pool_options1Raw["match_criteria"]
+	if len(private_pool_optionsRaw) > 0 {
+		privatePoolOptionsMap["private_pool_options_id"] = private_pool_optionsRaw["id"]
+		privatePoolOptionsMap["private_pool_options_match_criteria"] = private_pool_optionsRaw["match_criteria"]
 
 		privatePoolOptionsMaps = append(privatePoolOptionsMaps, privatePoolOptionsMap)
 	}
-	if private_pool_options1RawObj != nil {
-		if err := d.Set("private_pool_options", privatePoolOptionsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("private_pool_options", privatePoolOptionsMaps); err != nil {
+		return err
 	}
-	rds_instances1Raw, _ := jsonpath.Get("$.scaling_group.rds_instances", objectRaw)
-	d.Set("rds_instances", rds_instances1Raw)
+	rds_instancesRaw, _ := jsonpath.Get("$.scaling_group.rds_instances", objectRaw)
+	d.Set("rds_instances", rds_instancesRaw)
 	scalingConfigMaps := make([]map[string]interface{}, 0)
 	scalingConfigMap := make(map[string]interface{})
-	auto_scaling1Raw := make(map[string]interface{})
+	auto_scalingRaw := make(map[string]interface{})
 	if objectRaw["auto_scaling"] != nil {
-		auto_scaling1Raw = objectRaw["auto_scaling"].(map[string]interface{})
+		auto_scalingRaw = objectRaw["auto_scaling"].(map[string]interface{})
 	}
-	if len(auto_scaling1Raw) > 0 {
-		scalingConfigMap["eip_bandwidth"] = auto_scaling1Raw["eip_bandwidth"]
-		scalingConfigMap["eip_internet_charge_type"] = auto_scaling1Raw["eip_internet_charge_type"]
-		scalingConfigMap["enable"] = auto_scaling1Raw["enable"]
-		scalingConfigMap["is_bond_eip"] = auto_scaling1Raw["is_bond_eip"]
-		scalingConfigMap["max_size"] = auto_scaling1Raw["max_instances"]
-		scalingConfigMap["min_size"] = auto_scaling1Raw["min_instances"]
-		scalingConfigMap["type"] = auto_scaling1Raw["type"]
+	if len(auto_scalingRaw) > 0 {
+		scalingConfigMap["eip_bandwidth"] = auto_scalingRaw["eip_bandwidth"]
+		scalingConfigMap["eip_internet_charge_type"] = auto_scalingRaw["eip_internet_charge_type"]
+		scalingConfigMap["enable"] = auto_scalingRaw["enable"]
+		scalingConfigMap["is_bond_eip"] = auto_scalingRaw["is_bond_eip"]
+		scalingConfigMap["max_size"] = auto_scalingRaw["max_instances"]
+		scalingConfigMap["min_size"] = auto_scalingRaw["min_instances"]
+		scalingConfigMap["type"] = auto_scalingRaw["type"]
 
 		scalingConfigMaps = append(scalingConfigMaps, scalingConfigMap)
 	}
-	if objectRaw["auto_scaling"] != nil {
-		if err := d.Set("scaling_config", scalingConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("scaling_config", scalingConfigMaps); err != nil {
+		return err
 	}
-	security_group_ids1Raw, _ := jsonpath.Get("$.scaling_group.security_group_ids", objectRaw)
-	d.Set("security_group_ids", security_group_ids1Raw)
-	spot_price_limit1Raw, _ := jsonpath.Get("$.scaling_group.spot_price_limit", objectRaw)
+	security_group_idsRaw, _ := jsonpath.Get("$.scaling_group.security_group_ids", objectRaw)
+	d.Set("security_group_ids", security_group_idsRaw)
+	spot_price_limitRaw, _ := jsonpath.Get("$.scaling_group.spot_price_limit", objectRaw)
 	spotPriceLimitMaps := make([]map[string]interface{}, 0)
-	if spot_price_limit1Raw != nil {
-		for _, spot_price_limitChild1Raw := range spot_price_limit1Raw.([]interface{}) {
+	if spot_price_limitRaw != nil {
+		for _, spot_price_limitChildRaw := range spot_price_limitRaw.([]interface{}) {
 			spotPriceLimitMap := make(map[string]interface{})
-			spot_price_limitChild1Raw := spot_price_limitChild1Raw.(map[string]interface{})
-			spotPriceLimitMap["instance_type"] = spot_price_limitChild1Raw["instance_type"]
-			spotPriceLimitMap["price_limit"] = spot_price_limitChild1Raw["price_limit"]
+			spot_price_limitChildRaw := spot_price_limitChildRaw.(map[string]interface{})
+			spotPriceLimitMap["instance_type"] = spot_price_limitChildRaw["instance_type"]
+			spotPriceLimitMap["price_limit"] = spot_price_limitChildRaw["price_limit"]
 
 			spotPriceLimitMaps = append(spotPriceLimitMaps, spotPriceLimitMap)
 		}
 	}
-	if spot_price_limit1Raw != nil {
-		if err := d.Set("spot_price_limit", spotPriceLimitMaps); err != nil {
-			return err
-		}
+	if err := d.Set("spot_price_limit", spotPriceLimitMaps); err != nil {
+		return err
 	}
-	system_disk_categories1Raw, _ := jsonpath.Get("$.scaling_group.system_disk_categories", objectRaw)
-	d.Set("system_disk_categories", system_disk_categories1Raw)
+	system_disk_categoriesRaw, _ := jsonpath.Get("$.scaling_group.system_disk_categories", objectRaw)
+	d.Set("system_disk_categories", system_disk_categoriesRaw)
 	tagsMaps, _ := jsonpath.Get("$.scaling_group.tags", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
-	taints1Raw, _ := jsonpath.Get("$.kubernetes_config.taints", objectRaw)
+	taintsRaw, _ := jsonpath.Get("$.kubernetes_config.taints", objectRaw)
 	taintsMaps := make([]map[string]interface{}, 0)
-	if taints1Raw != nil {
-		for _, taintsChild1Raw := range taints1Raw.([]interface{}) {
+	if taintsRaw != nil {
+		for _, taintsChildRaw := range taintsRaw.([]interface{}) {
 			taintsMap := make(map[string]interface{})
-			taintsChild1Raw := taintsChild1Raw.(map[string]interface{})
-			taintsMap["effect"] = taintsChild1Raw["effect"]
-			taintsMap["key"] = taintsChild1Raw["key"]
-			taintsMap["value"] = taintsChild1Raw["value"]
+			taintsChildRaw := taintsChildRaw.(map[string]interface{})
+			taintsMap["effect"] = taintsChildRaw["effect"]
+			taintsMap["key"] = taintsChildRaw["key"]
+			taintsMap["value"] = taintsChildRaw["value"]
 
 			taintsMaps = append(taintsMaps, taintsMap)
 		}
 	}
-	if taints1Raw != nil {
-		if err := d.Set("taints", taintsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("taints", taintsMaps); err != nil {
+		return err
 	}
 	teeConfigMaps := make([]map[string]interface{}, 0)
 	teeConfigMap := make(map[string]interface{})
-	tee_config1Raw := make(map[string]interface{})
+	tee_configRaw := make(map[string]interface{})
 	if objectRaw["tee_config"] != nil {
-		tee_config1Raw = objectRaw["tee_config"].(map[string]interface{})
+		tee_configRaw = objectRaw["tee_config"].(map[string]interface{})
 	}
-	if len(tee_config1Raw) > 0 {
-		teeConfigMap["tee_enable"] = tee_config1Raw["tee_enable"]
+	if len(tee_configRaw) > 0 {
+		teeConfigMap["tee_enable"] = tee_configRaw["tee_enable"]
 
 		teeConfigMaps = append(teeConfigMaps, teeConfigMap)
 	}
-	if objectRaw["tee_config"] != nil {
-		if err := d.Set("tee_config", teeConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("tee_config", teeConfigMaps); err != nil {
+		return err
 	}
-	vswitch_ids1Raw, _ := jsonpath.Get("$.scaling_group.vswitch_ids", objectRaw)
-	d.Set("vswitch_ids", vswitch_ids1Raw)
+	vswitch_idsRaw, _ := jsonpath.Get("$.scaling_group.vswitch_ids", objectRaw)
+	d.Set("vswitch_ids", vswitch_idsRaw)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("cluster_id", parts[0])
@@ -2041,11 +2031,11 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	ClusterId := parts[0]
 	NodepoolId := parts[1]
 	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -2146,7 +2136,8 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("desired_size") {
 		update = true
-		objectDataLocalMap1["desired_size"] = d.Get("desired_size")
+		desiredSize, _ := strconv.ParseInt(d.Get("desired_size").(string), 10, 64)
+		objectDataLocalMap1["desired_size"] = desiredSize
 	}
 
 	if d.HasChange("image_id") {
@@ -2181,12 +2172,14 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("on_demand_base_capacity") {
 		update = true
-		objectDataLocalMap1["on_demand_base_capacity"] = d.Get("on_demand_base_capacity")
+		onDemandBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_base_capacity").(string), 10, 64)
+		objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
 	}
 
 	if d.HasChange("on_demand_percentage_above_base_capacity") {
 		update = true
-		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = d.Get("on_demand_percentage_above_base_capacity")
+		onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_percentage_above_base_capacity").(string), 10, 64)
+		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
 	}
 
 	if d.HasChange("period_unit") {
