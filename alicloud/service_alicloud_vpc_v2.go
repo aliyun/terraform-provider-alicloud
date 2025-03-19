@@ -1946,7 +1946,8 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	jsonString := "{}"
-	jsonString, _ = sjson.Set(jsonString, "Filter[0].Value[0]", parts[0])
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Value.0", parts[0])
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Key", "HaVipId")
 	err = json.Unmarshal([]byte(jsonString), &request)
 	if err != nil {
 		return object, WrapError(err)
