@@ -71,7 +71,7 @@ for fileName in ${changeFiles[@]}; do
   fi
   if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
     docsPathKey="website/docs/r"
-    if [[ $fileName =~ "data_source_" || $fileName =~ "website/docs/d/" ]]; then
+    if [[ $fileName =~ "data_source_alicloud" || $fileName =~ "website/docs/d/" ]]; then
       docsPathKey="website/docs/d"
     fi
 
@@ -163,7 +163,7 @@ allExample["init"]=1
 for fileName in ${changeFiles[@]}; do
   if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
     docsPathKey="website/docs/r"
-    if [[ $fileName =~ "data_source_" || $fileName =~ "website/docs/d/" ]]; then
+    if [[ $fileName =~ "data_source_alicloud" || $fileName =~ "website/docs/d/" ]]; then
       docsPathKey="website/docs/d"
     fi
 
