@@ -895,6 +895,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_eais_client_instance_attachment":                      resourceAliCloudEaisClientInstanceAttachment(),
 			"alicloud_resource_manager_auto_grouping_rule":                  resourceAliCloudResourceManagerAutoGroupingRule(),
 			"alicloud_eflo_invocation":                                      resourceAliCloudEfloInvocation(),
 			"alicloud_eflo_cluster":                                         resourceAliCloudEfloCluster(),

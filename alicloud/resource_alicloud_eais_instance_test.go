@@ -138,6 +138,7 @@ func TestAccAliCloudEaisInstance_basic0(t *testing.T) {
 					"instance_type":     "eais.ei-a6.2xlarge",
 					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
+					"category":          "eais",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -151,7 +152,7 @@ func TestAccAliCloudEaisInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				ImportStateVerifyIgnore: []string{"category"},
 			},
 		},
 	})
@@ -430,3 +431,178 @@ func TestUnitAliCloudEaisInstance(t *testing.T) {
 	}
 
 }
+
+// Test Eais Instance. >>> Resource test cases, automatically generated.
+// Case cc_jupyter_pro 10128
+func TestAccAliCloudEaisInstance_basic10128(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eais_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudEaisInstanceMap10128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EaisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEaisInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacceais%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisInstanceBasicDependence10128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name":     name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.sg.id}",
+					"vswitch_id":        "${alicloud_vswitch.vsw.id}",
+					"instance_type":     "eais.ei-a6.2xlarge",
+					"image":             "registry-vpc.cn-hangzhou.aliyuncs.com/eai_beijing/eais-triton:v3.2.5-server",
+					"environment_var": []map[string]interface{}{
+						{
+							"key":   "testKey",
+							"value": "testValue",
+						},
+					},
+					"status":   "InUse",
+					"category": "jupyter",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"resource_group_id": CHECKSET,
+						"security_group_id": CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"instance_type":     "eais.ei-a6.2xlarge",
+						"environment_var.#": "1",
+						"status":            "InUse",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Stopped",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "InUse",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "InUse",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"environment_var": []map[string]interface{}{
+						{
+							"key":   "testKey-update",
+							"value": "testValue-update",
+						},
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"environment_var", "image", "category"},
+			},
+		},
+	})
+}
+
+var AlicloudEaisInstanceMap10128 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   "cn-hangzhou",
+}
+
+func AlicloudEaisInstanceBasicDependence10128(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone" {
+  default = "cn-hangzhou-i"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vsw" {
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = alicloud_vpc.vpc.id
+  zone_id      = var.zone
+}
+
+resource "alicloud_security_group" "sg" {
+  security_group_name = alicloud_vpc.vpc.id
+  vpc_id              = alicloud_vpc.vpc.id
+}
+
+
+`, name)
+}
+
+// Test Eais Instance. <<< Resource test cases, automatically generated.
