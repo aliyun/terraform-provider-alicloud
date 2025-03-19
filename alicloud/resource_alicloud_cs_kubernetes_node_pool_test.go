@@ -1868,10 +1868,11 @@ data "alicloud_zones" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
-	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
-	kubernetes_node_role       = "Worker"
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g6"
+  kubernetes_node_role       = "Worker"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1917,6 +1918,7 @@ resource "alicloud_instance" "default" {
   instance_type     = data.alicloud_instance_types.default.instance_types.0.id
   security_groups   = [alicloud_security_group.group.id]
   vswitch_id        = local.vswitch_id
+  system_disk_category       = "cloud_efficiency"
   lifecycle {
     ignore_changes = [user_data, instance_name, image_id, security_groups, tags]
   }
