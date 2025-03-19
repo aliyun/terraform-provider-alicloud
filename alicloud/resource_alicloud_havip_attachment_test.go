@@ -292,6 +292,60 @@ func TestAccAliCloudVPCHavipAttachment_basic_multiple_instance_bug_fix(t *testin
 	})
 }
 
+func TestAccAliCloudVPCHavipAttachment_basic_multiple_havip_bug_fix(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_havip_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudHavipAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcHaVipAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shavipattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHavipAttachmentBasicDependence_bug_fix)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ha_vip_id":     "${alicloud_havip.default.id}",
+					"instance_id":   "${alicloud_ecs_network_interface_attachment.default.0.network_interface_id}",
+					"instance_type": "NetworkInterface",
+					"force":         "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ha_vip_id":     CHECKSET,
+						"instance_id":   CHECKSET,
+						"instance_type": "NetworkInterface",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
 var AliCloudHavipAttachmentMap0 = map[string]string{}
 
 func AliCloudHavipAttachmentBasicDependence0(name string) string {
@@ -314,6 +368,9 @@ func AliCloudHavipAttachmentBasicDependence0(name string) string {
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
+		cpu_core_count       = 2
+		memory_size          = 8
+		instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -373,6 +430,9 @@ func AliCloudHavipAttachmentBasicDependence1(name string) string {
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
+		cpu_core_count       = 2
+		memory_size          = 8
+		instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -432,6 +492,9 @@ func AliCloudHavipAttachmentBasicDependence2(name string) string {
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
+		cpu_core_count       = 2
+		memory_size          = 8
+		instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -502,6 +565,9 @@ func AliCloudHavipAttachmentBasicDependence_bug_fix(name string) string {
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
+		cpu_core_count       = 2
+		memory_size          = 8
+		instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -519,6 +585,32 @@ func AliCloudHavipAttachmentBasicDependence_bug_fix(name string) string {
 	resource "alicloud_security_group" "default" {
   		name   = var.name
   		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_havip" "example" {
+	  count       = 21
+	  vswitch_id  = alicloud_vswitch.default.id
+	  description = var.name
+	}
+
+	resource "alicloud_instance" "example" {
+	  count                      = 21
+	  availability_zone          = data.alicloud_zones.default.zones.0.id
+	  vswitch_id                 = alicloud_vswitch.default.id
+	  image_id                   = data.alicloud_images.default.images.0.id
+	  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+	  system_disk_category       = "cloud_efficiency"
+	  internet_charge_type       = "PayByTraffic"
+	  internet_max_bandwidth_out = 5
+	  security_groups            = [alicloud_security_group.default.id]
+	  instance_name              = var.name
+	  user_data                  = "echo 'net.ipv4.ip_forward=1'>> /etc/sysctl.conf"
+	}
+	
+	resource "alicloud_havip_attachment" "example" {
+	  count       = 21
+	  havip_id    = alicloud_havip.example[count.index].id
+	  instance_id = alicloud_instance.example[count.index].id
 	}
 
 	resource "alicloud_havip" "default" {
