@@ -1,24 +1,29 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
+func resourceAliCloudRamGroupPolicyAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamGroupPolicyAttachmentCreate,
-		Read:   resourceAlicloudRamGroupPolicyAttachmentRead,
-		Delete: resourceAlicloudRamGroupPolicyAttachmentDelete,
+		Create: resourceAliCloudRamGroupPolicyAttachmentCreate,
+		Read:   resourceAliCloudRamGroupPolicyAttachmentRead,
+		Delete: resourceAliCloudRamGroupPolicyAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"group_name": {
 				Type:     schema.TypeString,
@@ -40,21 +45,29 @@ func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
-	request := ram.CreateAttachPolicyToGroupRequest()
-	request.RegionId = client.RegionId
-	request.PolicyType = d.Get("policy_type").(string)
-	request.PolicyName = d.Get("policy_name").(string)
-	request.GroupName = d.Get("group_name").(string)
-
+	action := "AttachPolicyToGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.AttachPolicyToGroup(request)
-		})
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("policy_type"); ok {
+		request["PolicyType"] = v
+	}
+	if v, ok := d.GetOk("policy_name"); ok {
+		request["PolicyName"] = v
+	}
+	if v, ok := d.GetOk("group_name"); ok {
+		request["GroupName"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -62,69 +75,60 @@ func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_group_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_group_policy_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(strings.Join([]string{"group", request.PolicyName, request.PolicyType, request.GroupName}, COLON_SEPARATED))
+	d.SetId(fmt.Sprintf("group:%v:%v:%v", request["PolicyName"], request["PolicyType"], request["GroupName"]))
 
-	return resourceAlicloudRamGroupPolicyAttachmentRead(d, meta)
+	return resourceAliCloudRamGroupPolicyAttachmentRead(d, meta)
 }
 
-func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramServiceV2 := RamServiceV2{client}
 
-	if split := strings.Split(d.Id(), ":"); len(split) != 4 {
-		id := strings.Join([]string{"group", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("group_name").(string)}, COLON_SEPARATED)
-		d.SetId(id)
-	}
-	object, err := ramService.DescribeRamGroupPolicyAttachment(d.Id())
+	objectRaw, err := ramServiceV2.DescribeRamGroupPolicyAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_group_policy_attachment DescribeRamGroupPolicyAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 4)
-	if err != nil {
-		return WrapError(err)
-	}
+	d.Set("policy_name", objectRaw["PolicyName"])
+	d.Set("policy_type", objectRaw["PolicyType"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("group_name", parts[3])
-	d.Set("policy_name", object.PolicyName)
-	d.Set("policy_type", object.PolicyType)
+
 	return nil
 }
 
-func resourceAlicloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	parts := strings.Split(d.Id(), ":")
+	action := "DetachPolicyFromGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["PolicyType"] = parts[2]
+	request["PolicyName"] = parts[1]
+	request["GroupName"] = parts[3]
 
-	id := strings.Join([]string{"group", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("group_name").(string)}, COLON_SEPARATED)
-	if d.Id() != id {
-		d.SetId(id)
-	}
-	parts, err := ParseResourceId(id, 4)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := ram.CreateDetachPolicyFromGroupRequest()
-	request.RegionId = client.RegionId
-	request.PolicyName = parts[1]
-	request.PolicyType = parts[2]
-	request.GroupName = parts[3]
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DetachPolicyFromGroup(request)
-		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -132,17 +136,16 @@ func resourceAlicloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Group", "EntityNotExist.Group.Policy"}) || NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(ramService.WaitForRamGroupPolicyAttachment(d.Id(), Deleted, DefaultTimeout))
-
+	return nil
 }
