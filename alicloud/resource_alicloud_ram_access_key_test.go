@@ -4,62 +4,58 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/vault/helper/pgpkeys"
 )
 
-func TestAccAlicloudRAMAccessKey_basic(t *testing.T) {
-	var v ram.AccessKey
-	var u ram.User
-	resourceAKId := "alicloud_ram_access_key.default"
-	resourceUserId := "alicloud_ram_user.default"
-	ra := resourceAttrInit("alicloud_ram_access_key.default", accessKeyBasicMap)
-	rand := acctest.RandIntRange(1000000, 9999999)
-
-	testAccCheck := ra.resourceAttrMapUpdateSet()
+// Test Ram AccessKey. >>> Resource test cases, automatically generated.
+// Case  AccessKey测试 8985
+func TestAccAliCloudRamAccessKey_basic8985(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_access_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamAccessKeyMap8985)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamAccessKey", []string{"user_name"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamAccessKeyBasicDependence8985)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
-		IDRefreshName: resourceAKId,
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamAccessKeyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamAccessKeyCreate(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"user_name": "${alicloud_ram_user.defaultnH7ezc.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccessKeyExists(resourceAKId, &v),
-					testAccCheckRamUserExists(resourceUserId, &u),
-					testAccCheckDecryptSecretKeyAndTest(resourceAKId, pgpPrivKey),
-					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.default", "secret"),
-					testAccCheck(accessKeyBasicMap),
-					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
-				Config: testAccRamAccessKeyStatus(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Inactive",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccessKeyExists(resourceAKId, &v),
-					testAccCheckRamUserExists(resourceUserId, &u),
-					testAccCheck(map[string]string{"status": "Inactive"}),
-					resource.TestCheckResourceAttrSet("alicloud_ram_access_key.default", "secret"),
-				),
-			},
-			{
-				Config: testAccRamAccessKeyCreate(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccessKeyExists(resourceAKId, &v),
-					testAccCheckRamUserExists(resourceUserId, &u),
-					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.default", "secret"),
 					testAccCheck(map[string]string{
-						"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand),
-						"status":    "Active",
+						"status": "Inactive",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Active",
 					}),
 				),
 			},
@@ -67,195 +63,96 @@ func TestAccAlicloudRAMAccessKey_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRAMAccessKey_multi(t *testing.T) {
-	var v ram.AccessKey
-	var u ram.User
-	resourceAKId := "alicloud_ram_access_key.default.1"
-	resourceUserId := "alicloud_ram_user.default"
-	ra := resourceAttrInit(resourceAKId, accessKeyMultiMap)
-	rand := acctest.RandIntRange(1000000, 9999999)
-
-	testAccCheck := ra.resourceAttrMapUpdateSet()
+func TestAccAliCloudRamAccessKey_basic8985_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_access_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamAccessKeyMap8985)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamAccessKey", []string{"user_name"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamAccessKeyBasicDependence8985)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
-		IDRefreshName: resourceAKId,
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamAccessKeyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAccessKeyMulti(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"user_name":   "${alicloud_ram_user.defaultnH7ezc.name}",
+					"status":      "Inactive",
+					"secret_file": "./secret_file.txt",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccessKeyExists(resourceAKId, &v),
-					testAccCheckRamUserExists(resourceUserId, &u),
-					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"status": "Inactive",
+						"secret": CHECKSET,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_access_key" {
-			continue
-		}
-
-		// Try to find the ak
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateListAccessKeysRequest()
-		request.UserName = rs.Primary.Attributes["user_name"]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListAccessKeys(request)
-		})
-
-		response, _ := raw.(*ram.ListAccessKeysResponse)
-		if len(response.AccessKeys.AccessKey) > 0 {
-			for _, v := range response.AccessKeys.AccessKey {
-				if v.AccessKeyId == rs.Primary.ID {
-					return WrapError(Error("Error Access Key still exist"))
-				}
-			}
-		}
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
-			return WrapError(err)
-		}
-	}
-	return nil
+func TestAccAliCloudRamAccessKey_basic8986_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_access_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamAccessKeyMap8985)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamAccessKey", []string{"user_name"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamAccessKeyBasicDependence8985)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_name":   "${alicloud_ram_user.defaultnH7ezc.name}",
+					"status":      "Inactive",
+					"secret_file": "./secret_file.txt",
+					"pgp_key":     "${var.pgpPubKey}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":           "Inactive",
+						"key_fingerprint":  CHECKSET,
+						"encrypted_secret": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
 }
 
-func testAccRamAccessKeyCreate(rand int) string {
-	return fmt.Sprintf(`
-resource "alicloud_ram_user" "default" {
-  name = "tf-testAcc%sRamAccessKeyConfig%d"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
-
-resource "alicloud_ram_access_key" "default" {
-  user_name = "${alicloud_ram_user.default.name}"
-  status = "Active"
-  secret_file = "/hello.txt"
-  pgp_key = <<EOF
-%s
-EOF
-	}`, defaultRegionToTest, rand, pgpPubKey)
-}
-
-func testAccRamAccessKeyStatus(rand int) string {
-	return fmt.Sprintf(`
-resource "alicloud_ram_user" "default" {
-  name = "tf-testAcc%sRamAccessKeyConfig%d"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
-
-resource "alicloud_ram_access_key" "default" {
-  user_name = "${alicloud_ram_user.default.name}"
-  status = "Inactive"
-  secret_file = "/hello.txt"
-}`, defaultRegionToTest, rand)
-}
-
-func testAccAccessKeyMulti(rand int) string {
-	return fmt.Sprintf(`
-resource "alicloud_ram_user" "default" {
-  name = "tf-testAcc%sRamAccessKeyConfig%d"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
-
-resource "alicloud_ram_access_key" "default" {     
-  user_name = "${alicloud_ram_user.default.name}"
-  status = "Active"
-  secret_file = "/hello.txt"
-  count = 2
-}`, defaultRegionToTest, rand)
-}
-
-var accessKeyBasicMap = map[string]string{
-	"user_name":   CHECKSET,
+var AliCloudRamAccessKeyMap8985 = map[string]string{
+	"create_time": CHECKSET,
 	"status":      CHECKSET,
-	"secret_file": "/hello.txt",
-}
-var accessKeyMultiMap = map[string]string{
-	"user_name":   CHECKSET,
-	"status":      "Active",
-	"secret_file": "/hello.txt",
 }
 
-func testAccCheckRamAccessKeyExists(n string, ak *ram.AccessKey) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Access key ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateListAccessKeysRequest()
-		request.UserName = rs.Primary.Attributes["user_name"]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListAccessKeys(request)
-		})
-
-		if err == nil {
-			response, _ := raw.(*ram.ListAccessKeysResponse)
-			if len(response.AccessKeys.AccessKey) > 0 {
-				for _, v := range response.AccessKeys.AccessKey {
-					if v.AccessKeyId == rs.Primary.ID {
-						*ak = v
-						return nil
-					}
-				}
-			}
-			return WrapError(fmt.Errorf("Error finding access key %s", rs.Primary.ID))
-		}
-		return WrapError(err)
-	}
+func AliCloudRamAccessKeyBasicDependence8985(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
 }
 
-func testAccCheckDecryptSecretKeyAndTest(accessKey, key string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		keyResource, ok := s.RootModule().Resources[accessKey]
-		if !ok {
-			return WrapError(Error("Not found: %s", accessKey))
-		}
-
-		password, ok := keyResource.Primary.Attributes["encrypted_secret"]
-		if !ok {
-			return WrapError(Error("No password in state"))
-		}
-
-		// We can't verify that the decrypted password is correct, because we don't
-		// have it. We can verify that decrypting it does not error
-		_, err := pgpkeys.DecryptBytes(password, key)
-		if err != nil {
-			return WrapError(Error("Error decrypting password: %s", err))
-		}
-
-		return nil
-	}
-}
-
-const pgpPubKey = `mQENBFXbjPUBCADjNjCUQwfxKL+RR2GA6pv/1K+zJZ8UWIF9S0lk7cVIEfJiprzzwiMwBS5cD0da
+	variable "pgpPubKey" {
+  		default = <<EOF
+mQENBFXbjPUBCADjNjCUQwfxKL+RR2GA6pv/1K+zJZ8UWIF9S0lk7cVIEfJiprzzwiMwBS5cD0da
 rGin1FHvIWOZxujA7oW0O2TUuatqI3aAYDTfRYurh6iKLC+VS+F7H+/mhfFvKmgr0Y5kDCF1j0T/
 063QZ84IRGucR/X43IY7kAtmxGXH0dYOCzOe5UBX1fTn3mXGe2ImCDWBH7gOViynXmb6XNvXkP0f
 sF5St9jhO7mbZU9EFkv9O3t3EaURfHopsCVDOlCkFCw5ArY+DUORHRzoMX0PnkyQb5OzibkChzpg
@@ -280,9 +177,13 @@ oPn2jVMnXCm4EKc7fcLFrz/LKmJ8seXhxjM3EdFtylBGCrx3xdK0f+JDNQaC/rhUb5V2XuX6VwoH
 PXFv3m3WfUlnG/om78UjQqyVACRZqqAGmuPq+TSkRUCpt9h+A39LQWkojHqyob3cyLgy6z9Q557O
 9uK3lQozbw2gH9zC0RqnePl+rsWIUU/ga16fH6pWc1uJiEBt8UZGypQ/E56/343epmYAe0a87sHx
 8iDV+dNtDVKfPRENiLOOc19MmS+phmUyrbHqI91c0pmysYcJZCD3a502X1gpjFbPZcRtiTmGnUKd
-OIu60YPNE4+h7u2CfYyFPu3AlUaGNMBlvy6PEpU=`
+OIu60YPNE4+h7u2CfYyFPu3AlUaGNMBlvy6PEpU=
+EOF
+	}
 
-const pgpPrivKey = `lQOYBFXbjPUBCADjNjCUQwfxKL+RR2GA6pv/1K+zJZ8UWIF9S0lk7cVIEfJiprzzwiMwBS5cD0da
+	variable "pgpPriKey" {
+  		default = <<EOF
+lQOYBFXbjPUBCADjNjCUQwfxKL+RR2GA6pv/1K+zJZ8UWIF9S0lk7cVIEfJiprzzwiMwBS5cD0da
 rGin1FHvIWOZxujA7oW0O2TUuatqI3aAYDTfRYurh6iKLC+VS+F7H+/mhfFvKmgr0Y5kDCF1j0T/
 063QZ84IRGucR/X43IY7kAtmxGXH0dYOCzOe5UBX1fTn3mXGe2ImCDWBH7gOViynXmb6XNvXkP0f
 sF5St9jhO7mbZU9EFkv9O3t3EaURfHopsCVDOlCkFCw5ArY+DUORHRzoMX0PnkyQb5OzibkChzpg
@@ -330,4 +231,17 @@ NIupLOUcf/srsm3IXT4SXWVomOc9hjGQiJ3rraIbADsc+6bCAr4XNZS7moViAAcIPXFv3m3WfUln
 G/om78UjQqyVACRZqqAGmuPq+TSkRUCpt9h+A39LQWkojHqyob3cyLgy6z9Q557O9uK3lQozbw2g
 H9zC0RqnePl+rsWIUU/ga16fH6pWc1uJiEBt8UZGypQ/E56/343epmYAe0a87sHx8iDV+dNtDVKf
 PRENiLOOc19MmS+phmUyrbHqI91c0pmysYcJZCD3a502X1gpjFbPZcRtiTmGnUKdOIu60YPNE4+h
-7u2CfYyFPu3AlUaGNMBlvy6PEpU=`
+7u2CfYyFPu3AlUaGNMBlvy6PEpU=
+EOF
+	}
+
+resource "alicloud_ram_user" "defaultnH7ezc" {
+  name         = var.name
+  display_name = "fortRamAKest"
+}
+
+
+`, name)
+}
+
+// Test Ram AccessKey. <<< Resource test cases, automatically generated.
