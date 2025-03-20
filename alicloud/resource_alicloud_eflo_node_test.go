@@ -44,6 +44,10 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 					"server_arch":       "bmserver",
 					"computing_server":  "efg2.C48cA3sen",
 					"stage_num":         "36",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,6 +63,9 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 						"server_arch":       "bmserver",
 						"computing_server":  "efg2.C48cA3sen",
 						"stage_num":         CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
 					}),
 				),
 			},
@@ -69,6 +76,33 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},

@@ -74,6 +74,7 @@ The default ManualRenewal.
 * `server_arch` - (Optional) Architecture
 * `stage_num` - (Optional) Number of stages
 * `status` - (Optional, Computed) The status of the resource
+* `tags` - (Optional, Map) The tag of the resource
 * `zone` - (Optional) Availability Zone
 
 ## Attributes Reference
@@ -87,6 +88,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Node.
+* `update` - (Defaults to 5 mins) Used when update the Node.
 
 ## Import
 
