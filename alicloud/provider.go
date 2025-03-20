@@ -1733,7 +1733,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mse_znode":                                             resourceAlicloudMseZnode(),
 			"alicloud_alikafka_instance_allowed_ip_attachment":               resourceAliCloudAliKafkaInstanceAllowedIpAttachment(),
 			"alicloud_ecs_image_pipeline":                                    resourceAlicloudEcsImagePipeline(),
-			"alicloud_slb_server_group_server_attachment":                    resourceAlicloudSlbServerGroupServerAttachment(),
+			"alicloud_slb_server_group_server_attachment":                    resourceAliCloudSlbServerGroupServerAttachment(),
 			"alicloud_alb_listener_acl_attachment":                           resourceAliCloudAlbListenerAclAttachment(),
 			"alicloud_hbr_ots_backup_plan":                                   resourceAlicloudHbrOtsBackupPlan(),
 			"alicloud_sae_load_balancer_internet":                            resourceAlicloudSaeLoadBalancerInternet(),
