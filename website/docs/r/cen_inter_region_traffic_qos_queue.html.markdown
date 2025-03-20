@@ -2,28 +2,23 @@
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_inter_region_traffic_qos_queue"
-sidebar_current: "docs-alicloud-resource-cen-inter-region-traffic-qos-queue"
 description: |-
-  Provides a Alicloud Cen Inter Region Traffic Qos Queue resource.
+  Provides a Alicloud Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue resource.
 ---
 
 # alicloud_cen_inter_region_traffic_qos_queue
 
-Provides a Cen Inter Region Traffic Qos Queue resource.
+Provides a Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue resource.
 
-For information about Cen Inter Region Traffic Qos Queue and how to use it, see [What is Inter Region Traffic Qos Queue](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createceninterregiontrafficqosqueue).
+
+
+For information about Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue and how to use it, see [What is Inter Region Traffic Qos Queue](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateCenInterRegionTrafficQosQueue).
 
 -> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_inter_region_traffic_qos_queue&exampleId=35bc8c01-a767-41fd-13cb-f44d7cc40132c2a5b3b7&activeTab=example&spm=docs.r.cen_inter_region_traffic_qos_queue.0.35bc8c01a7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -106,19 +101,18 @@ resource "alicloud_cen_inter_region_traffic_qos_queue" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `traffic_qos_policy_id` - (Required, ForceNew) The ID of the traffic scheduling policy.
-* `remain_bandwidth_percent` - (Required) The percentage of cross-region bandwidth that the current queue can use.
-* `dscps` - (Required) The DSCP value of the traffic packet to be matched in the current queue, ranging from 0 to 63.
-* `inter_region_traffic_qos_queue_name` - (Optional) The name of the traffic scheduling policy.
+* `bandwidth` - (Optional, Available since v1.246.0) The guaranteed bandwidth value. If guaranteed by bandwidth is selected for TrafficQosPolicy, this value is valid.
+* `dscps` - (Required, List) The DSCP value of the traffic packet to be matched in the current queue, ranging from 0 to 63.
 * `inter_region_traffic_qos_queue_description` - (Optional) The description information of the traffic scheduling policy.
-
-
+* `inter_region_traffic_qos_queue_name` - (Optional) The name of the traffic scheduling policy.
+* `remain_bandwidth_percent` - (Optional, Int) The percentage of cross-region bandwidth that the current queue can use.
+* `traffic_qos_policy_id` - (Required, ForceNew) The ID of the traffic scheduling policy.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.
-* `status` - The status of the traffic scheduling policy. -**Creating**: The function is being created.-**Active**: available.-**Modifying**: is being modified.-**Deleting**: Deleted.-**Deleted**: Deleted.
+* `id` - The ID of the resource supplied above.
+* `status` - The status of the traffic scheduling policy.
 
 ## Timeouts
 
@@ -129,8 +123,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Cen Inter Region Traffic Qos Queue can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Inter Region Traffic Qos Queue can be imported using the id, e.g.
 
 ```shell
-$terraform import alicloud_cen_inter_region_traffic_qos_queue.example <id>
+$ terraform import alicloud_cen_inter_region_traffic_qos_queue.example <id>
 ```
