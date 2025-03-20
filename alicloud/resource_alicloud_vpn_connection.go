@@ -256,6 +256,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 						"role": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"status": {
 							Type:     schema.TypeString,
@@ -274,6 +275,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 									"local_id": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"ike_enc_alg": {
 										Type:     schema.TypeString,
@@ -298,6 +300,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 									"remote_id": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"ike_pfs": {
 										Type:     schema.TypeString,

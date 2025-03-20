@@ -1,25 +1,28 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
-	"regexp"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
+func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCenTransitRouterVpnAttachmentsRead,
+		Read: dataSourceAliCloudCenTransitRouterVpnAttachmentRead,
 		Schema: map[string]*schema.Schema{
-			"cen_id": {
-				Type:     schema.TypeString,
-				Required: true,
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
 				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -38,21 +41,25 @@ func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
 			},
-			"ids": {
-				Type:     schema.TypeList,
+			"cen_id": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
+			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				ForceNew: true,
+			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-			},
-			"output_file": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"attachments": {
 				Type:     schema.TypeList,
@@ -63,11 +70,15 @@ func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"create_time": {
+						"cen_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"resource_type": {
+						"charge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"create_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -75,11 +86,23 @@ func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 						"transit_router_attachment_description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"transit_router_attachment_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"transit_router_attachment_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -88,23 +111,15 @@ func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
 							Computed: true,
 						},
 						"vpn_owner_id": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"transit_router_attachment_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"transit_router_id": {
+						"resource_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"zone": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -115,32 +130,27 @@ func dataSourceAlicloudCenTransitRouterVpnAttachments() *schema.Resource {
 								},
 							},
 						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func dataSourceAlicloudCenTransitRouterVpnAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCenTransitRouterVpnAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "ListTransitRouterVpnAttachments"
-	request := make(map[string]interface{})
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("transit_router_id"); ok {
-		request["TransitRouterId"] = v
-	}
-	request["CenId"] = d.Get("cen_id")
 	var objects []map[string]interface{}
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return WrapError(err)
-		}
-		nameRegex = r
-	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -150,13 +160,40 @@ func dataSourceAlicloudCenTransitRouterVpnAttachmentsRead(d *schema.ResourceData
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
+
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListTransitRouterVpnAttachments"
 	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
+	if v, ok := d.GetOk("cen_id"); ok {
+		request["CenId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
+	if v, ok := d.GetOk("transit_router_id"); ok {
+		request["TransitRouterId"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	request["MaxResults"] = PageSizeLarge
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -164,75 +201,71 @@ func dataSourceAlicloudCenTransitRouterVpnAttachmentsRead(d *schema.ResourceData
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IllegalParam.TrInstance", "IllegalParam.Region", "IllegalParam.CenId", "IllegalParam.TransitRouterId"}) {
-				d.SetId("ListTransitRouterVpnAttachments")
-				d.Set("ids", []string{})
-				return nil
-			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_vpn_attachments", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
-		}
+
+		resp, _ := jsonpath.Get("$.TransitRouterAttachments[*]", response)
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["TransitRouterAttachmentName"])) {
-				continue
-			}
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["TransitRouterAttachmentId"])]; !ok {
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
-				continue
-			}
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-	for _, object := range objects {
-		mapping := map[string]interface{}{
-			"auto_publish_route_enabled":            object["AutoPublishRouteEnabled"],
-			"create_time":                           object["CreationTime"],
-			"resource_type":                         fmt.Sprint(object["ResourceType"]),
-			"status":                                object["Status"],
-			"transit_router_attachment_description": object["TransitRouterAttachmentDescription"],
-			"transit_router_attachment_name":        object["TransitRouterAttachmentName"],
-			"vpn_id":                                object["VpnId"],
-			"vpn_owner_id":                          fmt.Sprint(object["VpnOwnerId"]),
-			"id":                                    fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_id":          fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_id":                     object["TransitRouterId"],
-		}
+	for _, objectRaw := range objects {
+		mapping := map[string]interface{}{}
 
-		zones := make([]map[string]interface{}, 0)
-		if zonesList, ok := object["Zones"].([]interface{}); ok {
-			for _, v := range zonesList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"zone_id": m1["ZoneId"],
-					}
-					zones = append(zones, temp1)
-				}
+		mapping["id"] = objectRaw["TransitRouterAttachmentId"]
+
+		mapping["auto_publish_route_enabled"] = objectRaw["AutoPublishRouteEnabled"]
+		mapping["cen_id"] = objectRaw["CenId"]
+		mapping["charge_type"] = objectRaw["ChargeType"]
+		mapping["create_time"] = objectRaw["CreationTime"]
+		mapping["status"] = objectRaw["Status"]
+		mapping["transit_router_attachment_description"] = objectRaw["TransitRouterAttachmentDescription"]
+		mapping["transit_router_attachment_name"] = objectRaw["TransitRouterAttachmentName"]
+		mapping["transit_router_id"] = objectRaw["TransitRouterId"]
+		mapping["vpn_id"] = objectRaw["VpnId"]
+		mapping["vpn_owner_id"] = objectRaw["VpnOwnerId"]
+		mapping["resource_type"] = objectRaw["ResourceType"]
+		mapping["transit_router_attachment_id"] = objectRaw["TransitRouterAttachmentId"]
+
+		tagsMaps := objectRaw["Tags"]
+		mapping["tags"] = tagsToMap(tagsMaps)
+		zonesRaw := objectRaw["Zones"]
+		zoneMaps := make([]map[string]interface{}, 0)
+		if zonesRaw != nil {
+			for _, zonesChildRaw := range zonesRaw.([]interface{}) {
+				zoneMap := make(map[string]interface{})
+				zonesChildRaw := zonesChildRaw.(map[string]interface{})
+				zoneMap["zone_id"] = zonesChildRaw["ZoneId"]
+
+				zoneMaps = append(zoneMaps, zoneMap)
 			}
 		}
-		mapping["zone"] = zones
+		mapping["zone"] = zoneMaps
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["TransitRouterAttachmentName"])
+		names = append(names, objectRaw[""])
 		s = append(s, mapping)
 	}
 
@@ -240,16 +273,13 @@ func dataSourceAlicloudCenTransitRouterVpnAttachmentsRead(d *schema.ResourceData
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
-	}
 
 	if err := d.Set("attachments", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
-
 	return nil
 }

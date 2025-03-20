@@ -9,179 +9,209 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCenTransitRouterVpnAttachmentsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
-		}),
-	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_attachment_name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_attachment_name}_fake"`,
-		}),
-	}
-	transitRouterIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"ids":               `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
-			"transit_router_id": `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_id}"`,
-		}),
-		fakeConfig: "",
-	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
+func TestAccAlicloudCenTransitRouterVpnAttachmentDataSource(t *testing.T) {
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := acctest.RandIntRange(1000000, 9999999)
+
+	//idsConf := dataSourceTestAccConfig{
+	//	existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+	//		"ids": `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
+	//	}),
+	//	fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+	//		"ids": `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
+	//	}),
+	//}
+
+	CenIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
-			"status": `"${alicloud_cen_transit_router_vpn_attachment.default.status}"`,
+			"cen_id": `"${alicloud_cen_transit_router.default.cen_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"ids":    `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
-			"status": `"Detaching"`,
+		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+			"ids":    `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
+			"cen_id": `"${alicloud_cen_transit_router.default.id}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"name_regex":        `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_attachment_name}"`,
+	TransitRouterIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
-			"status":            `"${alicloud_cen_transit_router_vpn_attachment.default.status}"`,
-			"transit_router_id": `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_id}"`,
+			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_transit_router_vpn_attachment.default.transit_router_attachment_name}_fake"`,
-			"ids":        `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
-			"status":     `"Detaching"`,
+		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
+			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}_fake"`,
 		}),
-	}
-	var existAlicloudCenTransitRouterVpnAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
-		return map[string]string{
-			"ids.#":         "1",
-			"names.#":       "1",
-			"attachments.#": "1",
-			"attachments.0.auto_publish_route_enabled":            "false",
-			"attachments.0.transit_router_attachment_description": fmt.Sprintf("tf-testAccTransitRouterVpnAttachment-%d", rand),
-			"attachments.0.transit_router_attachment_name":        fmt.Sprintf("tf-testAccTransitRouterVpnAttachment-%d", rand),
-			"attachments.0.transit_router_id":                     CHECKSET,
-			"attachments.0.vpn_id":                                CHECKSET,
-			"attachments.0.vpn_owner_id":                          CHECKSET,
-			"attachments.0.zone.#":                                "1",
-			"attachments.0.transit_router_attachment_id":          CHECKSET,
-			"attachments.0.id":                                    CHECKSET,
-			"attachments.0.status":                                CHECKSET,
-			"attachments.0.create_time":                           CHECKSET,
-			"attachments.0.resource_type":                         CHECKSET,
-		}
-	}
-	var fakeAlicloudCenTransitRouterVpnAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
-		return map[string]string{
-			"ids.#":   "0",
-			"names.#": "0",
-		}
-	}
-	var alicloudCenTransitRouterVpnAttachmentsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_cen_transit_router_vpn_attachments.default",
-		existMapFunc: existAlicloudCenTransitRouterVpnAttachmentsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudCenTransitRouterVpnAttachmentsDataSourceNameMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheck(t)
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+			"ids":    `["${alicloud_cen_transit_router_vpn_attachment.default.id}"]`,
+			"cen_id": `"${alicloud_cen_transit_router.default.cen_id}"`,
+
+			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand, map[string]string{
+			"ids":    `["${alicloud_cen_transit_router_vpn_attachment.default.id}_fake"]`,
+			"cen_id": `"${alicloud_cen_transit_router.default.id}_fake"`,
+
+			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}_fake"`,
+		}),
 	}
-	alicloudCenTransitRouterVpnAttachmentsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, transitRouterIdConf, statusConf, allConf)
+
+	CenTransitRouterVpnAttachmentCheckInfo.dataSourceTestCheck(t, rand, CenIdConf, TransitRouterIdConf, allConf)
 }
-func testAccCheckAlicloudCenTransitRouterVpnAttachmentsDataSourceName(rand int, attrMap map[string]string) string {
+
+var existCenTransitRouterVpnAttachmentMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"attachments.#":                                       "1",
+		"attachments.0.status":                                CHECKSET,
+		"attachments.0.transit_router_attachment_id":          CHECKSET,
+		"attachments.0.vpn_owner_id":                          CHECKSET,
+		"attachments.0.zone.#":                                CHECKSET,
+		"attachments.0.create_time":                           CHECKSET,
+		"attachments.0.transit_router_attachment_name":        CHECKSET,
+		"attachments.0.auto_publish_route_enabled":            CHECKSET,
+		"attachments.0.charge_type":                           CHECKSET,
+		"attachments.0.cen_id":                                CHECKSET,
+		"attachments.0.transit_router_attachment_description": CHECKSET,
+		"attachments.0.tags.%":                                CHECKSET,
+		"attachments.0.transit_router_id":                     CHECKSET,
+		"attachments.0.vpn_id":                                CHECKSET,
+	}
+}
+
+var fakeCenTransitRouterVpnAttachmentMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"attachments.#": "0",
+	}
+}
+
+var CenTransitRouterVpnAttachmentCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_cen_transit_router_vpn_attachments.default",
+	existMapFunc: existCenTransitRouterVpnAttachmentMapFunc,
+	fakeMapFunc:  fakeCenTransitRouterVpnAttachmentMapFunc,
+}
+
+func testAccCheckAlicloudCenTransitRouterVpnAttachmentSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
-
 	config := fmt.Sprintf(`
-
-variable "name" {	
-	default = "tf-testAccTransitRouterVpnAttachment-%d"
+variable "name" {
+	default = "tf-testAccCenTransitRouterVpnAttachment%d"
 }
+data "alicloud_account" "default" {
+}
+
 resource "alicloud_cen_instance" "default" {
-	cen_instance_name = var.name
+  cen_instance_name = "test-vpn-attachment"
 }
 
 resource "alicloud_cen_transit_router" "default" {
-	cen_id = alicloud_cen_instance.default.id
-	transit_router_description = "desd"
-	transit_router_name = var.name
+  cen_id = alicloud_cen_instance.default.id
 }
 
-data "alicloud_cen_transit_router_available_resources" "default" {}
+resource "alicloud_cen_transit_router_cidr" "default" {
+  cidr              = "192.168.10.0/24"
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+}
 
 resource "alicloud_vpn_customer_gateway" "default" {
-  name        = "${var.name}"
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = "testAccVpnConnectionDesc"
+  ip_address            = "1.1.1.7"
+  customer_gateway_name = "test-vpn-attachment"
+  depends_on            = ["alicloud_cen_transit_router_cidr.default"]
 }
-resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  network_type        = "public"
-  local_subnet        = "0.0.0.0/0"
-  remote_subnet       = "0.0.0.0/0"
-  effect_immediately  = false
-  ike_config {
-    ike_auth_alg = "md5"
-    ike_enc_alg  = "des"
-    ike_version  = "ikev2"
-    ike_mode     = "main"
-    ike_lifetime = 86400
-    psk          = "tf-testvpn2"
-    ike_pfs      = "group1"
-    remote_id    = "testbob2"
-    local_id     = "testalice2"
-  }
-  ipsec_config {
-    ipsec_pfs      = "group5"
-    ipsec_enc_alg  = "des"
-    ipsec_auth_alg = "md5"
-    ipsec_lifetime = 86400
-  }
-  bgp_config {
-    enable       = true
-    local_asn    = 45014
-    tunnel_cidr  = "169.254.11.0/30"
-    local_bgp_ip = "169.254.11.1"
-  }
-  health_check_config {
-    enable   = true
-    sip      = "192.168.1.1"
-    dip      = "10.0.0.1"
-    interval = 10
-    retry    = 10
-    policy   = "revoke_route"
 
+data "alicloud_cen_transit_router_service" "default" {
+	enable = "On"
+}
+
+resource "alicloud_vpn_gateway_vpn_attachment" "default" {
+  network_type = "public"
+  local_subnet = "0.0.0.0/0"
+  enable_tunnels_bgp = "false"
+  vpn_attachment_name = var.name
+  tunnel_options_specification {
+    customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+    enable_dpd = "true"
+    enable_nat_traversal = "true"
+    tunnel_index = "1"
+      tunnel_bgp_config {
+      local_bgp_ip = "169.254.10.1"
+      tunnel_cidr = "169.254.10.0/30"
+      local_asn = "1219001"
+    }
+    
+    tunnel_ike_config {
+      remote_id = "2.2.2.2"
+      ike_enc_alg = "aes"
+      ike_mode = "main"
+      ike_version = "ikev1"
+      local_id = "1.1.1.1"
+      ike_auth_alg = "md5"
+      ike_lifetime = "86100"
+      ike_pfs = "group2"
+      psk = "12345678"
+    }
+    
+      tunnel_ipsec_config {
+      ipsec_auth_alg = "md5"
+      ipsec_enc_alg = "aes"
+      ipsec_lifetime = "86200"
+      ipsec_pfs = "group5"
+    }
+    
   }
-  enable_dpd           = true
-  enable_nat_traversal = true
-  vpn_attachment_name  = var.name
+  tunnel_options_specification {
+    enable_nat_traversal = "true"
+    tunnel_index = "2"
+      tunnel_bgp_config {
+      local_asn = "1219001"
+      local_bgp_ip = "169.254.20.1"
+      tunnel_cidr = "169.254.20.0/30"
+    }
+    
+      tunnel_ike_config {
+      local_id = "4.4.4.4"
+      remote_id = "5.5.5.5"
+      ike_lifetime = "86400"
+      ike_pfs = "group5"
+      ike_mode = "main"
+      ike_version = "ikev2"
+      psk = "32333442"
+      ike_auth_alg = "md5"
+      ike_enc_alg = "aes"
+    }
+    
+      tunnel_ipsec_config {
+      ipsec_enc_alg = "aes"
+      ipsec_lifetime = "86400"
+      ipsec_pfs = "group5"
+      ipsec_auth_alg = "sha256"
+    }
+    
+    customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+    enable_dpd = "true"
+  }
+  
+  remote_subnet = "0.0.0.0/0"
 }
 
 resource "alicloud_cen_transit_router_vpn_attachment" "default" {
-	auto_publish_route_enabled = false
-	transit_router_attachment_description = var.name
-	transit_router_attachment_name = var.name
-	cen_id = alicloud_cen_transit_router.default.cen_id
-	transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-	vpn_id = alicloud_vpn_gateway_vpn_attachment.default.id
-	zone {
-		zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
-	}
+  transit_router_attachment_description = "test-vpn-attachment"
+  transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
+  vpn_id = "${alicloud_vpn_gateway_vpn_attachment.default.id}"
+  auto_publish_route_enabled = "false"
+  charge_type = "POSTPAY"
+  transit_router_attachment_name = "test-vpn-attachment"
+  vpn_owner_id = "${data.alicloud_account.default.id}"
+  cen_id = "${alicloud_cen_transit_router.default.cen_id}"
 }
 
 data "alicloud_cen_transit_router_vpn_attachments" "default" {
-	cen_id = alicloud_cen_transit_router.default.cen_id
-	%s
+%s
 }
-`, rand, strings.Join(pairs, " \n "))
+`, rand, strings.Join(pairs, "\n   "))
 	return config
 }
