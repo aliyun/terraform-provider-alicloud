@@ -93,7 +93,7 @@ The following arguments are supported:
 * `endpoint_id` - (Required, ForceNew) The endpoint ID.
 * `eni_ip` - (Optional, ForceNew, Computed, Available since v1.212.0) The IP address of the endpoint ENI.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch in the zone.
-* `zone_id` - (Optional, ForceNew) The zone ID.
+* `zone_id` - (Optional, Computed, ForceNew) The zone ID.
 
 ## Attributes Reference
 

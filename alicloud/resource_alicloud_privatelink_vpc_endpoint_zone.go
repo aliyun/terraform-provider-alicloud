@@ -57,6 +57,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZone() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},

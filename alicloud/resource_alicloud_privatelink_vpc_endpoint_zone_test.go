@@ -325,8 +325,51 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 	}
 }
 
-// Test PrivateLink VpcEndpointZone. >>> Resource test cases, automatically generated.
-// Case 4898
+func TestAccAliCloudPrivateLinkVpcEndpointZone_basic_without_zoneid(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_zone.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointZoneMap4898)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointZone")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointzone%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointZoneBasicDependence4898)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.defaulti9F95i.id}",
+					"vswitch_id":  "${alicloud_vswitch.defaultmEwUAc.id}",
+					"eni_ip":      "10.1.0.245",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":     CHECKSET,
+						"endpoint_id": CHECKSET,
+						"vswitch_id":  CHECKSET,
+						"eni_ip":      "10.1.0.245",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPrivateLinkVpcEndpointZone_basic4898(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_zone.default"
@@ -459,5 +502,3 @@ resource "alicloud_privatelink_vpc_endpoint_service_resource" "defaultdTPOne" {
 
 `, name)
 }
-
-// Test PrivateLink VpcEndpointZone. <<< Resource test cases, automatically generated.
