@@ -174,6 +174,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cs_kubernetes_node_pools":            dataSourceAliCloudAckNodepools(),
 			"alicloud_ram_system_policys":                  dataSourceAliCloudRamSystemPolicys(),
 			"alicloud_esa_sites":                           dataSourceAliCloudEsaSites(),
 			"alicloud_cloud_firewall_nat_firewalls":        dataSourceAliCloudCloudFirewallNatFirewalls(),
