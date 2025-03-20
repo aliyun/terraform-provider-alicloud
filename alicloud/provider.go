@@ -1313,7 +1313,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_connection":                                        resourceAliCloudVPNGatewayVpnConnection(),
 			"alicloud_ssl_vpn_server":                                        resourceAliyunSslVpnServer(),
 			"alicloud_ssl_vpn_client_cert":                                   resourceAliyunSslVpnClientCert(),
-			"alicloud_cen_instance":                                          resourceAliCloudCenInstance(),
+			"alicloud_cen_instance":                                          resourceAliCloudCenCenInstance(),
 			"alicloud_cen_instance_attachment":                               resourceAlicloudCenInstanceAttachment(),
 			"alicloud_cen_bandwidth_package":                                 resourceAlicloudCenBandwidthPackage(),
 			"alicloud_cen_bandwidth_package_attachment":                      resourceAlicloudCenBandwidthPackageAttachment(),
