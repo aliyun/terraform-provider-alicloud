@@ -72,6 +72,66 @@ func TestAccAliCloudCenInterRegionTrafficQosQueue_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCenInterRegionTrafficQosQueue_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_cen_inter_region_traffic_qos_queue.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudCenInterRegionTrafficQosQueueMap)
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccCenInterRegionTrafficQosQueue-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudCenInterRegionTrafficQosQueueBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenInterRegionTrafficQosQueueDestroyWithProviders(&providers),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_qos_policy_id": "${alicloud_cen_inter_region_traffic_qos_policy.default.id}",
+					"dscps":                 []string{"2", "3"},
+					"bandwidth":             "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCenInterRegionTrafficQosQueueExistsWithProviders(resourceId, v, &providers),
+					testAccCheck(map[string]string{
+						"traffic_qos_policy_id": CHECKSET,
+						"dscps.#":               "2",
+						"bandwidth":             "1",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":                                  "2",
+					"inter_region_traffic_qos_queue_name":        name + "_update",
+					"inter_region_traffic_qos_queue_description": "testDescription",
+					"dscps": []string{"4"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCenInterRegionTrafficQosQueueExistsWithProviders(resourceId, v, &providers),
+					testAccCheck(map[string]string{
+						"bandwidth":                                  "2",
+						"inter_region_traffic_qos_queue_name":        name + "_update",
+						"inter_region_traffic_qos_queue_description": "testDescription",
+						"dscps.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCenInterRegionTrafficQosQueueDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, provider := range *providers {
@@ -204,6 +264,72 @@ func resourceAlicloudCenInterRegionTrafficQosQueueBasicDependence(name string) s
   		transit_router_attachment_id                = alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id
   		inter_region_traffic_qos_policy_name        = var.name
   		inter_region_traffic_qos_policy_description = var.name
+	}
+
+`, name)
+}
+
+func resourceAlicloudCenInterRegionTrafficQosQueueBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	provider "alicloud" {
+  		alias  = "bj"
+  		region = "cn-beijing"
+	}
+
+	provider "alicloud" {
+  		alias  = "hz"
+  		region = "cn-hangzhou"
+	}
+
+	resource "alicloud_cen_instance" "default" {
+  		provider          = alicloud.hz
+  		cen_instance_name = var.name
+	}
+
+	resource "alicloud_cen_bandwidth_package" "default" {
+  		provider               = alicloud.hz
+  		bandwidth              = 5
+  		geographic_region_a_id = "China"
+  		geographic_region_b_id = "China"
+	}
+
+	resource "alicloud_cen_bandwidth_package_attachment" "default" {
+  		provider             = alicloud.hz
+  		instance_id          = alicloud_cen_instance.default.id
+  		bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
+	}
+
+	resource "alicloud_cen_transit_router" "hz" {
+  		provider = alicloud.hz
+  		cen_id   = alicloud_cen_bandwidth_package_attachment.default.instance_id
+	}
+
+	resource "alicloud_cen_transit_router" "bj" {
+  		provider = alicloud.bj
+  		cen_id   = alicloud_cen_transit_router.hz.cen_id
+	}
+
+	resource "alicloud_cen_transit_router_peer_attachment" "default" {
+  		provider                      = alicloud.hz
+  		cen_id                        = alicloud_cen_instance.default.id
+  		transit_router_id             = alicloud_cen_transit_router.hz.transit_router_id
+  		peer_transit_router_region_id = "cn-beijing"
+  		peer_transit_router_id        = alicloud_cen_transit_router.bj.transit_router_id
+  		cen_bandwidth_package_id      = alicloud_cen_bandwidth_package_attachment.default.bandwidth_package_id
+  		bandwidth                     = 5
+	}
+
+	resource "alicloud_cen_inter_region_traffic_qos_policy" "default" {
+  		provider                                    = alicloud.hz
+  		transit_router_id                           = alicloud_cen_transit_router.hz.transit_router_id
+  		transit_router_attachment_id                = alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id
+  		inter_region_traffic_qos_policy_name        = var.name
+  		inter_region_traffic_qos_policy_description = var.name
+        bandwidth_guarantee_mode = "byBandwidth"
 	}
 
 `, name)
