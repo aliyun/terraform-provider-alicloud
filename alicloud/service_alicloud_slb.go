@@ -1160,27 +1160,33 @@ func (s *SlbService) DescribeSlbServerGroupServerAttachment(id string) (object m
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"The specified VServerGroupId does not exist", "InvalidParameter"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.BackendServers.BackendServer", response)
+
+	resp, err := jsonpath.Get("$.BackendServers.BackendServer", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackendServers.BackendServer", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Slb:ServerGroupServerAttachment", id)), NotFoundWithResponse, response)
 	}
-	for _, v := range v.([]interface{}) {
+
+	for _, v := range resp.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["ServerId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["Port"]) == parts[2] {
 			idExist = true
 			return v.(map[string]interface{}), nil
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Slb:ServerGroupServerAttachment", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
