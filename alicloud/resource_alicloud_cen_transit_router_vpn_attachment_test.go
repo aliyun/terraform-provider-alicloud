@@ -355,7 +355,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterVpnAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudCenTransitRouterVpnAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -378,7 +378,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterVpnAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudCenTransitRouterVpnAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -405,7 +405,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterVpnAttachmentUpdate(dExisted, rawClient)
+	err = resourceAliCloudCenTransitRouterVpnAttachmentUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -446,7 +446,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterVpnAttachmentUpdate(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterVpnAttachmentUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -490,7 +490,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterVpnAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterVpnAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -509,7 +509,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterVpnAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudCenTransitRouterVpnAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -540,7 +540,7 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterVpnAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterVpnAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -550,3 +550,393 @@ func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 		}
 	}
 }
+
+// Test Cen TransitRouterVpnAttachment. >>> Resource test cases, automatically generated.
+// Case VPN Attachment双隧道 10332
+func TestAccAliCloudCenTransitRouterVpnAttachment_basic10332(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpnAttachmentMap10332)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpnAttachmentBasicDependence10332)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_owner_id":                          "${data.alicloud_account.default.id}",
+					"cen_id":                                "${alicloud_cen_transit_router.defaultM8Zo6H.cen_id}",
+					"transit_router_attachment_description": "test-vpn-attachment",
+					"transit_router_id":                     "${alicloud_cen_transit_router.defaultM8Zo6H.transit_router_id}",
+					"vpn_id":                                "${alicloud_vpn_gateway_vpn_attachment.defaultvrPzdh.id}",
+					"auto_publish_route_enabled":            "false",
+					"charge_type":                           "POSTPAY",
+					"transit_router_attachment_name":        "test-vpn-attachment",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_owner_id":                          CHECKSET,
+						"cen_id":                                CHECKSET,
+						"transit_router_attachment_description": "test-vpn-attachment",
+						"transit_router_id":                     CHECKSET,
+						"vpn_id":                                CHECKSET,
+						"auto_publish_route_enabled":            "false",
+						"charge_type":                           "POSTPAY",
+						"transit_router_attachment_name":        "test-vpn-attachment",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_attachment_description": "test-vpn-attachment2",
+					"auto_publish_route_enabled":            "true",
+					"transit_router_attachment_name":        "test-vpn-attachment2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_attachment_description": "test-vpn-attachment2",
+						"auto_publish_route_enabled":            "true",
+						"transit_router_attachment_name":        "test-vpn-attachment2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterVpnAttachmentMap10332 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudCenTransitRouterVpnAttachmentBasicDependence10332(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_cen_instance" "defaultbpR5Uk" {
+  cen_instance_name = "test-vpn-attachment"
+}
+
+resource "alicloud_cen_transit_router" "defaultM8Zo6H" {
+  cen_id = alicloud_cen_instance.defaultbpR5Uk.id
+}
+
+resource "alicloud_cen_transit_router_cidr" "defaultuUtyCv" {
+  cidr              = "192.168.10.0/24"
+  transit_router_id = alicloud_cen_transit_router.defaultM8Zo6H.transit_router_id
+}
+
+resource "alicloud_vpn_customer_gateway" "defaultMeoCIz" {
+  ip_address            = "0.0.0.0"
+  customer_gateway_name = "test-vpn-attachment"
+  depends_on            = ["alicloud_cen_transit_router_cidr.defaultuUtyCv"]
+}
+
+data "alicloud_cen_transit_router_service" "default" {
+	enable = "On"
+}
+
+resource "alicloud_vpn_gateway_vpn_attachment" "defaultvrPzdh" {
+  network_type = "public"
+  local_subnet = "0.0.0.0/0"
+  enable_tunnels_bgp = "false"
+  vpn_attachment_name = var.name
+  tunnel_options_specification {
+    customer_gateway_id = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+    enable_dpd = "true"
+    enable_nat_traversal = "true"
+    tunnel_index = "1"
+
+    tunnel_ike_config {
+      remote_id = "2.2.2.2"
+      ike_enc_alg = "aes"
+      ike_mode = "main"
+      ike_version = "ikev1"
+      local_id = "1.1.1.1"
+      ike_auth_alg = "md5"
+      ike_lifetime = "86100"
+      ike_pfs = "group2"
+      psk = "12345678"
+    }
+    
+      tunnel_ipsec_config {
+      ipsec_auth_alg = "md5"
+      ipsec_enc_alg = "aes"
+      ipsec_lifetime = "86200"
+      ipsec_pfs = "group5"
+    }
+    
+  }
+  tunnel_options_specification {
+    enable_nat_traversal = "true"
+    tunnel_index = "2"
+      tunnel_ike_config {
+      local_id = "4.4.4.4"
+      remote_id = "5.5.5.5"
+      ike_lifetime = "86400"
+      ike_pfs = "group5"
+      ike_mode = "main"
+      ike_version = "ikev2"
+      psk = "32333442"
+      ike_auth_alg = "md5"
+      ike_enc_alg = "aes"
+    }
+    
+      tunnel_ipsec_config {
+      ipsec_enc_alg = "aes"
+      ipsec_lifetime = "86400"
+      ipsec_pfs = "group5"
+      ipsec_auth_alg = "sha256"
+    }
+    
+    customer_gateway_id = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+    enable_dpd = "true"
+  }
+  
+  remote_subnet = "0.0.0.0/0"
+}
+
+`, name)
+}
+
+// Case VPN Attachment单隧道 10409
+func TestAccAliCloudCenTransitRouterVpnAttachment_basic10409(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpnAttachmentMap10409)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpnAttachmentBasicDependence10409)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_owner_id":                          "${data.alicloud_account.default.id}",
+					"cen_id":                                "${alicloud_cen_transit_router.defaultM8Zo6H.cen_id}",
+					"transit_router_attachment_description": "test-vpn-attachment",
+					"transit_router_id":                     "${alicloud_cen_transit_router_cidr.defaultuUtyCv.transit_router_id}",
+					"vpn_id":                                "${alicloud_vpn_gateway_vpn_attachment.defaultvrPzdh.id}",
+					"auto_publish_route_enabled":            "false",
+					"zone": []map[string]interface{}{
+						{
+							"zone_id": "eu-central-1a",
+						},
+					},
+					"charge_type":                    "POSTPAY",
+					"transit_router_attachment_name": "test-vpn-attachment",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_owner_id":                          CHECKSET,
+						"cen_id":                                CHECKSET,
+						"transit_router_attachment_description": "test-vpn-attachment",
+						"transit_router_id":                     CHECKSET,
+						"vpn_id":                                CHECKSET,
+						"auto_publish_route_enabled":            "false",
+						"zone.#":                                "1",
+						"charge_type":                           "POSTPAY",
+						"transit_router_attachment_name":        "test-vpn-attachment",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_attachment_description": "test-vpn-attachment2",
+					"auto_publish_route_enabled":            "true",
+					"transit_router_attachment_name":        "test-vpn-attachment2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_attachment_description": "test-vpn-attachment2",
+						"auto_publish_route_enabled":            "true",
+						"transit_router_attachment_name":        "test-vpn-attachment2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterVpnAttachmentMap10409 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudCenTransitRouterVpnAttachmentBasicDependence10409(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_cen_instance" "defaultbpR5Uk" {
+  cen_instance_name = "test-vpn-attachment"
+}
+
+resource "alicloud_cen_transit_router" "defaultM8Zo6H" {
+  cen_id = alicloud_cen_instance.defaultbpR5Uk.id
+}
+
+resource "alicloud_cen_transit_router_cidr" "defaultuUtyCv" {
+  cidr              = "192.168.10.0/24"
+  transit_router_id = alicloud_cen_transit_router.defaultM8Zo6H.transit_router_id
+}
+
+resource "alicloud_vpn_customer_gateway" "defaultMeoCIz" {
+  ip_address            = "0.0.0.0"
+  customer_gateway_name = "test-vpn-attachment"
+}
+
+resource "alicloud_vpn_gateway_vpn_attachment" "defaultvrPzdh" {
+  customer_gateway_id = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+  vpn_attachment_name = "test-vpn-attachment"
+  local_subnet        = "10.0.1.0/24"
+  remote_subnet       = "10.0.2.0/24"
+}
+
+
+`, name)
+}
+
+// Test Cen TransitRouterVpnAttachment. <<< Resource test cases, automatically generated.

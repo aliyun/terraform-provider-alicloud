@@ -622,7 +622,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -645,7 +645,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -672,7 +672,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
+	err = resourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -786,7 +786,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
+		err := resourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -830,7 +830,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpnGatewayVpnAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudVpnGatewayVpnAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -849,7 +849,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -877,7 +877,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -887,3 +887,1202 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 		}
 	}
 }
+
+// Test VpnGateway VpnAttachment. >>> Resource test cases, automatically generated.
+// Case 双隧道VpnAttachment测试用例-基础增删改查 10338
+func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap10338)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependence10338)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "0.0.0.0/0",
+					"enable_tunnels_bgp":  "true",
+					"vpn_attachment_name": name,
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "1",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219001",
+									"local_bgp_ip": "169.254.10.1",
+									"tunnel_cidr":  "169.254.10.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "86100",
+									"ike_mode":     "main",
+									"ike_pfs":      "group2",
+									"ike_version":  "ikev1",
+									"local_id":     "1.1.1.1",
+									"psk":          "12345678",
+									"remote_id":    "2.2.2.2",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "md5",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_lifetime": "86200",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+						{
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "2",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219001",
+									"local_bgp_ip": "169.254.20.1",
+									"tunnel_cidr":  "169.254.20.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "md5",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "86400",
+									"ike_mode":     "main",
+									"ike_pfs":      "group5",
+									"ike_version":  "ikev2",
+									"local_id":     "4.4.4.4",
+									"psk":          "32333442",
+									"remote_id":    "5.5.5.5",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha256",
+									"ipsec_enc_alg":  "aes",
+									"ipsec_lifetime": "86400",
+									"ipsec_pfs":      "group5",
+								},
+							},
+							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw1.id}",
+						},
+					},
+					"remote_subnet":     "0.0.0.0/0",
+					"network_type":      "public",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":                   "0.0.0.0/0",
+						"enable_tunnels_bgp":             "true",
+						"vpn_attachment_name":            name,
+						"tunnel_options_specification.#": "2",
+						"remote_subnet":                  "0.0.0.0/0",
+						"network_type":                   "public",
+						"resource_group_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "9.9.9.9/32",
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"enable_dpd":           "false",
+							"enable_nat_traversal": "false",
+							"tunnel_index":         "2",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"psk":          "tunnel2new",
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes256",
+									"ike_lifetime": "86122",
+									"ike_mode":     "aggressive",
+									"ike_pfs":      "group14",
+									"ike_version":  "ikev2",
+									"local_id":     "2.2.2.2",
+									"remote_id":    "3.3.3.3",
+								},
+							},
+							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219002",
+									"local_bgp_ip": "169.254.42.1",
+									"tunnel_cidr":  "169.254.42.0/30",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "aes192",
+									"ipsec_lifetime": "86111",
+									"ipsec_pfs":      "disabled",
+								},
+							},
+						},
+						{
+							"enable_dpd":           "false",
+							"enable_nat_traversal": "false",
+							"tunnel_index":         "1",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219002",
+									"local_bgp_ip": "169.254.41.1",
+									"tunnel_cidr":  "169.254.41.0/30",
+								},
+							},
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes192",
+									"ike_lifetime": "86022",
+									"ike_mode":     "aggressive",
+									"ike_pfs":      "group2",
+									"ike_version":  "ikev1",
+									"local_id":     "5.5.5.5",
+									"psk":          "123456789",
+									"remote_id":    "4.4.4.4",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "md5",
+									"ipsec_enc_alg":  "aes192",
+									"ipsec_lifetime": "86111",
+									"ipsec_pfs":      "disabled",
+								},
+							},
+							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
+						},
+					},
+					"remote_subnet":     "9.0.0.0/8",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":                   "9.9.9.9/32",
+						"tunnel_options_specification.#": "2",
+						"remote_subnet":                  "9.0.0.0/8",
+						"resource_group_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":       "0.0.0.0/0",
+					"enable_tunnels_bgp": "false",
+					"tunnel_options_specification": []map[string]interface{}{
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw1.id}",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
+							"tunnel_index":         "1",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "55555",
+									"ike_mode":     "main",
+									"ike_pfs":      "group2",
+									"ike_version":  "ikev2",
+									"local_id":     "54.54.3.2",
+									"psk":          "sadsaa",
+									"remote_id":    "54.54.3.23",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "3des",
+									"ipsec_lifetime": "44232",
+									"ipsec_pfs":      "group5",
+								},
+							},
+						},
+						{
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.cgw2.id}",
+							"enable_dpd":           "false",
+							"enable_nat_traversal": "false",
+							"tunnel_index":         "2",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"ike_auth_alg": "sha1",
+									"ike_enc_alg":  "aes",
+									"ike_lifetime": "4432",
+									"ike_mode":     "main",
+									"ike_pfs":      "group14",
+									"ike_version":  "ikev1",
+									"local_id":     "54.54.3.2",
+									"psk":          "wdascsax",
+									"remote_id":    "54.54.3.29",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "des",
+									"ipsec_lifetime": "86400",
+									"ipsec_pfs":      "group1",
+								},
+							},
+						},
+					},
+					"remote_subnet":     "0.0.0.0/0",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":                   "0.0.0.0/0",
+						"enable_tunnels_bgp":             "false",
+						"tunnel_options_specification.#": "2",
+						"remote_subnet":                  "0.0.0.0/0",
+						"resource_group_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayVpnAttachmentMap10338 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpnGatewayVpnAttachmentBasicDependence10338(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-huhehaote"
+}
+
+variable "az2" {
+  default = "cn-huhehaote-b"
+}
+
+variable "az1" {
+  default = "cn-huhehaote-a"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpn_customer_gateway" "cgw1" {
+  ip_address = "2.2.2.2"
+  asn        = "1219001"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw2" {
+  ip_address            = "43.43.3.22"
+  asn                   = "44331"
+  customer_gateway_name = "test_amp"
+}
+
+
+`, name)
+}
+
+// Case 单隧道VpnAttachment增删改查 10363
+func TestAccAliCloudVpnGatewayVpnAttachment_basic10363(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap10363)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependence10363)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "0.0.0.0/0",
+					"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw1.id}",
+					"vpn_attachment_name": name,
+					"effect_immediately":  "true",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"local_asn":    "2222",
+							"local_bgp_ip": "169.254.40.1",
+							"tunnel_cidr":  "169.254.40.0/30",
+						},
+					},
+					"remote_subnet": "0.0.0.0/0",
+					"network_type":  "private",
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group5",
+							"ipsec_enc_alg":  "3des",
+							"ipsec_auth_alg": "md5",
+							"ipsec_lifetime": "86100",
+						},
+					},
+					"enable_nat_traversal": "true",
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "md5",
+							"local_id":     "32.32.32.32",
+							"ike_enc_alg":  "3des",
+							"ike_version":  "ikev1",
+							"ike_mode":     "main",
+							"ike_lifetime": "86100",
+							"psk":          "122312421",
+							"remote_id":    "5.5.5.5",
+							"ike_pfs":      "group2",
+						},
+					},
+					"enable_dpd": "true",
+					"health_check_config": []map[string]interface{}{
+						{
+							"enable":   "true",
+							"dip":      "32.2.2.2",
+							"retry":    "9",
+							"sip":      "3.3.3.3",
+							"interval": "11",
+							"policy":   "reserve_route",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "0.0.0.0/0",
+						"customer_gateway_id":  CHECKSET,
+						"vpn_attachment_name":  name,
+						"effect_immediately":   "true",
+						"remote_subnet":        "0.0.0.0/0",
+						"network_type":         "private",
+						"enable_nat_traversal": "true",
+						"enable_dpd":           "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "2.0.0.0/8",
+					"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
+					"vpn_attachment_name": name + "_update",
+					"effect_immediately":  "false",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"local_asn":    "1219002",
+							"local_bgp_ip": "169.254.20.1",
+							"tunnel_cidr":  "169.254.20.0/30",
+						},
+					},
+					"remote_subnet": "3.0.0.0/8",
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group1",
+							"ipsec_enc_alg":  "aes192",
+							"ipsec_auth_alg": "sha1",
+							"ipsec_lifetime": "82222",
+						},
+					},
+					"enable_nat_traversal": "false",
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha1",
+							"local_id":     "32.11.1.1",
+							"ike_enc_alg":  "aes192",
+							"ike_version":  "ikev2",
+							"ike_mode":     "aggressive",
+							"ike_lifetime": "5888",
+							"psk":          "12321416",
+							"remote_id":    "32.32.32.32",
+							"ike_pfs":      "group1",
+						},
+					},
+					"enable_dpd": "false",
+					"health_check_config": []map[string]interface{}{
+						{
+							"enable":   "true",
+							"dip":      "32.32.32.11",
+							"retry":    "3",
+							"sip":      "1.32.2.1",
+							"interval": "10",
+							"policy":   "revoke_route",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "2.0.0.0/8",
+						"customer_gateway_id":  CHECKSET,
+						"vpn_attachment_name":  name + "_update",
+						"effect_immediately":   "false",
+						"remote_subnet":        "3.0.0.0/8",
+						"enable_nat_traversal": "false",
+						"enable_dpd":           "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet":        "0.0.0.0/0",
+					"vpn_attachment_name": name + "_update",
+					"effect_immediately":  "true",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"remote_subnet": "0.0.0.0/0",
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group1",
+							"ipsec_enc_alg":  "des",
+							"ipsec_auth_alg": "sha256",
+							"ipsec_lifetime": "3222",
+						},
+					},
+					"enable_nat_traversal": "true",
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha256",
+							"local_id":     "5.54.3.2",
+							"ike_enc_alg":  "aes192",
+							"ike_version":  "ikev2",
+							"ike_mode":     "main",
+							"ike_lifetime": "44444",
+							"psk":          "4343343",
+							"remote_id":    "54.54.3.4",
+							"ike_pfs":      "group5",
+						},
+					},
+					"health_check_config": []map[string]interface{}{
+						{
+							"enable": "false",
+							"policy": "revoke_route",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "0.0.0.0/0",
+						"vpn_attachment_name":  name + "_update",
+						"effect_immediately":   "true",
+						"remote_subnet":        "0.0.0.0/0",
+						"enable_nat_traversal": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayVpnAttachmentMap10363 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpnGatewayVpnAttachmentBasicDependence10363(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-huhehaote"
+}
+
+variable "name2" {
+  default = "test_amp2"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw1" {
+  ip_address = "54.54.54.21"
+  asn        = "42311"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw2" {
+  ip_address = "3.12.22.33"
+  asn        = "44492"
+}
+
+
+`, name)
+}
+
+// Case VpnAttachment测试用例-幸确-私网 5629
+func TestAccAliCloudVpnGatewayVpnAttachment_basic5629(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap5629)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependence5629)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "0.0.0.0/0",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"local_asn":    "45104",
+							"local_bgp_ip": "169.254.10.1",
+							"tunnel_cidr":  "169.254.10.0/30",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group2",
+							"ipsec_enc_alg":  "aes",
+							"ipsec_auth_alg": "md5",
+							"ipsec_lifetime": "86400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "md5",
+							"ike_enc_alg":  "aes",
+							"ike_version":  "ikev1",
+							"ike_mode":     "main",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group2",
+							"local_id":     "9.0.0.1",
+							"psk":          "123456",
+							"remote_id":    "6.6.6.6",
+						},
+					},
+					"enable_dpd":           "true",
+					"customer_gateway_id":  "${alicloud_vpn_customer_gateway.用户网关1.id}",
+					"vpn_attachment_name":  name,
+					"effect_immediately":   "false",
+					"remote_subnet":        "172.16.0.0/12",
+					"network_type":         "private",
+					"enable_nat_traversal": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "0.0.0.0/0",
+						"enable_dpd":           "true",
+						"customer_gateway_id":  CHECKSET,
+						"vpn_attachment_name":  name,
+						"effect_immediately":   "false",
+						"remote_subnet":        "172.16.0.0/12",
+						"network_type":         "private",
+						"enable_nat_traversal": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "3.0.0.0/24",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "md5",
+							"ike_enc_alg":  "aes",
+							"ike_version":  "ikev1",
+							"ike_mode":     "main",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group2",
+						},
+					},
+					"effect_immediately": "true",
+					"remote_subnet":      "2.0.0.0/24",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":       "3.0.0.0/24",
+						"effect_immediately": "true",
+						"remote_subnet":      "2.0.0.0/24",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "3.3.0.0/24",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "md5",
+							"ike_enc_alg":  "aes",
+							"ike_version":  "ikev1",
+							"ike_mode":     "main",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group2",
+						},
+					},
+					"remote_subnet": "3.3.2.0/24",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":  "3.3.0.0/24",
+						"remote_subnet": "3.3.2.0/24",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayVpnAttachmentMap5629 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpnGatewayVpnAttachmentBasicDependence5629(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "eu-central-1"
+}
+
+resource "alicloud_vpn_customer_gateway" "用户网关1" {
+  ip_address            = "4.4.4.2"
+  asn                   = "1219002"
+  customer_gateway_name = "用户网关1-VpnAttachment"
+  description           = "Xingque-Amp-test-vpn-attachement"
+}
+
+
+`, name)
+}
+
+// Case VpnAttachment测试用例-幸确 5358
+func TestAccAliCloudVpnGatewayVpnAttachment_basic5358(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap5358)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGatewayVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccvpngateway%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayVpnAttachmentBasicDependence5358)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "0.0.0.0/0",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"local_asn":    "45104",
+							"local_bgp_ip": "169.254.10.1",
+							"tunnel_cidr":  "169.254.10.0/30",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group2",
+							"ipsec_enc_alg":  "aes",
+							"ipsec_auth_alg": "md5",
+							"ipsec_lifetime": "86400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "md5",
+							"ike_enc_alg":  "aes",
+							"ike_version":  "ikev1",
+							"ike_mode":     "main",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group2",
+							"local_id":     "9.0.0.1",
+							"psk":          "123456",
+							"remote_id":    "6.6.6.6",
+						},
+					},
+					"enable_dpd":           "true",
+					"customer_gateway_id":  "${alicloud_vpn_customer_gateway.用户网关1.id}",
+					"vpn_attachment_name":  name,
+					"effect_immediately":   "false",
+					"remote_subnet":        "172.16.0.0/12",
+					"network_type":         "public",
+					"enable_nat_traversal": "true",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "0.0.0.0/0",
+						"enable_dpd":           "true",
+						"customer_gateway_id":  CHECKSET,
+						"vpn_attachment_name":  name,
+						"effect_immediately":   "false",
+						"remote_subnet":        "172.16.0.0/12",
+						"network_type":         "public",
+						"enable_nat_traversal": "true",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "192.168.0.0/24",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"local_asn":    "1219006",
+							"local_bgp_ip": "169.254.20.1",
+							"tunnel_cidr":  "169.254.20.0/30",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "disabled",
+							"ipsec_enc_alg":  "aes192",
+							"ipsec_auth_alg": "sha1",
+							"ipsec_lifetime": "12400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha1",
+							"ike_enc_alg":  "aes192",
+							"ike_version":  "ikev2",
+							"ike_mode":     "aggressive",
+							"ike_lifetime": "12800",
+							"ike_pfs":      "group1",
+							"local_id":     "6.6.6.7",
+							"psk":          "432145",
+							"remote_id":    "6.6.6.9",
+						},
+					},
+					"enable_dpd":           "false",
+					"customer_gateway_id":  "${alicloud_vpn_customer_gateway.用户网关2.id}",
+					"vpn_attachment_name":  name + "_update",
+					"remote_subnet":        "172.16.0.0/24",
+					"enable_nat_traversal": "false",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "192.168.0.0/24",
+						"enable_dpd":           "false",
+						"customer_gateway_id":  CHECKSET,
+						"vpn_attachment_name":  name + "_update",
+						"remote_subnet":        "172.16.0.0/24",
+						"enable_nat_traversal": "false",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "192.168.0.0/25",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group1",
+							"ipsec_enc_alg":  "aes256",
+							"ipsec_auth_alg": "sha256",
+							"ipsec_lifetime": "86400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha256",
+							"ike_enc_alg":  "aes256",
+							"ike_version":  "ikev2",
+							"ike_mode":     "aggressive",
+							"ike_lifetime": "8640",
+							"ike_pfs":      "group5",
+							"local_id":     "cccc",
+							"psk":          "123456788",
+							"remote_id":    "test",
+						},
+					},
+					"enable_dpd":           "true",
+					"vpn_attachment_name":  name + "_update",
+					"remote_subnet":        "0.0.0.0/1",
+					"enable_nat_traversal": "true",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":         "192.168.0.0/25",
+						"enable_dpd":           "true",
+						"vpn_attachment_name":  name + "_update",
+						"remote_subnet":        "0.0.0.0/1",
+						"enable_nat_traversal": "true",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"local_subnet": "192.168.0.0/24",
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group5",
+							"ipsec_enc_alg":  "des",
+							"ipsec_auth_alg": "sha384",
+							"ipsec_lifetime": "86400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha384",
+							"ike_enc_alg":  "des",
+							"ike_version":  "ikev2",
+							"ike_mode":     "aggressive",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group14",
+							"local_id":     "cccc",
+							"psk":          "12345678",
+							"remote_id":    "test",
+						},
+					},
+					"enable_dpd":        "false",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"local_subnet":      "192.168.0.0/24",
+						"enable_dpd":        "false",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bgp_config": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+					"ipsec_config": []map[string]interface{}{
+						{
+							"ipsec_pfs":      "group14",
+							"ipsec_enc_alg":  "3des",
+							"ipsec_auth_alg": "sha512",
+							"ipsec_lifetime": "86400",
+						},
+					},
+					"ike_config": []map[string]interface{}{
+						{
+							"ike_auth_alg": "sha512",
+							"ike_enc_alg":  "3des",
+							"ike_version":  "ikev2",
+							"ike_mode":     "main",
+							"ike_lifetime": "86400",
+							"ike_pfs":      "group14",
+							"local_id":     "cccc",
+							"psk":          "12345678",
+							"remote_id":    "test",
+						},
+					},
+					"enable_dpd":           "true",
+					"effect_immediately":   "true",
+					"enable_nat_traversal": "false",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_dpd":           "true",
+						"effect_immediately":   "true",
+						"enable_nat_traversal": "false",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayVpnAttachmentMap5358 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpnGatewayVpnAttachmentBasicDependence5358(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "eu-central-1"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpn_customer_gateway" "用户网关1" {
+  ip_address            = "4.4.4.1"
+  asn                   = "1219002"
+  customer_gateway_name = "用户网关1-VpnAttachment"
+  description           = "Xingque-Amp-test-vpn-attachement"
+}
+
+resource "alicloud_vpn_customer_gateway" "用户网关2" {
+  description           = "Xingque-Amp-test-vpn-attachement"
+  ip_address            = "43.43.43.43"
+  asn                   = "1219001"
+  customer_gateway_name = "用户网关2-Vpnattachment"
+}
+
+
+`, name)
+}
+
+// Test VpnGateway VpnAttachment. <<< Resource test cases, automatically generated.

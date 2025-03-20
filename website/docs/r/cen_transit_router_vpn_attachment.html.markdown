@@ -2,7 +2,6 @@
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_vpn_attachment"
-sidebar_current: "docs-alicloud-resource-cen-transit-router-vpn-attachment"
 description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Vpn Attachment resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Vpn Attachment resource.
 
+
+
 For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachment and how to use it, see [What is Transit Router Vpn Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervpnattachment).
 
 -> **NOTE:** Available since v1.183.0.
@@ -18,12 +19,6 @@ For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachme
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_vpn_attachment&exampleId=da578cb0-6252-bd5f-8f1a-ec3d6957c058ecb2e6df&activeTab=example&spm=docs.r.cen_transit_router_vpn_attachment.0.da578cb062&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -60,10 +55,10 @@ resource "alicloud_vpn_gateway_vpn_attachment" "example" {
     ike_version  = "ikev2"
     ike_mode     = "main"
     ike_lifetime = 86400
-    psk          = "tf-testvpn2"
+    psk          = "tf-examplevpn2"
     ike_pfs      = "group1"
-    remote_id    = "testbob2"
-    local_id     = "testalice2"
+    remote_id    = "examplebob2"
+    local_id     = "examplealice2"
   }
   ipsec_config {
     ipsec_pfs      = "group5"
@@ -115,37 +110,48 @@ resource "alicloud_cen_transit_router_vpn_attachment" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_publish_route_enabled` - (Optional) Specifies whether to allow the transit router to automatically advertise routes to the IPsec-VPN attachment. Valid values:
 
-* `auto_publish_route_enabled` - (Optional) Whether to allow the forwarding router instance to automatically publish routing entries to IPsec connections.
-* `cen_id` - (Optional, ForceNew) The id of the cen.
-* `transit_router_attachment_description` - (Optional) The description of the VPN connection. The description can contain `2` to `256` characters. The description must start with English letters, but cannot start with `http://` or `https://`.
-* `transit_router_attachment_name` - (Optional) The name of the VPN connection. The name must be `2` to `128` characters in length, and can contain digits, underscores (_), and hyphens (-). It must start with a letter.
-* `transit_router_id` - (Required, ForceNew) The ID of the forwarding router instance.
-* `vpn_id` - (Required, ForceNew) The id of the vpn.
-* `vpn_owner_id` - (Optional, ForceNew) The owner id of vpn. **NOTE:** You must set `vpn_owner_id`, if you want to connect the transit router to an IPsec-VPN connection that belongs to another Alibaba Cloud account.
-* `zone` - (Required, ForceNew) The list of zone mapping. See [`zone`](#zone) below.
-* `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
+  - `true` (default): yes
+  - `false`: no
+* `cen_id` - (Optional, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
+* `charge_type` - (Optional, ForceNew, Available since v1.246.0) The billing method.
+Set the value to `POSTPAY`, which is the default value and specifies the pay-as-you-go billing method.
+* `tags` - (Optional, Map) The tag of the resource
+* `transit_router_attachment_description` - (Optional) The new description of the VPN attachment.
+The description must be 2 to 256 characters in length. The description must start with a letter but cannot start with `http://` or `https://`.
+* `transit_router_attachment_name` - (Optional) The name of the VPN attachment.
+The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (\_), and hyphens (-). It must start with a letter.
+* `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
+* `vpn_id` - (Required, ForceNew) The ID of the IPsec-VPN attachment.
+* `vpn_owner_id` - (Optional, ForceNew, Int) The ID of the Alibaba Cloud account to which the IPsec-VPN connection belongs.
+
+  - If you do not set this parameter, the ID of the current Alibaba Cloud account is used.
+  - You must set VpnOwnerId if you want to connect the transit router to an IPsec-VPN connection that belongs to another Alibaba Cloud account.
+* `zone` - (Optional, ForceNew, Set) The Zone ID in the current region.
+System will create resources under the Zone that you specify.
+Left blank if associated IPSec connection is in dual-tunnel mode. See [`zone`](#zone) below.
 
 ### `zone`
 
-The `zone` supports the following:
-
-* `zone_id` - (Required, ForceNew) The id of the zone.
+The zone supports the following:
+* `zone_id` - (Required, ForceNew) The zone ID of the read-only instance.
+You can call the [ListTransitRouterAvailableResource](https://www.alibabacloud.com/help/en/doc-detail/261356.html) operation to query the most recent zone list.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Transit Router Vpn Attachment.
-* `status` - The associating status of the network.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource
+* `region_id` - The ID of the region where the transit router is deployed.
+* `status` - Status
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 40 mins) Used when create the Transit Router Vpn Attachment.
-* `update` - (Defaults to 1 mins) Used when update the Transit Router Vpn Attachment.
-* `delete` - (Defaults to 30 mins) Used when delete the Transit Router Vpn Attachment.
+* `create` - (Defaults to 8 mins) Used when create the Transit Router Vpn Attachment.
+* `delete` - (Defaults to 8 mins) Used when delete the Transit Router Vpn Attachment.
+* `update` - (Defaults to 5 mins) Used when update the Transit Router Vpn Attachment.
 
 ## Import
 
