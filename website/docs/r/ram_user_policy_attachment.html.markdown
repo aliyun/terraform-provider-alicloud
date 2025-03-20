@@ -2,18 +2,22 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_user_policy_attachment"
-sidebar_current: "docs-alicloud-resource-ram-user-policy-attachment"
 description: |-
-  Provides a RAM User Policy attachment resource.
+  Provides a Alicloud RAM User Policy Attachment resource.
 ---
 
 # alicloud_ram_user_policy_attachment
 
-Provides a RAM User Policy attachment resource. 
+Provides a RAM User Policy Attachment resource.
+
+
+For information about RAM User Policy Attachment and how to use it, see [What is User Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToUser).
 
 -> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
+
+Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_user_policy_attachment&exampleId=bb51ee62-921c-07ac-96eb-459c30b73ef77c7c5674&activeTab=example&spm=docs.r.ram_user_policy_attachment.0.bb51ee6292&intl_lang=EN_US" target="_blank">
@@ -30,6 +34,7 @@ resource "alicloud_ram_user" "user" {
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
 }
+
 resource "random_integer" "default" {
   min = 10000
   max = 99999
@@ -64,24 +69,33 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
   user_name   = alicloud_ram_user.user.name
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
-
-* `user_name` - (Required, ForceNew) Name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
-* `policy_name` - (Required, ForceNew) Name of the RAM policy. This name can have a string of 1 to 128 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
-* `policy_type` - (Required, ForceNew) Type of the RAM policy. It must be `Custom` or `System`.
+* `policy_name` - (Required, ForceNew) The permission policy name.
+* `policy_type` - (Required, ForceNew) Permission policy type. Value:
+  - System: System policy.
+  - Custom: Custom policy.
+* `user_name` - (Required, ForceNew) The RAM user name.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The resource ID in terraform of User Policy Attachment. The value is formulated as `user:<policy_name>:<policy_type>:<user_name>`.
 
-* `id` - The attachment ID. Composed of policy name, policy type and user name with format `user:<policy_name>:<policy_type>:<user_name>`.
+## Timeouts
+
+-> **NOTE:** Available since v1.246.0.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the User Policy Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the User Policy Attachment.
 
 ## Import
 
-RAM User Policy attachment can be imported using the id, e.g.
+RAM User Policy Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_user_policy_attachment.example user:my-policy:Custom:my-user
+$ terraform import alicloud_ram_user_policy_attachment.example user:<policy_name>:<policy_type>:<user_name>
 ```

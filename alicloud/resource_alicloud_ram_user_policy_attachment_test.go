@@ -4,132 +4,120 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRAMUserPolicyAttachment_basic(t *testing.T) {
-	var v *ram.Policy
-	var u *ram.User
+// Test Ram UserPolicyAttachment. >>> Resource test cases, automatically generated.
+// Case UserPolicyAttachment_UserId 9642
+func TestAccAliCloudRamUserPolicyAttachment_basic9642(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_user_policy_attachment.default"
-	ra := resourceAttrInit(resourceId, ramPolicyForUserMap)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rcUser := resourceCheckInit("alicloud_ram_user.default", &u, serviceFunc)
-
+	ra := resourceAttrInit(resourceId, AliCloudRamUserPolicyAttachmentMap9642)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamUserPolicyAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamUserPolicyAttachmentBasicDependence9642)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamUserPolicyAttachmentDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserPolicyAttachmentConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"policy_type": "Custom",
+					"user_name":   "${alicloud_ram_user.default4nWJxj.name}",
+					"policy_name": "${alicloud_ram_policy.defaultVBNCbB.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					rcUser.checkResourceExists(),
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"policy_type": "Custom",
+						"user_name":   CHECKSET,
+						"policy_name": CHECKSET,
+					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var ramPolicyForUserMap = map[string]string{
-	"user_name":   CHECKSET,
-	"policy_name": CHECKSET,
-	"policy_type": "Custom",
-}
-
-func testAccRamUserPolicyAttachmentConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%sRamUserPolicyAttachmentConfig-%d"
-	}
-	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
-	  document = <<EOF
-		{
-		  "Statement": [
+func TestAccAliCloudRamUserPolicyAttachment_basic9643(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_user_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamUserPolicyAttachmentMap9642)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamUserPolicyAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamUserPolicyAttachmentBasicDependence9642)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
-	}
-
-	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_user_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  user_name = "${alicloud_ram_user.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
-	}`, defaultRegionToTest, rand)
+				Config: testAccConfig(map[string]interface{}{
+					"policy_type": "System",
+					"user_name":   "${alicloud_ram_user.default4nWJxj.name}",
+					"policy_name": "AliyunECSFullAccess",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_type": "System",
+						"user_name":   CHECKSET,
+						"policy_name": "AliyunECSFullAccess",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
+var AliCloudRamUserPolicyAttachmentMap9642 = map[string]string{}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_user_policy_attachment" {
-			continue
-		}
-
-		// Try to find the attachment
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateListPoliciesForUserRequest()
-		request.UserName = rs.Primary.Attributes["user_name"]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForUser(request)
-		})
-
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
-			return WrapError(err)
-		}
-		response, _ := raw.(*ram.ListPoliciesForUserResponse)
-		if len(response.Policies.Policy) > 0 {
-			for _, v := range response.Policies.Policy {
-				if v.PolicyName == rs.Primary.Attributes["policy_name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {
-					return WrapError(Error("Error attachment still exist."))
-				}
-			}
-		}
-	}
-	return nil
+func AliCloudRamUserPolicyAttachmentBasicDependence9642(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
 }
+
+resource "alicloud_ram_user" "default4nWJxj" {
+  name         = var.name
+  display_name = "fortRamUPTest"
+}
+
+resource "alicloud_ram_policy" "defaultVBNCbB" {
+  policy_name     = var.name
+  policy_document = "{\"Statement\": [{\"Effect\": \"Allow\",\"Action\": \"ecs:Describe*\",\"Resource\": \"acs:ecs:cn-qingdao:*:instance/*\"}],\"Version\": \"1\"}"
+}
+
+`, name)
+}
+
+// Test Ram UserPolicyAttachment. <<< Resource test cases, automatically generated.

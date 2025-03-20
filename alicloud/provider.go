@@ -1249,7 +1249,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_alias":                                             resourceAlicloudRamAccountAlias(),
 			"alicloud_ram_account_alias":                                     resourceAlicloudRamAccountAlias(),
 			"alicloud_ram_group_membership":                                  resourceAlicloudRamGroupMembership(),
-			"alicloud_ram_user_policy_attachment":                            resourceAlicloudRamUserPolicyAtatchment(),
+			"alicloud_ram_user_policy_attachment":                            resourceAliCloudRamUserPolicyAttachment(),
 			"alicloud_ram_role_policy_attachment":                            resourceAliCloudRamRolePolicyAttachment(),
 			"alicloud_ram_group_policy_attachment":                           resourceAlicloudRamGroupPolicyAtatchment(),
 			"alicloud_container_cluster":                                     resourceAlicloudCSSwarm(),
