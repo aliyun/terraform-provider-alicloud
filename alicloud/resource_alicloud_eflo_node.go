@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -88,6 +89,7 @@ func resourceAliCloudEfloNode() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"zone": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -246,6 +248,14 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["OperatingState"])
 
+	objectRaw, err = efloServiceV2.DescribeNodeListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
 	return nil
 }
 
@@ -286,6 +296,12 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	if d.HasChange("tags") {
+		efloServiceV2 := EfloServiceV2{client}
+		if err := efloServiceV2.SetResourceTags(d, "Node"); err != nil {
+			return WrapError(err)
+		}
+	}
 	return resourceAliCloudEfloNodeRead(d, meta)
 }
 
