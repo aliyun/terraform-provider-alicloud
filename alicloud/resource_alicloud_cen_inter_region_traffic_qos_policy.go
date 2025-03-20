@@ -1,45 +1,42 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCenInterRegionTrafficQosPolicy() *schema.Resource {
+func resourceAliCloudCenInterRegionTrafficQosPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenInterRegionTrafficQosPolicyCreate,
-		Read:   resourceAlicloudCenInterRegionTrafficQosPolicyRead,
-		Update: resourceAlicloudCenInterRegionTrafficQosPolicyUpdate,
-		Delete: resourceAlicloudCenInterRegionTrafficQosPolicyDelete,
+		Create: resourceAliCloudCenInterRegionTrafficQosPolicyCreate,
+		Read:   resourceAliCloudCenInterRegionTrafficQosPolicyRead,
+		Update: resourceAliCloudCenInterRegionTrafficQosPolicyUpdate,
+		Delete: resourceAliCloudCenInterRegionTrafficQosPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"transit_router_id": {
+			"bandwidth_guarantee_mode": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
-			"transit_router_attachment_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"inter_region_traffic_qos_policy_name": {
+			"inter_region_traffic_qos_policy_description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"inter_region_traffic_qos_policy_description": {
+			"inter_region_traffic_qos_policy_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -47,35 +44,47 @@ func resourceAlicloudCenInterRegionTrafficQosPolicy() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"transit_router_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudCenInterRegionTrafficQosPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenInterRegionTrafficQosPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
-	var response map[string]interface{}
+
 	action := "CreateCenInterRegionTrafficQosPolicy"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken("CreateCenInterRegionTrafficQosPolicy")
+	request["ClientToken"] = buildClientToken(action)
+
 	request["TransitRouterId"] = d.Get("transit_router_id")
-	request["TransitRouterAttachmentId"] = d.Get("transit_router_attachment_id")
-
 	if v, ok := d.GetOk("inter_region_traffic_qos_policy_name"); ok {
 		request["TrafficQosPolicyName"] = v
 	}
-
 	if v, ok := d.GetOk("inter_region_traffic_qos_policy_description"); ok {
 		request["TrafficQosPolicyDescription"] = v
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
+	request["TransitRouterAttachmentId"] = d.Get("transit_router_attachment_id")
+	if v, ok := d.GetOk("bandwidth_guarantee_mode"); ok {
+		request["BandwidthGuaranteeMode"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus.TransitRouterAttachment", "IncorrectStatus.TransitRouterInstance", "Operation.Blocking"}) || NeedRetry(err) {
 				wait()
@@ -93,67 +102,67 @@ func resourceAlicloudCenInterRegionTrafficQosPolicyCreate(d *schema.ResourceData
 
 	d.SetId(fmt.Sprint(response["TrafficQosPolicyId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenInterRegionTrafficQosPolicyStateRefreshFunc(d.Id(), []string{}))
+	cenServiceV2 := CenServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cenServiceV2.CenInterRegionTrafficQosPolicyStateRefreshFunc(d.Id(), "TrafficQosPolicyStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenInterRegionTrafficQosPolicyRead(d, meta)
+	return resourceAliCloudCenInterRegionTrafficQosPolicyRead(d, meta)
 }
 
-func resourceAlicloudCenInterRegionTrafficQosPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenInterRegionTrafficQosPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
+	cenServiceV2 := CenServiceV2{client}
 
-	object, err := cbnService.DescribeCenInterRegionTrafficQosPolicy(d.Id())
+	objectRaw, err := cenServiceV2.DescribeCenInterRegionTrafficQosPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cen_inter_region_traffic_qos_policy DescribeCenInterRegionTrafficQosPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("transit_router_id", object["TransitRouterId"])
-	d.Set("transit_router_attachment_id", object["TransitRouterAttachmentId"])
-	d.Set("inter_region_traffic_qos_policy_name", object["TrafficQosPolicyName"])
-	d.Set("inter_region_traffic_qos_policy_description", object["TrafficQosPolicyDescription"])
-	d.Set("status", object["TrafficQosPolicyStatus"])
+	d.Set("bandwidth_guarantee_mode", objectRaw["BandwidthGuaranteeMode"])
+	d.Set("inter_region_traffic_qos_policy_description", objectRaw["TrafficQosPolicyDescription"])
+	d.Set("inter_region_traffic_qos_policy_name", objectRaw["TrafficQosPolicyName"])
+	d.Set("status", objectRaw["TrafficQosPolicyStatus"])
+	d.Set("transit_router_attachment_id", objectRaw["TransitRouterAttachmentId"])
+	d.Set("transit_router_id", objectRaw["TransitRouterId"])
 
 	return nil
 }
 
-func resourceAlicloudCenInterRegionTrafficQosPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenInterRegionTrafficQosPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
+	var query map[string]interface{}
 	update := false
 
-	request := map[string]interface{}{
-		"ClientToken":        buildClientToken("UpdateCenInterRegionTrafficQosPolicyAttribute"),
-		"TrafficQosPolicyId": d.Id(),
-	}
+	var err error
+	action := "UpdateCenInterRegionTrafficQosPolicyAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TrafficQosPolicyId"] = d.Id()
 
+	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("inter_region_traffic_qos_policy_name") {
 		update = true
-	}
-	if v, ok := d.GetOk("inter_region_traffic_qos_policy_name"); ok {
-		request["TrafficQosPolicyName"] = v
+		request["TrafficQosPolicyName"] = d.Get("inter_region_traffic_qos_policy_name")
 	}
 
 	if d.HasChange("inter_region_traffic_qos_policy_description") {
 		update = true
-	}
-	if v, ok := d.GetOk("inter_region_traffic_qos_policy_description"); ok {
-		request["TrafficQosPolicyDescription"] = v
+		request["TrafficQosPolicyDescription"] = d.Get("inter_region_traffic_qos_policy_description")
 	}
 
 	if update {
-		action := "UpdateCenInterRegionTrafficQosPolicyAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -164,38 +173,32 @@ func resourceAlicloudCenInterRegionTrafficQosPolicyUpdate(d *schema.ResourceData
 			return nil
 		})
 		addDebug(action, response, request)
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenInterRegionTrafficQosPolicyStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
 	}
 
-	return resourceAlicloudCenInterRegionTrafficQosPolicyRead(d, meta)
+	return resourceAliCloudCenInterRegionTrafficQosPolicyRead(d, meta)
 }
 
-func resourceAlicloudCenInterRegionTrafficQosPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenInterRegionTrafficQosPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
 	action := "DeleteCenInterRegionTrafficQosPolicy"
+	var request map[string]interface{}
 	var response map[string]interface{}
-
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["TrafficQosPolicyId"] = d.Id()
 
-	request := map[string]interface{}{
-		"ClientToken":        buildClientToken("DeleteCenInterRegionTrafficQosPolicy"),
-		"TrafficQosPolicyId": d.Id(),
-	}
+	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -208,10 +211,14 @@ func resourceAlicloudCenInterRegionTrafficQosPolicyDelete(d *schema.ResourceData
 	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenInterRegionTrafficQosPolicyStateRefreshFunc(d.Id(), []string{}))
+	cenServiceV2 := CenServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cenServiceV2.CenInterRegionTrafficQosPolicyStateRefreshFunc(d.Id(), "TrafficQosPolicyStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

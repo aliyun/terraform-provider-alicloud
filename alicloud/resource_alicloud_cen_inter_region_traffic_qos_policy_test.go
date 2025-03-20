@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenInterRegionTrafficQosPolicy_basic0(t *testing.T) {
+func TestAccAliCloudCenInterRegionTrafficQosPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_cen_inter_region_traffic_qos_policy.default"
@@ -43,6 +43,7 @@ func TestAccAlicloudCenInterRegionTrafficQosPolicy_basic0(t *testing.T) {
 					"transit_router_attachment_id":                "${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}",
 					"inter_region_traffic_qos_policy_name":        name,
 					"inter_region_traffic_qos_policy_description": name,
+					"bandwidth_guarantee_mode":                    "byBandwidthPercent",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInterRegionTrafficQosPolicyExistsWithProviders(resourceId, v, &providers),
@@ -51,6 +52,7 @@ func TestAccAlicloudCenInterRegionTrafficQosPolicy_basic0(t *testing.T) {
 						"transit_router_attachment_id":                CHECKSET,
 						"inter_region_traffic_qos_policy_name":        name,
 						"inter_region_traffic_qos_policy_description": name,
+						"bandwidth_guarantee_mode":                    "byBandwidthPercent",
 					}),
 				),
 			},

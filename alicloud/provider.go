@@ -1841,7 +1841,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_honeypot_node":                        resourceAlicloudThreatDetectionHoneypotNode(),
 			"alicloud_cen_transit_router_multicast_domain":                   resourceAliCloudCenTransitRouterMulticastDomain(),
 			"alicloud_cen_transit_router_multicast_domain_source":            resourceAlicloudCenTransitRouterMulticastDomainSource(),
-			"alicloud_cen_inter_region_traffic_qos_policy":                   resourceAlicloudCenInterRegionTrafficQosPolicy(),
+			"alicloud_cen_inter_region_traffic_qos_policy":                   resourceAliCloudCenInterRegionTrafficQosPolicy(),
 			"alicloud_threat_detection_baseline_strategy":                    resourceAlicloudThreatDetectionBaselineStrategy(),
 			"alicloud_threat_detection_anti_brute_force_rule":                resourceAliCloudThreatDetectionAntiBruteForceRule(),
 			"alicloud_threat_detection_honey_pot":                            resourceAlicloudThreatDetectionHoneyPot(),
