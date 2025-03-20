@@ -490,14 +490,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Computed:     true,
 			},
 			"on_demand_base_capacity": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: IntBetween(0, 1000),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"on_demand_percentage_above_base_capacity": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: IntBetween(0, 100),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"password": {
 				Type:          schema.TypeString,
