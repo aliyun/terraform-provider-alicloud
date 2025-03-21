@@ -20,6 +20,12 @@ For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachme
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_vpn_attachment&exampleId=b6418f7d-6e4e-df31-e943-8889fe7bb9cf170a6aca&activeTab=example&spm=docs.r.cen_transit_router_vpn_attachment.0.b6418f7d6e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf_example"
@@ -108,6 +114,12 @@ resource "alicloud_cen_transit_router_vpn_attachment" "example" {
 ```
 
 Dual Tunnel Mode Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_vpn_attachment&exampleId=99a96233-f1f8-eba6-1499-0b7d42f900808721ccad&activeTab=example&spm=docs.r.cen_transit_router_vpn_attachment.1.99a96233f1&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {

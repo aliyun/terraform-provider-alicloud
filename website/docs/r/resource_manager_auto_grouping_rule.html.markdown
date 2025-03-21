@@ -20,6 +20,12 @@ For information about Resource Manager Auto Grouping Rule and how to use it, see
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_resource_manager_auto_grouping_rule&exampleId=bcff043d-d96f-88d9-aff4-6cadd99554714f17f139&activeTab=example&spm=docs.r.resource_manager_auto_grouping_rule.0.bcff043dd9&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

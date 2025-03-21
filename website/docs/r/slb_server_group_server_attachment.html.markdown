@@ -20,7 +20,7 @@ and the `alicloud_slb_listener` block should use `depends_on = [alicloud_slb_ser
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_group_server_attachment&exampleId=9da2adb6-0785-e634-d06d-b1838eaac79a1252ba4e&activeTab=example&spm=docs.r.slb_server_group_server_attachment.0.9da2adb607&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_server_group_server_attachment&exampleId=39bab162-8a3c-1f1f-a90b-4a7f993c1a94a72d5800&activeTab=example&spm=docs.r.slb_server_group_server_attachment.0.39bab1628a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

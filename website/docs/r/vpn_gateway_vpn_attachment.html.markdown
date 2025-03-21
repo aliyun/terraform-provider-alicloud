@@ -20,6 +20,12 @@ For information about VPN Gateway Vpn Attachment and how to use it, see [What is
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_gateway_vpn_attachment&exampleId=9a5be41b-822c-c907-2cbc-eec5ba1487a364b8dd07&activeTab=example&spm=docs.r.vpn_gateway_vpn_attachment.0.9a5be41b82&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -75,6 +81,12 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
 ```
 
 Dual Tunnel Mode Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpn_gateway_vpn_attachment&exampleId=9bd08d02-4655-8291-c20f-f880c472ad395794a24a&activeTab=example&spm=docs.r.vpn_gateway_vpn_attachment.1.9bd08d0246&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {

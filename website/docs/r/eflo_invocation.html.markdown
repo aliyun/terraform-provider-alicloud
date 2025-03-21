@@ -20,6 +20,12 @@ For information about Eflo Invocation and how to use it, see [What is Invocation
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_invocation&exampleId=5f93d77e-45c1-eb29-bd19-8fae5f44a10312ceb554&activeTab=example&spm=docs.r.eflo_invocation.0.5f93d77e45&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 # Before executing this example, you need to confirm with the product team whether the resources are sufficient or you will get an error message with "Failure to check order before create instance"
 variable "name" {

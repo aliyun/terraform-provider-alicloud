@@ -54,7 +54,7 @@ resource "alicloud_ram_access_key" "ak" {
 
 Using `pgp_key` to encrypt the secret.
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=b4c8a6fe-72a1-2258-b8bc-53ae1f90586757eaf5e9&activeTab=example&spm=docs.r.ram_access_key.1.b4c8a6fe72&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_access_key&exampleId=2a73ed24-9d33-6847-6269-0087c126dba0828f3649&activeTab=example&spm=docs.r.ram_access_key.1.2a73ed249d&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

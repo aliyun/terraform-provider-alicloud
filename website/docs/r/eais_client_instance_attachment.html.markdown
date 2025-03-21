@@ -20,6 +20,12 @@ For information about EAIS Client Instance Attachment and how to use it, see [Wh
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_eais_client_instance_attachment&exampleId=2848594c-4550-b39b-1cd9-a3b990cc5cf9f0066c29&activeTab=example&spm=docs.r.eais_client_instance_attachment.0.2848594c45&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

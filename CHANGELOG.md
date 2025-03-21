@@ -1,38 +1,39 @@
-## 1.246.0 (Unreleased)
+## 1.247.0 (Unreleased)
+## 1.246.0 (March 21, 2025)
 
-- **New Resource:** `alicloud_eais_client_instance_attachment` [GH-8513]
-- **New Resource:** `alicloud_resource_manager_auto_grouping_rule` [GH-8519]
-- **New Resource:** `alicloud_eflo_cluster` [GH-8522]
-- **New Resource:** `alicloud_eflo_node` [GH-8522]
-- **New Resource:** `alicloud_eflo_node_group` [GH-8522]
-- **New Resource:** `alicloud_eflo_invocation` [GH-8522]
-- **New Data Source:** `alicloud_cs_kubernetes_node_pools` [GH-8531]
+- **New Resource:** `alicloud_eais_client_instance_attachment` ([#8513](https://github.com/aliyun/terraform-provider-alicloud/issues/8513))
+- **New Resource:** `alicloud_resource_manager_auto_grouping_rule` ([#8519](https://github.com/aliyun/terraform-provider-alicloud/issues/8519))
+- **New Resource:** `alicloud_eflo_cluster` ([#8522](https://github.com/aliyun/terraform-provider-alicloud/issues/8522))
+- **New Resource:** `alicloud_eflo_node` ([#8522](https://github.com/aliyun/terraform-provider-alicloud/issues/8522))
+- **New Resource:** `alicloud_eflo_node_group` ([#8522](https://github.com/aliyun/terraform-provider-alicloud/issues/8522))
+- **New Resource:** `alicloud_eflo_invocation` ([#8522](https://github.com/aliyun/terraform-provider-alicloud/issues/8522))
+- **New Data Source:** `alicloud_cs_kubernetes_node_pools` ([#8531](https://github.com/aliyun/terraform-provider-alicloud/issues/8531))
 
 ENHANCEMENTS:
 
-- resource/alicloud_vpn_connection: Mark role_name as Computed; resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute charge_type, resource_group_id, tunnel_options_specification and etc.; resource/alicloud_cen_transit_router_vpn_attachment: Add new attribute charge_type; data-source/alicloud_cen_transit_router_vpn_attachments: Supports output_file; data-source/alicloud_vpn_gateway_vpn_attachments: Supports tunnel_options_specification. [GH-8512]
-- resource/alicloud_eais_instance: Support attribute environment_var, image and instance_name. [GH-8513]
-- resource/alicloud_ram_policy: Refactored the resource alicloud_ram_policy; Added the field tags, create_time; Removed the ForceNew for field description. [GH-8516]
-- resource/alicloud_api_gateway_instance: Add new attribute ingress_vpc_id, ingress_vpc_owner_id, ingress_vswitch_id; resource/alicloud_api_gateway_group: Add new attribute user_log_config. [GH-8517]
-- resource/alicloud_oss_bucket: Server side encryption support SM4. [GH-8521]
-- resource/alicloud_ram_access_key: Refactored the resource alicloud_ram_access_key; Added the field create_time. [GH-8526]
-- resource/alicloud_cen_instance: Improves the invkoing api method. [GH-8528]
-- resource/alicloud_cen_inter_region_traffic_qos_policy: Add new attribute bandwidth_guarantee_mode. [GH-8529]
-- resource/alicloud_ram_user_policy_attachment: Refactored the resource alicloud_ram_user_policy_attachment. [GH-8530]
-- resource/alicloud_cen_inter_region_traffic_qos_queue: Add new attribute bandwidth. [GH-8532]
-- resource/alicloud_slb_server_group_server_attachment: Supported type set to eci; Improved alicloud_slb_server_group_server_attachment testcase. [GH-8533]
-- resource/alicloud_eflo_node: Support tags. [GH-8534]
-- resource/alicloud_cs_kubernetes_node_pool: remove ValidateFunc for on_demand_base_capacity, on_demand_percentage_above_base_capacity. [GH-8536]
-- resource/alicloud_vswitch: Add retry code while deleting vswitch. [GH-8541]
-- docs: Improves description for esa. [GH-8537]
-- docs: Improves example for vpn_attachment. [GH-8538]
+- resource/alicloud_vpn_connection: Mark role_name as Computed; resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute charge_type, resource_group_id, tunnel_options_specification and etc.; resource/alicloud_cen_transit_router_vpn_attachment: Add new attribute charge_type; data-source/alicloud_cen_transit_router_vpn_attachments: Supports output_file; data-source/alicloud_vpn_gateway_vpn_attachments: Supports tunnel_options_specification. ([#8512](https://github.com/aliyun/terraform-provider-alicloud/issues/8512))
+- resource/alicloud_eais_instance: Support attribute environment_var, image and instance_name. ([#8513](https://github.com/aliyun/terraform-provider-alicloud/issues/8513))
+- resource/alicloud_ram_policy: Refactored the resource alicloud_ram_policy; Added the field tags, create_time; Removed the ForceNew for field description. ([#8516](https://github.com/aliyun/terraform-provider-alicloud/issues/8516))
+- resource/alicloud_api_gateway_instance: Add new attribute ingress_vpc_id, ingress_vpc_owner_id, ingress_vswitch_id; resource/alicloud_api_gateway_group: Add new attribute user_log_config. ([#8517](https://github.com/aliyun/terraform-provider-alicloud/issues/8517))
+- resource/alicloud_oss_bucket: Server side encryption support SM4. ([#8521](https://github.com/aliyun/terraform-provider-alicloud/issues/8521))
+- resource/alicloud_ram_access_key: Refactored the resource alicloud_ram_access_key; Added the field create_time. ([#8526](https://github.com/aliyun/terraform-provider-alicloud/issues/8526))
+- resource/alicloud_cen_instance: Improves the invkoing api method. ([#8528](https://github.com/aliyun/terraform-provider-alicloud/issues/8528))
+- resource/alicloud_cen_inter_region_traffic_qos_policy: Add new attribute bandwidth_guarantee_mode. ([#8529](https://github.com/aliyun/terraform-provider-alicloud/issues/8529))
+- resource/alicloud_ram_user_policy_attachment: Refactored the resource alicloud_ram_user_policy_attachment. ([#8530](https://github.com/aliyun/terraform-provider-alicloud/issues/8530))
+- resource/alicloud_cen_inter_region_traffic_qos_queue: Add new attribute bandwidth. ([#8532](https://github.com/aliyun/terraform-provider-alicloud/issues/8532))
+- resource/alicloud_slb_server_group_server_attachment: Supported type set to eci; Improved alicloud_slb_server_group_server_attachment testcase. ([#8533](https://github.com/aliyun/terraform-provider-alicloud/issues/8533))
+- resource/alicloud_eflo_node: Support tags. ([#8534](https://github.com/aliyun/terraform-provider-alicloud/issues/8534))
+- resource/alicloud_cs_kubernetes_node_pool: remove ValidateFunc for on_demand_base_capacity, on_demand_percentage_above_base_capacity. ([#8536](https://github.com/aliyun/terraform-provider-alicloud/issues/8536))
+- resource/alicloud_vswitch: Add retry code while deleting vswitch. ([#8541](https://github.com/aliyun/terraform-provider-alicloud/issues/8541))
+- docs: Improves description for esa. ([#8537](https://github.com/aliyun/terraform-provider-alicloud/issues/8537))
+- docs: Improves example for vpn_attachment. ([#8538](https://github.com/aliyun/terraform-provider-alicloud/issues/8538))
 
 BUG FIXES:
 
-- resource/alicloud_havip_attachment: Fix bug while havip count larger 20; testcase: Improves testcase for havip_attachment. [GH-8524]
-- resource/alicloud_cs_kubernetes_node_pool: Fix bug while set desired_size, on_demand_base_capacity, on_demand_percentage_above_base_capacity zero value. [GH-8525]
-- resource/alicloud_privatelink_vpc_endpoint_zone: Fix bug while missing zone_id. [GH-8535]
-- data-source/alicloud_arms_prometheus: Fixed the read error in field push_gate_way_intra_url, push_gate_way_inter_url. [GH-8520]
+- resource/alicloud_havip_attachment: Fix bug while havip count larger 20; testcase: Improves testcase for havip_attachment. ([#8524](https://github.com/aliyun/terraform-provider-alicloud/issues/8524))
+- resource/alicloud_cs_kubernetes_node_pool: Fix bug while set desired_size, on_demand_base_capacity, on_demand_percentage_above_base_capacity zero value. ([#8525](https://github.com/aliyun/terraform-provider-alicloud/issues/8525))
+- resource/alicloud_privatelink_vpc_endpoint_zone: Fix bug while missing zone_id. ([#8535](https://github.com/aliyun/terraform-provider-alicloud/issues/8535))
+- data-source/alicloud_arms_prometheus: Fixed the read error in field push_gate_way_intra_url, push_gate_way_inter_url. ([#8520](https://github.com/aliyun/terraform-provider-alicloud/issues/8520))
 
 ## 1.245.0 (March 17, 2025)
 
