@@ -190,7 +190,7 @@ func deleteAcl(alikafkaService AlikafkaService, instanceId string, username stri
 	}
 }
 
-func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
+func TestAccAliCloudAlikafkaSaslAcl_basic(t *testing.T) {
 
 	var v *alikafka.KafkaAclVO
 	resourceId := "alicloud_alikafka_sasl_acl.default"
@@ -290,7 +290,209 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudAlikafkaSaslAcl_multi(t *testing.T) {
+func TestAccAliCloudAlikafkaSaslAcl_cluster(t *testing.T) {
+
+	var v *alikafka.KafkaAclVO
+	resourceId := "alicloud_alikafka_sasl_acl.default"
+	ra := resourceAttrInit(resourceId, alikafkaSaslAclBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaSaslAclConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":               "${alicloud_alikafka_instance.default.id}",
+					"username":                  "${alicloud_alikafka_sasl_user.default.username}",
+					"acl_resource_type":         "Cluster",
+					"acl_resource_name":         "${alicloud_alikafka_topic.default.topic}",
+					"acl_resource_pattern_type": "LITERAL",
+					"acl_operation_type":        "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"username":          fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_name": fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_type": "Cluster",
+					}),
+				),
+			},
+
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_resource_pattern_type": "PREFIXED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_resource_pattern_type": "PREFIXED"}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_operation_type": "Read",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_operation_type": "Read"}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_resource_type": "Group",
+					"acl_resource_name": "${alicloud_alikafka_consumer_group.default.consumer_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_resource_type": "Group",
+						"acl_resource_name": fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand)}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"username":           "${alicloud_alikafka_sasl_user.default.username}",
+					"acl_resource_type":  "Topic",
+					"acl_resource_name":  "${alicloud_alikafka_topic.default.topic}",
+					"acl_operation_type": "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"username":           fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_type":  "Topic",
+						"acl_resource_name":  fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_operation_type": "Write"}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudAlikafkaSaslAcl_TransactionalId(t *testing.T) {
+
+	var v *alikafka.KafkaAclVO
+	resourceId := "alicloud_alikafka_sasl_acl.default"
+	ra := resourceAttrInit(resourceId, alikafkaSaslAclBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaSaslAclConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":               "${alicloud_alikafka_instance.default.id}",
+					"username":                  "${alicloud_alikafka_sasl_user.default.username}",
+					"acl_resource_type":         "TransactionalId",
+					"acl_resource_name":         "${alicloud_alikafka_topic.default.topic}",
+					"acl_resource_pattern_type": "LITERAL",
+					"acl_operation_type":        "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"username":          fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_name": fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_type": "TransactionalId",
+					}),
+				),
+			},
+
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_resource_pattern_type": "PREFIXED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_resource_pattern_type": "PREFIXED"}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_operation_type": "Read",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_operation_type": "Read"}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_resource_type": "Group",
+					"acl_resource_name": "${alicloud_alikafka_consumer_group.default.consumer_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_resource_type": "Group",
+						"acl_resource_name": fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand)}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"username":           "${alicloud_alikafka_sasl_user.default.username}",
+					"acl_resource_type":  "Topic",
+					"acl_resource_name":  "${alicloud_alikafka_topic.default.topic}",
+					"acl_operation_type": "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"username":           fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_resource_type":  "Topic",
+						"acl_resource_name":  fmt.Sprintf("tf-testacc-alikafkasaslaclbasic%v", rand),
+						"acl_operation_type": "Write"}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudAlikafkaSaslAcl_multi(t *testing.T) {
 
 	var v *alikafka.KafkaAclVO
 	resourceId := "alicloud_alikafka_sasl_acl.default.1"
@@ -537,4 +739,51 @@ var alikafkaSaslAclBasicMap = map[string]string{
 	"acl_resource_name":         "${var.name}",
 	"acl_resource_pattern_type": "LITERAL",
 	"acl_operation_type":        "Write",
+}
+
+func resourceAlikafkaSaslAclConfigDependenceForCluster(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%v"
+}
+
+variable "operation" {
+  default = ["Write", "Read"]
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name            = var.name
+  partition_num   = 50
+  disk_type       = "1"
+  disk_size       = "500"
+  deploy_type     = "5"
+  io_max          = "20"
+  spec_type       = "professional"
+  service_version = "2.2.0"
+  config          = "{\"enable.acl\":\"true\"}"
+  vswitch_id      = alicloud_vswitch.default.id
+  security_group  = alicloud_security_group.default.id
+}
+`, name)
 }
