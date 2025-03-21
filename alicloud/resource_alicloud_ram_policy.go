@@ -59,7 +59,8 @@ func resourceAliCloudRamPolicy() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"None", "DeleteOldestNonDefaultVersionWhenLimitExceeded"}, false),
 			},
-			"tags": tagsSchema(),
+			//Currently, `tags` is available on `Domestic Site Account`
+			//"tags": tagsSchema(),
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -178,14 +179,14 @@ func resourceAliCloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(Error("One of 'policy_document', 'document', 'statement'  must be specified."))
 
 	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		tagsMapJSON, err := convertListMapToJsonString(tagsMap)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["Tag"] = tagsMapJSON
-	}
+	//if v, ok := d.GetOk("tags"); ok {
+	//	tagsMap := ConvertTags(v.(map[string]interface{}))
+	//	tagsMapJSON, err := convertListMapToJsonString(tagsMap)
+	//	if err != nil {
+	//		return WrapError(err)
+	//	}
+	//	request["Tag"] = tagsMapJSON
+	//}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -254,13 +255,13 @@ func resourceAliCloudRamPolicyRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("attachment_count", policyRaw["AttachmentCount"])
 	d.Set("type", policyRaw["PolicyType"])
 
-	objectRaw, err = ramServiceV2.DescribePolicyListTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
-	}
-
-	tagsMaps := objectRaw["TagResources"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	//objectRaw, err = ramServiceV2.DescribePolicyListTagResources(d.Id())
+	//if err != nil && !NotFoundError(err) {
+	//	return WrapError(err)
+	//}
+	//
+	//tagsMaps := objectRaw["TagResources"]
+	//d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
@@ -351,12 +352,12 @@ func resourceAliCloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if d.HasChange("tags") {
-		ramServiceV2 := RamServiceV2{client}
-		if err := ramServiceV2.SetResourceTags(d, "policy"); err != nil {
-			return WrapError(err)
-		}
-	}
+	//if d.HasChange("tags") {
+	//	ramServiceV2 := RamServiceV2{client}
+	//	if err := ramServiceV2.SetResourceTags(d, "policy"); err != nil {
+	//		return WrapError(err)
+	//	}
+	//}
 	d.Partial(false)
 	return resourceAliCloudRamPolicyRead(d, meta)
 }

@@ -70,8 +70,6 @@ The following arguments are supported:
 * `force` - (Optional, Bool) Specifies whether to force delete the Policy. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
-* `tags` - (Optional, Map, Available since v1.246.0) A mapping of tags to assign to the resource.
--> **NOTE:** Currently, `tags` is available on `Domestic Site Account`.
 * `name` - (Optional, ForceNew, Deprecated since v1.114.0) Field `name` has been deprecated from provider version 1.114.0. New field `policy_name` instead.
 * `document` - (Optional, Deprecated since v1.114.0) Field `document` has been deprecated from provider version 1.114.0. New field `policy_document` instead.
 * `version` - (Optional, Deprecated since v1.49.0) Field `version` has been deprecated from provider version 1.49.0. New field `document` instead.

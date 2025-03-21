@@ -112,7 +112,6 @@ func TestAccAliCloudRamPolicy_basic10003(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -150,48 +149,48 @@ func TestAccAliCloudRamPolicy_basic10003(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF",
+			//			"For":     "Test",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF",
+			//			"tags.For":     "Test",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF-update",
+			//			"For":     "Test-update",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF-update",
+			//			"tags.For":     "Test-update",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "0",
+			//			"tags.Created": REMOVEKEY,
+			//			"tags.For":     REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -217,7 +216,6 @@ func TestAccAliCloudRamPolicy_basic10003_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -228,10 +226,10 @@ func TestAccAliCloudRamPolicy_basic10003_twin(t *testing.T) {
 					"description":     name,
 					"policy_name":     name,
 					"policy_document": "{\\n    \\\"Version\\\": \\\"1\\\",\\n    \\\"Statement\\\": [\\n        {\\n            \\\"Effect\\\": \\\"Deny\\\",\\n            \\\"Action\\\": \\\"*\\\",\\n            \\\"Resource\\\": \\\"*\\\"\\n        }\\n    ]\\n}",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "Test",
+					//},
 					"rotate_strategy": "DeleteOldestNonDefaultVersionWhenLimitExceeded",
 					"force":           "true",
 				}),
@@ -240,9 +238,9 @@ func TestAccAliCloudRamPolicy_basic10003_twin(t *testing.T) {
 						"description":     name,
 						"policy_name":     name,
 						"policy_document": CHECKSET,
-						"tags.%":          "2",
-						"tags.Created":    "TF",
-						"tags.For":        "Test",
+						//"tags.%":          "2",
+						//"tags.Created":    "TF",
+						//"tags.For":        "Test",
 					}),
 				),
 			},
@@ -272,7 +270,6 @@ func TestAccAliCloudRamPolicy_basic10005(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -310,48 +307,48 @@ func TestAccAliCloudRamPolicy_basic10005(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF",
+			//			"For":     "Test",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF",
+			//			"tags.For":     "Test",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF-update",
+			//			"For":     "Test-update",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF-update",
+			//			"tags.For":     "Test-update",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "0",
+			//			"tags.Created": REMOVEKEY,
+			//			"tags.For":     REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -377,7 +374,6 @@ func TestAccAliCloudRamPolicy_basic10005_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -388,21 +384,21 @@ func TestAccAliCloudRamPolicy_basic10005_twin(t *testing.T) {
 					"description": name,
 					"name":        name,
 					"document":    "{\\n    \\\"Version\\\": \\\"1\\\",\\n    \\\"Statement\\\": [\\n        {\\n            \\\"Effect\\\": \\\"Deny\\\",\\n            \\\"Action\\\": \\\"*\\\",\\n            \\\"Resource\\\": \\\"*\\\"\\n        }\\n    ]\\n}",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "Test",
+					//},
 					"rotate_strategy": "DeleteOldestNonDefaultVersionWhenLimitExceeded",
 					"force":           "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":  name,
-						"name":         name,
-						"document":     CHECKSET,
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
+						"description": name,
+						"name":        name,
+						"document":    CHECKSET,
+						//"tags.%":       "2",
+						//"tags.Created": "TF",
+						//"tags.For":     "Test",
 					}),
 				),
 			},
@@ -432,7 +428,6 @@ func TestAccAliCloudRamPolicy_basic10006(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -483,48 +478,48 @@ func TestAccAliCloudRamPolicy_basic10006(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF",
+			//			"For":     "Test",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF",
+			//			"tags.For":     "Test",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF-update",
+			//			"For":     "Test-update",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF-update",
+			//			"tags.For":     "Test-update",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "0",
+			//			"tags.Created": REMOVEKEY,
+			//			"tags.For":     REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -550,7 +545,6 @@ func TestAccAliCloudRamPolicy_basic10006_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -568,22 +562,22 @@ func TestAccAliCloudRamPolicy_basic10006_twin(t *testing.T) {
 							"resource": []string{"*"},
 						},
 					},
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "Test",
+					//},
 					"rotate_strategy": "DeleteOldestNonDefaultVersionWhenLimitExceeded",
 					"force":           "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":  name,
-						"name":         name,
-						"version":      "1",
-						"statement.#":  "1",
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
+						"description": name,
+						"name":        name,
+						"version":     "1",
+						"statement.#": "1",
+						//"tags.%":       "2",
+						//"tags.Created": "TF",
+						//"tags.For":     "Test",
 					}),
 				),
 			},
@@ -612,7 +606,6 @@ func TestAccAliCloudRamPolicy_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -624,10 +617,10 @@ func TestAccAliCloudRamPolicy_multi(t *testing.T) {
 					"description":     name + "-${count.index}",
 					"policy_name":     name + "-${count.index}",
 					"policy_document": "{\\n    \\\"Version\\\": \\\"1\\\",\\n    \\\"Statement\\\": [\\n        {\\n            \\\"Effect\\\": \\\"Deny\\\",\\n            \\\"Action\\\": \\\"*\\\",\\n            \\\"Resource\\\": \\\"*\\\"\\n        }\\n    ]\\n}",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "Test",
+					//},
 					"rotate_strategy": "DeleteOldestNonDefaultVersionWhenLimitExceeded",
 					"force":           "true",
 				}),
@@ -636,9 +629,9 @@ func TestAccAliCloudRamPolicy_multi(t *testing.T) {
 						"description":     name + fmt.Sprint(-5),
 						"policy_name":     name + fmt.Sprint(-5),
 						"policy_document": CHECKSET,
-						"tags.%":          "2",
-						"tags.Created":    "TF",
-						"tags.For":        "Test",
+						//"tags.%":          "2",
+						//"tags.Created":    "TF",
+						//"tags.For":        "Test",
 					}),
 				),
 			},
