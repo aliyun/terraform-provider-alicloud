@@ -3,16 +3,16 @@ subcategory: "VPN Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpn_gateway_vpn_attachment"
 description: |-
-  Provides a Alicloud V P N Gateway Vpn Attachment resource.
+  Provides a Alicloud VPN Gateway Vpn Attachment resource.
 ---
 
 # alicloud_vpn_gateway_vpn_attachment
 
-Provides a V P N Gateway Vpn Attachment resource.
+Provides a VPN Gateway Vpn Attachment resource.
 
 VpnAttachment has been upgraded to dual-tunnel mode. When you create a VpnAttachment in dual tunnel mode, you can configure the following request parameters in addition to the required parameters: vpn_attachment_name, network_type, effectImmediately, tags array, resource_group_id, tunnel_options_specification array, and enable_tunnels_bgp.
 
-For information about V P N Gateway Vpn Attachment and how to use it, see [What is Vpn Attachment](https://www.alibabacloud.com/help/zh/virtual-private-cloud/latest/createvpnattachment).
+For information about VPN Gateway Vpn Attachment and how to use it, see [What is Vpn Attachment](https://www.alibabacloud.com/help/zh/virtual-private-cloud/latest/createvpnattachment).
 
 -> **NOTE:** Available since v1.181.0.
 
@@ -71,6 +71,100 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   enable_dpd           = true
   enable_nat_traversal = true
   vpn_attachment_name  = var.name
+}
+```
+
+Dual Tunnel Mode Usage
+
+```terraform
+variable "name" {
+  default = "tf_example"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpn_customer_gateway" "cgw1" {
+  ip_address = "2.2.2.2"
+  asn        = "1219001"
+}
+
+resource "alicloud_vpn_customer_gateway" "cgw2" {
+  ip_address            = "43.43.3.22"
+  asn                   = "44331"
+  customer_gateway_name = "example_amp"
+}
+
+
+resource "alicloud_vpn_gateway_vpn_attachment" "default" {
+  local_subnet        = "0.0.0.0/0"
+  enable_tunnels_bgp  = "true"
+  vpn_attachment_name = "tfaccvpngateway25800"
+  tunnel_options_specification {
+    tunnel_ipsec_config {
+      ipsec_lifetime = "86200"
+      ipsec_pfs      = "group5"
+      ipsec_auth_alg = "md5"
+      ipsec_enc_alg  = "aes"
+    }
+
+    customer_gateway_id  = alicloud_vpn_customer_gateway.cgw1.id
+    enable_dpd           = "true"
+    enable_nat_traversal = "true"
+    tunnel_index         = "1"
+    tunnel_bgp_config {
+      local_asn    = "1219001"
+      local_bgp_ip = "169.254.10.1"
+      tunnel_cidr  = "169.254.10.0/30"
+    }
+
+    tunnel_ike_config {
+      ike_mode     = "main"
+      ike_version  = "ikev1"
+      psk          = "12345678"
+      remote_id    = "2.2.2.2"
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "aes"
+      ike_lifetime = "86100"
+      ike_pfs      = "group2"
+      local_id     = "1.1.1.1"
+    }
+
+  }
+  tunnel_options_specification {
+    tunnel_ipsec_config {
+      ipsec_enc_alg  = "aes"
+      ipsec_lifetime = "86400"
+      ipsec_pfs      = "group5"
+      ipsec_auth_alg = "sha256"
+    }
+
+    customer_gateway_id  = alicloud_vpn_customer_gateway.cgw1.id
+    enable_dpd           = "true"
+    enable_nat_traversal = "true"
+    tunnel_index         = "2"
+    tunnel_bgp_config {
+      local_asn    = "1219001"
+      local_bgp_ip = "169.254.20.1"
+      tunnel_cidr  = "169.254.20.0/30"
+    }
+
+    tunnel_ike_config {
+      local_id     = "4.4.4.4"
+      remote_id    = "5.5.5.5"
+      ike_lifetime = "86400"
+      ike_mode     = "main"
+      ike_pfs      = "group5"
+      ike_version  = "ikev2"
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "aes"
+      psk          = "32333442"
+    }
+
+  }
+
+  remote_subnet     = "0.0.0.0/0"
+  network_type      = "public"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 ```
 
@@ -267,7 +361,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-V P N Gateway Vpn Attachment can be imported using the id, e.g.
+VPN Gateway Vpn Attachment can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_vpn_gateway_vpn_attachment.example <id>
