@@ -1033,6 +1033,16 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category": "cloud_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_groups": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -3510,6 +3520,16 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 						"system_disk_encrypted":  "true",
 						"system_disk_kms_key_id": CHECKSET,
 						"system_disk_category":   "cloud_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_performance_level": "PL2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_performance_level": "PL2",
 					}),
 				),
 			},
