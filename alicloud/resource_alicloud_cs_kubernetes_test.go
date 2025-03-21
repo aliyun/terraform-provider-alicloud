@@ -251,6 +251,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"api_audiences":                  []string{"https://kubernetes.default.svc"},
 					"service_account_issuer":         "https://kubernetes.default.svc",
 					"user_ca":                        tmpCAFile.Name(),
+					"set_certificate_authority":      "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -279,6 +280,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 						"nat_gateway_id":                CHECKSET,
 						"slb_internet_enabled":          "true",
 						"node_cidr_mask":                "24",
+						"set_certificate_authority":     "true",
 					}),
 				),
 			},
@@ -286,7 +288,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "rds_instances",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "new_nat_gateway", "password", "user_ca", "rds_instances",
 					"cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password",
 					"retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime",
 					"api_audiences", "service_account_issuer", "load_balancer_spec", "platform",
@@ -462,6 +464,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 					"cluster_ca_cert":              clusterCaCertFile.Name(),
 					"client_key":                   clientKeyFile.Name(),
 					"client_cert":                  clientCertFile.Name(),
+					"set_certificate_authority":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -487,6 +490,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 						"new_nat_gateway":              "true",
 						"nat_gateway_id":               CHECKSET,
 						"is_enterprise_security_group": "true",
+						"set_certificate_authority":    "true",
 					}),
 				),
 			},
@@ -494,7 +498,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "runtime",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "new_nat_gateway", "password", "user_ca", "runtime",
 					"rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context",
 					"kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons",
 					"load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform",
@@ -587,20 +591,20 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  security_group_name = var.name
+  vpc_id              = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_ecs_auto_snapshot_policy" "default" {
-  name            = var.name
-  repeat_weekdays = ["1", "2", "3"]
-  retention_days  = -1
-  time_points     = ["1", "22", "23"]
+  auto_snapshot_policy_name = var.name
+  repeat_weekdays           = ["1", "2", "3"]
+  retention_days            = -1
+  time_points               = ["1", "22", "23"]
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
   password                      = "Test12345"
@@ -654,7 +658,7 @@ locals {
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
   password                      = "Test12345"
