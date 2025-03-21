@@ -20,12 +20,6 @@ For information about ESA Https Basic Configuration and how to use it, see [What
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_https_basic_configuration&exampleId=43bfc1d9-2d7c-704e-3f81-4a5cead1c591c084b424&activeTab=example&spm=docs.r.esa_https_basic_configuration.0.43bfc1d92d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -77,11 +71,13 @@ The following arguments are supported:
 * `ocsp_stapling` - (Optional) Indicates whether OCSP is enabled. Default is off. Possible values:
   - on: Enabled.
   - off: Disabled.
-* `rule` - (Optional) Matching rule content.
-* `rule_enable` - (Optional) Rule switch. Possible values:
-  - on: Enable.
-  - off: Disable.
-* `rule_name` - (Optional) Rule name, which can be used to find the rule with the specified name.
+* `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
+  -  Match all incoming requests: value set to true
+  -  Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
+* `rule_enable` - (Optional) Rule switch. When adding global configuration, this parameter does not need to be set. Value range:
+  - on: open.
+  - off: close.
+* `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
 * `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
 * `tls10` - (Optional) Whether to enable TLS1.0. Default is disabled. Possible values:
   - on: Enable.
