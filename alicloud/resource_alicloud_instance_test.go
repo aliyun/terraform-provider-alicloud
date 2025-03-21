@@ -2635,6 +2635,9 @@ data "alicloud_images" "default" {
 data "alicloud_instance_types" "default" {
   availability_zone = data.alicloud_zones.default.zones.0.id
   image_id          = data.alicloud_images.default.images.0.id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g6"
 }
 
 resource "alicloud_vpc" "default" {
@@ -3124,9 +3127,10 @@ func testAccCheckSpotInstanceDependence(name string) string {
 		default = "%s"
 	}
 	data "alicloud_instance_types" "special" {
-	  	cpu_core_count    = 2
-	  	memory_size       = 4
 	  	spot_strategy = "SpotWithPriceLimit"
+		cpu_core_count       = 2
+  		memory_size          = 8
+  		instance_type_family = "ecs.g6"
 	}
 	
 	`, EcsInstanceCommonNoZonesTestCase, name)
@@ -3490,6 +3494,7 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_essd",
+					"system_disk_size":              "500",
 					"instance_name":                 "${var.name}",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
 					"spot_strategy":                 "NoSpot",
@@ -3510,6 +3515,17 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 						"system_disk_encrypted":  "true",
 						"system_disk_kms_key_id": CHECKSET,
 						"system_disk_category":   "cloud_essd",
+						"system_disk_size":       "500",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_performance_level": "PL2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_performance_level": "PL2",
 					}),
 				),
 			},
@@ -4365,6 +4381,9 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
+		cpu_core_count       = 2
+  		memory_size          = 8
+  		instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {

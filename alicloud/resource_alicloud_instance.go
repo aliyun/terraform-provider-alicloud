@@ -1525,11 +1525,45 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	if !d.IsNewResource() && (d.HasChange("system_disk_size") || d.HasChange("system_disk_auto_snapshot_policy_id") || d.HasChange("system_disk_name") || d.HasChange("system_disk_description")) {
+	if !d.IsNewResource() && (d.HasChange("system_disk_size") || d.HasChange("system_disk_auto_snapshot_policy_id") || d.HasChange("system_disk_name") || d.HasChange("system_disk_description") || d.HasChange("system_disk_performance_level")) {
 		disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
+
+		if d.HasChange("system_disk_performance_level") {
+			action := "ModifyDiskSpec"
+			var response map[string]interface{}
+			request := map[string]interface{}{
+				"RegionId": client.RegionId,
+			}
+			request["DiskId"] = disk["DiskId"].(string)
+			if d.HasChange("system_disk_performance_level") {
+				request["PerformanceLevel"] = d.Get("system_disk_performance_level")
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling.ConcurrentLimitExceeded"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsService.EcsDiskStateRefreshFunc(disk["DiskId"].(string), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
 		if d.HasChange("system_disk_size") {
 			instance, errDesc := ecsService.DescribeInstance(d.Id())
 			if errDesc != nil {
