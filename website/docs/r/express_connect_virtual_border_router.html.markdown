@@ -75,14 +75,14 @@ The following arguments are supported:
 * `vbr_owner_id` - (Optional) The vbr owner id.
 * `virtual_border_router_name` - (Optional) The name of VBR. Length is from 2 to 128 characters, must start with a letter or the Chinese at the beginning can contain numbers, the underscore character (_) and dash (-). But do not start with http:// or https:// at the beginning.
 * `vlan_id` - (Required) The VLAN ID of the VBR. Value range: 0~2999.
-* `include_cross_account_vbr` - (Optional, Available in 1.191.0+) Whether cross account border routers are included. Valid values: `false`, `true`. Default: `true`. 
+* `include_cross_account_vbr` - (Optional, Available since v1.191.0) Whether cross account border routers are included. Valid values: `false`, `true`. Default: `true`. 
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Virtual Border Router.
-* `route_table_id` - (Available in v1.166.0+) The Route Table ID Of the Virtual Border Router.
+* `route_table_id` - (Available since vv1.166.0) The Route Table ID Of the Virtual Border Router.
 
 ## Timeouts
 

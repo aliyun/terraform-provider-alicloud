@@ -394,6 +394,61 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudExpressConnectVirtualBorderRouter_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_virtual_border_router.default"
+	ra := resourceAttrInit(resourceId, AlicloudExpressConnectVirtualBorderRouterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectVirtualBorderRouter", []string{"include_cross_account_vbr"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 2999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectvirtualborderrouter%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectVirtualBorderRouterBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"physical_connection_id":     "${data.alicloud_express_connect_physical_connections.default.ids.0}",
+					"vlan_id":                    "0",
+					"local_gateway_ip":           "10.0.0.1",
+					"peer_gateway_ip":            "10.0.0.2",
+					"peering_subnet_mask":        "255.255.255.252",
+					"virtual_border_router_name": "tf-testAcc-PrT1AqAjKvGgLQpbygetjH6f",
+					"description":                "tf-testAcc-llZJhorzazsS81mf2PVyFEAA",
+					"bandwidth":                  "100",
+					"include_cross_account_vbr":  false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"virtual_border_router_name": "tf-testAcc-PrT1AqAjKvGgLQpbygetjH6f",
+						"description":                "tf-testAcc-llZJhorzazsS81mf2PVyFEAA",
+						"physical_connection_id":     CHECKSET,
+						"vlan_id":                    "0",
+						"local_gateway_ip":           "10.0.0.1",
+						"peer_gateway_ip":            "10.0.0.2",
+						"peering_subnet_mask":        "255.255.255.252",
+						"bandwidth":                  "100",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"vbr_owner_id", "bandwidth", "include_cross_account_vbr"},
+			},
+		},
+	})
+}
+
 var AlicloudExpressConnectVirtualBorderRouterMap0 = map[string]string{
 	"enable_ipv6":  CHECKSET,
 	"vbr_owner_id": NOSET,
@@ -408,6 +463,17 @@ variable "name" {
 }
 data "alicloud_express_connect_physical_connections" "default" {
   name_regex = "^preserved-NODELETING"
+}
+`, name)
+}
+
+func AlicloudExpressConnectVirtualBorderRouterBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+data "alicloud_express_connect_physical_connections" "default" {
+  name_regex = "^preserved-NODELETING-0"
 }
 `, name)
 }

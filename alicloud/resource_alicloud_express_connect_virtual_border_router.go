@@ -8,7 +8,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
@@ -45,7 +44,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(3, 10),
+				ValidateFunc: IntBetween(3, 10),
 			},
 			"enable_ipv6": {
 				Type:     schema.TypeBool,
@@ -64,13 +63,13 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(200, 1000),
+				ValidateFunc: IntBetween(200, 1000),
 			},
 			"min_tx_interval": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(200, 1000),
+				ValidateFunc: IntBetween(200, 1000),
 			},
 			"peer_gateway_ip": {
 				Type:     schema.TypeString,
@@ -97,7 +96,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"active", "deleting", "recovering", "terminated", "terminating", "unconfirmed"}, false),
+				ValidateFunc: StringInSlice([]string{"active", "deleting", "recovering", "terminated", "terminating", "unconfirmed"}, false),
 			},
 			"vbr_owner_id": {
 				Type:     schema.TypeString,
@@ -110,7 +109,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 			"vlan_id": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2999),
+				ValidateFunc: IntBetween(0, 2999),
 			},
 			"route_table_id": {
 				Type:     schema.TypeString,
@@ -223,9 +222,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 	d.Set("physical_connection_id", object["PhysicalConnectionId"])
 	d.Set("status", object["Status"])
 	d.Set("virtual_border_router_name", object["Name"])
-	if v, ok := object["VlanId"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("vlan_id", formatInt(v))
-	}
+	d.Set("vlan_id", formatInt(object["VlanId"]))
 	d.Set("route_table_id", object["RouteTableId"])
 	d.Set("bandwidth", formatInt(object["Bandwidth"]))
 	return nil
