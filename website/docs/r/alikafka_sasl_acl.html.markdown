@@ -97,7 +97,7 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
 * `username` - (Required, ForceNew) Username for the sasl user. The length should between 1 to 64 characters. The user should be an existed sasl user.
-* `acl_resource_type` - (Required, ForceNew) Resource type for this acl. The resource type can only be "Topic" and "Group".
+* `acl_resource_type` - (Required, ForceNew) Resource type for this acl. The resource type can only be "Topic", "Group". Since version 1.247.0, the resource type support "Cluster" and "TransactionalId".
 * `acl_resource_name` - (Required, ForceNew) Resource name for this acl. The resource name should be a topic or consumer group name.
 * `acl_resource_pattern_type` - (Required, ForceNew) Resource pattern type for this acl. The resource pattern support two types "LITERAL" and "PREFIXED". "LITERAL": A literal name defines the full name of a resource. The special wildcard character "*" can be used to represent a resource with any name. "PREFIXED": A prefixed name defines a prefix for a resource.
 * `acl_operation_type` - (Required, ForceNew) Operation type for this acl. The operation type can only be "Write" and "Read".

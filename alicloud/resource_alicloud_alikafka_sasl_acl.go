@@ -37,7 +37,7 @@ func resourceAlicloudAlikafkaSaslAcl() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Group", "Topic"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Group", "Topic", "Cluster", "TransactionalId"}, false),
 			},
 			"acl_resource_name": {
 				Type:         schema.TypeString,
