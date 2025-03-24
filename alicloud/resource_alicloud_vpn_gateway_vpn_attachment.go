@@ -38,10 +38,9 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 							Computed: true,
 						},
 						"local_asn": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: IntBetween(0, 4294967295),
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
 						},
 						"tunnel_cidr": {
 							Type:     schema.TypeString,
