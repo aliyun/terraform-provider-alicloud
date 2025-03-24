@@ -125,6 +125,7 @@ The following arguments are supported:
 
 * `db_type` - (Required, ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBVersion`.
+* `db_minor_version` - (Optional, ForceNew, Available since 1.247.0) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. Takes effect only when `db_type` is MySQL and `db_version` is 8.0.
 * `db_node_class` - (Required) The db_node_class of cluster node.
 -> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. 
   From version 1.204.0, If you need to create a Serverless cluster with MySQL , `db_node_class` can be set to `polar.mysql.sl.small`.
@@ -176,7 +177,7 @@ The following arguments are supported:
 * `clone_data_point` - (Optional, Available since 1.179.0) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CloneDataPoint`.
 -> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
 * `vpc_id` - (Optional, ForceNew, Computed, Available since v1.185.0) The id of the VPC.
-* `storage_type` - (Optional, ForceNew, Available since v1.203.0) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`, `ESSDPL0`, `ESSDAUTOPL`. The standard version only supports MySQL and PostgreSQL.
+* `storage_type` - (Optional, Available since v1.203.0) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`, `ESSDPL0`, `ESSDAUTOPL`. The standard version only supports MySQL and PostgreSQL.
 * `provisioned_iops` - (Optional, ForceNew, Available since v1.229.1) The provisioned read/write IOPS of the ESSD AutoPL disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}.
 -> **NOTE:** This parameter is available only if the StorageType parameter is set to ESSDAUTOPL.
 * `storage_space` - (Optional, Computed, Available since v1.203.0) Storage space charged by space (monthly package). Unit: GB.

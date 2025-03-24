@@ -44,6 +44,13 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ForceNew: true,
 				Required: true,
 			},
+			"db_minor_version": {
+				Type:         schema.TypeString,
+				ValidateFunc: StringInSlice([]string{"8.0.1", "8.0.2"}, false),
+				ForceNew:     true,
+				Optional:     true,
+				Computed:     true,
+			},
 			"db_node_class": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -266,7 +273,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"PSL5", "PSL4", "ESSDPL0", "ESSDPL1", "ESSDPL2", "ESSDPL3", "ESSDAUTOPL"}, false),
 				Computed:     true,
-				ForceNew:     true,
 			},
 			"provisioned_iops": {
 				Type:             schema.TypeString,
@@ -1278,6 +1284,41 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("seconds_until_auto_pause")
 	}
 
+	if !d.IsNewResource() && d.HasChange("storage_type") {
+		action := "ModifyDBClusterStoragePerformance"
+		storageType := d.Get("storage_type").(string)
+		modifyType := d.Get("modify_type").(string)
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+			"StorageType": storageType,
+			"ModifyType":  modifyType,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+		}
+		// wait cluster status change from ClassChanging to running
+		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("storage_type")
+	}
+
 	if d.HasChange("storage_space") {
 		action := "ModifyDBClusterStorageSpace"
 		storageSpace := d.Get("storage_space").(int)
@@ -1638,6 +1679,15 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("compress_storage", clusterAttribute.CompressStorageMode)
 	d.Set("hot_standby_cluster", convertPolarDBHotStandbyClusterStatusReadResponse(clusterAttribute.HotStandbyCluster))
 	d.Set("strict_consistency", clusterAttribute.StrictConsistency)
+
+	versionInfo, err := polarDBService.DescribeDBClusterVersion(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if versionInfo["DBMinorVersion"] != nil {
+		d.Set("db_minor_version", versionInfo["DBMinorVersion"].(string))
+	}
+
 	return nil
 }
 
@@ -1747,6 +1797,9 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	if v, ok := d.GetOk("storage_type"); ok && v.(string) != "" {
 		request["StorageType"] = d.Get("storage_type").(string)
+	}
+	if v, ok := d.GetOk("db_minor_version"); ok && v.(string) != "" {
+		request["DBMinorVersion"] = d.Get("db_minor_version").(string)
 	}
 	if v, ok := d.GetOk("provisioned_iops"); ok && v.(string) != "" {
 		request["ProvisionedIops"], _ = strconv.ParseInt(v.(string), 10, 64)
