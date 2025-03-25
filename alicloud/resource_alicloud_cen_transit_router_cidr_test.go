@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenTransitRouterCidr_basic0(t *testing.T) {
+func TestAccAliCloudCenTransitRouterCidr_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_cidr.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudCenTransitRouterCidrMap)
@@ -199,7 +199,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterCidrCreate(dInit, rawClient)
+	err = resourceAliCloudCenTransitRouterCidrCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -222,7 +222,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterCidrCreate(dInit, rawClient)
+		err := resourceAliCloudCenTransitRouterCidrCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -249,7 +249,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterCidrUpdate(dExisted, rawClient)
+	err = resourceAliCloudCenTransitRouterCidrUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -295,7 +295,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterCidrUpdate(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterCidrUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -339,7 +339,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterCidrRead(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterCidrRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -358,7 +358,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTransitRouterCidrDelete(dExisted, rawClient)
+	err = resourceAliCloudCenTransitRouterCidrDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -386,7 +386,7 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTransitRouterCidrDelete(dExisted, rawClient)
+		err := resourceAliCloudCenTransitRouterCidrDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -396,3 +396,271 @@ func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 		}
 	}
 }
+
+// Test Cen TransitRouterCidr. >>> Resource test cases, automatically generated.
+// Case TR CIDR_副本1742102910761 10544
+func TestAccAliCloudCenTransitRouterCidr_basic10544(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_cidr.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterCidrMap10544)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterCidr")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterCidrBasicDependence10544)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name,
+					"description":              "create",
+					"cidr":                     "192.168.10.0/24",
+					"publish_cidr_route":       "false",
+					"transit_router_id":        "${alicloud_cen_transit_router.tr.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name,
+						"description":              "create",
+						"cidr":                     "192.168.10.0/24",
+						"publish_cidr_route":       "false",
+						"transit_router_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name + "_update",
+					"description":              "update",
+					"cidr":                     "192.168.20.0/24",
+					"publish_cidr_route":       "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name + "_update",
+						"description":              "update",
+						"cidr":                     "192.168.20.0/24",
+						"publish_cidr_route":       "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterCidrMap10544 = map[string]string{
+	"transit_router_cidr_id": CHECKSET,
+}
+
+func AlicloudCenTransitRouterCidrBasicDependence10544(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "cen" {
+  cen_instance_name = "test-cidr"
+}
+
+resource "alicloud_cen_transit_router" "tr" {
+  cen_id = alicloud_cen_instance.cen.id
+}
+
+
+`, name)
+}
+
+// Case TR CIDR 10385
+func TestAccAliCloudCenTransitRouterCidr_basic10385(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_cidr.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterCidrMap10385)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterCidr")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterCidrBasicDependence10385)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name,
+					"description":              "create",
+					"cidr":                     "192.168.10.0/24",
+					"publish_cidr_route":       "false",
+					"transit_router_id":        "${alicloud_cen_transit_router.tr.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name,
+						"description":              "create",
+						"cidr":                     "192.168.10.0/24",
+						"publish_cidr_route":       "false",
+						"transit_router_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name + "_update",
+					"description":              "update",
+					"cidr":                     "192.168.20.0/24",
+					"publish_cidr_route":       "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name + "_update",
+						"description":              "update",
+						"cidr":                     "192.168.20.0/24",
+						"publish_cidr_route":       "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterCidrMap10385 = map[string]string{
+	"transit_router_cidr_id": CHECKSET,
+}
+
+func AlicloudCenTransitRouterCidrBasicDependence10385(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "cen" {
+  cen_instance_name = "test-cidr"
+}
+
+resource "alicloud_cen_transit_router" "tr" {
+  cen_id = alicloud_cen_instance.cen.id
+}
+
+
+`, name)
+}
+
+// Case 全生命周期 4525
+func TestAccAliCloudCenTransitRouterCidr_basic4525(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_cidr.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterCidrMap4525)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterCidr")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterCidrBasicDependence4525)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name,
+					"description":              "create",
+					"cidr":                     "192.168.10.0/24",
+					"publish_cidr_route":       "false",
+					"transit_router_id":        "${alicloud_cen_transit_router.tr.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name,
+						"description":              "create",
+						"cidr":                     "192.168.10.0/24",
+						"publish_cidr_route":       "false",
+						"transit_router_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_cidr_name": name + "_update",
+					"description":              "update",
+					"cidr":                     "192.168.20.0/24",
+					"publish_cidr_route":       "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_cidr_name": name + "_update",
+						"description":              "update",
+						"cidr":                     "192.168.20.0/24",
+						"publish_cidr_route":       "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterCidrMap4525 = map[string]string{
+	"transit_router_cidr_id": CHECKSET,
+}
+
+func AlicloudCenTransitRouterCidrBasicDependence4525(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "cen" {
+  cen_instance_name = "tf01"
+}
+
+resource "alicloud_cen_transit_router" "tr" {
+  cen_id              = alicloud_cen_instance.cen.id
+  transit_router_name = "tf01"
+}
+
+
+`, name)
+}
+
+// Test Cen TransitRouterCidr. <<< Resource test cases, automatically generated.
