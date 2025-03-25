@@ -139,7 +139,7 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `skip_wait_switch` - (Optional, Available since v1.244.0) Specifies whether to skip the WAIT_SWITCH status of instance when modifying instance spec. Works only when instance spec change.
 * `ingress_vpc_id` - (Optional, Available since v1.246.0) The VpcID which the client at.
 * `ingress_vpc_owner_id` - (Optional, Available since v1.246.0) The user ID that the VpcID of `ingress_vpc_id` belongs to.
-* `ingress_vswitch_id` - (Optional, Available since v1.246.0) The VSwitch ID that belongs to the Vpc of `ingress_vpc_id`.
+* `ingress_vswitch_id` - (Optional, Available since v1.246.0) The VSwitch ID that belongs to the Vpc of `ingress_vpc_id`. Required when `ingress_vpc_id` is set.
 
 ### `zone_vswitch_security_group`
 

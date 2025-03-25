@@ -438,16 +438,13 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	request["Token"] = buildClientToken(action)
 	request["InstanceId"] = d.Id()
 	if d.HasChanges("ingress_vpc_id", "ingress_vpc_owner_id", "ingress_vswitch_id") {
-		oldVal, newVal := d.GetChange("ingress_vpc_id")
-		if (newVal == nil || newVal.(string) == "") && (oldVal != nil && oldVal.(string) != "") {
-			request["VpcId"] = oldVal
-			request["DeleteVpcAccess"] = true
-		} else {
-			request["VpcId"] = newVal
+		v, ok := d.GetOk("ingress_vpc_id")
+		if ok && v != nil {
+			request["VpcId"] = v
+			request["VpcOwnerId"] = d.Get("ingress_vpc_owner_id")
+			request["VswitchId"] = d.Get("ingress_vswitch_id")
+			update = true
 		}
-		request["VpcOwnerId"] = d.Get("ingress_vpc_owner_id")
-		request["VswitchId"] = d.Get("ingress_vswitch_id")
-		update = true
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
