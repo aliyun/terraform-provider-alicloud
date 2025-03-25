@@ -152,6 +152,94 @@ func TestAccAliCloudResourceManagerSharedResource_image(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudResourceManagerSharedResource_IpamPool(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_shared_resource.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerSharedResource")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccResourceManagerSharedResource%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceIpamPoolDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_id": "${alicloud_resource_manager_resource_share.default.id}",
+					"resource_id":       "${alicloud_vpc_ipam_ipam_pool.default.id}",
+					"resource_type":     "IpamPool",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_id": CHECKSET,
+						"resource_id":       CHECKSET,
+						"resource_type":     "IpamPool",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudResourceManagerSharedResource_IpamResourceDiscovery(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_shared_resource.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerSharedResource")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccResourceManagerSharedResource%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceIpamResourceDiscoveryDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_id": "${alicloud_resource_manager_resource_share.default.id}",
+					"resource_id":       "${alicloud_vpc_ipam_ipam_resource_discovery.default.id}",
+					"resource_type":     "IpamResourceDiscovery",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_id": CHECKSET,
+						"resource_id":       CHECKSET,
+						"resource_type":     "IpamResourceDiscovery",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AliCloudResourceManagerSharedResourceMap = map[string]string{
 	"status": "Associated",
 }
@@ -259,6 +347,66 @@ func AliCloudResourceManagerSharedResourceImageDependence(name string) string {
 	resource "alicloud_image" "default" {
   		instance_id = alicloud_instance.default.id
   		image_name  = var.name
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
+`, name)
+}
+
+func AliCloudResourceManagerSharedResourceIpamPoolDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	
+	provider "alicloud" {
+	  region = "cn-beijing"
+	}
+	
+	resource "alicloud_vpc_ipam_ipam" "defaultIpam" {
+	  operating_region_list = ["cn-beijing"]
+	}
+	
+	resource "alicloud_vpc_ipam_ipam_pool" "parentIpamPool" {
+	  ipam_scope_id  = alicloud_vpc_ipam_ipam.defaultIpam.private_default_scope_id
+	  ipam_pool_name = format("%%s1", var.name)
+	  pool_region_id = alicloud_vpc_ipam_ipam.defaultIpam.region_id
+	}
+	
+	
+	resource "alicloud_vpc_ipam_ipam_pool" "default" {
+	  ipam_scope_id       = alicloud_vpc_ipam_ipam.defaultIpam.private_default_scope_id
+	  pool_region_id      = alicloud_vpc_ipam_ipam_pool.parentIpamPool.pool_region_id
+	  ipam_pool_name      = var.name
+	  source_ipam_pool_id = alicloud_vpc_ipam_ipam_pool.parentIpamPool.id
+	  ip_version          = "IPv4"
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
+`, name)
+}
+
+func AliCloudResourceManagerSharedResourceIpamResourceDiscoveryDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	
+	provider "alicloud" {
+	  region = "cn-beijing"
+	}
+	
+	data "alicloud_resource_manager_resource_groups" "default" {}
+	
+	
+	resource "alicloud_vpc_ipam_ipam_resource_discovery" "default" {
+	  operating_region_list               = ["cn-beijing"]
+	  ipam_resource_discovery_description = "This is a custom IPAM resource discovery."
+	  ipam_resource_discovery_name        = "example_resource_discovery"
 	}
 
 	resource "alicloud_resource_manager_resource_share" "default" {
