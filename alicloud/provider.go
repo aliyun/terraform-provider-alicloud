@@ -1323,7 +1323,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_limit":                                   resourceAlicloudCenBandwidthLimit(),
 			"alicloud_cen_route_entry":                                       resourceAlicloudCenRouteEntry(),
 			"alicloud_cen_instance_grant":                                    resourceAlicloudCenInstanceGrant(),
-			"alicloud_cen_transit_router":                                    resourceAlicloudCenTransitRouter(),
+			"alicloud_cen_transit_router":                                    resourceAliCloudCenTransitRouter(),
 			"alicloud_cen_transit_router_route_entry":                        resourceAlicloudCenTransitRouterRouteEntry(),
 			"alicloud_cen_transit_router_route_table":                        resourceAlicloudCenTransitRouterRouteTable(),
 			"alicloud_cen_transit_router_route_table_association":            resourceAlicloudCenTransitRouterRouteTableAssociation(),
