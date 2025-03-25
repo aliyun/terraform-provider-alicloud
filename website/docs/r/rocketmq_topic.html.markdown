@@ -30,7 +30,7 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "cn-chengdu"
+  region = "cn-hangzhou"
 }
 
 data "alicloud_zones" "default" {
@@ -52,16 +52,31 @@ resource "alicloud_vswitch" "createVswitch" {
 }
 
 resource "alicloud_rocketmq_instance" "createInstance" {
-  auto_renew_period = "1"
   product_info {
-    msg_process_spec       = "rmq.p2.4xlarge"
-    send_receive_ratio     = 0.3
+    msg_process_spec       = "rmq.u2.10xlarge"
+    send_receive_ratio     = "0.3"
     message_retention_time = "70"
   }
+  service_code    = "rmq"
+  payment_type    = "PayAsYouGo"
+  instance_name   = var.name
+  sub_series_code = "cluster_ha"
+  remark          = "example"
+  ip_whitelists   = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
+  software {
+    maintain_time = "02:00-06:00"
+  }
+  tags = {
+    Created = "TF"
+    For     = "example"
+  }
+  series_code = "ultimate"
   network_info {
     vpc_info {
-      vpc_id     = alicloud_vpc.createVpc.id
-      vswitch_id = alicloud_vswitch.createVswitch.id
+      vpc_id = alicloud_vpc.createVpc.id
+      vswitches {
+        vswitch_id = alicloud_vswitch.createVswitch.id
+      }
     }
     internet_info {
       internet_spec      = "enable"
@@ -69,15 +84,6 @@ resource "alicloud_rocketmq_instance" "createInstance" {
       flow_out_bandwidth = "30"
     }
   }
-  period          = "1"
-  sub_series_code = "cluster_ha"
-  remark          = "example"
-  instance_name   = var.name
-
-  service_code = "rmq"
-  series_code  = "professional"
-  payment_type = "PayAsYouGo"
-  period_unit  = "Month"
 }
 
 resource "alicloud_rocketmq_topic" "default" {
@@ -92,6 +98,7 @@ resource "alicloud_rocketmq_topic" "default" {
 
 The following arguments are supported:
 * `instance_id` - (Required, ForceNew) Instance ID.
+* `max_send_tps` - (Optional, Int, Available since v1.247.0) The maximum TPS for message sending.
 * `message_type` - (Optional, ForceNew) Message type.
 * `remark` - (Optional) Custom remarks.
 * `topic_name` - (Required, ForceNew) Topic name and identification.
@@ -101,6 +108,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<topic_name>`.
 * `create_time` - The creation time of the resource.
+* `region_id` - (Available since v1.247.0) The region ID to which the instance belongs.
 * `status` - The status of the resource.
 
 ## Timeouts

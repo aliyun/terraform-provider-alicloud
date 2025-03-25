@@ -354,22 +354,20 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	instanceId := parts[0]
 	topicName := parts[1]
-	action := fmt.Sprintf("/instances/%s/topics/%s", instanceId, topicName)
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	body = request
+	action := fmt.Sprintf("/instances/%s/topics/%s", instanceId, topicName)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, body)
+		response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -378,10 +376,9 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Topic.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("Topic", id), NotFoundMsg, response)
@@ -409,6 +406,14 @@ func (s *RocketmqServiceV2) RocketmqTopicStateRefreshFunc(id string, field strin
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))

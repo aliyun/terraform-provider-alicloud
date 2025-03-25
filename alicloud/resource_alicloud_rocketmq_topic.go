@@ -37,11 +37,19 @@ func resourceAliCloudRocketmqTopic() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"max_send_tps": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"message_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"NORMAL", "FIFO", "DELAY", "TRANSACTION"}, false),
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"remark": {
 				Type:         schema.TypeString,
@@ -82,11 +90,13 @@ func resourceAliCloudRocketmqTopicCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("remark"); ok {
 		request["remark"] = v
 	}
+	if v, ok := d.GetOkExists("max_send_tps"); ok {
+		request["maxSendTps"] = v
+	}
 	body = request
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -94,9 +104,9 @@ func resourceAliCloudRocketmqTopicCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_topic", action, AlibabaCloudSdkGoERROR)
@@ -128,7 +138,9 @@ func resourceAliCloudRocketmqTopicRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("create_time", objectRaw["createTime"])
+	d.Set("max_send_tps", objectRaw["maxSendTps"])
 	d.Set("message_type", objectRaw["messageType"])
+	d.Set("region_id", objectRaw["regionId"])
 	d.Set("remark", objectRaw["remark"])
 	d.Set("status", objectRaw["status"])
 	d.Set("instance_id", objectRaw["instanceId"])
@@ -144,17 +156,27 @@ func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	instanceId := parts[0]
 	topicName := parts[1]
 	action := fmt.Sprintf("/instances/%s/topics/%s", instanceId, topicName)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	if !d.IsNewResource() && d.HasChange("remark") {
+
+	if d.HasChange("remark") {
 		update = true
-		request["remark"] = d.Get("remark")
+	}
+	if v, ok := d.GetOk("remark"); ok {
+		request["remark"] = v
+	}
+	if d.HasChange("max_send_tps") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("max_send_tps"); ok && v.(int) != 0 {
+		request["maxSendTps"] = v
 	}
 
 	body = request
@@ -162,7 +184,6 @@ func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -170,9 +191,9 @@ func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -196,14 +217,12 @@ func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 
-	body["body"] = request
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, true)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -212,11 +231,14 @@ func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -225,5 +247,6 @@ func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
