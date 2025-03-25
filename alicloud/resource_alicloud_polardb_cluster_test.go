@@ -1129,7 +1129,7 @@ func TestAccAliCloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 					"db_type":           "MySQL",
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":     "polar.mysql.mmx4.medium",
 					"vswitch_id":        "${local.vswitch_id}",
 					"creation_category": "NormalMultimaster",
 				}),
@@ -1227,6 +1227,16 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"storage_space": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provisioned_iops": "1200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_iops": "1200",
 					}),
 				),
 			},
@@ -1479,6 +1489,26 @@ func TestAccAliCloudPolarDBCluster_SteadyServerless(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"scale_min": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_min": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scale_max": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_max": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"scale_ro_num_max": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1582,7 +1612,8 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
 					"lower_case_table_names": "0",
 					"backup_retention_policy_on_cluster_deletion": "NONE",
-					"storage_type": "PSL4",
+					"storage_type":     "PSL4",
+					"db_minor_version": "8.0.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1591,6 +1622,7 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 						"lower_case_table_names": CHECKSET,
 						"default_time_zone":      CHECKSET,
 						"storage_type":           "PSL4",
+						"db_minor_version":       "8.0.1",
 					}),
 				),
 			},
@@ -1611,6 +1643,26 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"compress_storage": "ON",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compress_storage": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_storage": "OFF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_type": "PSL5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type": "PSL5",
 					}),
 				),
 			},
