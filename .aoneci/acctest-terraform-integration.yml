@@ -10,6 +10,7 @@ triggers:
 
 jobs:
   IntegrationTest:
+    timeout: 6h
     steps:
       - uses: checkout
       - name: Setup Go
