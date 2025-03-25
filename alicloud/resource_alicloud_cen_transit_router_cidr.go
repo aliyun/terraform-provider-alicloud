@@ -1,22 +1,23 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
-	"regexp"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCenTransitRouterCidr() *schema.Resource {
+func resourceAliCloudCenTransitRouterCidr() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenTransitRouterCidrCreate,
-		Read:   resourceAlicloudCenTransitRouterCidrRead,
-		Update: resourceAlicloudCenTransitRouterCidrUpdate,
-		Delete: resourceAlicloudCenTransitRouterCidrDelete,
+		Create: resourceAliCloudCenTransitRouterCidrCreate,
+		Read:   resourceAliCloudCenTransitRouterCidrRead,
+		Update: resourceAliCloudCenTransitRouterCidrUpdate,
+		Delete: resourceAliCloudCenTransitRouterCidrDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,67 +27,66 @@ func resourceAlicloudCenTransitRouterCidr() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"transit_router_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"cidr": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"transit_router_cidr_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][-_a-zA-Z0-9]{1,127}$`), "The name can be up to 128 characters in length and can contain digits, letters, hyphens (-), and underscores (_). It must start with a digit or letter."),
-			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It must be `2` to `256` characters in length and cannot start with `https://` or `https://`.")),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"publish_cidr_route": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
 			},
 			"transit_router_cidr_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"transit_router_cidr_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"transit_router_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudCenTransitRouterCidrCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterCidrCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateTransitRouterCidr"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("CreateTransitRouterCidr")
-	request["TransitRouterId"] = d.Get("transit_router_id")
-	request["Cidr"] = d.Get("cidr")
-
-	if v, ok := d.GetOk("transit_router_cidr_name"); ok {
-		request["Name"] = v
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("transit_router_id"); ok {
+		request["TransitRouterId"] = v
 	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
 	if v, ok := d.GetOkExists("publish_cidr_route"); ok {
 		request["PublishCidrRoute"] = v
 	}
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
+	request["Cidr"] = d.Get("cidr")
+	if v, ok := d.GetOk("transit_router_cidr_name"); ok {
+		request["Name"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -102,81 +102,74 @@ func resourceAlicloudCenTransitRouterCidrCreate(d *schema.ResourceData, meta int
 
 	d.SetId(fmt.Sprintf("%v:%v", request["TransitRouterId"], response["TransitRouterCidrId"]))
 
-	return resourceAlicloudCenTransitRouterCidrRead(d, meta)
+	return resourceAliCloudCenTransitRouterCidrRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterCidrRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterCidrRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
-	object, err := cbnService.DescribeCenTransitRouterCidr(d.Id())
+	cenServiceV2 := CenServiceV2{client}
+
+	objectRaw, err := cenServiceV2.DescribeCenTransitRouterCidr(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_cidr DescribeCenTransitRouterCidr Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("transit_router_id", object["TransitRouterId"])
-	d.Set("transit_router_cidr_id", object["TransitRouterCidrId"])
-	d.Set("cidr", object["Cidr"])
-	d.Set("transit_router_cidr_name", object["Name"])
-	d.Set("description", object["Description"])
-	d.Set("publish_cidr_route", object["PublishCidrRoute"])
+	d.Set("cidr", objectRaw["Cidr"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("publish_cidr_route", objectRaw["PublishCidrRoute"])
+	d.Set("transit_router_cidr_name", objectRaw["Name"])
+	d.Set("transit_router_cidr_id", objectRaw["TransitRouterCidrId"])
+	d.Set("transit_router_id", objectRaw["TransitRouterId"])
 
 	return nil
 }
 
-func resourceAlicloudCenTransitRouterCidrUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterCidrUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyTransitRouterCidr"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TransitRouterCidrId"] = parts[1]
+	request["TransitRouterId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
 	}
 
-	request := map[string]interface{}{
-		"RegionId":            client.RegionId,
-		"ClientToken":         buildClientToken("ModifyTransitRouterCidr"),
-		"TransitRouterId":     parts[0],
-		"TransitRouterCidrId": parts[1],
+	if d.HasChange("publish_cidr_route") {
+		update = true
+		request["PublishCidrRoute"] = d.Get("publish_cidr_route")
 	}
 
 	if d.HasChange("cidr") {
 		update = true
 	}
 	request["Cidr"] = d.Get("cidr")
-
 	if d.HasChange("transit_router_cidr_name") {
 		update = true
-	}
-	if v, ok := d.GetOk("transit_router_cidr_name"); ok {
-		request["Name"] = v
-	}
-
-	if d.HasChange("description") {
-		update = true
-	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
-
-	if d.HasChange("publish_cidr_route") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("publish_cidr_route"); ok {
-		request["PublishCidrRoute"] = v
+		request["Name"] = d.Get("transit_router_cidr_name")
 	}
 
 	if update {
-		action := "ModifyTransitRouterCidr"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -185,39 +178,36 @@ func resourceAlicloudCenTransitRouterCidrUpdate(d *schema.ResourceData, meta int
 			return nil
 		})
 		addDebug(action, response, request)
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudCenTransitRouterCidrRead(d, meta)
+	return resourceAliCloudCenTransitRouterCidrRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterCidrDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterCidrDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
 	action := "DeleteTransitRouterCidr"
+	var request map[string]interface{}
 	var response map[string]interface{}
-
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["TransitRouterCidrId"] = parts[1]
+	request["TransitRouterId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
+		request["ClientToken"] = buildClientToken(action)
 
-	request := map[string]interface{}{
-		"RegionId":            client.RegionId,
-		"ClientToken":         buildClientToken("DeleteTransitRouterCidr"),
-		"TransitRouterId":     parts[0],
-		"TransitRouterCidrId": parts[1],
-	}
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "OperationFailed.CidrBlockAllocated"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
