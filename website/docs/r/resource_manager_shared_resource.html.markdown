@@ -69,6 +69,7 @@ The following arguments are supported:
   - The following types are added after v1.194.1: `PublicIpAddressPool`.
   - The following types are added after v1.208.0: `KMSInstance`.
   - The following types are added after v1.240.0: `Snapshot`.
+  - For more information about the types of resources that can be shared, see [Services that work with Resource Sharing](https://help.aliyun.com/zh/resource-management/resource-sharing/product-overview/services-that-work-with-resource-sharing?spm=api-workbench.API%20Document.0.0.32fff3cdFveEud)
 
 ## Attributes Reference
 

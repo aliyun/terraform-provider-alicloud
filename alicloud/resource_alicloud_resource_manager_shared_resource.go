@@ -34,10 +34,9 @@ func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 				ForceNew: true,
 			},
 			"resource_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"VSwitch", "ROSTemplate", "ServiceCatalogPortfolio", "PrefixList", "Image", "PublicIpAddressPool", "KMSInstance", "Snapshot"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
