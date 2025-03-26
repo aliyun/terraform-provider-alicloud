@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Bucket Cors resource. Cross-Origin Resource Sharing (CORS) allows web applications to access resources in other regions.
 
-For information about OSS Bucket Cors and how to use it, see [What is Bucket Cors](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Cors and how to use it, see [What is Bucket Cors](https://www.alibabacloud.com/help/en/oss/developer-reference/putbucketcors).
 
 -> **NOTE:** Available since v1.223.0.
 
