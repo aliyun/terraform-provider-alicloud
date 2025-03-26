@@ -30,7 +30,7 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "cn-chengdu"
+  region = "cn-hangzhou"
 }
 
 data "alicloud_zones" "default" {
@@ -52,16 +52,31 @@ resource "alicloud_vswitch" "createVswitch" {
 }
 
 resource "alicloud_rocketmq_instance" "createInstance" {
-  auto_renew_period = "1"
   product_info {
-    msg_process_spec       = "rmq.p2.4xlarge"
-    send_receive_ratio     = 0.3
+    msg_process_spec       = "rmq.u2.10xlarge"
+    send_receive_ratio     = "0.3"
     message_retention_time = "70"
   }
+  service_code    = "rmq"
+  payment_type    = "PayAsYouGo"
+  instance_name   = var.name
+  sub_series_code = "cluster_ha"
+  remark          = "example"
+  ip_whitelists   = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
+  software {
+    maintain_time = "02:00-06:00"
+  }
+  tags = {
+    Created = "TF"
+    For     = "example"
+  }
+  series_code = "ultimate"
   network_info {
     vpc_info {
-      vpc_id     = alicloud_vpc.createVpc.id
-      vswitch_id = alicloud_vswitch.createVswitch.id
+      vpc_id = alicloud_vpc.createVpc.id
+      vswitches {
+        vswitch_id = alicloud_vswitch.createVswitch.id
+      }
     }
     internet_info {
       internet_spec      = "enable"
@@ -69,15 +84,6 @@ resource "alicloud_rocketmq_instance" "createInstance" {
       flow_out_bandwidth = "30"
     }
   }
-  period          = "1"
-  sub_series_code = "cluster_ha"
-  remark          = "example"
-  instance_name   = var.name
-
-  service_code = "rmq"
-  series_code  = "professional"
-  payment_type = "PayAsYouGo"
-  period_unit  = "Month"
 }
 
 resource "alicloud_rocketmq_consumer_group" "default" {
@@ -96,15 +102,17 @@ resource "alicloud_rocketmq_consumer_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `consume_retry_policy` - (Required) Consumption retry strategy. See [`consume_retry_policy`](#consume_retry_policy) below.
+* `consume_retry_policy` - (Required, Set) Consumption retry strategy. See [`consume_retry_policy`](#consume_retry_policy) below.
 * `consumer_group_id` - (Required, ForceNew) The first ID of the resource.
 * `delivery_order_type` - (Optional) Delivery order.
 * `instance_id` - (Required, ForceNew) Instance ID.
+* `max_receive_tps` - (Optional, Int, Available since v1.247.0) Maximum received message tps.
 * `remark` - (Optional) Custom remarks.
 
 ### `consume_retry_policy`
 
 The consume_retry_policy supports the following:
+* `dead_letter_target_topic` - (Optional, Available since v1.247.0) The dead-letter topic. If the consumer fails to consume a message in an abnormal situation and the message is still unsuccessful after retrying, the message will be delivered to the dead letter Topic for subsequent business recovery or backtracking.
 * `max_retry_times` - (Optional) Maximum number of retries.
 * `retry_policy` - (Optional) Consume retry policy.
 
@@ -113,6 +121,7 @@ The consume_retry_policy supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<consumer_group_id>`.
 * `create_time` - The creation time of the resource.
+* `region_id` - (Available since v1.247.0) The ID of the region in which the instance resides.
 * `status` - The status of the resource.
 
 ## Timeouts
