@@ -25,16 +25,13 @@ func (s *CenServiceV2) DescribeCenTransitRouterPeerAttachment(id string) (object
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTransitRouterPeerAttachments"
-	parts, _ := ParseResourceId(id, 2)
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["CenId"] = parts[0]
-	query["TransitRouterAttachmentId"] = parts[1]
-	query["RegionId"] = client.RegionId
+	parts, _ := ParseResourceId(id, 2)
+	request["TransitRouterAttachmentId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "ListTransitRouterPeerAttachments"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
@@ -46,11 +43,10 @@ func (s *CenServiceV2) DescribeCenTransitRouterPeerAttachment(id string) (object
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -81,6 +77,13 @@ func (s *CenServiceV2) CenTransitRouterPeerAttachmentStateRefreshFunc(id string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -116,11 +119,11 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
