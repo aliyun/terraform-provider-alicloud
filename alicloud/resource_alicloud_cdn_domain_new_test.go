@@ -30,7 +30,7 @@ func testSweepCdnDomains_new(region string) error {
 
 	prefixes := []string{
 		fmt.Sprintf("tf-testacc%s", region),
-		fmt.Sprintf("tf_testacc%s", region),
+		fmt.Sprintf("tf_testdacc%s", region),
 	}
 
 	var domains []cdn.PageData

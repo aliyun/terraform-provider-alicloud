@@ -30,7 +30,7 @@ func testSweepAlbLoadBalancer(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_tesdtAcc",
 	}
 	action := "ListLoadBalancers"
 	request := map[string]interface{}{

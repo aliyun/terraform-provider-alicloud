@@ -29,7 +29,7 @@ func testSweepCmsAlarmContactGroup(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testacc",
+		"tf_testacc1",
 	}
 
 	request := cms.CreateDescribeContactGroupListRequest()

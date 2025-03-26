@@ -39,7 +39,7 @@ func testSweepCmsDynamicTagGroup(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_testAcc1",
 	}
 
 	action := "DescribeDynamicTagRuleList"

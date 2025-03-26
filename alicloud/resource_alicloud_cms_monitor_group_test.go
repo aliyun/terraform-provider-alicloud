@@ -37,7 +37,7 @@ func testSweepCmsMonitorgroup(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_testA1cc",
 	}
 	action := "DescribeMonitorGroups"
 	request := make(map[string]interface{})

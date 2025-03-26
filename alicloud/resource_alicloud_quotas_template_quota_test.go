@@ -21,7 +21,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3099(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotastemplatequota%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%squotastemplateqduota%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateQuotaBasicDependence3099)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

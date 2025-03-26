@@ -37,7 +37,7 @@ func testSweepInstances(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_testAcc1",
 	}
 
 	var insts []ecs.Instance

@@ -32,7 +32,7 @@ func testSweepCMSAlarms(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
+		"tf-tesdtAcc",
 		"tf_testAcc",
 	}
 

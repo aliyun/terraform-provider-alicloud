@@ -36,7 +36,7 @@ func testSweepEdasCluster(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_testAcc1",
 	}
 
 	clusterListRq := edas.CreateListClusterRequest()

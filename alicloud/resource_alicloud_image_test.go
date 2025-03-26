@@ -24,7 +24,7 @@ func TestAccAliCloudECSImageBasic(t *testing.T) {
 
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEcsImageConfigBasic%d", rand)
+	name := fmt.Sprintf("tf-testAccEc1sImageConfigBasic%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceImageBasicConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

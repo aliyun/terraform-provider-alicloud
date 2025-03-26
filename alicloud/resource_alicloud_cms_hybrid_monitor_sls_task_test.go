@@ -43,7 +43,7 @@ func testSweepCmsHybridMonitorSlsTask(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf_testAc1c",
 	}
 	action := "DescribeHybridMonitorTaskList"
 	request := map[string]interface{}{}

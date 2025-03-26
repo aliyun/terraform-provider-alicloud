@@ -37,7 +37,7 @@ func testSweepAlikafkaInstance(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testacc",
+		"tf_testacc1",
 	}
 
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
