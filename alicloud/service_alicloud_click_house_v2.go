@@ -382,3 +382,72 @@ func (s *ClickHouseServiceV2) DescribeAsyncDescribeDBInstanceAttribute(d *schema
 }
 
 // DescribeAsyncDescribeDBInstanceAttribute >>> Encapsulated.
+// DescribeClickHouseEnterpriseDbClusterBackupPolicy <<< Encapsulated get interface for ClickHouse EnterpriseDbClusterBackupPolicy.
+
+func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDbClusterBackupPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeBackupPolicy"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["Switch"]
+	if fmt.Sprint(currentStatus) == "false" {
+		return object, WrapErrorf(NotFoundErr("EnterpriseDbClusterBackupPolicy", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *ClickHouseServiceV2) ClickHouseEnterpriseDbClusterBackupPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeClickHouseEnterpriseDbClusterBackupPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeClickHouseEnterpriseDbClusterBackupPolicy >>> Encapsulated.
