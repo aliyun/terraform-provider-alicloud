@@ -1,28 +1,24 @@
 ---
-subcategory: "File Storage (NAS)"
+subcategory: "Network Attached Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_mount_target"
-sidebar_current: "docs-alicloud-resource-nas-mount-target"
 description: |-
-  Provides a Alicloud NAS MountTarget resource.
+  Provides a Alicloud Network Attached Storage (NAS) Mount Target resource.
 ---
 
 # alicloud_nas_mount_target
 
-Provides a NAS Mount Target resource.
-For information about NAS Mount Target and how to use it, see [Manage NAS Mount Targets](https://www.alibabacloud.com/help/en/doc-detail/27531.htm).
+Provides a Network Attached Storage (NAS) Mount Target resource.
+
+File system mount point.
+
+For information about Network Attached Storage (NAS) Mount Target and how to use it, see [What is Mount Target](https://www.alibabacloud.com/help/en/doc-detail/27531.htm).
 
 -> **NOTE:** Available since v1.34.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_mount_target&exampleId=22f8ab4c-6826-906f-09ad-67827e96eaae2128860b&activeTab=example&spm=docs.r.nas_mount_target.0.22f8ab4c68&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 data "alicloud_nas_zones" "default" {
@@ -73,36 +69,39 @@ resource "alicloud_nas_mount_target" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `access_group_name` - (Optional) The name of the permission group.
+* `dual_stack` - (Optional, Available since v1.247.0) Whether to create an IPv6 mount point.
+
+Value:
+  - true: create
+  - false (default): not created
+
+-> **NOTE:**  currently, only extreme NAS supports IPv6 function in various regions in mainland China, and IPv6 function needs to be turned on for this file system.
 
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
-* `access_group_name` - (Optional) The name of the permission group that applies to the mount target.
-* `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch in the VPC where the mount target resides.
-* `status` - (Optional) Whether the MountTarget is active. The status of the mount target. Valid values: `Active` and `Inactive`, Default value is `Active`. Before you mount a file system, make sure that the mount target is in the Active state.
-* `vpc_id` - (Optional, ForceNew, Available since v1.208.1) The ID of VPC.
-* `network_type` - (Optional, ForceNew, Available since v1.208.1) mount target network type. Valid values: `VPC`. The classic network's mount targets are not supported.
-* `security_group_id` - (Optional, ForceNew, Available in v1.95.0) The ID of security group.
+* `network_type` - (Optional, ForceNew, Available since v1.208.1) Network type.
+* `security_group_id` - (Optional) The ID of the security group.
+* `status` - (Optional, Computed) The current status of the Mount point, including Active and Inactive, can be used to mount the file system only when the status is Active.
+* `vswitch_id` - (Optional, ForceNew) The ID of the switch.
+* `vpc_id` - (Optional, ForceNew, Available since v1.208.1) VPC ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
-* `mount_target_domain` - The IPv4 domain name of the mount target. **NOTE:** Available since v1.161.0.
+* `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_target_domain>`.
+* `mount_target_domain` - The domain name of the Mount point.
 
 ## Timeouts
 
--> **NOTE:** Available since v1.153.0.
-
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 40 mins) Used when create the mount target (until it reaches the initial `Active` status).
-* `update` - (Defaults to 40 mins) Used when update the mount target.
-* `delete` - (Defaults to 40 mins) Used when delete the mount target.
+* `create` - (Defaults to 5 mins) Used when create the Mount Target.
+* `delete` - (Defaults to 5 mins) Used when delete the Mount Target.
+* `update` - (Defaults to 5 mins) Used when update the Mount Target.
 
 ## Import
 
-NAS MountTarget can be imported using the id, e.g.
+Network Attached Storage (NAS) Mount Target can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nas_mount_target.foo 192094b415:192094b415-luw38.cn-beijing.nas.aliyuncs.com
+$ terraform import alicloud_nas_mount_target.example <file_system_id>:<mount_target_domain>
 ```
