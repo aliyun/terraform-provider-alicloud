@@ -137,6 +137,61 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_link_type": "Gold",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_link_type": "Gold",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -174,7 +229,7 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic1(t *testing.T) {
 					"transit_router_id":                     "${alicloud_cen_transit_router.default_0.transit_router_id}",
 					"peer_transit_router_id":                "${alicloud_cen_transit_router.default_1.transit_router_id}",
 					"peer_transit_router_region_id":         "cn-beijing",
-					"transit_router_attachment_name":        name,
+					"transit_router_peer_attachment_name":   name,
 					"auto_publish_route_enabled":            "false",
 					"bandwidth":                             `5`,
 					"cen_bandwidth_package_id":              "${alicloud_cen_bandwidth_package.default.id}",
@@ -188,12 +243,23 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic1(t *testing.T) {
 						"peer_transit_router_id":                CHECKSET,
 						"transit_router_id":                     CHECKSET,
 						"peer_transit_router_region_id":         "cn-beijing",
-						"transit_router_attachment_name":        name,
+						"transit_router_peer_attachment_name":   name,
 						"auto_publish_route_enabled":            "false",
 						"bandwidth":                             `5`,
 						"cen_bandwidth_package_id":              CHECKSET,
 						"dry_run":                               "false",
 						"transit_router_attachment_description": "desp",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_peer_attachment_name": name + "_Update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCenTransitRouterPeerAttachmentExistsWithProviders(resourceId, v, &providers),
+					testAccCheck(map[string]string{
+						"transit_router_peer_attachment_name": name + "_Update",
 					}),
 				),
 			},
