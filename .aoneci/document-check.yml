@@ -18,7 +18,7 @@ jobs:
       - uses: checkout
       - uses: setup-env
         inputs:
-          go-version: '1.22.0'
+          go-version: '1.24.0'
       - name: terrafmt
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
@@ -32,7 +32,7 @@ jobs:
           fetch-depth: '3'
       - uses: setup-env
         inputs:
-          go-version: '1.22.0'
+          go-version: '1.24.0'
       - run: bash scripts/basic-check.sh
 
   Content:
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.22.0'
+          go-version: '1.24.0'
       - name: Checking the docs content
         run: |
           diffFiles=$(git diff --name-only HEAD^ HEAD)
@@ -67,7 +67,7 @@ jobs:
       - name: Setup Go
         uses: setup-env
         inputs:
-          go-version: '1.22.0'
+          go-version: '1.24.0'
       - uses: checkout
         inputs:
           fetch-depth: '2'
