@@ -3,16 +3,16 @@ subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_remote_adb_data_source"
 description: |-
-  Provides a Alicloud GPDB Remote A D B Data Source resource.
+  Provides a Alicloud GPDB Remote ADB Data Source resource.
 ---
 
 # alicloud_gpdb_remote_adb_data_source
 
-Provides a GPDB Remote A D B Data Source resource.
+Provides a GPDB Remote ADB Data Source resource.
 
 RemoteADBDataSource is the data external table call method between greenplums, which will be used for data external table access between ADB-PG.
 
-For information about GPDB Remote A D B Data Source and how to use it, see [What is Remote A D B Data Source](https://www.alibabacloud.com/help/en/).
+For information about GPDB Remote ADB Data Source and how to use it, see [What is Remote ADB Data Source](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createremoteadbdatasource).
 
 -> **NOTE:** Available since v1.227.0.
 
@@ -138,13 +138,13 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Remote A D B Data Source.
-* `delete` - (Defaults to 5 mins) Used when delete the Remote A D B Data Source.
-* `update` - (Defaults to 5 mins) Used when update the Remote A D B Data Source.
+* `create` - (Defaults to 5 mins) Used when create the Remote ADB Data Source.
+* `delete` - (Defaults to 5 mins) Used when delete the Remote ADB Data Source.
+* `update` - (Defaults to 5 mins) Used when update the Remote ADB Data Source.
 
 ## Import
 
-GPDB Remote A D B Data Source can be imported using the id, e.g.
+GPDB Remote ADB Data Source can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_remote_adb_data_source.example <local_db_instance_id>:<remote_adb_data_source_id>
