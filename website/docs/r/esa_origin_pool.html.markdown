@@ -50,9 +50,9 @@ resource "alicloud_esa_origin_pool" "default" {
     header  = "{\"Host\":[\"example.oss-cn-beijing.aliyuncs.com\"]}"
     enabled = "true"
     auth_conf {
-      secret_key = "bd8tjba5lXxxxxiRXFIBvoCIfJIL2WJ"
+      secret_key = "<SecretKeyId>"
       auth_type  = "private_cross_account"
-      access_key = "LTAI5tGLgmPe1wFwpX8645BF"
+      access_key = "<AccessKeyId>"
     }
 
     weight = "50"
@@ -66,8 +66,8 @@ resource "alicloud_esa_origin_pool" "default" {
       version    = "v2"
       region     = "us-east-1"
       auth_type  = "private"
-      access_key = "LTAI5tGLgmPe1wFwpX8645BF"
-      secret_key = "bd8tjba5lXxxxxiRXFIBvoCIfJIL2WJ"
+      access_key = "<AccessKeyId>"
+      secret_key = "<SecretKeyId>"
     }
 
     weight = "50"
@@ -80,11 +80,11 @@ resource "alicloud_esa_origin_pool" "default" {
     header  = "{\"Host\":[\"example1111.com\"]}"
     enabled = "true"
     auth_conf {
-      secret_key = "bd8tjba5lXxxxxiRXFIBvoCIfJIL2WJ"
+      secret_key = "<SecretKeyId>"
       version    = "v2"
       region     = "us-east-1"
       auth_type  = "private"
-      access_key = "LTAI5tGLgmPe1wFwpX8645BF"
+      access_key = "<AccessKeyId>"
     }
 
     weight = "30"
