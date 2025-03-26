@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_association.default"
@@ -63,7 +63,7 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic1(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTableAssociation_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_association.default"
@@ -240,7 +240,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -257,7 +257,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -274,7 +274,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationCreate(dCreate, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -286,7 +286,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 		patcheDescribeCenTransitRouterRouteTableAssociation := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenTransitRouterRouteTableAssociation", func(*CbnService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationUpdate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationUpdate(d, rawClient)
 		patcheDescribeCenTransitRouterRouteTableAssociation.Reset()
 		assert.Nil(t, err)
 	})
@@ -301,7 +301,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -318,7 +318,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -338,7 +338,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 		patcheDescribeCenTransitRouterRouteTableAssociation := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenTransitRouterRouteTableAssociation", func(*CbnService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeCenTransitRouterRouteTableAssociation.Reset()
 		assert.Nil(t, err)
@@ -356,7 +356,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -376,7 +376,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationDelete(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationDelete(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -393,7 +393,7 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -409,8 +409,122 @@ func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableAssociationRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableAssociationRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Cen TransitRouterRouteTableAssociation. >>> Resource test cases, automatically generated.
+// Case 全生命周期测试用例_副本1690357259109 3788
+func TestAccAliCloudCenTransitRouterRouteTableAssociation_basic3788(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table_association.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableAssociationMap3788)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTableAssociation")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableAssociationBasicDependence3788)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_id": "${alicloud_cen_transit_router_route_table.trr.transit_router_route_table_id}",
+					"transit_router_attachment_id":  "${alicloud_cen_transit_router_vpc_attachment.bind1.transit_router_attachment_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_id": CHECKSET,
+						"transit_router_attachment_id":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableAssociationMap3788 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableAssociationBasicDependence3788(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "cen" {
+  description       = "terraform test"
+  cen_instance_name = "Cen_Terraform_Test01"
+}
+
+resource "alicloud_cen_transit_router" "tr" {
+  support_multicast          = false
+  transit_router_name        = "CEN_TR_Terraform"
+  transit_router_description = "tr-created-by-terraform"
+  cen_id                     = alicloud_cen_instance.cen.id
+}
+
+resource "alicloud_cen_transit_router_route_table" "trr" {
+  transit_router_id               = alicloud_cen_transit_router.tr.transit_router_id
+  transit_router_route_table_name = "test"
+}
+
+resource "alicloud_vpc" "vpc1" {
+  dry_run     = false
+  enable_ipv6 = false
+  cidr_block  = "192.168.1.0/24"
+  vpc_name    = "cbnvpc1"
+}
+
+resource "alicloud_vswitch" "vsw1" {
+  vpc_id       = alicloud_vpc.vpc1.id
+  zone_id      = "cn-hangzhou-h"
+  cidr_block   = "192.168.1.0/25"
+  vswitch_name = "cbnvsw1"
+}
+
+resource "alicloud_vswitch" "vsw2" {
+  vpc_id       = alicloud_vpc.vpc1.id
+  zone_id      = "cn-hangzhou-i"
+  cidr_block   = "192.168.1.128/26"
+  vswitch_name = "cbnvsw2"
+}
+
+resource "alicloud_cen_transit_router_vpc_attachment" "bind1" {
+  auto_publish_route_enabled = false
+  vpc_id                     = alicloud_vpc.vpc1.id
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw1.id
+    zone_id    = alicloud_vswitch.vsw1.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vsw2.id
+    zone_id    = alicloud_vswitch.vsw2.zone_id
+  }
+  transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
+  cen_id            = alicloud_cen_transit_router.tr.cen_id
+}
+
+
+`, name)
+}
+
+// Test Cen TransitRouterRouteTableAssociation. <<< Resource test cases, automatically generated.
