@@ -34,6 +34,10 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"dead_letter_target_topic": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"retry_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -42,7 +46,7 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 						"max_retry_times": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(1, 1000),
+							ValidateFunc: IntBetween(0, 1000),
 						},
 					},
 				},
@@ -65,6 +69,14 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"max_receive_tps": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"remark": {
 				Type:     schema.TypeString,
@@ -99,23 +111,31 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 		request["deliveryOrderType"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
-	if v := d.Get("consume_retry_policy"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].max_retry_times", v)
-		if nodeNative != "" {
-			objectDataLocalMap["maxRetryTimes"] = nodeNative
-		}
-		nodeNative1, _ := jsonpath.Get("$[0].retry_policy", v)
-		if nodeNative1 != "" {
-			objectDataLocalMap["retryPolicy"] = nodeNative1
-		}
-	}
-	request["consumeRetryPolicy"] = objectDataLocalMap
 
+	if v := d.Get("consume_retry_policy"); !IsNil(v) {
+		maxRetryTimes1, _ := jsonpath.Get("$[0].max_retry_times", v)
+		if maxRetryTimes1 != nil && maxRetryTimes1 != "" {
+			objectDataLocalMap["maxRetryTimes"] = maxRetryTimes1
+		}
+		retryPolicy1, _ := jsonpath.Get("$[0].retry_policy", v)
+		if retryPolicy1 != nil && retryPolicy1 != "" {
+			objectDataLocalMap["retryPolicy"] = retryPolicy1
+		}
+		deadLetterTargetTopic1, _ := jsonpath.Get("$[0].dead_letter_target_topic", v)
+		if deadLetterTargetTopic1 != nil && deadLetterTargetTopic1 != "" {
+			objectDataLocalMap["deadLetterTargetTopic"] = deadLetterTargetTopic1
+		}
+
+		request["consumeRetryPolicy"] = objectDataLocalMap
+	}
+
+	if v, ok := d.GetOkExists("max_receive_tps"); ok {
+		request["maxReceiveTps"] = v
+	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,9 +143,9 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_consumer_group", action, AlibabaCloudSdkGoERROR)
@@ -139,7 +159,7 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudRocketmqConsumerGroupUpdate(d, meta)
+	return resourceAliCloudRocketmqConsumerGroupRead(d, meta)
 }
 
 func resourceAliCloudRocketmqConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -158,22 +178,29 @@ func resourceAliCloudRocketmqConsumerGroupRead(d *schema.ResourceData, meta inte
 
 	d.Set("create_time", objectRaw["createTime"])
 	d.Set("delivery_order_type", objectRaw["deliveryOrderType"])
+	d.Set("max_receive_tps", objectRaw["maxReceiveTps"])
+	d.Set("region_id", objectRaw["regionId"])
 	d.Set("remark", objectRaw["remark"])
 	d.Set("status", objectRaw["status"])
 	d.Set("consumer_group_id", objectRaw["consumerGroupId"])
 	d.Set("instance_id", objectRaw["instanceId"])
+
 	consumeRetryPolicyMaps := make([]map[string]interface{}, 0)
 	consumeRetryPolicyMap := make(map[string]interface{})
-	consumeRetryPolicy1Raw := make(map[string]interface{})
+	consumeRetryPolicyRaw := make(map[string]interface{})
 	if objectRaw["consumeRetryPolicy"] != nil {
-		consumeRetryPolicy1Raw = objectRaw["consumeRetryPolicy"].(map[string]interface{})
+		consumeRetryPolicyRaw = objectRaw["consumeRetryPolicy"].(map[string]interface{})
 	}
-	if len(consumeRetryPolicy1Raw) > 0 {
-		consumeRetryPolicyMap["max_retry_times"] = consumeRetryPolicy1Raw["maxRetryTimes"]
-		consumeRetryPolicyMap["retry_policy"] = consumeRetryPolicy1Raw["retryPolicy"]
+	if len(consumeRetryPolicyRaw) > 0 {
+		consumeRetryPolicyMap["dead_letter_target_topic"] = consumeRetryPolicyRaw["deadLetterTargetTopic"]
+		consumeRetryPolicyMap["max_retry_times"] = consumeRetryPolicyRaw["maxRetryTimes"]
+		consumeRetryPolicyMap["retry_policy"] = consumeRetryPolicyRaw["retryPolicy"]
+
 		consumeRetryPolicyMaps = append(consumeRetryPolicyMaps, consumeRetryPolicyMap)
 	}
-	d.Set("consume_retry_policy", consumeRetryPolicyMaps)
+	if err := d.Set("consume_retry_policy", consumeRetryPolicyMaps); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -185,46 +212,63 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	instanceId := parts[0]
 	consumerGroupId := parts[1]
 	action := fmt.Sprintf("/instances/%s/consumerGroups/%s", instanceId, consumerGroupId)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	if !d.IsNewResource() && d.HasChange("remark") {
+
+	if d.HasChange("remark") {
 		update = true
 	}
-	request["remark"] = d.Get("remark")
+	if v, ok := d.GetOk("remark"); ok {
+		request["remark"] = v
+	}
 
-	if !d.IsNewResource() && d.HasChange("delivery_order_type") {
+	if d.HasChange("delivery_order_type") {
 		update = true
 	}
-	request["deliveryOrderType"] = d.Get("delivery_order_type")
+	if v, ok := d.GetOk("delivery_order_type"); ok {
+		request["deliveryOrderType"] = v
+	}
 
-	if !d.IsNewResource() && d.HasChange("consume_retry_policy") {
+	if d.HasChange("consume_retry_policy") {
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
-	if v := d.Get("consume_retry_policy"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].max_retry_times", v)
-		if nodeNative != "" {
-			objectDataLocalMap["maxRetryTimes"] = nodeNative
-		}
-		nodeNative1, _ := jsonpath.Get("$[0].retry_policy", v)
-		if nodeNative1 != "" {
-			objectDataLocalMap["retryPolicy"] = nodeNative1
-		}
-	}
-	request["consumeRetryPolicy"] = objectDataLocalMap
 
+	if v := d.Get("consume_retry_policy"); !IsNil(v) {
+		maxRetryTimes1, _ := jsonpath.Get("$[0].max_retry_times", v)
+		if maxRetryTimes1 != nil && maxRetryTimes1 != "" {
+			objectDataLocalMap["maxRetryTimes"] = maxRetryTimes1
+		}
+		retryPolicy1, _ := jsonpath.Get("$[0].retry_policy", v)
+		if retryPolicy1 != nil && retryPolicy1 != "" {
+			objectDataLocalMap["retryPolicy"] = retryPolicy1
+		}
+		deadLetterTargetTopic1, _ := jsonpath.Get("$[0].dead_letter_target_topic", v)
+		if deadLetterTargetTopic1 != nil && deadLetterTargetTopic1 != "" {
+			objectDataLocalMap["deadLetterTargetTopic"] = deadLetterTargetTopic1
+		}
+
+		request["consumeRetryPolicy"] = objectDataLocalMap
+	}
+
+	if d.HasChange("max_receive_tps") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("max_receive_tps"); ok && v.(int) != 0 {
+		request["maxReceiveTps"] = v
+	}
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -232,9 +276,9 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -258,14 +302,12 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, body, true)
+		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -274,11 +316,14 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -287,5 +332,6 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
