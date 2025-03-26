@@ -165,6 +165,7 @@ The following attributes are exported:
   * `replica_set_role` - The role of the node.
   * `connection_domain` - The connection address of the node.
   * `connection_port` - The connection port of the node.
+  * `role_id` - The id of the role.
 
 ## Timeouts
 
