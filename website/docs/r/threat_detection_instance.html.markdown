@@ -20,12 +20,6 @@ For information about Threat Detection Instance and how to use it, see [What is 
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_threat_detection_instance&exampleId=b7939698-097c-9f53-a286-e40654e839a08cfdfa68&activeTab=example&spm=docs.r.threat_detection_instance.0.b793969809&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -66,7 +60,7 @@ Terraform cannot destroy resource `alicloud_threat_detection_instance`. Terrafor
 
 The following arguments are supported:
 * `buy_number` - (Optional) Number of servers.
-* `container_image_scan` - (Optional, Deprecated since v1.212.0) Container Image security scan. Interval type, value interval:[0,200000].
+* `container_image_scan` - (Optional, Deprecated since v1.247.0) Container Image security scan. Interval type, value interval:[0,200000].
 
 -> **NOTE:**  The step size is 20, that is, only multiples of 20 can be filled in.
 
@@ -89,6 +83,20 @@ The following arguments are supported:
 
 -> **NOTE:**  must be set when creating a prepaid instance.
 
+* `post_paid_flag` - (Optional, Int, Available since v1.247.0) Post-paid signage. Value:
+  - `1`: Postpaid instance
+* `post_pay_module_switch` - (Optional, JsonString, Available since v1.247.0) Pay-as-you-go module switch mapping, in JsonString format. Valid values:
+  - Key:
+  - `VUL`: vulnerability repair module
+  - `CSPM`: Cloud platform configuration check module
+  - `AGENTLESS`: AGENTLESS detection module
+  - `SERVERLESS`:Serverless asset module
+  - `CTDR`: threat analysis and response module
+  - Value:0 means off, 1 means on
+
+-> **NOTE:**  The module value of the unpassed value will not change.
+
+* `product_type` - (Optional, Available since v1.247.0) Product type, only China station needs to be set to sas, international station does not need to set.
 * `rasp_count` - (Optional, Available since v1.212.0) Number of application protection licenses. Interval type, value interval:[1,100000000].
 * `renew_period` - (Optional, Int) Automatic renewal cycle, in months.
 
@@ -104,7 +112,7 @@ The following arguments are supported:
   - AutoRenewal: automatic renewal.
   - ManualRenewal: manual renewal.
 
-  Default ManualRenewal.
+Default ManualRenewal.
 * `sas_anti_ransomware` - (Optional) Anti-ransomware capacity. Unit: GB. Interval type, value interval:[0,9999999999].
 
 -> **NOTE:**  The step size is 10, that is, only multiples of 10 can be filled in.
@@ -133,7 +141,10 @@ The following arguments are supported:
   - 1: Yes.
 * `sas_webguard_order_num` - (Optional) Tamper-proof authorization number. Value:
   - 0: No
-  - 1: Yes.
+1: Yes.
+* `subscription_type` - (Optional, Available since v1.247.0) The subscription type. Value:
+  - Subscription: Prepaid.
+  - PayAsYouGo: Post-paid.
 * `threat_analysis` - (Optional) Threat Analysis log storage capacity. Interval type, value interval:[0,9999999999].
 
 -> **NOTE:**  This module can only be purchased when Threat_analysis_switch = 1. The step size is 10, that is, only multiples of 10 can be filled in.
@@ -142,9 +153,9 @@ The following arguments are supported:
 
 -> **NOTE:**  Step size is 1.
 
-* `threat_analysis_sls_storage` - (Optional, Available since v1.232.0) Threat analysis and response log storage capacity. Interval type, value interval:[0,9999999999].
+* `threat_analysis_sls_storage` - (Optional, Available since v1.232.0) Threat analysis and response log storage capacity. Interval type, value interval:[100,9999999999].
 
--> **NOTE:**  The step size is 10, that is, only multiples of 10 can be filled in.
+-> **NOTE:**  The step size is 100, that is, only multiples of 100 can be filled in.
 
 * `threat_analysis_switch` - (Optional) Threat analysis. Value:
   - 0: No.
@@ -153,7 +164,7 @@ The following arguments are supported:
   - 0: No
   - 1: Yes
 * `v_core` - (Optional) Number of cores.
-* `version_code` - (Required) Select the security center version. Value:
+* `version_code` - (Optional) Select the security center version. Value:
   - level7: Antivirus Edition.
   - level3: Premium version.
   - level2: Enterprise Edition.
@@ -163,7 +174,7 @@ The following arguments are supported:
 
 -> **NOTE:**  This module can only be purchased when vul_switch = 1. Only when the version_code value is level7 or level10. other versions do not need to be purchased separately.
 
-* `vul_switch` - (Optional, Available since v1.212.0) Vulnerability fix switch. Value:
+* `vul_switch` - (Optional) Vulnerability fix switch. Value:
   - 0: No.
   - 1: Yes.
 
@@ -175,7 +186,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
-* `status` - The status of the resource
+* `status` - The resource attribute field representing the resource status. 
 
 ## Timeouts
 
