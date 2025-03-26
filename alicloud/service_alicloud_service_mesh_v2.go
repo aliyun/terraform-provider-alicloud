@@ -42,7 +42,7 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "503", "500", "ServiceMesh.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -81,7 +81,7 @@ func (s *ServiceMeshServiceV2) DescribeDescribeKialiConfiguration(id string) (ob
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"403", "503", "500"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -149,7 +149,7 @@ func (s *ServiceMeshServiceV2) DescribeDescribeServiceMeshKubeconfig(id string) 
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "500"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

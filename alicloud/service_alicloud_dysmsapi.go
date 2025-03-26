@@ -37,7 +37,7 @@ func (s *DysmsapiService) DescribeSmsShortUrl(id string) (object map[string]inte
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"1000067"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SMS:ShortUrl", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("SMS:ShortUrl", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {

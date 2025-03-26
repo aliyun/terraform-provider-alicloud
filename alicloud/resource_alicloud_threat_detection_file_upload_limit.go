@@ -67,7 +67,7 @@ func resourceAliCloudThreatDetectionFileUploadLimitCreate(d *schema.ResourceData
 	}
 
 	accountId, err := meta.(*connectivity.AliyunClient).AccountId()
-	d.SetId(fmt.Sprintf(accountId))
+	d.SetId(fmt.Sprint(accountId))
 
 	return resourceAliCloudThreatDetectionFileUploadLimitRead(d, meta)
 }

@@ -53,7 +53,7 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackage", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CommonBandwidthPackage", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -224,7 +224,7 @@ func (s *CbwpServiceV2) DescribeCommonBandwidthPackageAttachment(id string) (obj
 			}
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+	return object, WrapErrorf(NotFoundErr("CommonBandWidthPackageAttachment", id), NotFoundMsg, ProviderERROR)
 }
 
 // DescribeCbwpCommonBandwidthPackageAttachment <<< Encapsulated get interface for Cbwp CommonBandwidthPackageAttachment.
@@ -269,7 +269,7 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackageAttachment(id string) 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CommonBandwidthPackageAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -293,7 +293,7 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackageAttachment(id string) 
 			return item, nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("CommonBandwidthPackageAttachment", id), NotFoundMsg, response)
 }
 func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -334,7 +334,7 @@ func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[stri
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CommonBandwidthPackageAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -345,7 +345,7 @@ func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[stri
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("CommonBandwidthPackageAttachment", id), NotFoundMsg, response)
 }
 
 func (s *CbwpServiceV2) CbwpCommonBandwidthPackageAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

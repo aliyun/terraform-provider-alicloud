@@ -44,7 +44,7 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) || NotFoundError(err) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EfloNode", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("EfloNode", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -116,7 +116,7 @@ func (s *EfloServiceV2) DescribeEfloCluster(id string) (object map[string]interf
 
 	currentStatus := response["ClusterId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -309,16 +309,16 @@ func (s *EfloServiceV2) DescribeEfloNodeGroup(id string) (object map[string]inte
 
 	v, err := jsonpath.Get("$.Groups[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NodeGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NodeGroup", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NodeGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NodeGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["GroupId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NodeGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NodeGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -499,7 +499,7 @@ func (s *EfloServiceV2) DescribeEfloInvocation(id string) (object map[string]int
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Invocation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Invocation", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

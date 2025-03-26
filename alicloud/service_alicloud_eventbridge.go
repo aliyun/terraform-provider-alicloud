@@ -36,7 +36,7 @@ func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:EventBus", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("EventBridge:EventBus", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -79,7 +79,7 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 
 	if err != nil {
 		if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist", "EventRuleNotExisted"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("EventBridge:Rule", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -197,7 +197,7 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.EventSourceList", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("EventBridge", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["Name"].(string) == id {
@@ -213,7 +213,7 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EventBridge", id), NotFoundWithResponse, response)
 	}
 	return
 }

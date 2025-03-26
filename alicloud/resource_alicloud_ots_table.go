@@ -193,7 +193,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			case string(SseByOk):
 				typ = tablestore.SSE_BYOK
 			default:
-				return WrapError(Error("unknown sse key type: " + sseKeyType.(string)))
+				return WrapError(Error("unknown sse key type: %s", sseKeyType.(string)))
 			}
 			sseSpec.KeyType = &typ
 		}

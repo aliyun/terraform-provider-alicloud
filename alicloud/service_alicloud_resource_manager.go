@@ -53,7 +53,7 @@ func (s *ResourceManagerService) DescribeResourceManagerDelegatedAdministrator(i
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.Account", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["AccountId"]) == parts[0] {
@@ -67,7 +67,7 @@ func (s *ResourceManagerService) DescribeResourceManagerDelegatedAdministrator(i
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager", id), NotFoundWithResponse, response)
 	}
 	return
 }

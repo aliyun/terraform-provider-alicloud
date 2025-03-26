@@ -136,7 +136,7 @@ func dataSourceAlicloudEdasClustersRead(d *schema.ResourceData, meta interface{}
 
 	response, _ := raw.(*edas.ListClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error(response.Message))
+		return WrapError(Error("%s", response.Message))
 	}
 
 	var filteredClusters []edas.Cluster

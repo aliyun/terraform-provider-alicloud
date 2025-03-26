@@ -36,7 +36,7 @@ func (s *VsService) DescribeVideoSurveillanceSystemGroup(id string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Param.Invalid.Id", "NotFound.Group"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VideoSurveillanceSystem:Group", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("VideoSurveillanceSystem:Group", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

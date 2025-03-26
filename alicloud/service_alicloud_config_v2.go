@@ -44,7 +44,7 @@ func (s *ConfigServiceV2) DescribeConfigRule(id string) (object map[string]inter
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConfigRuleNotExists", "Invalid.ConfigRuleId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Rule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -109,7 +109,7 @@ func (s *ConfigServiceV2) DescribeConfigRemediation(id string) (object map[strin
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"RemediationConfigNotExist", "RemediationNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Remediation", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Remediation", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -172,7 +172,7 @@ func (s *ConfigServiceV2) DescribeConfigDelivery(id string) (object map[string]i
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DeliveryChannelNotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Delivery", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Delivery", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -243,7 +243,7 @@ func (s *ConfigServiceV2) DescribeConfigAggregateDelivery(id string) (object map
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DeliveryChannelNotExists", "Invalid.AggregatorId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AggregateDelivery", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AggregateDelivery", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

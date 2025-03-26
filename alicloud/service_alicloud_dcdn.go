@@ -55,10 +55,10 @@ func (s *DcdnService) DescribeDcdnDomainCertificateInfo(id string) (object map[s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DCDN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DCDN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DomainName"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DCDN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -76,7 +76,7 @@ func (s *DcdnService) DescribeDcdnDomain(id string) (object map[string]interface
 	response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DcdnDomain", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DcdnDomain", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -142,7 +142,7 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Dcdn:DomainConfig", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -153,7 +153,7 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Dcdn:DomainConfig", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -164,7 +164,7 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Dcdn:DomainConfig", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -212,7 +212,7 @@ func (s *DcdnService) DescribeDcdnIpaDomain(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DcdnIpaDomain", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DcdnIpaDomain", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -276,7 +276,7 @@ func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interf
 	}
 	result, _ := v.([]interface{})
 	if len(result) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DcdnWafPolicy", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("DcdnWafPolicy", id), NotFoundMsg, ProviderERROR)
 	}
 	object = result[0].(map[string]interface{})
 	return object, nil
@@ -313,7 +313,7 @@ func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interf
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Domains", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DcdnWafDomains", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DcdnWafDomains", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DomainName"]) == id {
@@ -392,7 +392,7 @@ func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object m
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Domains", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DCDN", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DomainName"]) == parts[1] {
@@ -557,7 +557,7 @@ func (s *DcdnService) DescribeDcdnWafRule(id string) (object map[string]interfac
 	}
 
 	if _, ok := response["Rule"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WafRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("WafRule", id), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$.Rule", response)
@@ -593,7 +593,7 @@ func (s *DcdnService) DescribeDcdnEr(id string) (object map[string]interface{}, 
 
 	if err != nil {
 		if _, ok := response["Content"]; !ok {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:Er", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Dcdn:Er", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

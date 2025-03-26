@@ -53,7 +53,7 @@ func (s *PolarDBService) DescribePolarDBCluster(id string) (instance *polardb.DB
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	if len(response.Items.DBCluster) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items.DBCluster[0], nil
@@ -143,7 +143,7 @@ func (s *PolarDBService) DescribePolarDBAutoRenewAttribute(id string) (instance 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*polardb.DescribeAutoRenewAttributeResponse)
 	if len(response.Items.AutoRenewAttribute) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items.AutoRenewAttribute[0], nil
@@ -348,7 +348,7 @@ func (s *PolarDBService) DescribePolarDBAccountPrivilege(id string) (account *po
 	}
 
 	if len(response.Accounts) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBAccountPrivilege", id), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts[0], nil
 }
@@ -525,7 +525,7 @@ func (s *PolarDBService) DescribePolarDBConnectionV2(id string, netType string) 
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address, error) {
@@ -561,7 +561,7 @@ func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address,
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DBEndpoint, error) {
@@ -584,7 +584,7 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 
 	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
 	if len(response.Items) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBInstanceNetInfo", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return response.Items, nil
@@ -621,7 +621,7 @@ func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBE
 
 	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
 	if len(response.Items) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBEndpoint", dbEndpointId)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBEndpoint", dbEndpointId), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items[0], nil
@@ -694,7 +694,7 @@ func (s *PolarDBService) DescribePolarDBDatabase(id string) (ds *polardb.Databas
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*polardb.DescribeDatabasesResponse)
 	if len(response.Databases.Database) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBDatabase", dbName)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR)
 	}
 	ds = &response.Databases.Database[0]
 	return ds, nil
@@ -787,7 +787,7 @@ func (s *PolarDBService) DescribePolarDBAccount(id string) (ds *polardb.DBAccoun
 	}
 
 	if len(response.Accounts) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts[0], nil
 }
@@ -1846,10 +1846,10 @@ func (s *PolarDBService) DescribePolarDBParameterGroup(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ParameterGroup", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PolarDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("PolarDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ParameterGroupId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PolarDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("PolarDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

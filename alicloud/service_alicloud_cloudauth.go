@@ -41,7 +41,7 @@ func (s *CloudauthService) DescribeCloudauthFaceConfig(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cloudauth", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cloudauth", id), NotFoundWithResponse, response)
 	} else {
 		for _, obj := range v.([]interface{}) {
 			if fmt.Sprint(obj.(map[string]interface{})["BizType"]) == id {
@@ -49,6 +49,6 @@ func (s *CloudauthService) DescribeCloudauthFaceConfig(id string) (object map[st
 				return object, nil
 			}
 		}
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cloudauth", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cloudauth", id), NotFoundWithResponse, response)
 	}
 }

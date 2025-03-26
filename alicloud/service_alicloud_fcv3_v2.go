@@ -45,7 +45,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FunctionNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Function", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Function", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -113,7 +113,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CustomDomain", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("CustomDomain", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -178,7 +178,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VersionNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FunctionVersion", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("FunctionVersion", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -243,7 +243,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AliasNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alias", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Alias", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -304,7 +304,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AsyncConfigNotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AsyncInvokeConfig", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AsyncInvokeConfig", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -365,7 +365,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OnDemandConfigNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ConcurrencyConfig", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ConcurrencyConfig", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -430,7 +430,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TriggerNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Trigger", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Trigger", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -502,7 +502,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 
 	currentStatus := response["target"]
 	if currentStatus == "0" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ProvisionConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ProvisionConfig", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -565,7 +565,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LayerVersionNotFound", "LayerNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LayerVersion", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LayerVersion", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -644,7 +644,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3VpcBinding(id string) (object map[string]int
 		}
 		return object, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("VpcBinding", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("VpcBinding", id), NotFoundMsg, response)
 }
 
 func (s *Fcv3ServiceV2) Fcv3VpcBindingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

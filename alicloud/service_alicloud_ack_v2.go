@@ -49,7 +49,7 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorNodePoolNotFound", "ErrorClusterNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Nodepool", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Nodepool", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

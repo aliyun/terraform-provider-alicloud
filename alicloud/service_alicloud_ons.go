@@ -26,7 +26,7 @@ func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_FOUNDError", "InvalidDomainName.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("OnsInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -58,7 +58,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{},
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("OnsTopic", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -70,10 +70,10 @@ func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{},
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.PublishInfoDo", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ons", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["Topic"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ons", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -125,7 +125,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{},
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OnsGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("OnsGroup", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -139,7 +139,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{},
 	var exist bool
 	var index int = 0
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ons", id), NotFoundWithResponse, response)
 	} else {
 		// special handling for fuzzy matching
 		onsGroupList := v.([]interface{})
@@ -151,7 +151,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{},
 			}
 		}
 		if !exist {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ons", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[index].(map[string]interface{})
@@ -276,7 +276,7 @@ func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, e
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("OnsTopic", id), NotFoundMsg, ProviderERROR)
 				return resource.NonRetryableError(err)
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

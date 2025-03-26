@@ -44,7 +44,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"1101080008", "9990040003"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -201,7 +201,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"1101080166"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ProjectMember", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ProjectMember", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -278,7 +278,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSource(id string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"1000010005"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DataSource", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("DataSource", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -355,7 +355,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"1000011038", "1000010005"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DataSourceSharedRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -366,7 +366,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DataSourceSharedRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -380,7 +380,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("DataSourceSharedRule", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
 }
 
 func (s *DataWorksServiceV2) DataWorksDataSourceSharedRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -448,7 +448,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"500130"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DiAlarmRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("DiAlarmRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -459,7 +459,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DiAlarmRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DiAlarmRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -530,7 +530,7 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"500130"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DiJob", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("DiJob", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -607,12 +607,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[str
 
 	v, err := jsonpath.Get("$.Network", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Network", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Network", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -682,12 +682,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 
 	v, err := jsonpath.Get("$.ResourceGroup", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DwResourceGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DwResourceGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DwResourceGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DwResourceGroup", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil

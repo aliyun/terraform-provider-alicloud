@@ -42,7 +42,7 @@ func (s *SasService) DescribeAllGroups(id string) (object map[string]interface{}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Groups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityCenter", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SecurityCenter", id), NotFoundWithResponse, response)
 	}
 	for _, vv := range v.([]interface{}) {
 		if fmt.Sprint(vv.(map[string]interface{})["GroupId"]) == id {
@@ -51,7 +51,7 @@ func (s *SasService) DescribeAllGroups(id string) (object map[string]interface{}
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityCenter", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SecurityCenter", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -136,7 +136,7 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConfigList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WebLockConfig", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("WebLockConfig", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 
@@ -165,7 +165,7 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"-100"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection:BaselineStrategy", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("ThreatDetection:BaselineStrategy", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -198,7 +198,7 @@ func (s *SasService) DescribeStrategy(id string) (object map[string]interface{},
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConsoleError"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection:BaselineStrategy", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("ThreatDetection:BaselineStrategy", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -258,7 +258,7 @@ func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (objec
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count]", response)
 	}
 	if formatInt(count) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection.AntiBruteForceRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ThreatDetection.AntiBruteForceRule", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.Rules[0]", response)
 	if err != nil {
@@ -316,7 +316,7 @@ func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count", response)
 	}
 	if formatInt(count) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.List[0]", response)
 	if err != nil {
@@ -380,7 +380,7 @@ func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		if success.(bool) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}

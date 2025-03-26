@@ -72,7 +72,7 @@ func (s *DtsService) DescribeDtsSubscriptionJob(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SubscriptionJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DTS:SubscriptionJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -133,7 +133,7 @@ func (s *DtsService) DescribeDtsSynchronizationInstance(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SynchronizationInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DTS:SynchronizationInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -305,7 +305,7 @@ func (s *DtsService) DescribeDtsSynchronizationJob(id string) (object map[string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SynchronizationJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DTS:SynchronizationJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -327,7 +327,7 @@ func (s *DtsService) DescribeDtsSynchronizationJob(id string) (object map[string
 	// and instance data will still be queried from the query interface.
 	// Therefore, it is judged that the instance does not exist when the end state is "Finished".
 	if object["Status"] == "Finished" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SynchronizationJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("DTS:SynchronizationJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 	return object, nil
 }
@@ -355,7 +355,7 @@ func (s *DtsService) DescribeDtsJobDetail(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SynchronizationJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DTS:SynchronizationJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -422,7 +422,7 @@ func (s *DtsService) DescribeDtsConsumerChannel(id string) (object map[string]in
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -431,7 +431,7 @@ func (s *DtsService) DescribeDtsConsumerChannel(id string) (object map[string]in
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConsumerChannels", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["ConsumerGroupId"]) == parts[1] {
@@ -445,7 +445,7 @@ func (s *DtsService) DescribeDtsConsumerChannel(id string) (object map[string]in
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -478,7 +478,7 @@ func (s *DtsService) DescribeDtsMigrationJob(id string) (object map[string]inter
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -487,7 +487,7 @@ func (s *DtsService) DescribeDtsMigrationJob(id string) (object map[string]inter
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DtsJobList", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DtsJobId"]) == id {
@@ -501,7 +501,7 @@ func (s *DtsService) DescribeDtsMigrationJob(id string) (object map[string]inter
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -549,7 +549,7 @@ func (s *DtsService) DescribeDtsMigrationInstance(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -592,7 +592,7 @@ func (s *DtsService) DescribeDtsSyncJob(id string) (object map[string]interface{
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -601,7 +601,7 @@ func (s *DtsService) DescribeDtsSyncJob(id string) (object map[string]interface{
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DtsJobList", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DtsJobId"]) == id {
@@ -615,7 +615,7 @@ func (s *DtsService) DescribeDtsSyncJob(id string) (object map[string]interface{
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -671,7 +671,7 @@ func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DtsInstanceStatus", response)
 	}
 	if status, ok := v.(map[string]interface{})["Status"]; ok && status == "finished" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 	}
 	return v.(map[string]interface{}), nil
 }

@@ -35,7 +35,7 @@ func (s *GdbService) DescribeGraphDatabaseDbInstance(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound", "InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase:DbInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GraphDatabase:DbInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -44,10 +44,10 @@ func (s *GdbService) DescribeGraphDatabaseDbInstance(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstance", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("GraphDatabase", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("GraphDatabase", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -83,7 +83,7 @@ func (s *GdbService) GetDBInstanceAccessWhiteList(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound", "InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase:DbInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GraphDatabase:DbInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -137,7 +137,7 @@ func (s *GdbService) DescribeDBInstanceAttribute(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase:DbInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GraphDatabase:DbInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -146,10 +146,10 @@ func (s *GdbService) DescribeDBInstanceAttribute(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstance", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("GraphDatabase", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GraphDatabase", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("GraphDatabase", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

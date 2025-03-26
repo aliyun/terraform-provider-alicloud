@@ -51,16 +51,16 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 
 	v, err := jsonpath.Get("$.EcrList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["AlibabaSideAsn"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -94,7 +94,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeInstanceGrantedToExpress
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -128,7 +128,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRout
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -162,7 +162,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeDisabledExpressConnectRo
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -196,7 +196,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterInte
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -230,7 +230,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterRegi
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -288,7 +288,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeAsyncDescribeInstanceGrantedToEx
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.EcrId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouter", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ExpressConnectRouter", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -482,7 +482,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.EcrId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVbrChildInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVbrChildInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -493,7 +493,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVbrChildInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVbrChildInstance", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -513,7 +513,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVbrChildInstance", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVbrChildInstance", id), NotFoundMsg, response)
 }
 
 func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterVbrChildInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -655,7 +655,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterTrAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouterTrAssociation", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.AssociationList[*]", response)
@@ -664,7 +664,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterTrAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouterTrAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -684,7 +684,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterTrAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ExpressConnectRouterTrAssociation", id), NotFoundMsg, response)
 }
 
 func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -748,7 +748,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	})
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"ResourceNotFound.EcrId"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVpcAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVpcAssociation", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.AssociationList[*]", response)
@@ -757,7 +757,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVpcAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVpcAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -777,7 +777,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterExpressConne
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVpcAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVpcAssociation", id), NotFoundMsg, response)
 }
 func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllowedPrefixHistory(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -814,7 +814,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeDescribeExpressConnectRouterAllo
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.EcrId", "ResourceNotFound.AssociationId", "ResourceNotFound.InstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnectRouterVpcAssociation", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ExpressConnectRouterVpcAssociation", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -899,7 +899,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GrantAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("GrantAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -922,7 +922,7 @@ func (s *ExpressConnectRouterServiceV2) DescribeExpressConnectRouterGrantAssocia
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("GrantAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("GrantAssociation", id), NotFoundMsg, response)
 }
 
 func (s *ExpressConnectRouterServiceV2) ExpressConnectRouterGrantAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

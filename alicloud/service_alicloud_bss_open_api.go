@@ -81,10 +81,10 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productC
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
 	} else if id != "" {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -150,10 +150,10 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -198,10 +198,10 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudFirewall", id), NotFoundWithResponse, response)
 		}
 	}
 
@@ -247,10 +247,10 @@ func (s *BssOpenApiService) DescribeCloudFirewallInstanceOrderDetail(orderId str
 	}
 
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewallOrderId", orderId)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewallOrderId", orderId), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["OrderId"]) != orderId {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewallOrderId", orderId)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudFirewallOrderId", orderId), NotFoundWithResponse, response)
 		}
 	}
 

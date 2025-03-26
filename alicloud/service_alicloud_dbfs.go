@@ -50,7 +50,7 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Dbfs:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -68,7 +68,7 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Dbfs:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -98,7 +98,7 @@ func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[stri
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:InstanceAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Dbfs:InstanceAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
 	}
 
 	return object, nil
@@ -162,7 +162,7 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Snapshot", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Dbfs:Snapshot", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -180,7 +180,7 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Snapshot", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Dbfs:Snapshot", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

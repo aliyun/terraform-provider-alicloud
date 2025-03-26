@@ -2574,7 +2574,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 			if newNodeGroup, ok := newNodeGroupMap[nodeGroupName]; !ok {
 				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
 				if oldNodeCount > 0 {
-					return WrapError(Error(fmt.Sprintf("The [nodeGroup: %v, nodeGroupType: %v] can not delete cause exists running nodes", nodeGroupName, oldNodeGroup["NodeGroupType"].(string))))
+					return WrapError(Error("The [nodeGroup: %v, nodeGroupType: %v] can not delete cause exists running nodes", nodeGroupName, oldNodeGroup["NodeGroupType"].(string)))
 				}
 				deleteNodeGroups = append(deleteNodeGroups, map[string]interface{}{
 					"ClusterId":   d.Id(),
@@ -2717,7 +2717,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				return true
 			})
 			if len(failedNodeGroupId) > 0 {
-				return WrapError(Error(fmt.Sprintf("EMR cluster resize found error result with the failed nodeGroupIds: [%s].", strings.Join(failedNodeGroupId, ","))))
+				return WrapError(Error("EMR cluster resize found error result with the failed nodeGroupIds: [%s].", strings.Join(failedNodeGroupId, ",")))
 			}
 		}
 

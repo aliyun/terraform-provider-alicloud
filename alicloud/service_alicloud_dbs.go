@@ -35,7 +35,7 @@ func (s *DbsService) DescribeBackupPlanBilling(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidJobId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DBS:BackupPlan", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DBS:BackupPlan", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -70,7 +70,7 @@ func (s *DbsService) DescribeDbsBackupPlan(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameterValid"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DBS:BackupPlan", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DBS:BackupPlan", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -79,10 +79,10 @@ func (s *DbsService) DescribeDbsBackupPlan(id string) (object map[string]interfa
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.BackupPlanDetail", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DBS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DBS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["BackupPlanId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DBS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DBS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

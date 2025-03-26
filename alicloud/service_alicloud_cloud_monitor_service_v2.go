@@ -53,7 +53,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridDoubleWrite", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:HybridDoubleWrite", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -64,7 +64,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridDoubleWrite", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:HybridDoubleWrite", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -146,7 +146,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MonitoringAgentProcess", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:MonitoringAgentProcess", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -157,7 +157,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MonitoringAgentProcess", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:MonitoringAgentProcess", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -205,7 +205,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitorin
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:GroupMonitoringAgentProcess", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudMonitorService:GroupMonitoringAgentProcess", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -223,7 +223,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitorin
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:GroupMonitoringAgentProcess", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:GroupMonitoringAgentProcess", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -274,7 +274,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceBasicPublic(id
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BasicPublic", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("BasicPublic", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -291,7 +291,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceBasicPublic(id
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("BasicPublic", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("BasicPublic", id), NotFoundMsg, response)
 }
 
 func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceBasicPublicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -368,7 +368,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterprisePublic", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterprisePublic", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -385,7 +385,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEnterprisePubl
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("EnterprisePublic", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("EnterprisePublic", id), NotFoundMsg, response)
 }
 
 func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceEnterprisePublicStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -462,7 +462,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceNaamPublic(id 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NaamPublic", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NaamPublic", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -479,7 +479,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceNaamPublic(id 
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("NaamPublic", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("NaamPublic", id), NotFoundMsg, response)
 }
 
 // DescribeCloudMonitorServiceNaamPublic >>> Encapsulated.

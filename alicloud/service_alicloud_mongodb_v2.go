@@ -47,7 +47,7 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 
 	currentStatus := response["PrivateSrvConnectionStringUri"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrivateSrvNetworkAddress", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("PrivateSrvNetworkAddress", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -126,7 +126,7 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Account", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

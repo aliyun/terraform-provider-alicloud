@@ -166,7 +166,7 @@ func (s *VodService) DescribeVodEditingProject(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidEditingProject.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VOD:EditingProject", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("VOD:EditingProject", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

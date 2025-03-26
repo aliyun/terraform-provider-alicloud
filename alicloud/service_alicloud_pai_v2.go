@@ -47,7 +47,7 @@ func (s *PaiServiceV2) DescribePaiService(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidService.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Service", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -124,7 +124,7 @@ func (s *PaiServiceV2) DescribePaiTrainingJob(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NoSuchObject"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TrainingJob", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TrainingJob", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

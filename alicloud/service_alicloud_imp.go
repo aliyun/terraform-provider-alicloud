@@ -37,7 +37,7 @@ func (s *ImpService) DescribeImpAppTemplate(id string) (object map[string]interf
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAppTemplateId.App.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("IMP:AppTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("IMP:AppTemplate", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

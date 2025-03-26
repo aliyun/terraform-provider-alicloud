@@ -52,7 +52,7 @@ func (s *EnsServiceV2) DescribeEnsInstance(id string) (object map[string]interfa
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -160,7 +160,7 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -232,7 +232,7 @@ func (s *EnsServiceV2) DescribeEnsSnapshot(id string) (object map[string]interfa
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Snapshot", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -299,7 +299,7 @@ func (s *EnsServiceV2) DescribeEnsNetwork(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Network", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -366,7 +366,7 @@ func (s *EnsServiceV2) DescribeEnsEip(id string) (object map[string]interface{},
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Eip", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Eip", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -429,7 +429,7 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 
 	currentStatus := response["LoadBalancerId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancer", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -488,7 +488,7 @@ func (s *EnsServiceV2) DescribeEnsVswitch(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVSwitchId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Vswitch", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -556,7 +556,7 @@ func (s *EnsServiceV2) DescribeEnsSecurityGroup(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ens.interface.error"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -625,7 +625,7 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Image", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Image", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -697,7 +697,7 @@ func (s *EnsServiceV2) DescribeEnsDiskInstanceAttachment(id string) (object map[
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DiskInstanceAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DiskInstanceAttachment", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -769,7 +769,7 @@ func (s *EnsServiceV2) DescribeEnsInstanceSecurityGroupAttachment(id string) (ob
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("InstanceSecurityGroupAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("InstanceSecurityGroupAttachment", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -840,7 +840,7 @@ func (s *EnsServiceV2) DescribeEnsEipInstanceAttachment(id string) (object map[s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EipInstanceAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EipInstanceAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -857,7 +857,7 @@ func (s *EnsServiceV2) DescribeEnsEipInstanceAttachment(id string) (object map[s
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("EipInstanceAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("EipInstanceAttachment", id), NotFoundMsg, response)
 }
 
 func (s *EnsServiceV2) EnsEipInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -921,7 +921,7 @@ func (s *EnsServiceV2) DescribeEnsNatGateway(id string) (object map[string]inter
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NatGateway", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NatGateway", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -987,7 +987,7 @@ func (s *EnsServiceV2) DescribeEnsKeyPair(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("KeyPair", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

@@ -47,7 +47,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectEcFailoverTestJob(id str
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalParam.JobId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EcFailoverTestJob", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("EcFailoverTestJob", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -121,7 +121,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpPeer(id string) (obje
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BgpPeer", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("BgpPeer", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -191,7 +191,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficQos", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficQos", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -265,7 +265,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosAssociation(id
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficQosAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficQosAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -279,7 +279,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosAssociation(id
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficQosAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("TrafficQosAssociation", id), NotFoundMsg, response)
 }
 
 func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -415,7 +415,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosQueue(id strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficQosQueue", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficQosQueue", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -555,7 +555,7 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQosRule(id string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficQosRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficQosRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

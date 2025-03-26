@@ -39,7 +39,7 @@ func (s *EventBridgeServiceV2) DescribeEventBridgeConnection(id string) (object 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConnectionNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Connection", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("EventBridge:Connection", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -50,7 +50,7 @@ func (s *EventBridgeServiceV2) DescribeEventBridgeConnection(id string) (object 
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Connection", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EventBridge:Connection", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -61,7 +61,7 @@ func (s *EventBridgeServiceV2) DescribeEventBridgeConnection(id string) (object 
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Connection", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EventBridge:Connection", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -91,7 +91,7 @@ func (s *EventBridgeServiceV2) DescribeEventBridgeApiDestination(id string) (obj
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ApiDestinationNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:ApiDestination", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("EventBridge:ApiDestination", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

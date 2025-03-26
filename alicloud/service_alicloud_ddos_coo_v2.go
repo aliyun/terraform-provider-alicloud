@@ -60,7 +60,7 @@ func (s *DdosCooServiceV2) DescribeDdosCooPort(id string) (object map[string]int
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Port", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Port", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -113,7 +113,7 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Port", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Port", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -176,16 +176,16 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 
 	v, err := jsonpath.Get("$.WebRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DomainResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DomainResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Domain"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DomainResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -225,7 +225,7 @@ func (s *DdosCooServiceV2) DescribeDescribeWebRules(id string) (object map[strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DomainResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

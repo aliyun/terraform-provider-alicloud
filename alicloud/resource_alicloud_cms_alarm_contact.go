@@ -90,7 +90,7 @@ func resourceAlicloudCmsAlarmContactCreate(d *schema.ResourceData, meta interfac
 	response, _ := raw.(*cms.PutContactResponse)
 
 	if response.Code != "200" {
-		return WrapError(Error("PutContact failed for " + response.Message))
+		return WrapError(Error("PutContact failed for %s", response.Message))
 	}
 	d.SetId(fmt.Sprintf("%v", request.ContactName))
 
@@ -155,7 +155,7 @@ func resourceAlicloudCmsAlarmContactUpdate(d *schema.ResourceData, meta interfac
 		response, _ := raw.(*cms.PutContactResponse)
 
 		if response.Code != "200" {
-			return WrapError(Error("PutContact failed for " + response.Message))
+			return WrapError(Error("PutContact failed for %s", response.Message))
 		}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -174,7 +174,7 @@ func resourceAlicloudCmsAlarmContactDelete(d *schema.ResourceData, meta interfac
 	response, _ := raw.(*cms.DeleteContactResponse)
 
 	if response.Code != "200" {
-		return WrapError(Error("DeleteContact failed for " + response.Message))
+		return WrapError(Error("DeleteContact failed for %s", response.Message))
 	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"400", "403", "404", "ContactNotExists"}) {

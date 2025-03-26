@@ -48,7 +48,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR", "ODPS-0420095"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -260,7 +260,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"QUOTA_PLAN_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaPlan", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("QuotaPlan", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -337,7 +337,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Role", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Role", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -482,11 +482,11 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 
 	v, err := jsonpath.Get("$.data.users[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -497,7 +497,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRoleUserAttachment(id string) (o
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("RoleUserAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
 }
 
 func (s *MaxComputeServiceV2) MaxComputeRoleUserAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

@@ -48,7 +48,7 @@ func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Sddp:Rule", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Sddp:Rule", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -66,7 +66,7 @@ func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Sddp:Rule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Sddp:Rule", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -101,7 +101,7 @@ func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConfigList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Code"]) == id {
@@ -110,7 +110,7 @@ func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -175,7 +175,7 @@ func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interf
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -189,7 +189,7 @@ func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interf
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
 	}
 	return
 }

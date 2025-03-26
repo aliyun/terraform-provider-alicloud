@@ -35,7 +35,7 @@ func (s *QuickbiPublicService) DescribeQuickBiUser(id string) (object map[string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"User.Not.In.Organization"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuickBI:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("QuickBI:User", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -69,7 +69,7 @@ func (s *QuickbiPublicService) QueryUserInfoByUserId(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"User.Not.In.Organization"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuickBI:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("QuickBI:User", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -53,7 +53,7 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Address", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Address", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -241,7 +241,7 @@ func (s *EipServiceV2) DescribeEipSegmentAddress(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SegmentAddress", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SegmentAddress", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -313,7 +313,7 @@ func (s *EipServiceV2) DescribeEipAssociation(id string) (object map[string]inte
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Association", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Association", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -324,7 +324,7 @@ func (s *EipServiceV2) DescribeEipAssociation(id string) (object map[string]inte
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Association", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Association", id), NotFoundMsg, response)
 }
 
 func (s *EipServiceV2) EipAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

@@ -35,7 +35,7 @@ func (s *ServicemeshService) DescribeServiceMeshServiceMesh(id string) (object m
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound", "StatusForbidden"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh:ServiceMesh", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ServiceMesh:ServiceMesh", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -167,7 +167,7 @@ func (s *ServicemeshService) DescribeServiceMeshExtensionProvider(id string) (ob
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh:ExtensionProvider", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ServiceMesh:ExtensionProvider", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -178,7 +178,7 @@ func (s *ServicemeshService) DescribeServiceMeshExtensionProvider(id string) (ob
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh:ExtensionProvider", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ServiceMesh:ExtensionProvider", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

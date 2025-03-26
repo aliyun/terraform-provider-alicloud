@@ -113,7 +113,7 @@ func (s *AlbServiceV2) DescribeAlbListenerAclAttachment(id string) (object map[s
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ListenerAclAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ListenerAclAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -134,7 +134,7 @@ func (s *AlbServiceV2) DescribeAlbListenerAclAttachment(id string) (object map[s
 		return v.(map[string]interface{}), nil
 	}
 
-	return object, WrapErrorf(Error(GetNotFoundMessage("ListenerAclAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ListenerAclAttachment", id), NotFoundMsg, response)
 }
 
 func (s *AlbServiceV2) AlbListenerAclAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -189,7 +189,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer", "-735"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LoadBalancer", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -382,11 +382,11 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string)
 
 	v, err := jsonpath.Get("$.SecurityGroupIds[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancerSecurityGroupAttachment", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancerSecurityGroupAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -400,7 +400,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string)
 		}
 		return v, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("LoadBalancerSecurityGroupAttachment", id), NotFoundMsg, response)
 }
 
 func (s *AlbServiceV2) AlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -493,7 +493,7 @@ func (s *AlbServiceV2) DescribeAlbAScript(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AScript", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AScript", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -504,7 +504,7 @@ func (s *AlbServiceV2) DescribeAlbAScript(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AScript", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AScript", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -573,7 +573,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerAccessLogConfigAttachment(id strin
 
 	currentStatus, err := jsonpath.Get("$.AccessLogConfig.LogProject", response)
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerAccessLogConfigAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancerAccessLogConfigAttachment", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -674,16 +674,16 @@ func (s *AlbServiceV2) DescribeAlbServerGroup(id string) (object map[string]inte
 
 	v, err := jsonpath.Get("$.ServerGroups[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["ServerGroupId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -715,7 +715,7 @@ func (s *AlbServiceV2) DescribeServerGroupListServerGroupServers(id string) (obj
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.ServerGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -782,7 +782,7 @@ func (s *AlbServiceV2) DescribeAlbListener(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Listener", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Listener", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -892,7 +892,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerZoneShiftedAttachment(id string) (
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerZoneShiftedAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancerZoneShiftedAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -906,7 +906,7 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancerZoneShiftedAttachment(id string) (
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerZoneShiftedAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("LoadBalancerZoneShiftedAttachment", id), NotFoundMsg, response)
 }
 
 func (s *AlbServiceV2) AlbLoadBalancerZoneShiftedAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

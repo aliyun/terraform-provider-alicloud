@@ -55,7 +55,7 @@ func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel,
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	domain, _ := raw.(*cdn.DescribeCdnDomainDetailResponse)
 	if domain.GetDomainDetailModel.DomainName != id {
-		return model, WrapErrorf(Error(GetNotFoundMessage("cdn_domain", id)), NotFoundMsg, ProviderERROR)
+		return model, WrapErrorf(NotFoundErr("cdn_domain", id), NotFoundMsg, ProviderERROR)
 	}
 	return &domain.GetDomainDetailModel, nil
 }
@@ -100,11 +100,11 @@ func (s *CdnService) DescribeCdnDomainConfig(id string) (object interface{}, err
 
 	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), DefaultErrorMsg, err)
+		return object, WrapErrorf(NotFoundErr("cdn_domain_config", id), DefaultErrorMsg, err)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), ResourceNotfound, response)
+		return object, WrapErrorf(NotFoundErr("cdn_domain_config", id), ResourceNotfound, response)
 	}
 
 	val := v.([]interface{})[0].(map[string]interface{})
@@ -147,7 +147,7 @@ func (c *CdnService) DescribeDomainCertificateInfo(id string) (certInfo cdn.Cert
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cdn.DescribeDomainCertificateInfoResponse)
 	if len(response.CertInfos.CertInfo) <= 0 {
-		return certInfo, WrapErrorf(Error(GetNotFoundMessage("DomainCertificateInfo", id)), NotFoundMsg, ProviderERROR)
+		return certInfo, WrapErrorf(NotFoundErr("DomainCertificateInfo", id), NotFoundMsg, ProviderERROR)
 	}
 	certInfo = response.CertInfos.CertInfo[0]
 	return
@@ -238,7 +238,7 @@ func (s *CdnService) DescribeCdnRealTimeLogDelivery(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Domain.NotFound", "InternalError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CDN:RealTimeLogDelivery", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CDN:RealTimeLogDelivery", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

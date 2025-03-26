@@ -295,7 +295,7 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Entry"]) == parts[2] {
@@ -304,7 +304,7 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -395,7 +395,7 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"CHART_NAMESPACE_NOT_EXIST"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, err)
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -436,7 +436,7 @@ func (s *CrService) DescribeCrChartRepository(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"CHART_REPO_NOT_EXIST"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CR", id)), NotFoundWithResponse, err)
+			return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -476,7 +476,7 @@ func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, e
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"CHAIN_NOT_EXIST"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CR:Chain", id)), NotFoundMsg, ProviderERROR, err)
+			return object, WrapErrorf(NotFoundErr("CR:Chain", id), NotFoundMsg, ProviderERROR, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -565,7 +565,7 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR:VpcEndpointLinkedVpc", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CR:VpcEndpointLinkedVpc", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -576,7 +576,7 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CR:VpcEndpointLinkedVpc", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CR:VpcEndpointLinkedVpc", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

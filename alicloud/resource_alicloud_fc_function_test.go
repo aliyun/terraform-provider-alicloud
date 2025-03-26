@@ -789,7 +789,7 @@ func checkInvocation(service string, function string, gold string) (err error) {
 	}
 	str := string(res.(*fc.InvokeFunctionOutput).Payload[:])
 	if gold != str {
-		return Error(fmt.Sprintf("Expect invocation result: %s, but got: %s", gold, str))
+		return fmt.Errorf("expect invocation result: %s, but got: %s", gold, str)
 	}
 	return nil
 }

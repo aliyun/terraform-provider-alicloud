@@ -52,12 +52,12 @@ func (s *ArmsServiceV2) DescribeArmsPrometheusMonitoring(id string) (object map[
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrometheusMonitoring", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("PrometheusMonitoring", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrometheusMonitoring", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("PrometheusMonitoring", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.(map[string]interface{}), nil
@@ -120,7 +120,7 @@ func (s *ArmsServiceV2) DescribeArmsRemoteWrite(id string) (object map[string]in
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RemoteWrite", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("RemoteWrite", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -183,7 +183,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvironment(id string) (object map[string]in
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Environment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Environment", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -334,7 +334,7 @@ func (s *ArmsServiceV2) DescribeArmsPrometheus(id string) (object map[string]int
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Prometheus", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Prometheus", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -403,7 +403,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvFeature(id string) (object map[string]int
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404", "14000"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnvFeature", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnvFeature", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -472,7 +472,7 @@ func (s *ArmsServiceV2) DescribeArmsAddonRelease(id string) (object map[string]i
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AddonRelease", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AddonRelease", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -542,7 +542,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvPodMonitor(id string) (object map[string]
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnvPodMonitor", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnvPodMonitor", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -612,7 +612,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvServiceMonitor(id string) (object map[str
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnvServiceMonitor", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnvServiceMonitor", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -681,7 +681,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvCustomJob(id string) (object map[string]i
 
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnvCustomJob", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnvCustomJob", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
@@ -745,7 +745,7 @@ func (s *ArmsServiceV2) DescribeArmsSyntheticTask(id string) (object map[string]
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterIllegal"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SyntheticTask", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SyntheticTask", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -822,7 +822,7 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 
 	currentStatus := v.(map[string]interface{})["status"]
 	if currentStatus == "DeleteSucceed" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GrafanaWorkspace", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("GrafanaWorkspace", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil

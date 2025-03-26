@@ -49,7 +49,7 @@ func (s *EbsService) DescribeEbsDiskReplicaGroup(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReplicaGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EBS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EBS", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -104,7 +104,7 @@ func (s *EbsService) DescribeEbsDedicatedBlockStorageCluster(id string) (object 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedBlockStorageClusters", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EBS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EBS", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -159,7 +159,7 @@ func (s *EbsService) DescribeEbsDiskReplicaPair(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReplicaPairs", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EBS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EBS", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }

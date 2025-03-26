@@ -59,7 +59,7 @@ func (s *WafOpenapiService) DescribeWafDomain(id string) (object map[string]inte
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ComboError", "DomainNotExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("WafDomain", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("WafDomain", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -94,7 +94,7 @@ func (s *WafOpenapiService) DescribeWafInstance(id string) (object map[string]in
 	}
 	object = v.(map[string]interface{})
 	if v, ok := object["InstanceId"]; !ok || v.(string) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WAF", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("WAF", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -134,7 +134,7 @@ func (s *WafOpenapiService) DescribeWafCertificate(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Certificates", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WAF", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("WAF", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["CertificateId"]) == parts[2] {
@@ -143,7 +143,7 @@ func (s *WafOpenapiService) DescribeWafCertificate(id string) (object map[string
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WAF", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("WAF", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -256,7 +256,7 @@ func (s *WafOpenapiService) DescribeWafv3Instance(id string) (object map[string]
 	}
 
 	if _, ok := v.(map[string]interface{})["InstanceId"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Wafv3Instance", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Wafv3Instance", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -319,7 +319,7 @@ func (s *WafOpenapiService) DescribeWafv3Domain(id string) (object map[string]in
 	}
 
 	if _, ok := v.(map[string]interface{})["Domain"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Wafv3Domain", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Wafv3Domain", id), NotFoundWithResponse, response)
 	}
 
 	return v.(map[string]interface{}), nil

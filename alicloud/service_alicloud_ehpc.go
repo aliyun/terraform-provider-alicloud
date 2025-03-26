@@ -44,7 +44,7 @@ func (s *EhpcService) DescribeEhpcJobTemplate(id string) (object map[string]inte
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Templates.JobTemplates", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ehpc", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ehpc", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -58,7 +58,7 @@ func (s *EhpcService) DescribeEhpcJobTemplate(id string) (object map[string]inte
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ehpc", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ehpc", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -85,7 +85,7 @@ func (s *EhpcService) DescribeEhpcCluster(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ClusterNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ehpc:Cluster", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ehpc:Cluster", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

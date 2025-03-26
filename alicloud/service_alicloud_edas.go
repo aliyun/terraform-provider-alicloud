@@ -146,7 +146,7 @@ func (e *EdasService) GetDeployGroup(appId, groupId string) (groupInfo *edas.Dep
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	rsp := raw.(*edas.ListDeployGroupResponse)
 	if rsp.Code != 200 {
-		return groupInfo, Error("get deploy group failed for " + rsp.Message)
+		return groupInfo, Error("get deploy group failed for %s", rsp.Message)
 	}
 	for _, group := range rsp.DeployGroupList.DeployGroup {
 		if group.GroupId == groupId {
@@ -310,7 +310,7 @@ func (e *EdasService) SyncResource(resourceType string) error {
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	rsp := raw.(*edas.SynchronizeResourceResponse)
 	if rsp.Code != 200 || !rsp.Success {
-		return WrapError(Error("sync resource failed for " + rsp.Message))
+		return WrapError(Error("sync resource failed for %s", rsp.Message))
 	}
 
 	return nil
@@ -359,7 +359,7 @@ func (e *EdasService) GetLastPackgeVersion(appId, groupId string) (string, error
 	response, _ := raw.(*edas.QueryApplicationStatusResponse)
 
 	if response.Code != 200 {
-		return "", WrapError(Error("QueryApplicationStatus failed for " + response.Message))
+		return "", WrapError(Error("QueryApplicationStatus failed for %s", response.Message))
 	}
 
 	for _, group := range response.AppInfo.GroupList.Group {
@@ -381,7 +381,7 @@ func (e *EdasService) GetLastPackgeVersion(appId, groupId string) (string, error
 	rsp, _ := raw.(*edas.ListHistoryDeployVersionResponse)
 
 	if rsp.Code != 200 {
-		return "", WrapError(Error("QueryApplicationStatus failed for " + response.Message))
+		return "", WrapError(Error("QueryApplicationStatus failed for %s", response.Message))
 	}
 
 	for _, version := range rsp.PackageVersionList.PackageVersion {
@@ -411,7 +411,7 @@ func (e *EdasService) DescribeEdasApplication(appId string) (*edas.Applcation, e
 
 	response, _ := raw.(*edas.GetApplicationResponse)
 	if response.Code != 200 {
-		return application, WrapError(Error("get application error :" + response.Message))
+		return application, WrapError(Error("get application error :%s", response.Message))
 	}
 
 	v := response.Applcation
@@ -497,7 +497,7 @@ func (e *EdasService) DescribeEdasCluster(clusterId string) (*edas.Cluster, erro
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return cluster, WrapError(Error("create cluster failed for " + response.Message))
+		return cluster, WrapError(Error("create cluster failed for %s", response.Message))
 	}
 
 	v := response.Cluster
@@ -526,7 +526,7 @@ func (e *EdasService) DescribeEdasDeployGroup(id string) (*edas.DeployGroup, err
 
 	response, _ := raw.(*edas.ListDeployGroupResponse)
 	if response.Code != 200 {
-		return group, WrapError(Error("create cluster failed for " + response.Message))
+		return group, WrapError(Error("create cluster failed for %s", response.Message))
 	}
 
 	for _, v := range response.DeployGroupList.DeployGroup {
@@ -638,12 +638,12 @@ func (e *EdasService) QueryK8sAppPackageType(appId string) (string, error) {
 
 	response, _ := raw.(*edas.GetApplicationResponse)
 	if response.Code != 200 {
-		return "", WrapError(Error("get application for appId:" + appId + " failed:" + response.Message))
+		return "", WrapError(Error("get application for appId:"+appId+" failed:", response.Message))
 	}
 	if len(response.Applcation.ApplicationType) > 0 {
 		return response.Applcation.ApplicationType, nil
 	}
-	return "", WrapError(Error("not package type for appId:" + appId))
+	return "", WrapError(Error("not package type for appId: %s", appId))
 }
 
 func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, error) {
@@ -668,7 +668,7 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 		if strings.Contains(response.Message, "does not exist") {
 			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return cluster, WrapError(Error("create k8s cluster failed for " + response.Message))
+		return cluster, WrapError(Error("create k8s cluster failed for %s", response.Message))
 	}
 
 	v := response.Cluster
@@ -697,7 +697,7 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 		if strings.Contains(response.Message, "does not exist") {
 			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return application, WrapError(Error("get k8s application error :" + response.Message))
+		return application, WrapError(Error("get k8s application error : %s", response.Message))
 	}
 
 	v := response.Applcation
@@ -841,7 +841,7 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.UserDefineRegionList.UserDefineRegionEntity", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EDAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EDAS", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -850,7 +850,7 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EDAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EDAS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

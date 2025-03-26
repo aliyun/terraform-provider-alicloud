@@ -329,10 +329,10 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		} else if strings.Contains(request["ZoneId"].(string), MULTI_IZ_SYMBOL) {
 			zoneStr := strings.Split(strings.SplitAfter(request["ZoneId"].(string), "(")[1], ")")[0]
 			if !strings.Contains(zoneStr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-				return WrapError(Error("The specified vswitch " + vsw.VSwitchId + " isn't in multi the zone " + request["ZoneId"].(string)))
+				return WrapError(Error("The specified vswitch %s isn't in multi the zone %s", vsw.VSwitchId, request["ZoneId"].(string)))
 			}
 		} else if request["ZoneId"].(string) != vsw.ZoneId {
-			return WrapError(Error("The specified vswitch " + vsw.VSwitchId + " isn't in the zone " + request["ZoneId"].(string)))
+			return WrapError(Error("The specified vswitch %s isn't in the zone %s", vsw.VSwitchId, request["ZoneId"].(string)))
 		}
 		if request["VpcId"] == nil {
 			request["VpcId"] = vsw.VpcId

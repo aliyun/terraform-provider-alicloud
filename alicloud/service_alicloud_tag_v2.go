@@ -43,7 +43,7 @@ func (s *TagServiceV2) DescribeTagPolicy(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -124,7 +124,7 @@ func (s *TagServiceV2) DescribeTagAssociatedRule(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AssociatedRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AssociatedRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

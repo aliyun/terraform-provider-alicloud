@@ -240,6 +240,6 @@ func parseTunnelType(orig string) (otsTunnel.TunnelType, error) {
 	case string(StreamTunnel):
 		return otsTunnel.TunnelTypeStream, nil
 	default:
-		return "", WrapError(Error("unknown ots tunnel type: " + orig))
+		return "", WrapError(Error("unknown ots tunnel type: %s", orig))
 	}
 }

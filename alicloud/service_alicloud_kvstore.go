@@ -30,14 +30,14 @@ func (s *KvstoreService) DescribeKVstoreInstance(id string) (*r_kvstore.DBInstan
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return instance, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return instance, WrapErrorf(NotFoundErr("KVstoreInstance", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
 	if len(response.Instances.DBInstanceAttribute) <= 0 {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return instance, WrapErrorf(NotFoundErr("KVstoreInstance", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 
 	return &response.Instances.DBInstanceAttribute[0], nil
@@ -71,7 +71,7 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (*r_kvstore.Desc
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("KVstore:BackupPolicy", id)), NotFoundWithResponse, response)
+			return response, WrapErrorf(NotFoundErr("KVstore:BackupPolicy", id), NotFoundWithResponse, response)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -150,7 +150,7 @@ func (s *KvstoreService) DescribeParameters(id string) (*r_kvstore.DescribeParam
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("Parameters", id)), NotFoundMsg, ProviderERROR)
+			return response, WrapErrorf(NotFoundErr("Parameters", id), NotFoundMsg, ProviderERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -354,7 +354,7 @@ func (s *KvstoreService) DescribeKVstoreAccount(id string) (*r_kvstore.Account, 
 	}
 
 	if len(response.Accounts.Account) < 1 {
-		return ds, WrapErrorf(Error(GetNotFoundMessage("KVstoreAccount", id)), NotFoundMsg, ProviderERROR)
+		return ds, WrapErrorf(NotFoundErr("KVstoreAccount", id), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts.Account[0], nil
 }

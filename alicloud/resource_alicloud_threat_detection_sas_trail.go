@@ -81,7 +81,7 @@ func resourceAliCloudThreatDetectionSasTrailCreate(d *schema.ResourceData, meta 
 	}
 
 	accountId, err := client.AccountId()
-	d.SetId(fmt.Sprintf(accountId))
+	d.SetId(fmt.Sprint(accountId))
 
 	return resourceAliCloudThreatDetectionSasTrailRead(d, meta)
 }

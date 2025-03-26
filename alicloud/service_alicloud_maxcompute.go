@@ -33,7 +33,7 @@ func (s *MaxComputeService) DescribeMaxcomputeProject(id string) (object map[str
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INTERNAL_SERVER_ERROR", "OBJECT_NOT_EXIST"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MaxCompute", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("MaxCompute", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -46,7 +46,7 @@ func (s *MaxComputeService) DescribeMaxcomputeProject(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.status", response)
 	}
 	if status == "DELETING" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MaxCompute:Project", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MaxCompute:Project", id), NotFoundWithResponse, response)
 	}
 	return v.(map[string]interface{}), nil
 }

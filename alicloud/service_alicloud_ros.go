@@ -26,7 +26,7 @@ func (s *RosService) DescribeRosChangeSet(id string) (object map[string]interfac
 	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ChangeSetNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RosChangeSet", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RosChangeSet", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -84,7 +84,7 @@ func (s *RosService) DescribeRosStack(id string) (object map[string]interface{},
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RosStack", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RosStack", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -130,7 +130,7 @@ func (s *RosService) GetStackPolicy(id string) (object map[string]interface{}, e
 	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RosStack", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RosStack", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -276,7 +276,7 @@ func (s *RosService) DescribeRosStackGroup(id string) (object map[string]interfa
 	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackGroupNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RosStackGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RosStackGroup", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -322,7 +322,7 @@ func (s *RosService) DescribeRosTemplate(id string) (object map[string]interface
 	response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ChangeSetNotFound", "StackNotFound", "TemplateNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RosTemplate", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RosTemplate", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -367,7 +367,7 @@ func (s *RosService) DescribeRosStackInstance(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StackInstanceNotFound", "StackGroupNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ROS:StackInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ROS:StackInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -422,7 +422,7 @@ func (s *RosService) DescribeRosTemplateScratch(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TemplateScratchNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ROS:TemplateScratch", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ROS:TemplateScratch", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

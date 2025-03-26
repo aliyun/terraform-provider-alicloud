@@ -32,7 +32,7 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 	response, _ = raw.(*alidns.DescribeDomainInfoResponse)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response.DomainName != id {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Dns", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("Dns", id), NotFoundMsg, ProviderERROR)
 	}
 	return response, nil
 }
@@ -68,7 +68,7 @@ func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
 		}
 	}
 
-	return group, WrapErrorf(Error(GetNotFoundMessage("DnsGroup", id)), NotFoundMsg, ProviderERROR)
+	return group, WrapErrorf(NotFoundErr("DnsGroup", id), NotFoundMsg, ProviderERROR)
 }
 
 func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecordInfoResponse, error) {
@@ -88,7 +88,7 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*alidns.DescribeDomainRecordInfoResponse)
 	if response.RecordId != id {
-		return response, WrapErrorf(Error(GetNotFoundMessage("DnsRecord", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(NotFoundErr("DnsRecord", id), NotFoundMsg, ProviderERROR)
 	}
 	return response, nil
 }
@@ -104,7 +104,7 @@ func (s *DnsService) DescribeDnsInstance(id string) (object alidns.DescribeDnsPr
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDnsProduct"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DnsInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DnsInstance", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -126,7 +126,7 @@ func (s *DnsService) DescribeAlidnsDomainAttachment(id string) (object alidns.De
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDnsProduct"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DnsDomainAttachment", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DnsDomainAttachment", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -136,7 +136,7 @@ func (s *DnsService) DescribeAlidnsDomainAttachment(id string) (object alidns.De
 	response, _ := raw.(*alidns.DescribeInstanceDomainsResponse)
 
 	if len(response.InstanceDomains) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("DnsDomainAttachment", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("DnsDomainAttachment", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return *response, nil
@@ -251,7 +251,7 @@ func (s *DnsService) DescribeDnsDomain(id string) (object alidns.DescribeDomainI
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DnsDomain", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DnsDomain", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

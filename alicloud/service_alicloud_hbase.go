@@ -156,7 +156,7 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]inter
 	addDebug(action, response, query)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Hbase:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Hbase:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

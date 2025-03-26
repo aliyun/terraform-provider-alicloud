@@ -46,7 +46,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVPNGateway(id string) (object ma
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVpnGatewayInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VPNGateway", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VPNGateway", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -114,7 +114,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayCustomerGateway(id string) (obje
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidCustomerGatewayInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CustomerGateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CustomerGateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -173,7 +173,7 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVpnConnection(id string) (object
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVpnConnectionInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpnConnection", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpnConnection", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -303,7 +303,7 @@ func (s *VPNGatewayServiceV2) DescribeVpnGatewayVpnAttachment(id string) (object
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVpnConnectionInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpnAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpnAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -52,7 +52,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayInstance(id string) (object map[
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -119,7 +119,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayPlugin(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Plugin", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -261,7 +261,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAccessControlList(id string) (ob
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvokeSlbApiFail"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessControlList", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessControlList", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -299,7 +299,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAclEntryAttachmentAttribute(id s
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvokeSlbApiFail"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AclEntryAttachment", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -310,14 +310,14 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAclEntryAttachmentAttribute(id s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntrys.AclEntry", response)
 	}
 	if len(aclEntries.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AclEntryAttachment", id), NotFoundWithResponse, response)
 	}
 	for _, v := range aclEntries.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["AclEntryIp"]) == parts[1] {
 			return v.(map[string]interface{}), nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("AclEntryAttachment", id), NotFoundWithResponse, response)
 }
 
 func (s *ApiGatewayServiceV2) DescribeApiGatewayInstanceAclAttachmentAttribute(id string) (object map[string]interface{}, err error) {
@@ -332,7 +332,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayInstanceAclAttachmentAttribute(i
 	}
 
 	if _, ok := response["AclId"].(string); !ok {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("InstanceAclAttachment", id)), NotFoundMsg, response)
+		return nil, WrapErrorf(NotFoundErr("InstanceAclAttachment", id), NotFoundMsg, response)
 	}
 	return response, nil
 }

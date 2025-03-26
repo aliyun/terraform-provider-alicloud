@@ -38,7 +38,7 @@ func (s *FcService) DescribeFcService(id string) (*fc.GetServiceOutput, error) {
 	addDebug("GetService", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetServiceOutput)
 	if *response.ServiceName != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcService", id)), NotFoundMsg, FcGoSdk)
+		err = WrapErrorf(NotFoundErr("FcService", id), NotFoundMsg, FcGoSdk)
 	}
 	return response, err
 }
@@ -93,7 +93,7 @@ func (s *FcService) DescribeFcFunction(id string) (*fc.GetFunctionOutput, error)
 	addDebug("GetFunction", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetFunctionOutput)
 	if *response.FunctionName == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcFunction", id)), NotFoundMsg, FcGoSdk)
+		err = WrapErrorf(NotFoundErr("FcFunction", id), NotFoundMsg, FcGoSdk)
 	}
 	return response, err
 }
@@ -151,7 +151,7 @@ func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
 	addDebug("GetTrigger", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetTriggerOutput)
 	if *response.TriggerName != name {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcTrigger", name)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("FcTrigger", name), NotFoundMsg, ProviderERROR)
 	}
 	return response, err
 }
@@ -183,7 +183,7 @@ func (s *FcService) DescribeFcAlias(id string) (*fc.GetAliasOutput, error) {
 	addDebug("GetAlias", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetAliasOutput)
 	if *response.AliasName == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcAlias", id)), NotFoundMsg, FcGoSdk)
+		err = WrapErrorf(NotFoundErr("FcAlias", id), NotFoundMsg, FcGoSdk)
 	}
 	return response, err
 }
@@ -360,7 +360,7 @@ func (s *FcService) DescribeFcCustomDomain(id string) (*fc.GetCustomDomainOutput
 	addDebug("GetCustomDomain", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetCustomDomainOutput)
 	if *response.DomainName != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcCustomDomain", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("FcCustomDomain", id), NotFoundMsg, ProviderERROR)
 	}
 	return response, err
 }

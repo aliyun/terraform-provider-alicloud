@@ -43,10 +43,10 @@ func (s *ScdnService) DescribeScdnDomainCertificateInfo(id string) (object map[s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -106,7 +106,7 @@ func (s *ScdnService) DescribeScdnDomain(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN:Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("SCDN:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -166,10 +166,10 @@ func (s *ScdnService) DescribeScdnCertificateList(id string) (object map[string]
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertificateListModel.CertList.Cert", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -204,10 +204,10 @@ func (s *ScdnService) DescribeScdnDomainCname(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CnameDatas.Data", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -242,10 +242,10 @@ func (s *ScdnService) DescribeScdnDomainConfigs(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -274,7 +274,7 @@ func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SCDN:Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("SCDN:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -305,7 +305,7 @@ func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]int
 	response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ScdnDomainConfig", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ScdnDomainConfig", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -317,7 +317,7 @@ func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DCDN:DomainConfig", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DCDN:DomainConfig", id), NotFoundWithResponse, response)
 	} else if len(v.([]interface{})) > 0 {
 		object = v.([]interface{})[0].(map[string]interface{})
 	}

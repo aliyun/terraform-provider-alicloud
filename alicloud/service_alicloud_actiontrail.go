@@ -32,10 +32,10 @@ func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrailList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ActionTrail", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["Name"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ActionTrail", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -84,7 +84,7 @@ func (s *ActiontrailService) DescribeActiontrailHistoryDeliveryJob(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DeliveryHistoryJobNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ActionTrail:HistoryDeliveryJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ActionTrail:HistoryDeliveryJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

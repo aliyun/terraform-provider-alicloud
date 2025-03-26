@@ -42,7 +42,7 @@ func (s *DbfsServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DbfsInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("DbfsInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

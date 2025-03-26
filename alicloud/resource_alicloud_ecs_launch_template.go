@@ -1361,7 +1361,7 @@ func getLaunchTemplateVersions(id string, meta interface{}) ([]interface{}, erro
 	}
 
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		return nil, WrapErrorf(NotFoundErr("ECS", id), NotFoundWithResponse, response)
 	}
 
 	return v.([]interface{}), nil

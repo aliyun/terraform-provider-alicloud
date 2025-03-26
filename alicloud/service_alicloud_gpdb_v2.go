@@ -49,7 +49,7 @@ func (s *GpdbServiceV2) DescribeGpdbLogBackup(id string) (object map[string]inte
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LogBackup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LogBackup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -60,7 +60,7 @@ func (s *GpdbServiceV2) DescribeGpdbLogBackup(id string) (object map[string]inte
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LogBackup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LogBackup", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -74,7 +74,7 @@ func (s *GpdbServiceV2) DescribeGpdbLogBackup(id string) (object map[string]inte
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("LogBackup", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("LogBackup", id), NotFoundMsg, response)
 }
 
 func (s *GpdbServiceV2) GpdbLogBackupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -129,7 +129,7 @@ func (s *GpdbServiceV2) DescribeGpdbBackupPolicy(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("BackupPolicy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("BackupPolicy", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -202,7 +202,7 @@ func (s *GpdbServiceV2) DescribeGpdbDbResourceGroup(id string) (object map[strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DbResourceGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DbResourceGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -278,12 +278,12 @@ func (s *GpdbServiceV2) DescribeGpdbRemoteADBDataSource(id string) (object map[s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RemoteADBDataSource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RemoteADBDataSource", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Id"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RemoteADBDataSource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RemoteADBDataSource", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -346,7 +346,7 @@ func (s *GpdbServiceV2) DescribeGpdbExternalDataService(id string) (object map[s
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ExternalService.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ExternalDataService", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ExternalDataService", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -412,7 +412,7 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ExternalService.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("StreamingDataService", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("StreamingDataService", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -478,7 +478,7 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataSource(id string) (object map[s
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ExternalDataSource.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("StreamingDataSource", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("StreamingDataSource", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -543,7 +543,7 @@ func (s *GpdbServiceV2) DescribeGpdbAccount(id string) (object map[string]interf
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Account", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -735,7 +735,7 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingJob(id string) (object map[string]i
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ExternalDataSourceJob.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("StreamingJob", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("StreamingJob", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -809,7 +809,7 @@ func (s *GpdbServiceV2) DescribeGpdbDBInstanceIPArray(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DBInstanceIPArray", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DBInstanceIPArray", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -877,7 +877,7 @@ func (s *GpdbServiceV2) DescribeGpdbDatabase(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Database.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Database", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Database", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

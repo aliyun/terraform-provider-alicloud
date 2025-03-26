@@ -44,7 +44,7 @@ func (s *AckOneServiceV2) DescribeAckOneCluster(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -112,7 +112,7 @@ func (s *AckOneServiceV2) DescribeAckOneMembershipAttachment(id string) (object 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -129,7 +129,7 @@ func (s *AckOneServiceV2) DescribeAckOneMembershipAttachment(id string) (object 
 		}
 	}
 	if !found {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Attachement", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Attachement", id), NotFoundMsg, response)
 	}
 
 	v := map[string]interface{}{

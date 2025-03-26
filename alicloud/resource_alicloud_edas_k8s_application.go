@@ -358,7 +358,7 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 	changeOrderId = response.ApplicationInfo.ChangeOrderId
 	d.SetId(appId)
 	if response.Code != 200 {
-		return WrapError(Error("Create k8s application failed for " + response.Message))
+		return WrapError(Error("Create k8s application failed for %s", response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -614,7 +614,7 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 		response, _ := raw.(*edas.DeployK8sApplicationResponse)
 		changeOrderId := response.ChangeOrderId
 		if response.Code != 200 {
-			return WrapError(Error("deploy k8s application failed for " + response.Message))
+			return WrapError(Error("deploy k8s application failed for %s", response.Message))
 		}
 
 		if len(changeOrderId) > 0 {
@@ -654,7 +654,7 @@ func resourceAlicloudEdasK8sApplicationDelete(d *schema.ResourceData, meta inter
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response := raw.(*edas.DeleteK8sApplicationResponse)
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("Delete k8s application failed for " + response.Message))
+			return resource.NonRetryableError(Error("Delete k8s application failed for %s", response.Message))
 		}
 		changeOrderId := response.ChangeOrderId
 

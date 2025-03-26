@@ -385,7 +385,7 @@ func GetNlbServerGroupServerAttachment(client *connectivity.AliyunClient, id str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroupServerAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroupServerAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -405,5 +405,5 @@ func GetNlbServerGroupServerAttachment(client *connectivity.AliyunClient, id str
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroupServerAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ServerGroupServerAttachment", id), NotFoundMsg, response)
 }

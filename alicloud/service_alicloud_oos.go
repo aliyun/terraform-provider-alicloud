@@ -25,7 +25,7 @@ func (s *OosService) DescribeOosTemplate(id string) (object map[string]interface
 	response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Template"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OosTemplate", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("OosTemplate", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -59,10 +59,10 @@ func (s *OosService) DescribeOosExecution(id string) (object map[string]interfac
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Executions", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("OOS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("OOS", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["ExecutionId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("OOS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("OOS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -113,7 +113,7 @@ func (s *OosService) DescribeOosApplication(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Application"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:Application", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Oos:Application", id), NotFoundMsg, ProviderERROR)
 		}
 
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -155,7 +155,7 @@ func (s *OosService) DescribeOosApplicationGroup(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.ApplicationGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:ApplicationGroup", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Oos:ApplicationGroup", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -189,7 +189,7 @@ func (s *OosService) DescribeOosPatchBaseline(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.PatchBaseline"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:Application", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Oos:Application", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -228,10 +228,10 @@ func (s *OosService) DescribeOosStateConfiguration(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.StateConfigurations", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("OOS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("OOS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["StateConfigurationId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("OOS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("OOS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -291,7 +291,7 @@ func (s *OosService) DescribeOosParameter(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Parameter"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:Application", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Oos:Application", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -329,7 +329,7 @@ func (s *OosService) DescribeOosSecretParameter(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Parameter"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:SecretParameter", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Oos:SecretParameter", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -376,7 +376,7 @@ func (s *OosService) DescribeOosDefaultPatchBaseline(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PatchBaseline", response)
 	}
 	if fmt.Sprint(v.(map[string]interface{})["IsDefault"]) != "true" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("OosDefaultPatchBaseline", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(NotFoundErr("OosDefaultPatchBaseline", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return v.(map[string]interface{}), nil
 }
@@ -409,7 +409,7 @@ func (s *OosService) DescribeOosSecretParameterForDataSource(id string, d *schem
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Parameter"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Oos:SecretParameter", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Oos:SecretParameter", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

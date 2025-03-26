@@ -31,7 +31,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseInstance(id string) (object 
 	response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNoEnoughNumber"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DmsEnterpriseInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("DmsEnterpriseInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -91,7 +91,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxy(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameterValid"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DMSEnterprise:Proxy", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DMSEnterprise:Proxy", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -225,7 +225,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseLogicDatabase(id string) (ob
 	v, err := jsonpath.Get("$.LogicDatabase", response)
 	success, _ := jsonpath.Get("$.Success", response)
 	if err != nil && success.(bool) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DmsEnterprise", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DmsEnterprise", id), NotFoundWithResponse, response)
 	}
 	return v.(map[string]interface{}), nil
 }

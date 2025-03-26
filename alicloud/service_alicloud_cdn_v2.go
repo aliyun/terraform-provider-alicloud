@@ -43,7 +43,7 @@ func (s *CdnServiceV2) DescribeCdnDomain(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -81,7 +81,7 @@ func (s *CdnServiceV2) DescribeDomainDescribeDomainCertificateInfo(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -92,7 +92,7 @@ func (s *CdnServiceV2) DescribeDomainDescribeDomainCertificateInfo(id string) (o
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -125,7 +125,7 @@ func (s *CdnServiceV2) DescribeDomainListTagResources(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -278,7 +278,7 @@ func (s *CdnServiceV2) DescribeCdnRealTimeLogDelivery(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Domain.NotFound", "InternalError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RealTimeLogDelivery", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("RealTimeLogDelivery", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

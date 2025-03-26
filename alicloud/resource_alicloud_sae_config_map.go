@@ -131,7 +131,7 @@ func resourceAlicloudSaeConfigMapUpdate(d *schema.ResourceData, meta interface{}
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotFound.ConfigMap"}) {
-				return WrapErrorf(Error(GetNotFoundMessage("SAE:ConfigMap", d.Id())), NotFoundMsg, ProviderERROR)
+				return WrapErrorf(NotFoundErr("SAE:ConfigMap", d.Id()), NotFoundMsg, ProviderERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}

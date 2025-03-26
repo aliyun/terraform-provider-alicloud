@@ -46,7 +46,7 @@ func (s *EsaServiceV2) DescribeEsaSite(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"32", "SiteNotFound", "101"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Site", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -86,7 +86,7 @@ func (s *EsaServiceV2) DescribeSiteListTagResources(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "101"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Site", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -120,7 +120,7 @@ func (s *EsaServiceV2) DescribeSiteGetManagedTransform(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Site", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -154,7 +154,7 @@ func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Site", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -188,7 +188,7 @@ func (s *EsaServiceV2) DescribeSiteGetTieredCache(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Site", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -387,12 +387,12 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RatePlanInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RatePlanInstance", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == "offline" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RatePlanInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RatePlanInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -561,7 +561,7 @@ func (s *EsaServiceV2) DescribeEsaList(id string) (object map[string]interface{}
 
 	currentStatus := response["Id"]
 	if fmt.Sprint(currentStatus) == "0" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("List", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("List", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -630,7 +630,7 @@ func (s *EsaServiceV2) DescribeEsaPage(id string) (object map[string]interface{}
 
 	currentStatus := response["Id"]
 	if fmt.Sprint(currentStatus) == "0" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Page", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Page", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -769,11 +769,11 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 	})
 	addDebug(action, response, request)
 	if IsExpectedErrors(err, []string{"SiteNotFound.NotFound"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RewriteUrlRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RewriteUrlRule", id), NotFoundMsg, response)
 	}
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"0"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RewriteUrlRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RewriteUrlRule", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -1301,7 +1301,7 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 
 	currentStatus := response["ConfigId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CacheRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CacheRule", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -1375,7 +1375,7 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 
 	currentStatus := response["ConfigId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("OriginRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("OriginRule", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -1522,7 +1522,7 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]inte
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WaitingRoom", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("WaitingRoom", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1670,7 +1670,7 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WaitingRoomEvent", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("WaitingRoomEvent", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1749,7 +1749,7 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("WaitingRoomRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("WaitingRoomRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -2094,12 +2094,12 @@ func (s *EsaServiceV2) DescribeEsaCacheReserveInstance(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CacheReserveInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CacheReserveInstance", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if fmt.Sprint(currentStatus) == "offline" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CacheReserveInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CacheReserveInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

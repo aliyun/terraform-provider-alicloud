@@ -86,7 +86,7 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 	}
 	table, _ = raw.(*tablestore.ListTableResponse)
 	if table == nil {
-		return table, WrapErrorf(Error(GetNotFoundMessage("OtsTable", instanceName)), NotFoundMsg, ProviderERROR)
+		return table, WrapErrorf(NotFoundErr("OtsTable", instanceName), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -128,7 +128,7 @@ func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableRespo
 	}
 	table, _ = raw.(*tablestore.DescribeTableResponse)
 	if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
-		return table, WrapErrorf(Error(GetNotFoundMessage("OtsTable", id)), NotFoundMsg, ProviderERROR)
+		return table, WrapErrorf(NotFoundErr("OtsTable", id), NotFoundMsg, ProviderERROR)
 	}
 	return table, nil
 }
@@ -286,7 +286,7 @@ func (s *OtsService) DescribeOtsInstance(instanceName string) (inst RestOtsInsta
 	}
 
 	if inst.InstanceName != instanceName {
-		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstance", instanceName)), NotFoundMsg, ProviderERROR)
+		return inst, WrapErrorf(NotFoundErr("OtsInstance", instanceName), NotFoundMsg, ProviderERROR)
 	}
 
 	return inst, nil
@@ -309,7 +309,7 @@ func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo,
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
-		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
+		return inst, WrapErrorf(NotFoundErr("OtsInstanceAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 	return resp.VpcInfos.VpcInfo[0], nil
 }
@@ -352,7 +352,7 @@ func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err erro
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
-		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
+		return inst, WrapErrorf(NotFoundErr("OtsInstanceAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 
 	var retInfos []ots.VpcInfo
@@ -455,7 +455,7 @@ func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunne
 	}
 	resp, _ = raw.(*otsTunnel.DescribeTunnelResponse)
 	if resp == nil || resp.Tunnel == nil || resp.Tunnel.TableName != tableName || resp.Tunnel.TunnelName != tunnelName {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsTunnel", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("OtsTunnel", id), NotFoundMsg, ProviderERROR)
 	}
 	return resp, nil
 }
@@ -493,7 +493,7 @@ func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp
 	}
 	resp, _ = raw.(*otsTunnel.ListTunnelResponse)
 	if resp == nil {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsTunnel", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("OtsTunnel", id), NotFoundMsg, ProviderERROR)
 	}
 	return resp, nil
 }
@@ -742,7 +742,7 @@ func (s *OtsService) ListOtsSearchIndex(instanceName string, tableName string) (
 	}
 	resp, _ := raw.(*tablestore.ListSearchIndexResponse)
 	if resp == nil {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("SearchIndex", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("SearchIndex", id), NotFoundMsg, ProviderERROR)
 	}
 	// IndexInfo slice can be nil when table not has search index
 	return resp.IndexInfo, nil
@@ -798,7 +798,7 @@ func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.De
 
 	indexResp, _ = raw.(*tablestore.DescribeSearchIndexResponse)
 	if indexResp == nil || indexResp.SyncStat == nil || indexResp.Schema == nil {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsSearchIndex", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("OtsSearchIndex", id), NotFoundMsg, ProviderERROR)
 	}
 	return indexResp, nil
 }

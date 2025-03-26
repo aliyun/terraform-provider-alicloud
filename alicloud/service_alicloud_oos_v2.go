@@ -45,7 +45,7 @@ func (s *OosServiceV2) DescribeOosPatchBaseline(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.PatchBaseline"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PatchBaseline", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("PatchBaseline", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -194,7 +194,7 @@ func (s *OosServiceV2) DescribeOosSecretParameter(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Parameter"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SecretParameter", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SecretParameter", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -234,7 +234,7 @@ func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResourceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SecretParameter", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SecretParameter", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

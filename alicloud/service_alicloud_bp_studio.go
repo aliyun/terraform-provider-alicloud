@@ -35,7 +35,7 @@ func (s *BpStudioService) DescribeBpStudioApplication(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"8004"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("BPStudio:Application", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("BPStudio:Application", id), NotFoundMsg, ProviderERROR)
 		}
 
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -49,7 +49,7 @@ func (s *BpStudioService) DescribeBpStudioApplication(id string) (object map[str
 
 	object = v.(map[string]interface{})
 	if len(object) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BPStudio:Application", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("BPStudio:Application", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

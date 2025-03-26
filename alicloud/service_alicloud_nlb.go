@@ -125,7 +125,7 @@ func (s *NlbService) DescribeNlbServerGroup(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ServerGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["ServerGroupId"]) == id {
@@ -134,7 +134,7 @@ func (s *NlbService) DescribeNlbServerGroup(id string) (object map[string]interf
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -237,7 +237,7 @@ func (s *NlbService) DescribeNlbSecurityPolicy(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["SecurityPolicyId"]) == id {
@@ -246,7 +246,7 @@ func (s *NlbService) DescribeNlbSecurityPolicy(id string) (object map[string]int
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -417,7 +417,7 @@ func (s *NlbService) DescribeNlbServerGroupServerAttachment(id string) (object m
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Servers", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["ServerId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["ServerType"]) == parts[2] && fmt.Sprint(v.(map[string]interface{})["Port"]) == parts[3] {
@@ -426,7 +426,7 @@ func (s *NlbService) DescribeNlbServerGroupServerAttachment(id string) (object m
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -498,7 +498,7 @@ func (s *NlbService) DescribeNlbLoadBalancerSecurityGroupAttachment(id string) (
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB:SecurityGroupAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NLB:SecurityGroupAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

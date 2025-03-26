@@ -52,7 +52,7 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVvpInstance(id string)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VvpInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VvpInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

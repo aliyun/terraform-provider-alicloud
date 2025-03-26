@@ -54,7 +54,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 
 	v, err := jsonpath.Get("$.Template", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Wafv3", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Wafv3", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return v.(map[string]interface{}), nil

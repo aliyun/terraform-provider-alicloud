@@ -47,7 +47,7 @@ func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 		return project, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunLogGoSdkERROR)
 	}
 	if project == nil || project.Name == "" {
-		return project, WrapErrorf(Error(GetNotFoundMessage("LogProject", id)), NotFoundMsg, ProviderERROR)
+		return project, WrapErrorf(NotFoundErr("LogProject", id), NotFoundMsg, ProviderERROR)
 	}
 	return project, nil
 }
@@ -109,7 +109,7 @@ func (s *LogService) DescribeLogStore(id string) (*sls.LogStore, error) {
 		return store, WrapErrorf(err, DefaultErrorMsg, id, "GetLogStore", AliyunLogGoSdkERROR)
 	}
 	if store == nil || store.Name == "" {
-		return store, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, ProviderERROR)
+		return store, WrapErrorf(NotFoundErr("LogStore", id), NotFoundMsg, ProviderERROR)
 	}
 	return store, nil
 }
@@ -178,7 +178,7 @@ func (s *LogService) DescribeLogStoreIndex(id string) (*sls.Index, error) {
 	}
 
 	if index == nil || (index.Line == nil && index.Keys == nil) {
-		return index, WrapErrorf(Error(GetNotFoundMessage("LogStoreIndex", id)), NotFoundMsg, ProviderERROR)
+		return index, WrapErrorf(NotFoundErr("LogStoreIndex", id), NotFoundMsg, ProviderERROR)
 	}
 	return index, nil
 }
@@ -220,7 +220,7 @@ func (s *LogService) DescribeLogMachineGroup(id string) (*sls.MachineGroup, erro
 	}
 
 	if group == nil || group.Name == "" {
-		return group, WrapErrorf(Error(GetNotFoundMessage("LogMachineGroup", id)), NotFoundMsg, ProviderERROR)
+		return group, WrapErrorf(NotFoundErr("LogMachineGroup", id), NotFoundMsg, ProviderERROR)
 	}
 	return group, nil
 }
@@ -291,7 +291,7 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetConfig", AliyunLogGoSdkERROR)
 	}
 	if response == nil || response.Name == "" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("LogTailConfig", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(NotFoundErr("LogTailConfig", id), NotFoundMsg, ProviderERROR)
 	}
 	return response, nil
 }
@@ -364,7 +364,7 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 		}
 	}
 	if groupName == "" {
-		return groupName, WrapErrorf(Error(GetNotFoundMessage("LogtailAttachment", id)), NotFoundMsg, ProviderERROR)
+		return groupName, WrapErrorf(NotFoundErr("LogtailAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 	return groupName, nil
 }
@@ -518,7 +518,7 @@ func (s *LogService) DescribeLogAlert(id string) (*sls.Alert, error) {
 	}
 
 	if alert == nil || alert.Name == "" {
-		return alert, WrapErrorf(Error(GetNotFoundMessage("LogstoreAlert", id)), NotFoundMsg, ProviderERROR)
+		return alert, WrapErrorf(NotFoundErr("LogstoreAlert", id), NotFoundMsg, ProviderERROR)
 	}
 	return alert, nil
 }
@@ -682,7 +682,7 @@ func (s *LogService) DescribeLogDashboard(id string) (string, error) {
 	}
 
 	if dashboard == "" {
-		return dashboard, WrapErrorf(Error(GetNotFoundMessage("LogstoreDashboard", id)), NotFoundMsg, ProviderERROR)
+		return dashboard, WrapErrorf(NotFoundErr("LogstoreDashboard", id), NotFoundMsg, ProviderERROR)
 	}
 	return dashboard, nil
 }
@@ -1154,7 +1154,7 @@ func (s *LogService) DescribeLogResource(id string) (*sls.Resource, error) {
 	}
 
 	if res == nil {
-		return res, WrapErrorf(Error(GetNotFoundMessage("LogResource", id)), NotFoundMsg, ProviderERROR)
+		return res, WrapErrorf(NotFoundErr("LogResource", id), NotFoundMsg, ProviderERROR)
 	}
 	return res, nil
 }
@@ -1219,7 +1219,7 @@ func (s *LogService) DescribeLogResourceRecord(id string) (*sls.ResourceRecord, 
 	}
 
 	if res == nil {
-		return res, WrapErrorf(Error(GetNotFoundMessage("LogResourceRecord", id)), NotFoundMsg, ProviderERROR)
+		return res, WrapErrorf(NotFoundErr("LogResourceRecord", id), NotFoundMsg, ProviderERROR)
 	}
 	return res, nil
 }

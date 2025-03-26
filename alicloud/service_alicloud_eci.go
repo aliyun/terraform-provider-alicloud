@@ -32,7 +32,7 @@ func (s *EciService) DescribeEciImageCache(id string) (object eci.DescribeImageC
 	response, _ := raw.(*eci.DescribeImageCachesResponse)
 
 	if len(response.ImageCaches) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("EciImageCache", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("EciImageCache", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return response.ImageCaches[0], nil
@@ -73,7 +73,7 @@ func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]int
 	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("EciContainerGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("EciContainerGroup", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -85,10 +85,10 @@ func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ContainerGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECIOpenAPI", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECIOpenAPI", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["ContainerGroupId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECIOpenAPI", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECIOpenAPI", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -145,7 +145,7 @@ func (s *EciService) DescribeEciVirtualNode(id string) (object map[string]interf
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VirtualNodes", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECI", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECI", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["VirtualNodeId"]) == id {
@@ -161,7 +161,7 @@ func (s *EciService) DescribeEciVirtualNode(id string) (object map[string]interf
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECI", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECI", id), NotFoundWithResponse, response)
 	}
 	return
 }

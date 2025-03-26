@@ -31,7 +31,7 @@ func (s *NATGatewayServiceV2) DescribeNATGatewaySnatEntry(id string) (object map
 	request["SnatTableId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
@@ -47,7 +47,7 @@ wait := incrementalWait(3*time.Second, 5*time.Second)
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidSnatTableId.NotFound", "InvalidSnatEntryId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SnatEntry", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -58,7 +58,7 @@ wait := incrementalWait(3*time.Second, 5*time.Second)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SnatEntry", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

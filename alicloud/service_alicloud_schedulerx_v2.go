@@ -49,14 +49,14 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"groupid not exist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Job", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Job", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data.JobConfigInfo", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Job", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Job", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -130,7 +130,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Namespace", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Namespace", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -201,14 +201,14 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"groupid not exist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AppGroup", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("AppGroup", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AppGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AppGroup", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil

@@ -78,7 +78,7 @@ func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface
 
 	response, _ := raw.(*edas.ImportK8sClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error("import k8s cluster failed for " + response.Message))
+		return WrapError(Error("import k8s cluster failed for %s", response.Message))
 	}
 	if len(response.Data) == 0 {
 		return WrapError(Error("null cluster id after import k8s cluster"))
@@ -101,7 +101,7 @@ func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface
 			return resource.NonRetryableError(err)
 		}
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("Get cluster failed for " + response.Message))
+			return resource.NonRetryableError(Error("Get cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
@@ -170,7 +170,7 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 			return resource.NonRetryableError(err)
 		}
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("Delete EDAS K8s cluster failed for " + response.Message))
+			return resource.NonRetryableError(Error("Delete EDAS K8s cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
@@ -202,7 +202,7 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 		} else if response.Code == 601 && strings.Contains(response.Message, "does not exist") {
 			return nil
 		} else {
-			return resource.NonRetryableError(Error("check cluster status failed for " + response.Message))
+			return resource.NonRetryableError(Error("check cluster status failed for %s", response.Message))
 		}
 	})
 	if err != nil {

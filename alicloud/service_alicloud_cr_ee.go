@@ -214,14 +214,14 @@ func (c *CrService) DescribeCrEENamespace(id string) (*cr_ee.GetNamespaceRespons
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Namespace", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			return response, WrapErrorf(NotFoundErr("CrEE:Namespace", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	if !response.GetNamespaceIsSuccess {
 		if response.Code == "NAMESPACE_NOT_EXIST" {
-			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Namespace", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			return response, WrapErrorf(NotFoundErr("CrEE:Namespace", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -351,14 +351,14 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Repo", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			return response, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	if !response.GetRepositoryIsSuccess {
 		if response.Code == "REPO_NOT_EXIST" {
-			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Repo", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			return response, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -495,7 +495,7 @@ func (c *CrService) DescribeCrEESyncRule(id string) (*cr_ee.SyncRulesItem, error
 		}
 
 		if len(response.SyncRules) < 1 {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CrEE:SyncRule", id)), NotFoundWithResponse, response)
+			return nil, WrapErrorf(NotFoundErr("CrEE:SyncRule", id), NotFoundWithResponse, response)
 		}
 
 		for _, rule := range response.SyncRules {
@@ -518,7 +518,7 @@ func (c *CrService) DescribeCrEESyncRule(id string) (*cr_ee.SyncRulesItem, error
 	}
 
 	if !idExist {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("CrEE:SyncRule", id)), NotFoundWithResponse, response)
+		return nil, WrapErrorf(NotFoundErr("CrEE:SyncRule", id), NotFoundWithResponse, response)
 	}
 
 	return nil, nil

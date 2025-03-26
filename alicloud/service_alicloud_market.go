@@ -24,7 +24,7 @@ func (s *MarketService) DescribeMarketOrder(id string) (order *market.DescribeOr
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response.OrderId == 0 {
-		return order, WrapErrorf(Error(GetNotFoundMessage("Market Order", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return order, WrapErrorf(NotFoundErr("Market Order", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
 }

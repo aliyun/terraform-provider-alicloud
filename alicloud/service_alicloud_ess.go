@@ -72,7 +72,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	if len(customAlarms) > 0 {
 		return customAlarms[0], nil
 	}
-	return alarm, WrapErrorf(Error(GetNotFoundMessage("EssAlarm", id)), NotFoundMsg, ProviderERROR)
+	return alarm, WrapErrorf(NotFoundErr("EssAlarm", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook, err error) {
@@ -93,7 +93,7 @@ func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook
 			return v, nil
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EssLifecycleHook", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("EssLifecycleHook", id), NotFoundMsg, ProviderERROR)
 	return
 }
 
@@ -132,7 +132,7 @@ func (s *EssService) DescribeEssNotification(id string) (object map[string]inter
 	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeNotificationConfigurations", nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotificationConfigurationNotExist", "InvalidScalingGroupId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("EssNotification", id), NotFoundMsg, ProviderERROR)
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, "DescribeNotificationConfigurations", AlibabaCloudSdkGoERROR)
 		return
@@ -159,7 +159,7 @@ func (s *EssService) DescribeEssNotification(id string) (object map[string]inter
 		}
 	}
 
-	err = WrapErrorf(Error(GetNotFoundMessage("EssNotificationConfiguration", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("EssNotificationConfiguration", id), NotFoundMsg, ProviderERROR)
 	return
 
 }
@@ -232,7 +232,7 @@ func (s *EssService) DescribeEssScalingGroupById(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingGroups.ScalingGroup", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingGroups", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScalingGroups", id), NotFoundMsg, ProviderERROR)
 	}
 
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -259,7 +259,7 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 			return v, nil
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EssScalingGroup", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("EssScalingGroup", id), NotFoundMsg, ProviderERROR)
 	return
 }
 
@@ -294,7 +294,7 @@ func (s *EssService) DescribeEssScalingGroupSuspendProcess(id string) (object ma
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EssScalingGroup", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EssScalingGroup", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -339,7 +339,7 @@ func (s *EssService) DescribeEssEciScalingConfiguration(id string) (object map[s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingConfigurations", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EciScalingConfiguration", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("EciScalingConfiguration", id), NotFoundMsg, ProviderERROR)
 	}
 
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -374,7 +374,7 @@ func (s *EssService) DescribeEssScalingConfigurationByCommonApi(id string) (obje
 	}
 
 	if len(vv.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingConfiguration", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScalingConfiguration", id), NotFoundMsg, ProviderERROR)
 	}
 
 	object = vv.([]interface{})[0].(map[string]interface{})
@@ -537,14 +537,14 @@ func (s *EssService) DescribeEssScalingRule(id string) (object map[string]interf
 	addDebug("DescribeScalingRules", response, request)
 	get, err := jsonpath.Get("$.ScalingRules", response)
 	if err != nil || get == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScalingRules", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.ScalingRules.ScalingRule", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingRules.ScalingRule", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScalingRules", id), NotFoundMsg, ProviderERROR)
 	}
 
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -577,7 +577,7 @@ func (s *EssService) DescribeEssScalingRuleWithAlarm(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingRules.ScalingRule", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingRules", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScalingRules", id), NotFoundMsg, ProviderERROR)
 	}
 
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -627,7 +627,7 @@ func (s *EssService) DescribeEssScheduledTask(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScheduledTasks.ScheduledTask", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ScheduledTasks", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("ScheduledTasks", id), NotFoundMsg, ProviderERROR)
 	}
 
 	for _, w := range v.([]interface{}) {
@@ -636,7 +636,7 @@ func (s *EssService) DescribeEssScheduledTask(id string) (object map[string]inte
 			return m, nil
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EssScheduledTask", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("EssScheduledTask", id), NotFoundMsg, ProviderERROR)
 	return
 
 }
@@ -689,7 +689,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingInstancesResponse)
 	if len(response.ScalingInstances.ScalingInstance) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("EssAttachment", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("EssAttachment", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return response.ScalingInstances.ScalingInstance, nil
@@ -726,7 +726,7 @@ func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.
 	}
 
 	if len(configs) < 1 {
-		return configs, WrapErrorf(Error(GetNotFoundMessage("EssScalingConfifuration", id)), NotFoundMsg, ProviderERROR)
+		return configs, WrapErrorf(NotFoundErr("EssScalingConfifuration", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return

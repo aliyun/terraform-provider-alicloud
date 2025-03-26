@@ -101,14 +101,14 @@ func (s *DasService) DescribeDasSwitchDasPro(id string) (object map[string]inter
 
 	if fmt.Sprint(response["Success"]) == "false" {
 		if fmt.Sprint(response["Code"]) == "-404" {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Das:SwitchDasPro", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Das:SwitchDasPro", id), NotFoundWithResponse, response)
 		}
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	resp, err := jsonpath.Get("$.Data", response)
 	if resp == nil && fmt.Sprint(response["Success"]) == "true" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Das:SwitchDasPro", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Das:SwitchDasPro", id), NotFoundWithResponse, response)
 	}
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)

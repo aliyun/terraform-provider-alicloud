@@ -44,7 +44,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointService(id string) 
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointService", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpointService", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -245,23 +245,23 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceUser(id stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceUser", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpointServiceUser", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Users[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceUser", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointServiceUser", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceUser", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointServiceUser", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["UserId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceUser", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointServiceUser", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -324,7 +324,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceResource", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpointServiceResource", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -335,7 +335,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceResource", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointServiceResource", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -349,7 +349,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceResource(id 
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceResource", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("VpcEndpointServiceResource", id), NotFoundMsg, response)
 }
 
 func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -416,18 +416,18 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointZone", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpointZone", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Zones[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointZone", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointZone", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointZone", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointZone", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -438,7 +438,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointZone", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("VpcEndpointZone", id), NotFoundMsg, response)
 }
 
 func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointZoneStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -507,12 +507,12 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointConnection(id strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointConnection", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointConnection", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["ConnectionStatus"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointConnection", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VpcEndpointConnection", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -578,7 +578,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpoint(id string) (object
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -645,7 +645,7 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointListVpcEndpointSecurityGroups(
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcEndpoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

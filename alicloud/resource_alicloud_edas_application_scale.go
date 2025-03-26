@@ -81,7 +81,7 @@ func resourceAlicloudEdasApplicationScaleCreate(d *schema.ResourceData, meta int
 	changeOrderId = response.ChangeOrderId
 	d.SetId(appId + ":" + strings.Join(aString, ","))
 	if response.Code != 200 {
-		return WrapError(Error("scaleOut application failed for " + response.Message))
+		return WrapError(Error("scaleOut application failed for %s", response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -122,7 +122,7 @@ func resourceAlicloudEdasApplicationScaleRead(d *schema.ResourceData, meta inter
 	var eccs []string
 	response := raw.(*edas.QueryApplicationStatusResponse)
 	if response.Code != 200 {
-		return WrapError(Error("QueryApplicationStatus failed for " + response.Message))
+		return WrapError(Error("QueryApplicationStatus failed for %s", response.Message))
 	}
 	for _, ecc := range response.AppInfo.EccList.Ecc {
 		for _, ecu := range aString {
@@ -163,7 +163,7 @@ func resourceAlicloudEdasApplicationScaleDelete(d *schema.ResourceData, meta int
 	var changeOrderId string
 	response, _ := raw.(*edas.ScaleInApplicationResponse)
 	if response.Code != 200 {
-		return WrapError(Error("scaleIn application failed for " + response.Message))
+		return WrapError(Error("scaleIn application failed for %s", response.Message))
 	}
 	changeOrderId = response.ChangeOrderId
 

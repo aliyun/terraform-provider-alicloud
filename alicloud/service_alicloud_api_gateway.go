@@ -39,7 +39,7 @@ func (s *CloudApiService) DescribeApiGatewayGroup(id string) (*cloudapi.Describe
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	apiGroup, _ = raw.(*cloudapi.DescribeApiGroupResponse)
 	if apiGroup.GroupId == "" {
-		return apiGroup, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayGroup", id)), NotFoundMsg, ProviderERROR)
+		return apiGroup, WrapErrorf(NotFoundErr("ApiGatewayGroup", id), NotFoundMsg, ProviderERROR)
 	}
 	return apiGroup, nil
 }
@@ -131,7 +131,7 @@ func (s *CloudApiService) DescribeApiGatewayApi(id string) (*cloudapi.DescribeAp
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	api, _ = raw.(*cloudapi.DescribeApiResponse)
 	if api.ApiId == "" {
-		return api, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayApi", id)), NotFoundMsg, ProviderERROR)
+		return api, WrapErrorf(NotFoundErr("ApiGatewayApi", id), NotFoundMsg, ProviderERROR)
 	}
 	return api, nil
 }
@@ -207,7 +207,7 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 	}
 
 	if len(filteredAppsTemp) < 1 {
-		return app, WrapErrorf(Error(GetNotFoundMessage("ApigatewayAppAttachment", id)), NotFoundMsg, ProviderERROR)
+		return app, WrapErrorf(NotFoundErr("ApigatewayAppAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 	app = &filteredAppsTemp[0]
 	return app, nil
@@ -262,7 +262,7 @@ func (s *CloudApiService) DescribeApiGatewayPluginAttachment(id string) (*clouda
 	}
 
 	if len(filteredPluginsTemp) < 1 {
-		return plugin, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayPluginAttachment", id)), NotFoundMsg, ProviderERROR)
+		return plugin, WrapErrorf(NotFoundErr("ApiGatewayPluginAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 
 	plugin = &filteredPluginsTemp[0]
@@ -311,7 +311,7 @@ func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (*cloudapi.VpcA
 	}
 
 	if len(filteredVpcsTemp) < 1 {
-		return vpc, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayVpcAccess", id)), NotFoundMsg, ProviderERROR)
+		return vpc, WrapErrorf(NotFoundErr("ApiGatewayVpcAccess", id), NotFoundMsg, ProviderERROR)
 	}
 	return &filteredVpcsTemp[0], nil
 }
@@ -609,10 +609,10 @@ func (s *CloudApiService) DescribeApiGatewayLogConfig(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LogInfos.LogInfo", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["LogType"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -657,10 +657,10 @@ func (s *CloudApiService) DescribeApiGatewayModel(id string) (object map[string]
 	}
 
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ModelName"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 		}
 	}
 

@@ -26,7 +26,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerRole(id string) (object 
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerRole", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerRole", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -67,7 +67,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceGroup(id string)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.ResourceGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceGroup", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager:ResourceGroup", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -79,7 +79,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceGroup(id string)
 
 	if status, ok := v.(map[string]interface{})["Status"].(string); ok && status == "PendingDelete" {
 		log.Printf("[WARN] Removing ResourceManagerResourceGroup  %s because it's already gone", id)
-		return v.(map[string]interface{}), WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceGroup", id)), NotFoundWithResponse, response)
+		return v.(map[string]interface{}), WrapErrorf(NotFoundErr("ResourceManager:ResourceGroup", id), NotFoundWithResponse, response)
 	}
 
 	object = v.(map[string]interface{})
@@ -132,7 +132,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (objec
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerFolder", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerFolder", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -155,7 +155,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (ob
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerHandshake", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerHandshake", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -185,7 +185,7 @@ func (s *ResourcemanagerService) GetPolicyVersion(id string, d *schema.ResourceD
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerPolicy", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -212,7 +212,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicy(id string) (objec
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerPolicy", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -250,7 +250,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (obje
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:Account", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ResourceManager:Account", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -284,7 +284,7 @@ func (s *ResourcemanagerService) GetAccountDeletionStatus(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:Account", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ResourceManager:Account", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -329,7 +329,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id str
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceDirectoryNotInUse"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceDirectory", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerResourceDirectory", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -364,7 +364,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string)
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyVersion", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerPolicyVersion", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -399,7 +399,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExists.ResourceGroup"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerPolicyAttachment", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -411,7 +411,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PolicyAttachments.PolicyAttachment", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -428,7 +428,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicy(id string)
 	response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.ControlPolicy"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerControlPolicy", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ResourceManagerControlPolicy", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -475,7 +475,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Target"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager:ControlPolicyAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -486,7 +486,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager:ControlPolicyAttachment", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -497,7 +497,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ControlPolicyAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager:ControlPolicyAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

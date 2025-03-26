@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -202,7 +201,7 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 			// Skip the null cert config.
 		} else {
 			b, _ := json.Marshal(object)
-			return WrapError(Error(fmt.Sprintf("Illegal cert config: %s", string(b))))
+			return WrapError(Error("Illegal cert config: %s", string(b)))
 		}
 	}
 	if err := d.Set("cert_config", certConfig); err != nil {

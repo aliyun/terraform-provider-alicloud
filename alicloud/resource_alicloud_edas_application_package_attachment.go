@@ -88,7 +88,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentCreate(d *schema.ResourceDa
 	response, _ := raw.(*edas.DeployApplicationResponse)
 	changeOrderId := response.ChangeOrderId
 	if response.Code != 200 {
-		return WrapError(Error("deploy application failed for " + response.Message))
+		return WrapError(Error("deploy application failed for %s", response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -123,7 +123,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentRead(d *schema.ResourceData
 	response, _ := raw.(*edas.QueryApplicationStatusResponse)
 
 	if response.Code != 200 {
-		return WrapError(Error("QueryApplicationStatus failed for " + response.Message))
+		return WrapError(Error("QueryApplicationStatus failed for %s", response.Message))
 	}
 
 	groupId := d.Get("group_id").(string)
@@ -166,7 +166,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentDelete(d *schema.ResourceDa
 	response, _ := raw.(*edas.RollbackApplicationResponse)
 	changeOrderId := response.ChangeOrderId
 	if response.Code != 200 && !strings.Contains(response.Message, "ex.app.deploy.group.empty") {
-		return WrapError(Error("deploy application failed for " + response.Message))
+		return WrapError(Error("deploy application failed for %s", response.Message))
 	}
 
 	if len(changeOrderId) > 0 {

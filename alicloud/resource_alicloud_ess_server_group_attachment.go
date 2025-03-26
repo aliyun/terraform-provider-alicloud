@@ -143,7 +143,7 @@ func resourceAliyunEssServerGroupAttachmentRead(d *schema.ResourceData, meta int
 			return nil
 		}
 	}
-	return WrapErrorf(Error(GetNotFoundMessage("ServerGroup", d.Id())), NotFoundMsg, ProviderERROR)
+	return WrapErrorf(NotFoundErr("ServerGroup", d.Id()), NotFoundMsg, ProviderERROR)
 }
 
 func resourceAliyunEssServerGroupAttachmentDelete(d *schema.ResourceData, meta interface{}) error {

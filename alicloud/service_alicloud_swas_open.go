@@ -36,7 +36,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerInstance(id string) (ob
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -45,10 +45,10 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerInstance(id string) (ob
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -112,7 +112,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FirewallRules", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["RuleId"]) == parts[1] {
@@ -126,7 +126,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -154,7 +154,7 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (ob
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDiskId.NotFound", "InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer:Snapshot", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer:Snapshot", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -163,10 +163,10 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (ob
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["SnapshotId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -223,10 +223,10 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Images", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ImageId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SimpleApplicationServer", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

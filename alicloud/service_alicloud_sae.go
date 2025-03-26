@@ -37,7 +37,7 @@ func (s *SaeService) DescribeSaeNamespace(id string) (object map[string]interfac
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidNamespaceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:Namespace", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("SAE:Namespace", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_namespace", "GET "+action, AlibabaCloudSdkGoERROR)
 	}
@@ -72,7 +72,7 @@ func (s *SaeService) DescribeSaeConfigMap(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.ConfigMap"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ConfigMap", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("SAE:ConfigMap", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -139,7 +139,7 @@ func (s *SaeService) DescribeSaeApplication(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAppId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:Application", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("SAE:Application", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -229,7 +229,7 @@ func (s *SaeService) DescribeSaeIngress(id string) (object map[string]interface{
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.WithMessage"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:Ingress", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("SAE:Ingress", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -522,7 +522,7 @@ func (s *SaeService) DescribeSaeApplicationScalingRule(id string) (object map[st
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidAppId.NotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+				return object, WrapErrorf(NotFoundErr("SAE:ApplicationScalingRule", id), NotFoundMsg, ProviderERROR)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -531,7 +531,7 @@ func (s *SaeService) DescribeSaeApplicationScalingRule(id string) (object map[st
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.ApplicationScalingRules", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("SAE:ApplicationScalingRule", id), NotFoundMsg, ProviderERROR)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["ScaleRuleName"]) == parts[1] {
@@ -550,7 +550,7 @@ func (s *SaeService) DescribeSaeApplicationScalingRule(id string) (object map[st
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("SAE:ApplicationScalingRule", id), NotFoundMsg, ProviderERROR)
 	}
 	return object, nil
 }
@@ -577,7 +577,7 @@ func (s *SaeService) DescribeSaeGreyTagRoute(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.WithMessage"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SAE", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("SAE", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

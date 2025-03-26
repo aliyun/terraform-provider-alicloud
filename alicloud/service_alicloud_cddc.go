@@ -43,10 +43,10 @@ func (s *CddcService) DescribeCddcDedicatedHostGroup(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHostGroups.DedicatedHostGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CDDC", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DedicatedHostGroupId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CDDC", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -212,7 +212,7 @@ func (s *CddcService) DescribeCddcDedicatedHost(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDedicatedHostGroup.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DedicatedHost", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DedicatedHost", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -221,7 +221,7 @@ func (s *CddcService) DescribeCddcDedicatedHost(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	if fmt.Sprint(v.(map[string]interface{})["DedicatedHostId"]) != parts[1] {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CDDC", id), NotFoundWithResponse, response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -281,14 +281,14 @@ func (s *CddcService) DescribeCddcDedicatedHostAccount(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHosts.DedicatedHosts", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CDDC", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["AccountName"]) == parts[1] {
 			return v.(map[string]interface{}), nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("CDDC", id), NotFoundWithResponse, response)
 }
 
 func (s *CddcService) CddcDedicatedHostAccountStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {

@@ -34,7 +34,7 @@ func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.GetProjectR
 	}
 	project, _ = raw.(*datahub.GetProjectResult)
 	if project == nil {
-		return project, WrapErrorf(Error(GetNotFoundMessage("DatahubProject", id)), NotFoundMsg, ProviderERROR)
+		return project, WrapErrorf(NotFoundErr("DatahubProject", id), NotFoundMsg, ProviderERROR)
 	}
 	return project, nil
 }
@@ -94,7 +94,7 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.GetSub
 	}
 	subscription, _ = raw.(*datahub.GetSubscriptionResult)
 	if subscription == nil || subscription.TopicName != topicName || subscription.SubId != subId {
-		return subscription, WrapErrorf(Error(GetNotFoundMessage("DatahubSubscription", id)), NotFoundMsg, ProviderERROR)
+		return subscription, WrapErrorf(NotFoundErr("DatahubSubscription", id), NotFoundMsg, ProviderERROR)
 	}
 	return subscription, nil
 }
@@ -155,7 +155,7 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.GetTopicResul
 	}
 	topic, _ = raw.(*datahub.GetTopicResult)
 	if topic == nil {
-		return topic, WrapErrorf(Error(GetNotFoundMessage("DatahubTopic", id)), NotFoundMsg, ProviderERROR)
+		return topic, WrapErrorf(NotFoundErr("DatahubTopic", id), NotFoundMsg, ProviderERROR)
 	}
 	return topic, nil
 }

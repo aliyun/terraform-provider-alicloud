@@ -35,7 +35,7 @@ func (s *MnsOpenService) DescribeMessageServiceQueue(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"QueueNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Mns:Queue", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Mns:Queue", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -71,7 +71,7 @@ func (s *MnsOpenService) DescribeMessageServiceTopic(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TopicNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Mns:Topic", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Mns:Topic", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -112,7 +112,7 @@ func (s *MnsOpenService) DescribeMessageServiceSubscription(id string) (object m
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TopicNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Mns:Subscription", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Mns:Subscription", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

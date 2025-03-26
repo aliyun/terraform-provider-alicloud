@@ -42,7 +42,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSavedQuery(id string) 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExists.QueryId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SavedQuery", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SavedQuery", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -108,7 +108,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerAutoGroupingRule(id st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AutoGroupingRule"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AutoGroupingRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AutoGroupingRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

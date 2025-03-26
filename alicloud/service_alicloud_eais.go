@@ -53,7 +53,7 @@ func (s *EaisService) DescribeEaisInstance(id string) (object map[string]interfa
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Eais:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Eais:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -71,7 +71,7 @@ func (s *EaisService) DescribeEaisInstance(id string) (object map[string]interfa
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Eais:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Eais:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

@@ -51,7 +51,7 @@ func (s *DMSEnterpriseServiceV2) DescribeDMSEnterpriseAuthorityTemplate(id strin
 	}
 
 	if _, ok := response["AuthorityTemplateView"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AuthorityTemplate", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AuthorityTemplate", id), NotFoundMsg, response)
 	}
 
 	return response, nil

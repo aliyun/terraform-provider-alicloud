@@ -411,7 +411,7 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	if err != nil {
 		// Handle exceptions
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ecp_instance alikafkaService.DescribeAliKafkaInstance Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_alikakfa_instance alikafkaService.DescribeAliKafkaInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
