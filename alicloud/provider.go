@@ -896,6 +896,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_click_house_enterprise_db_cluster_security_ip":        resourceAliCloudClickHouseEnterpriseDbClusterSecurityIP(),
 			"alicloud_click_house_enterprise_db_cluster_backup_policy":      resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicy(),
 			"alicloud_click_house_enterprise_db_cluster_public_endpoint":    resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpoint(),
 			"alicloud_click_house_enterprise_db_cluster_account":            resourceAliCloudClickHouseEnterpriseDBClusterAccount(),
