@@ -2,30 +2,29 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_group_policy_attachment"
-sidebar_current: "docs-alicloud-resource-ram-group-policy-attachment"
 description: |-
-  Provides a RAM Group Policy attachment resource.
+  Provides a Alicloud RAM Group Policy Attachment resource.
 ---
 
 # alicloud_ram_group_policy_attachment
 
-Provides a RAM Group Policy attachment resource. 
+Provides a RAM Group Policy Attachment resource.
+
+
+
+For information about RAM Group Policy Attachment and how to use it, see [What is Group Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToGroup).
 
 -> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_group_policy_attachment&exampleId=5eb5fe16-5720-9ea8-8358-931b0db0648e21f2be4a&activeTab=example&spm=docs.r.ram_group_policy_attachment.0.5eb5fe1657&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
+Basic Usage
 
 ```terraform
 # Create a RAM Group Policy attachment.
 resource "alicloud_ram_group" "group" {
-  name     = "groupName"
-  comments = "this is a group comments."
+  group_name = "groupName"
+  comments   = "this is a group comments."
 }
 
 resource "random_integer" "default" {
@@ -62,24 +61,29 @@ resource "alicloud_ram_group_policy_attachment" "attach" {
   group_name  = alicloud_ram_group.group.name
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
-
-* `group_name` - (Required, ForceNew) Name of the RAM group. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
-* `policy_name` - (Required, ForceNew) Name of the RAM policy. This name can have a string of 1 to 128 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
-* `policy_type` - (Required, ForceNew) Type of the RAM policy. It must be `Custom` or `System`.
+* `group_name` - (Required, ForceNew) Specifies the user group name.
+* `policy_name` - (Required, ForceNew) The permission policy name.
+* `policy_type` - (Required, ForceNew) Permission policy type.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<policy_name>:<policy_type>:<group_name>`.
 
-* `id` - The attachment ID. Composed of policy name, policy type and group name with format `group:<policy_name>:<policy_type>:<group_name>`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Group Policy Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Group Policy Attachment.
 
 ## Import
 
-RAM Group Policy attachment can be imported using the id, e.g.
+RAM Group Policy Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_group_policy_attachment.example group:my-policy:Custom:my-group
+$ terraform import alicloud_ram_group_policy_attachment.example <policy_name>:<policy_type>:<group_name>
 ```
