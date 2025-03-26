@@ -52,7 +52,7 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -132,7 +132,7 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 		}
 
 		if len(v.([]interface{})) == 0 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PolicyBinding", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("PolicyBinding", id), NotFoundMsg, response)
 		}
 
 		result, _ := v.([]interface{})
@@ -156,7 +156,7 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 			break
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("PolicyBinding", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("PolicyBinding", id), NotFoundMsg, response)
 }
 
 func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -221,7 +221,7 @@ func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]int
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CrossAccount", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CrossAccount", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -235,7 +235,7 @@ func (s *HbrServiceV2) DescribeHbrCrossAccount(id string) (object map[string]int
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CrossAccount", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("CrossAccount", id), NotFoundMsg, response)
 }
 
 func (s *HbrServiceV2) HbrCrossAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -298,7 +298,7 @@ func (s *HbrServiceV2) DescribeHbrVault(id string) (object map[string]interface{
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResourceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Vault", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Vault", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -309,7 +309,7 @@ func (s *HbrServiceV2) DescribeHbrVault(id string) (object map[string]interface{
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Vault", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Vault", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

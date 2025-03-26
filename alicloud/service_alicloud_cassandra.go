@@ -30,7 +30,7 @@ func (s *CassandraService) DescribeCassandraCluster(id string) (object cassandra
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return cluster, WrapErrorf(Error(GetNotFoundMessage("Cassandra", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return cluster, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return cluster, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -75,7 +75,7 @@ func (s *CassandraService) DescribeCassandraDataCenter(id string) (object cassan
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("CassandraDataCenter", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("CassandraDataCenter", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -327,7 +327,7 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra:BackupPlan", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Cassandra:BackupPlan", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -336,7 +336,7 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if v.(map[string]interface{})["DataCenterId"].(string) == parts[1] {
@@ -345,7 +345,7 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

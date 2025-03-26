@@ -135,7 +135,7 @@ func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	}
 
 	if len(v.([]interface{})) != 1 {
-		return WrapErrorf(Error(GetNotFoundMessage("CDN", d.Get("function_name").(string))), DefaultErrorMsg, err)
+		return WrapErrorf(NotFoundErr("CDN", d.Get("function_name").(string)), DefaultErrorMsg, err)
 	}
 
 	val := v.([]interface{})[0].(map[string]interface{})
@@ -227,7 +227,7 @@ func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		if len(v.([]interface{})) > 1 {
-			return WrapErrorf(Error(GetNotFoundMessage("CDN", d.Get("function_name").(string))), DefaultErrorMsg, err)
+			return WrapErrorf(NotFoundErr("CDN", d.Get("function_name").(string)), DefaultErrorMsg, err)
 		}
 
 		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, cdnService.CdnDomainConfigRefreshFunc(d.Id(), []string{}))

@@ -20,7 +20,7 @@ func (s *PrivatelinkService) ListVpcEndpointServiceResources(id string) (object 
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointService", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointService", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -45,7 +45,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointService(id string) (o
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointService", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointService", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -96,7 +96,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string)
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointConnection", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointConnection", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -108,7 +108,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string)
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Connections", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("PrivateLink", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -144,7 +144,7 @@ func (s *PrivatelinkService) ListVpcEndpointSecurityGroups(id string) (object ma
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpoint", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -169,7 +169,7 @@ func (s *PrivatelinkService) ListVpcEndpointZones(id string) (object map[string]
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpoint", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -195,7 +195,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpoint(id string) (object m
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpoint", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -246,7 +246,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id st
 		response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointServiceResource", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointServiceResource", id), NotFoundMsg, ProviderERROR)
 				return object, err
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -258,7 +258,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id st
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("PrivateLink", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["ResourceId"].(string) == parts[1] {
@@ -292,7 +292,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceUser(id string
 	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointServiceUser", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointServiceUser", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -304,7 +304,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceUser(id string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("PrivateLink", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -326,7 +326,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointZone(id string) (obje
 		response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointZone", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("PrivatelinkVpcEndpointZone", id), NotFoundMsg, ProviderERROR)
 				return object, err
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -338,7 +338,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointZone(id string) (obje
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Zones", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("PrivateLink", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["ZoneId"].(string) == parts[1] {

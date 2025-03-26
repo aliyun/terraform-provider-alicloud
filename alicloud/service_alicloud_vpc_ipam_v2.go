@@ -48,16 +48,16 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpam(id string) (object map[string]int
 
 	v, err := jsonpath.Get("$.Ipams[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipam", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipam", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipam", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipam", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["IpamId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipam", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipam", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -213,16 +213,16 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamScope(id string) (object map[strin
 
 	v, err := jsonpath.Get("$.IpamScopes[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamScope", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamScope", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamScope", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamScope", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["IpamScopeId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamScope", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamScope", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -292,16 +292,16 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 
 	v, err := jsonpath.Get("$.IpamPools[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamPool", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamPool", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamPool", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamPool", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["IpamPoolId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamPool", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamPool", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -380,7 +380,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamPoolCidr", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamPoolCidr", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -446,7 +446,7 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolAllocation(id string) (object 
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.IpamPoolAllocation"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("IpamPoolAllocation", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("IpamPoolAllocation", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -584,16 +584,16 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamResourceDiscovery(id string) (obje
 
 	v, err := jsonpath.Get("$.IpamResourceDiscoveries[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamResourceDiscovery", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamResourceDiscovery", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["IpamResourceDiscoveryId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("IpamResourceDiscovery", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("IpamResourceDiscovery", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

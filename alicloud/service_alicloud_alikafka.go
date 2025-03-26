@@ -55,7 +55,7 @@ func (s *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka
 			return &v, nil
 		}
 	}
-	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
+	return alikafkaInstance, WrapErrorf(NotFoundErr("AlikafkaInstance", instanceId), NotFoundMsg, ProviderERROR)
 }
 
 func (s *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
@@ -95,7 +95,7 @@ func (s *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, time
 			return &v, nil
 		}
 		if time.Now().After(deadline) {
-			return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
+			return alikafkaInstance, WrapErrorf(NotFoundErr("AlikafkaInstance", orderId), NotFoundMsg, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -144,7 +144,7 @@ func (s *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.Co
 			return &v, nil
 		}
 	}
-	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
+	return alikafkaConsumerGroup, WrapErrorf(NotFoundErr("AlikafkaConsumerGroup", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.TopicStatus, error) {
@@ -190,7 +190,7 @@ func (s *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.Topi
 		return &topicStatusResp.TopicStatus, nil
 	}
 
-	return alikafkaTopicStatus, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopicStatus "+ResourceNotfound, id)), ResourceNotfound)
+	return alikafkaTopicStatus, WrapErrorf(NotFoundErr("AlikafkaTopicStatus "+ResourceNotfound, id), ResourceNotfound)
 }
 
 func (s *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
@@ -236,7 +236,7 @@ func (s *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, e
 			return &v, nil
 		}
 	}
-	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)
+	return alikafkaTopic, WrapErrorf(NotFoundErr("AlikafkaTopic", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*alikafka.SaslUserVO, error) {
@@ -283,7 +283,7 @@ func (s *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*alikafka.SaslUse
 			return &v, nil
 		}
 	}
-	return alikafkaSaslUser, WrapErrorf(Error(GetNotFoundMessage("AlikafkaSaslUser", id)), NotFoundMsg, ProviderERROR)
+	return alikafkaSaslUser, WrapErrorf(NotFoundErr("AlikafkaSaslUser", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAclVO, error) {
@@ -339,7 +339,7 @@ func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAcl
 			return &v, nil
 		}
 	}
-	return alikafkaSaslAcl, WrapErrorf(Error(GetNotFoundMessage("AlikafkaSaslAcl", id)), NotFoundMsg, ProviderERROR)
+	return alikafkaSaslAcl, WrapErrorf(NotFoundErr("AlikafkaSaslAcl", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *AlikafkaService) WaitForAlikafkaInstanceUpdated(id string, topicQuota int, diskSize int, ioMax int,
@@ -866,7 +866,7 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConsumerList.ConsumerVO", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["ConsumerId"]) == parts[1] {
@@ -875,7 +875,7 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -911,7 +911,7 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("AliKafka:SaslUser", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -922,7 +922,7 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:SaslUser", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -933,7 +933,7 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:SaslUser", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -973,7 +973,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR", "BIZ.INSTANCE.STATUS.ERROR"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("AliKafka:InstanceAllowedIpAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -995,7 +995,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:InstanceAllowedIpAttachment", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1011,7 +1011,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:InstanceAllowedIpAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1053,7 +1053,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:Instance", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1064,7 +1064,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("AliKafka:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1136,7 +1136,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 			return v.(map[string]interface{}), nil
 		}
 		if time.Now().After(deadline) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("AlikafkaInstance", orderId), NotFoundMsg, ProviderERROR)
 		}
 	}
 }

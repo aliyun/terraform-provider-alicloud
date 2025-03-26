@@ -1091,7 +1091,7 @@ func modificationProtectionConfigDiffSuppressFunc(k, old, new string, d *schema.
 		}
 		for _, modificationProtectionConfigs := range val {
 			modificationProtectionConfigArg := modificationProtectionConfigs.(map[string]interface{})
-			return fmt.Sprintf(modificationProtectionConfigArg["status"].(string)) != "ConsoleProtection"
+			return fmt.Sprint(modificationProtectionConfigArg["status"]) != "ConsoleProtection"
 		}
 	}
 	return true

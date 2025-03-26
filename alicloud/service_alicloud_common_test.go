@@ -373,7 +373,7 @@ func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 		if len(errorStrSlice) == 1 {
 			return nil
 		}
-		return WrapError(fmt.Errorf(strings.Join(errorStrSlice, "\n")))
+		return WrapError(fmt.Errorf("%s", strings.Join(errorStrSlice, "\n")))
 	}
 }
 

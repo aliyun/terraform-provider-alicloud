@@ -40,7 +40,7 @@ func (s *OceanBaseProService) DescribeOceanBaseInstance(id string) (object map[s
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if _, ok := response["Instance"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.Instance", response)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *OceanBaseProService) DescribeInstances(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }

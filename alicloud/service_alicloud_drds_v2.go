@@ -46,7 +46,7 @@ func (s *DrdsServiceV2) DescribeDrdsPolardbxInstance(id string) (object map[stri
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DBInstance.NotFound", "RAM.Permission.Denied"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PolardbXInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PolardbXInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -110,7 +110,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynJobs(d *schema.ResourceData, res
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DBInstance.NotFound", "RAM.Permission.Denied"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PolardbXInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PolardbXInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -175,7 +175,7 @@ func (s *DrdsServiceV2) DrdsPolardbxInstanceAsynDeleteJobs(d *schema.ResourceDat
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DBInstance.NotFound", "RAM.Permission.Denied"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PolardbXInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PolardbXInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

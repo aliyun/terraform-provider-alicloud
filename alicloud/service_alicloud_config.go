@@ -39,7 +39,7 @@ func (s *ConfigService) DescribeConfigRule(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConfigRuleNotExists", "Invalid.ConfigRuleId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config:Rule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Config:Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -62,7 +62,7 @@ func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object map[str
 	response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "DeliveryChannelNotExists"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ConfigDeliveryChannel", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -74,10 +74,10 @@ func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DeliveryChannels", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Config", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Config", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DeliveryChannelId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Config", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -94,7 +94,7 @@ func (s *ConfigService) DescribeConfigConfigurationRecorder(id string) (object m
 	response, err = client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ConfigConfigurationRecorder", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ConfigConfigurationRecorder", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -169,7 +169,7 @@ func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]i
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Invalid.AggregatorId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config:Aggregator", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Config:Aggregator", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -227,7 +227,7 @@ func (s *ConfigService) DescribeConfigAggregateConfigRule(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConfigRuleNotExists", "Invalid.AggregatorId.Value", "Invalid.ConfigRuleId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config:AggregateConfigRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Config:AggregateConfigRule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -271,7 +271,7 @@ func (s *ConfigService) DescribeConfigAggregateCompliancePack(id string) (object
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Invalid.AggregatorId.Value", "Invalid.CompliancePackId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config:AggregateCompliancePack", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Config:AggregateCompliancePack", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -330,7 +330,7 @@ func (s *ConfigService) DescribeConfigCompliancePack(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Invalid.CompliancePackId.Value"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Config:CompliancePack", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Config:CompliancePack", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -529,7 +529,7 @@ func (s *ConfigService) DescribeConfigDelivery(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DeliveryChannelNotExists"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDelivery", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ConfigDelivery", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -570,7 +570,7 @@ func (s *ConfigService) DescribeConfigAggregateDelivery(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Invalid.AggregatorId.Value"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("ConfigDeliveryChannel", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

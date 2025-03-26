@@ -199,7 +199,7 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 	}
 	cluster, _ = response.(*cs.KubernetesClusterDetail)
 	if cluster.ClusterId != id {
-		return cluster, WrapErrorf(Error(GetNotFoundMessage("CsKubernetes", id)), NotFoundMsg, ProviderERROR)
+		return cluster, WrapErrorf(NotFoundErr("CsKubernetes", id), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -372,7 +372,7 @@ func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName s
 
 	addon, ok := resp.Body[addonName]
 	if !ok {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", addonName)), ResourceNotfound)
+		return nil, WrapErrorf(NotFoundErr("alicloud_cs_kubernetes_addon", addonName), ResourceNotfound)
 	}
 
 	addonInfo := addon.(map[string]interface{})["addon_info"]
@@ -410,7 +410,7 @@ func (s *CsClient) DescribeCsKubernetesAddonInstance(clusterId string, addonName
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AddonNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", addonName)), ResourceNotfound)
+			err = WrapErrorf(NotFoundErr("alicloud_cs_kubernetes_addon", addonName), ResourceNotfound)
 			return component, err
 		}
 		return nil, err
@@ -533,7 +533,7 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 	addonInstance, err := s.DescribeCsKubernetesAddonInstance(clusterId, addonName)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AddonNotFound", "ErrorClusterNotFound"}) || NotFoundError(err) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", id)), ResourceNotfound)
+			return nil, WrapErrorf(NotFoundErr("alicloud_cs_kubernetes_addon", id), ResourceNotfound)
 		}
 		return nil, err
 	}
@@ -558,7 +558,7 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 		return addon, nil
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", id)), ResourceNotfound)
+	return nil, WrapErrorf(NotFoundErr("alicloud_cs_kubernetes_addon", id), ResourceNotfound)
 }
 
 func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
@@ -839,7 +839,7 @@ func (s *CsService) DescribeCsKubernetesNodePool(id string) (nodePool *cs.NodePo
 	}
 	nodePool, _ = response.(*cs.NodePoolDetail)
 	if nodePool.NodePoolId != nodePoolId {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("CsNodePool", nodePoolId)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("CsNodePool", nodePoolId), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -894,7 +894,7 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster *cs.Kubernet
 	}
 	cluster, _ = response.(*cs.KubernetesClusterDetail)
 	if cluster.ClusterId != id {
-		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSManagedKubernetes", id)), NotFoundMsg, ProviderERROR)
+		return cluster, WrapErrorf(NotFoundErr("CSManagedKubernetes", id), NotFoundMsg, ProviderERROR)
 	}
 	return
 
@@ -1031,7 +1031,7 @@ func (s *CsService) DescribeCsServerlessKubernetes(id string) (*cs.ServerlessClu
 	}
 	cluster, _ = response.(*cs.ServerlessClusterResponse)
 	if cluster != nil && cluster.ClusterId != id {
-		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSServerlessKubernetes", id)), NotFoundMsg, ProviderERROR)
+		return cluster, WrapErrorf(NotFoundErr("CSServerlessKubernetes", id), NotFoundMsg, ProviderERROR)
 	}
 	return cluster, nil
 

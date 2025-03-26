@@ -46,7 +46,7 @@ func (s *EnsService) DescribeEnsKeyPair(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ENS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ENS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil

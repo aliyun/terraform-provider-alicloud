@@ -49,7 +49,7 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -60,7 +60,7 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 }
 
 func (s *DdosBgpServiceV2) DdosBgpPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

@@ -46,7 +46,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceQueue(id string) (object
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound:QueueName", "RESOURCE_NOT_FOUND", "QueueNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Queue", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Queue", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -89,7 +89,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceTopic(id string) (object
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound:TopicName", "TopicNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Topic", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Topic", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -316,7 +316,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpointAcl(id string) (
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EndpointAcl", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EndpointAcl", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -327,7 +327,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceEndpointAcl(id string) (
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EndpointAcl", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EndpointAcl", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -398,7 +398,7 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceSubscription(id string) 
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SubscriptionNotExist", "ResourceNotFound:TopicName/subscriptionName", "TopicNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Subscription", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Subscription", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

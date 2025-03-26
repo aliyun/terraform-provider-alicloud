@@ -53,7 +53,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (object 
 	}
 	object = v.(map[string]interface{})
 	if (object["instanceId"].(string)) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Elasticsearch Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Elasticsearch Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, WrapError(err)

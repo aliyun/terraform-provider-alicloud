@@ -60,7 +60,7 @@ func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, er
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalError", "ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Cms:Alarm", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -71,7 +71,7 @@ func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, er
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:Alarm", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -82,7 +82,7 @@ func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, er
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:Alarm", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -220,7 +220,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ContactNotExists", "ResourceNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("CmsAlarmContact", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -228,12 +228,12 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	}
 
 	if response.Code != "200" {
-		err = Error("DescribeContactList failed for " + response.Message)
+		err = Error("DescribeContactList failed for %s", response.Message)
 		return
 	}
 
 	if len(response.Contacts.Contact) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("CmsAlarmContact", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.Contacts.Contact[0], nil
@@ -265,7 +265,7 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ContactGroupNotExists", "ResourceNotFound"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("CmsAlarmContactGroup", id), NotFoundMsg, ProviderERROR)
 				return object, err
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -274,12 +274,12 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cms.DescribeContactGroupListResponse)
 		if response.Code != "200" {
-			err = Error("DescribeContactGroupList failed for " + response.Message)
+			err = Error("DescribeContactGroupList failed for %s", response.Message)
 			return object, err
 		}
 
 		if len(response.ContactGroupList.ContactGroup) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			err = WrapErrorf(NotFoundErr("CmsAlarmContactGroup", id), NotFoundMsg, ProviderERROR, response.RequestId)
 			return object, err
 		}
 		for _, object := range response.ContactGroupList.ContactGroup {
@@ -296,7 +296,7 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 			request.PageNumber = page
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("CmsAlarmContactGroup", id), NotFoundMsg, ProviderERROR)
 	return
 }
 
@@ -326,7 +326,7 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists", "ResourceNotFound", "ResourceNotFoundError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Cms:GroupMetricRule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -337,7 +337,7 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:GroupMetricRule", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -348,7 +348,7 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:GroupMetricRule", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -446,11 +446,11 @@ func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]inter
 	}
 	addDebug(action, response, request)
 	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"GroupsNotExists", "ResourceNotFound"}) {
-		err = WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroup", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("CmsMonitorGroup", id), NotFoundMsg, ProviderERROR)
 		return object, err
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("DescribeMonitorGroups failed for " + response["Message"].(string))
+		err = Error("DescribeMonitorGroups failed for %s", response["Message"].(string))
 		return object, err
 	}
 	v, err := jsonpath.Get("$.Resources.Resource", response)
@@ -458,10 +458,10 @@ func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources.Resource", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(formatInt(v.([]interface{})[0].(map[string]interface{})["GroupId"])) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -494,7 +494,7 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceNotFound", "ResourceNotFoundError"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("CmsMonitorGroupInstances", id), NotFoundMsg, ProviderERROR)
 				return object, err
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -517,7 +517,7 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 	}
 
 	if len(object) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CmsMonitorGroupInstances", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -548,7 +548,7 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:MetricRuleTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Cms:MetricRuleTemplate", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -601,7 +601,7 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:DynamicTagGroup", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cms:DynamicTagGroup", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -619,7 +619,7 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:DynamicTagGroup", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:DynamicTagGroup", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -662,7 +662,7 @@ func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interfac
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:Namespace", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudMonitorService:Namespace", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -680,7 +680,7 @@ func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interfac
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:Namespace", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:Namespace", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -710,17 +710,17 @@ func (s *CmsService) DescribeCmsSlsGroup(id string) (object map[string]interface
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"400"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:SlsGroup", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:SlsGroup", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.List", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.List", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["SLSGroupName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -751,17 +751,17 @@ func (s *CmsService) DescribeCmsHybridMonitorSlsTask(id string) (object map[stri
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridMonitorSlsTask", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:HybridMonitorSlsTask", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.TaskList", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TaskList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["TaskId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -799,14 +799,14 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:HybridMonitorFcTask", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService:HybridMonitorFcTask", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.TaskList", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TaskList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -845,7 +845,7 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:EventRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:EventRule", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -856,7 +856,7 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:EventRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cms:EventRule", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -895,7 +895,7 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (objects []interface{}
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return objects, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+		return objects, WrapErrorf(NotFoundErr("Cms:GroupMetricRule", id), NotFoundWithResponse, response)
 	}
 
 	objects = resp.([]interface{})
@@ -933,7 +933,7 @@ func (s *CmsService) DescribeCmsMetricRuleBlackList(id string) (object map[strin
 	totalCount, _ := jsonpath.Get("$.Total", response)
 	total, _ := totalCount.(json.Number).Int64()
 	if err != nil && total == 0 {
-		err = WrapErrorf(Error(GetNotFoundMessage("Cms", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("Cms", id), NotFoundMsg, ProviderERROR)
 		return object, err
 	}
 	return v.(map[string]interface{}), nil

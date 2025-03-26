@@ -85,7 +85,7 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 
 	response, _ := raw.(*edas.InsertClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error(fmt.Sprint(response)))
+		return WrapError(Error("%v", response))
 	}
 	d.SetId(response.Cluster.ClusterId)
 
@@ -114,7 +114,7 @@ func resourceAlicloudEdasClusterRead(d *schema.ResourceData, meta interface{}) e
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error(fmt.Sprint(response)))
+		return WrapError(Error("%v", response))
 	}
 
 	d.Set("cluster_name", response.Cluster.ClusterName)
@@ -151,9 +151,9 @@ func resourceAlicloudEdasClusterDelete(d *schema.ResourceData, meta interface{})
 		}
 		if response.Code != 200 {
 			if strings.Contains(response.Message, "there are still instances in it") {
-				return resource.RetryableError(Error("delete cluster failed for " + response.Message))
+				return resource.RetryableError(Error("delete cluster failed for %s", response.Message))
 			}
-			return resource.NonRetryableError(Error("delete cluster failed for " + response.Message))
+			return resource.NonRetryableError(Error("delete cluster failed for %s", response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)

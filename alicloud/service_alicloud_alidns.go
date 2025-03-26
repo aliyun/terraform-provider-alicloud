@@ -35,7 +35,7 @@ func (s *AlidnsService) DescribeAlidnsDomainGroup(id string) (object alidns.Doma
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 
 		if len(response.DomainGroups.DomainGroup) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomainGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			err = WrapErrorf(NotFoundErr("AlidnsDomainGroup", id), NotFoundMsg, ProviderERROR, response.RequestId)
 			return object, err
 		}
 		for _, object := range response.DomainGroups.DomainGroup {
@@ -52,7 +52,7 @@ func (s *AlidnsService) DescribeAlidnsDomainGroup(id string) (object alidns.Doma
 			request.PageNumber = page
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomainGroup", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(NotFoundErr("AlidnsDomainGroup", id), NotFoundMsg, ProviderERROR)
 	return
 }
 
@@ -67,7 +67,7 @@ func (s *AlidnsService) DescribeAlidnsRecord(id string) (object alidns.DescribeD
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DomainRecordNotBelongToUser", "InvalidRR.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsRecord", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("AlidnsRecord", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -152,7 +152,7 @@ func (s *AlidnsService) DescribeAlidnsDomain(id string) (object alidns.DescribeD
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomain", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("AlidnsDomain", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -186,7 +186,7 @@ func (s *AlidnsService) DescribeAlidnsInstance(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDnsProduct"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Alidns:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -220,7 +220,7 @@ func (s *AlidnsService) DescribeAlidnsCustomLine(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DnsCustomLine.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns::CustomLine", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Alidns::CustomLine", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -254,7 +254,7 @@ func (s *AlidnsService) DescribeCustomLine(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DnsCustomLine.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns::CustomLine", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Alidns::CustomLine", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -288,7 +288,7 @@ func (s *AlidnsService) DescribeAlidnsGtmInstance(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DnsGtmInstance.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns:GtmInstance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Alidns:GtmInstance", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -322,7 +322,7 @@ func (s *AlidnsService) DescribeAlidnsAddressPool(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DnsGtmAddrPool.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns::AddressPool", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Alidns::AddressPool", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -356,7 +356,7 @@ func (s *AlidnsService) DescribeAlidnsAccessStrategy(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DnsGtmAccessStrategy.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns:DnsGtmAccessStrategy", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Alidns:DnsGtmAccessStrategy", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

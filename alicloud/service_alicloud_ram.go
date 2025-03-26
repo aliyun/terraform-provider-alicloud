@@ -366,7 +366,7 @@ func (s *RamService) DescribeRamLoginProfile(id string) (*ram.GetLoginProfileRes
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.User.LoginProfile", "EntityNotExist.User"}) {
-			return response, WrapErrorf(Error(GetNotFoundMessage("Ram:LoginProfile", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+			return response, WrapErrorf(NotFoundErr("Ram:LoginProfile", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -497,7 +497,7 @@ func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
-			return key, WrapErrorf(Error(GetNotFoundMessage("RamAccessKey", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return key, WrapErrorf(NotFoundErr("RamAccessKey", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return key, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -508,7 +508,7 @@ func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, 
 			return &accessKey, nil
 		}
 	}
-	return key, WrapErrorf(Error(GetNotFoundMessage("RamAccessKey", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+	return key, WrapErrorf(NotFoundErr("RamAccessKey", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 }
 
 func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, timeout int) error {
@@ -545,7 +545,7 @@ func (s *RamService) DescribeRamPolicy(id string) (object map[string]interface{}
 	response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RamPolicy", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RamPolicy", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

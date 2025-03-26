@@ -822,10 +822,6 @@ func resourceAliCloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta inter
 		return nil
 	}
 
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("DeleteMetricRules failed for " + response["Message"].(string)))
-	}
-
 	return nil
 }
 

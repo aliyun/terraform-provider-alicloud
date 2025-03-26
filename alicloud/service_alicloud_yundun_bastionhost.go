@@ -71,7 +71,7 @@ func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -112,7 +112,7 @@ func (s *YundunBastionhostService) DescribeBastionhostInstances(id string) (obje
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BastionhostInstance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("BastionhostInstance", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -529,7 +529,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (obje
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:UserGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:UserGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -570,7 +570,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUser(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:User", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -610,7 +610,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroup(id string) (obje
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -655,7 +655,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:UserAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("Bastionhost:UserAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -664,7 +664,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["UserId"]) == parts[2] {
@@ -678,7 +678,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -712,7 +712,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHost(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND", "HostNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:Host", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:Host", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -753,7 +753,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccount(id string) (ob
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND", "HostAccountNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostAccount", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostAccount", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -797,7 +797,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("Bastionhost:HostAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -806,7 +806,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Hosts", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["HostId"]) == parts[2] {
@@ -820,7 +820,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -854,7 +854,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserAttachment(
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostAccountUserAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostAccountUserAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -863,7 +863,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserAttachment(
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HostAccounts", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{}), nil
 }
@@ -898,7 +898,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserGroupAttach
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostAccountUserGroupAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostAccountUserGroupAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -907,7 +907,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountUserGroupAttach
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HostAccounts", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{}), nil
 }
@@ -942,7 +942,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserAttach
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostGroupAccountUserAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostGroupAccountUserAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -951,7 +951,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserAttach
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HostAccountNames", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{}), nil
 }
@@ -986,7 +986,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserGroupA
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostGroupAccountUserGroupAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Bastionhost:HostGroupAccountUserGroupAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -995,7 +995,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostGroupAccountUserGroupA
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HostAccountNames", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{}), nil
 }
@@ -1163,7 +1163,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountShareKeyAttachm
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HostAccounts", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["HostsAccountId"]) == parts[2] {
@@ -1177,7 +1177,7 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAccountShareKeyAttachm
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Bastionhost", id), NotFoundWithResponse, response)
 	}
 	return
 }

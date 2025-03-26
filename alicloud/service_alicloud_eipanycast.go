@@ -77,11 +77,11 @@ func (s *EipanycastService) DescribeEipanycastAnycastEipAddressAttachment(id str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	if len(v.(map[string]interface{})["AnycastEipBindInfoList"].([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EipanycastAnycastEipAddressAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EipanycastAnycastEipAddressAttachment", id), NotFoundWithResponse, response)
 	} else {
 		if vv, ok := v.(map[string]interface{})["AnycastEipBindInfoList"].([]interface{})[0].(map[string]interface{}); ok {
 			if parts[1]+parts[2]+parts[3] != fmt.Sprint(vv["BindInstanceId"], vv["BindInstanceRegionId"], vv["BindInstanceType"]) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("EipanycastAnycastEipAddressAttachment", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("EipanycastAnycastEipAddressAttachment", id), NotFoundWithResponse, response)
 			}
 		}
 	}

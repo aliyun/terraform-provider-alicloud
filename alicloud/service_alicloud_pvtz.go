@@ -29,7 +29,7 @@ func (s *PvtzService) DescribePvtzZoneBasic(id string) (object map[string]interf
 	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PvtzZone", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -55,7 +55,7 @@ func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object map[string]i
 	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneAttachment", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PvtzZoneAttachment", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -128,7 +128,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-					err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneRecord", id)), NotFoundMsg, ProviderERROR)
+					err = WrapErrorf(NotFoundErr("PvtzZoneRecord", id), NotFoundMsg, ProviderERROR)
 					return resource.NonRetryableError(err)
 				}
 				err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -145,7 +145,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Records.Record", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("PrivateZone", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["RecordId"]) == parts[0] {
@@ -264,7 +264,7 @@ func (s *PvtzService) DescribePvtzUserVpcAuthorization(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"System.Busy"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone:UserVpcAuthorization", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PrivateZone:UserVpcAuthorization", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -273,10 +273,10 @@ func (s *PvtzService) DescribePvtzUserVpcAuthorization(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("PrivateZone", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AuthType"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("PrivateZone", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -306,7 +306,7 @@ func (s *PvtzService) DescribePvtzEndpoint(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResolverEndpoint.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone:Endpoint", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PrivateZone:Endpoint", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -360,7 +360,7 @@ func (s *PvtzService) DescribePvtzRule(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResolverRule.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone:Rule", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("PrivateZone:Rule", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -395,7 +395,7 @@ func (s *PvtzService) DescribePvtzRuleAttachment(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResolverRule.NotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone:RuleAttachment", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("PrivateZone:RuleAttachment", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -417,7 +417,7 @@ func (s *PvtzService) DescribeSyncEcsHostTask(id string) (object map[string]inte
 	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"System.Busy", "Ecs.SyncTask.NotExists", "ServiceUnavailable", "Throttling.User"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("PvtzZone", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -562,7 +562,7 @@ func (s *PvtzService) DescribeListTagResources(id string) (object map[string]int
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ZONE", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ZONE", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

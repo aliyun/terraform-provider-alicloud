@@ -52,7 +52,7 @@ func (s *EcsServiceV2) DescribeEcsImageComponent(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ImageComponent", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ImageComponent", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -197,7 +197,7 @@ func (s *EcsServiceV2) DescribeEcsImage(id string) (object map[string]interface{
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidImageId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Image", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Image", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -209,7 +209,7 @@ func (s *EcsServiceV2) DescribeEcsImage(id string) (object map[string]interface{
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Image", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Image", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -272,16 +272,16 @@ func (s *EcsServiceV2) DescribeEcsAutoSnapshotPolicy(id string) (object map[stri
 
 	v, err := jsonpath.Get("$.AutoSnapshotPolicies.AutoSnapshotPolicy[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AutoSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AutoSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AutoSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -326,7 +326,7 @@ func (s *EcsServiceV2) DescribeEcsImagePipelineExecution(id string) (object map[
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ImagePipelineExecution", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ImagePipelineExecution", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -400,12 +400,12 @@ func (s *EcsServiceV2) DescribeEcsKeyPair(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("KeyPair", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["KeyPairName"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("KeyPair", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -446,16 +446,16 @@ func (s *EcsServiceV2) DescribeEcsDisk(id string) (object map[string]interface{}
 
 	v, err := jsonpath.Get("$.Disks.Disk[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -525,16 +525,16 @@ func (s *EcsServiceV2) DescribeEcsSecurityGroup(id string) (object map[string]in
 
 	v, err := jsonpath.Get("$.SecurityGroups.SecurityGroup[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["SecurityGroupId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -567,7 +567,7 @@ func (s *EcsServiceV2) DescribeSecurityGroupDescribeSecurityGroupAttribute(id st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SecurityGroup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -606,7 +606,7 @@ func (s *EcsServiceV2) DescribeEcsSnapshot(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResource.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Snapshot", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -617,7 +617,7 @@ func (s *EcsServiceV2) DescribeEcsSnapshot(id string) (object map[string]interfa
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Snapshot", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

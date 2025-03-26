@@ -41,7 +41,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionBackupPolicy(id string) 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DataNotExist", "InvalidId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("TDS:BackupPolicy", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("TDS:BackupPolicy", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -100,7 +100,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VulWhitelistNotExist", "InvalidId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("TDS:VulWhitelist", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("TDS:VulWhitelist", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -108,7 +108,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 	v, err := jsonpath.Get("$.VulWhitelist", response)
 	if err != nil {
 		if fmt.Sprint(response["Code"]) == "VulWhitelistNotExist" {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("TDS:VulWhitelist", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("TDS:VulWhitelist", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VulWhitelist", response)
 	}
@@ -143,7 +143,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) 
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NodeNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HoneypotNode", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HoneypotNode", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -153,7 +153,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) 
 	}
 
 	if fmt.Sprint(v.(map[string]interface{})["TotalStatus"]) == "-1" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HoneypotNode", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HoneypotNode", id), NotFoundWithResponse, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -240,7 +240,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"HoneypotPresetNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HoneypotPreset", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HoneypotPreset", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

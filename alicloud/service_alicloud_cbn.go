@@ -45,7 +45,7 @@ func (s *CbnService) DescribeCenFlowlog(id string) (object cbn.FlowLog, err erro
 	response, _ := raw.(*cbn.DescribeFlowlogsResponse)
 
 	if len(response.FlowLogs.FlowLog) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenFlowlog", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("CenFlowlog", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return response.FlowLogs.FlowLog[0], nil
@@ -121,7 +121,7 @@ func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cen:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -139,7 +139,7 @@ func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cen:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cen:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -244,7 +244,7 @@ func (s *CbnService) DescribeCenRouteMap(id string) (object cbn.RouteMap, err er
 	response, _ := raw.(*cbn.DescribeCenRouteMapsResponse)
 
 	if len(response.RouteMaps.RouteMap) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenRouteMap", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("CenRouteMap", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return response.RouteMaps.RouteMap[0], nil
@@ -299,7 +299,7 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterIllegal.CenInstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:PrivateZone", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Cen:PrivateZone", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -307,7 +307,7 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 	response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
 
 	if len(response.PrivateZoneInfos.PrivateZoneInfo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("Cen:PrivateZone", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("Cen:PrivateZone", id), NotFoundMsg, ProviderERROR)
 		return
 	}
 
@@ -369,7 +369,7 @@ func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthC
 	response, _ := raw.(*cbn.DescribeCenVbrHealthCheckResponse)
 
 	if len(response.VbrHealthChecks.VbrHealthCheck) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenVbrHealthCheck", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("CenVbrHealthCheck", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.VbrHealthChecks.VbrHealthCheck[0], nil
@@ -407,7 +407,7 @@ func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.Descri
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "ParameterError", "ParameterInstanceId"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("CenInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("CenInstanceAttachment", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -458,7 +458,7 @@ func (s *CbnService) DescribeCenBandwidthPackage(id string) (object cbn.CenBandw
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackage", id)), NotFoundMsg, ProviderERROR)
+				err = WrapErrorf(NotFoundErr("CenBandwidthPackage", id), NotFoundMsg, ProviderERROR)
 				return resource.NonRetryableError(err)
 			}
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -468,7 +468,7 @@ func (s *CbnService) DescribeCenBandwidthPackage(id string) (object cbn.CenBandw
 		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 
 		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackage", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			err = WrapErrorf(NotFoundErr("CenBandwidthPackage", id), NotFoundMsg, ProviderERROR, response.RequestId)
 			return resource.NonRetryableError(err)
 		}
 		object = response.CenBandwidthPackages.CenBandwidthPackage[0]
@@ -698,7 +698,7 @@ func (s *CbnService) DescribeCenRouteService(id string) (object cbn.RouteService
 	response, _ := raw.(*cbn.DescribeRouteServicesInCenResponse)
 
 	if len(response.RouteServiceEntries.RouteServiceEntry) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenRouteService", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("CenRouteService", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.RouteServiceEntries.RouteServiceEntry[0], nil
@@ -752,7 +752,7 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -761,10 +761,10 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouters", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterId"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -820,7 +820,7 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "IllegalParam.Region"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -829,10 +829,10 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -894,7 +894,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVbrAttachment", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVbrAttachment", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -905,7 +905,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVbrAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVbrAttachment", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -923,7 +923,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVbrAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVbrAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -985,7 +985,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVpcAttachment", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVpcAttachment", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -996,7 +996,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVpcAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVpcAttachment", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -1014,7 +1014,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVpcAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVpcAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1068,22 +1068,22 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidTransitRouterRouteTableId.NotFound"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter RouteTable ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN TransitRouter RouteTable ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterRouteEntries", response)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterRouteEntries", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteEntryId"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1139,7 +1139,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidTransitRouterId.NotFound"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN TransitRouter ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1148,10 +1148,10 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterRouteTables", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteTableId"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1206,7 +1206,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1215,10 +1215,10 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAssociations", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1273,7 +1273,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1282,10 +1282,10 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterPropagations", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1346,10 +1346,10 @@ func (s *CbnService) DescribeCenTrafficMarkingPolicy(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficMarkingPolicies", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["TrafficMarkingPolicyId"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1399,7 +1399,7 @@ func (s *CbnService) DescribeCenTransitRouterVpnAttachment(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("CEN Instance ID", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1408,7 +1408,7 @@ func (s *CbnService) DescribeCenTransitRouterVpnAttachment(id string) (object ma
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -1474,7 +1474,7 @@ func (s *CbnService) DescribeCenTransitRouterGrantAttachment(id string) (object 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GrantRules", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterGrantAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("TransitRouterGrantAttachment", id), NotFoundWithResponse, response)
 	} else {
 		for _, vv := range v.([]interface{}) {
 			item := vv.(map[string]interface{})
@@ -1483,7 +1483,7 @@ func (s *CbnService) DescribeCenTransitRouterGrantAttachment(id string) (object 
 			}
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterGrantAttachment", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("TransitRouterGrantAttachment", id), NotFoundWithResponse, response)
 }
 
 func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (object map[string]interface{}, err error) {
@@ -1526,7 +1526,7 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterPrefixListAssociation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterPrefixListAssociation", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1537,7 +1537,7 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterPrefixListAssociation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterPrefixListAssociation", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1604,7 +1604,7 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterCidr", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterCidr", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1615,7 +1615,7 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterCidr", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterCidr", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1655,7 +1655,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (o
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalParam.TransitRouterMulticastDomainId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastGroups", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1665,7 +1665,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (o
 	}
 	resp := v.([]interface{})
 	if len(resp) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastGroups", id), NotFoundWithResponse, response)
 	}
 	return resp[0].(map[string]interface{}), nil
 }
@@ -1724,7 +1724,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object 
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomain", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastDomain", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1735,7 +1735,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object 
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomain", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastDomain", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1796,7 +1796,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object ma
 	}
 	resp := v.([]interface{})
 	if len(resp) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:InterRegionTrafficQosQueue", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:InterRegionTrafficQosQueue", id), NotFoundWithResponse, response)
 	}
 	return resp[0].(map[string]interface{}), nil
 }
@@ -1853,7 +1853,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosPolicy(id string) (object m
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:InterRegionTrafficQosPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:InterRegionTrafficQosPolicy", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1864,7 +1864,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosPolicy(id string) (object m
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:InterRegionTrafficQosPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:InterRegionTrafficQosPolicy", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -1931,7 +1931,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
 	}
 	if formatInt(count) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN.TransitRouterMulticastDomainPeerMember", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN.TransitRouterMulticastDomainPeerMember", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.TransitRouterMulticastGroups[0]", response)
 	if err != nil {
@@ -1998,7 +1998,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IllegalParam.TransitRouterMulticastDomainId"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterMulticastDomainMember", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("Cen:TransitRouterMulticastDomainMember", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -2009,7 +2009,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 		}
 
 		if fmt.Sprint(totalCount) == "0" {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterMulticastDomainMember", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cen:TransitRouterMulticastDomainMember", id), NotFoundWithResponse, response)
 		}
 
 		resp, err := jsonpath.Get("$.TransitRouterMulticastGroups", response)
@@ -2018,7 +2018,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterMulticastDomainMember", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cen:TransitRouterMulticastDomainMember", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -2036,7 +2036,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (o
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterMulticastDomainMember", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cen:TransitRouterMulticastDomainMember", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -2098,7 +2098,7 @@ func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.TransitRouterAttachment"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("Cen", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("Cen", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -2108,7 +2108,7 @@ func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouteEntry", response)
 	}
 	if len(all.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cen", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cen", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.RouteEntry[0]", response)
 	if err != nil {
@@ -2176,7 +2176,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainAssociation(id strin
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomainAssociation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastDomainAssociation", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -2187,7 +2187,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainAssociation(id strin
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomainAssociation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouterMulticastDomainAssociation", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -2251,7 +2251,7 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotExist.AggregationRoute", "InstanceNotExist.TransitRouterRouteTable"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+			return nil, WrapErrorf(NotFoundErr("CEN:TransitRouteTableAggregation", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -2262,7 +2262,7 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouteTableAggregation", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -2273,7 +2273,7 @@ func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object 
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CEN:TransitRouteTableAggregation", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

@@ -43,7 +43,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -54,7 +54,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -72,7 +72,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -123,7 +123,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || NotFoundError(err) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -134,7 +134,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -145,7 +145,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -187,7 +187,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[strin
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -205,7 +205,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[strin
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -298,7 +298,7 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SchedulerRules", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range v.([]interface{}) {
@@ -309,7 +309,7 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -345,10 +345,10 @@ func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[st
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.WebRules", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["Domain"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -387,7 +387,7 @@ func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]inter
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NotFoundError(err) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -396,10 +396,10 @@ func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkRules", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["FrontendProtocol"].(string) != parts[2] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosCoo", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

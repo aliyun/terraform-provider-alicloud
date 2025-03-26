@@ -47,7 +47,7 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("MongoDB:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -58,7 +58,7 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (object map[string]i
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:Instance", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -69,7 +69,7 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (object map[string]i
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -941,10 +941,10 @@ func (s *MongoDBService) DescribeMongodbAccount(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.Account", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AccountName"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1024,7 +1024,7 @@ func (s *MongoDBService) DescribeMongodbServerlessInstance(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ServerlessInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("MongoDB:ServerlessInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1033,10 +1033,10 @@ func (s *MongoDBService) DescribeMongodbServerlessInstance(id string) (object ma
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DBInstances.DBInstance", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -1222,7 +1222,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPublicAddress(id string) 
 	exist := false
 	var networkAddress = make([]map[string]interface{}, 0)
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 	} else {
 		for _, item := range v.([]interface{}) {
 			if item.(map[string]interface{})["NetworkType"].(string) == "Public" {
@@ -1231,7 +1231,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPublicAddress(id string) 
 			}
 		}
 		if !exist {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = make(map[string]interface{}, 0)
@@ -1276,7 +1276,7 @@ func (s *MongoDBService) DescribeShardingNodeType(id string) (string, error) {
 
 	var nodeType string
 	if len(v.([]interface{})) < 1 {
-		return "", WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+		return "", WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 	} else {
 		for _, item := range v.([]interface{}) {
 			if item.(map[string]interface{})["NodeId"].(string) == parts[1] {
@@ -1286,7 +1286,7 @@ func (s *MongoDBService) DescribeShardingNodeType(id string) (string, error) {
 		}
 	}
 	if nodeType == "" {
-		return "", WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+		return "", WrapErrorf(NotFoundErr("MongoDB", id), NotFoundWithResponse, response)
 	}
 
 	return nodeType, nil
@@ -1372,7 +1372,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("MongoDB:ShardingNetworkPrivateAddress", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1383,7 +1383,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:ShardingNetworkPrivateAddress", id), NotFoundWithResponse, response)
 	}
 
 	object = make(map[string]interface{}, 0)
@@ -1397,7 +1397,7 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:ShardingNetworkPrivateAddress", id), NotFoundWithResponse, response)
 	}
 
 	object["NetworkAddress"] = networkAddressMaps
@@ -1430,7 +1430,7 @@ func (s *MongoDBService) DescribeMongoDBShardingInstance(id string) (object map[
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("MongoDB:ShardingInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1441,7 +1441,7 @@ func (s *MongoDBService) DescribeMongoDBShardingInstance(id string) (object map[
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingInstance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:ShardingInstance", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -1452,7 +1452,7 @@ func (s *MongoDBService) DescribeMongoDBShardingInstance(id string) (object map[
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingInstance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MongoDB:ShardingInstance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

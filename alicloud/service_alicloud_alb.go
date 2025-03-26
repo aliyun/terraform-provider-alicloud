@@ -38,7 +38,7 @@ func (s *AlbService) ListAclEntries(id string) (objects []map[string]interface{}
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceNotFound.Acl"}) {
-				return objects, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return objects, WrapErrorf(NotFoundErr("ALB:Acl", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -207,7 +207,7 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Forbidden.Acl"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("ALB:Acl", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -216,14 +216,14 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
 		}
 		if fmt.Sprint(totalCount) == "0" {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		v, err := jsonpath.Get("$.Acls", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Acls", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["AclId"]) == id {
@@ -239,7 +239,7 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -271,13 +271,13 @@ func (s *AlbService) DescribeAlbSecurityPolicy(id string) (object map[string]int
 		}
 		v, err := jsonpath.Get("$.SecurityPolicies", response)
 		if formatInt(response["TotalCount"]) == 0 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["SecurityPolicyId"]) == id {
@@ -293,7 +293,7 @@ func (s *AlbService) DescribeAlbSecurityPolicy(id string) (object map[string]int
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -322,13 +322,13 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 	}
 	v, err := jsonpath.Get("$.SecurityPolicies", response)
 	if formatInt(response["TotalCount"]) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["SecurityPolicyId"]) == id {
@@ -337,7 +337,7 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -402,7 +402,7 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Alb:ServerGroup", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -420,7 +420,7 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Alb:ServerGroup", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -462,7 +462,7 @@ func (s *AlbService) DescribeAlbServerGroup(id string) (object map[string]interf
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Alb:ServerGroup", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -480,7 +480,7 @@ func (s *AlbService) DescribeAlbServerGroup(id string) (object map[string]interf
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Alb:ServerGroup", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -529,7 +529,7 @@ func (s *AlbService) DescribeAlbLoadBalancer(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:LoadBalancer", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ALB:LoadBalancer", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -563,7 +563,7 @@ func (s *AlbService) GetLoadBalancerAttribute(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:LoadBalancer", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ALB:LoadBalancer", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -678,7 +678,7 @@ func (s *AlbService) DescribeAlbListener(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:Listener", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ALB:Listener", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -726,7 +726,7 @@ func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]in
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rules", response)
 		}
 		if val, ok := v.([]interface{}); !ok || len(val) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["RuleId"]) == id {
@@ -742,7 +742,7 @@ func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]in
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -793,7 +793,7 @@ func (s *AlbService) DescribeAlbHealthCheckTemplate(id string) (object map[strin
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.HealthCheckTemplate"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:HealthCheckTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("ALB:HealthCheckTemplate", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -845,7 +845,7 @@ func (s *AlbService) DescribeAlbListenerAdditionalCertificateAttachment(id strin
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Certificates", response)
 		}
 		if val, ok := v.([]interface{}); !ok || len(val) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["CertificateId"]) == parts[1] {
@@ -861,7 +861,7 @@ func (s *AlbService) DescribeAlbListenerAdditionalCertificateAttachment(id strin
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -912,7 +912,7 @@ func (s *AlbService) DescribeAlbListenerAclAttachment(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -924,7 +924,7 @@ func (s *AlbService) DescribeAlbListenerAclAttachment(id string) (object map[str
 
 	aclConfig, ok := listenerObject["AclConfig"]
 	if !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("alb_listener_acl_attachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("alb_listener_acl_attachment", id), NotFoundWithResponse, response)
 
 	}
 	idExist := false
@@ -944,7 +944,7 @@ func (s *AlbService) DescribeAlbListenerAclAttachment(id string) (object map[str
 	}
 
 	if !idExist {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("alb_listener_acl_attachment", id)), NotFoundWithResponse, response)
+		return nil, WrapErrorf(NotFoundErr("alb_listener_acl_attachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -981,7 +981,7 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceNotFound.Acl"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("ALB:AclEntryAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("ALB:AclEntryAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -990,7 +990,7 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 		}
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:AclEntryAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ALB:AclEntryAttachment", id), NotFoundWithResponse, response)
 		}
 		for _, v := range resp.([]interface{}) {
 			item := v.(map[string]interface{})
@@ -1006,7 +1006,7 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB:AclEntryAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ALB:AclEntryAttachment", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

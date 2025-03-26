@@ -43,7 +43,7 @@ func (s *GovernanceServiceV2) DescribeGovernanceBaseline(id string) (object map[
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidBaseline.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Baseline", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Baseline", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -105,7 +105,7 @@ func (s *GovernanceServiceV2) DescribeGovernanceAccount(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidBlueprint.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Account", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -43,7 +43,7 @@ func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDBCluster(id string) (
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseDBCluster", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("EnterpriseDBCluster", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -120,7 +120,7 @@ func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDBClusterAccount(id st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound", "InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseDBClusterAccount", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("EnterpriseDBClusterAccount", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -171,7 +171,7 @@ func (s *ClickHouseServiceV2) DescribeEnterpriseDBClusterAccountDescribeAccounts
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseDBClusterAccount", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterpriseDBClusterAccount", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -182,7 +182,7 @@ func (s *ClickHouseServiceV2) DescribeEnterpriseDBClusterAccountDescribeAccounts
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseDBClusterAccount", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("EnterpriseDBClusterAccount", id), NotFoundMsg, response)
 }
 
 func (s *ClickHouseServiceV2) ClickHouseEnterpriseDBClusterAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

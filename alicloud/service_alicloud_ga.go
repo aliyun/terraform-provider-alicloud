@@ -42,7 +42,7 @@ func (s *GaService) DescribeGaAccelerator(id string) (object map[string]interfac
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Accelerator", "UnknownError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:Accelerator", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:Accelerator", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -100,7 +100,7 @@ func (s *GaService) DescribeGaListener(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Listener", "UnknownError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:GaListener", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:GaListener", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -159,7 +159,7 @@ func (s *GaService) DescribeGaBandwidthPackage(id string) (object map[string]int
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BandwidthPackage", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga:BandwidthPackage", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -220,7 +220,7 @@ func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interf
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("Ga:EndpointGroup", id)), NotFoundWithResponse, response)
+			return nil, WrapErrorf(NotFoundErr("Ga:EndpointGroup", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -233,7 +233,7 @@ func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interf
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:EndpointGroup", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga:EndpointGroup", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -286,7 +286,7 @@ func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]inter
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:ForwardingRule", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga:ForwardingRule", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -304,7 +304,7 @@ func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]inter
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:ForwardingRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga:ForwardingRule", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -336,7 +336,7 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"UnknownError", "NotExist.IpSet"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:IpSet", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga:IpSet", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -348,7 +348,7 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 
 	object = v.(map[string]interface{})
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:IpSet", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga:IpSet", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -377,7 +377,7 @@ func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Ga:BandwidthPackageAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
 	}
 
 	return object, nil
@@ -518,7 +518,7 @@ func (s *GaService) DescribeGaAcl(id string) (object map[string]interface{}, err
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Acl"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:Acl", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -573,7 +573,7 @@ func (s *GaService) GetAcl(id string) (object map[string]interface{}, err error)
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Acl"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:Acl", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -614,7 +614,7 @@ func (s *GaService) DescribeGaAclAttachment(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga::AclAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga::AclAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -635,7 +635,7 @@ func (s *GaService) DescribeGaAclAttachment(id string) (object map[string]interf
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga::AclAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga::AclAttachment", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -701,7 +701,7 @@ func (s *GaService) DescribeGaAdditionalCertificate(id string) (object map[strin
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Certificates", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Domain"]) == parts[2] {
@@ -717,7 +717,7 @@ func (s *GaService) DescribeGaAdditionalCertificate(id string) (object map[strin
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -758,7 +758,7 @@ func (s *GaService) DescribeGaAcceleratorSpareIpAttachment(id string) (object ma
 	}
 	object = v.(map[string]interface{})
 	if _, ok := object["State"]; !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:SpareIp", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Ga:SpareIp", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 	return object, nil
 }
@@ -855,7 +855,7 @@ func (s *GaService) DescribeGaAccessLog(id string) (object map[string]interface{
 	object = v.(map[string]interface{})
 
 	if object["Status"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GaAccessLog", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("GaAccessLog", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -910,7 +910,7 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Acl"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:AclEntryAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ga:AclEntryAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -919,7 +919,7 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 	}
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:AclEntryAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga:AclEntryAttachment", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -930,7 +930,7 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:AclEntryAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga:AclEntryAttachment", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -971,7 +971,7 @@ func (s *GaService) DescribeGaBasicAccelerator(id string) (object map[string]int
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicAccelerator", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:BasicAccelerator", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -1023,7 +1023,7 @@ func (s *GaService) DescribeGaBasicEndpointGroup(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpointGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:BasicEndpointGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1084,7 +1084,7 @@ func (s *GaService) DescribeGaBasicIpSet(id string) (object map[string]interface
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.IpSet"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicIpSet", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:BasicIpSet", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1145,7 +1145,7 @@ func (s *GaService) DescribeGaBasicAccelerateIp(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.AccelerateIpId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicAccelerateIp", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:BasicAccelerateIp", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1211,7 +1211,7 @@ func (s *GaService) DescribeGaBasicEndpoint(id string) (object map[string]interf
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPoints"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpoint", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:BasicEndpoint", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1289,7 +1289,7 @@ func (s *GaService) DescribeGaBasicAccelerateIpEndpointRelation(id string) (obje
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicAccelerateIpEndpointRelation", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:BasicAccelerateIpEndpointRelation", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -1351,7 +1351,7 @@ func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Domains", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ga", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -1383,7 +1383,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroup(id string) (object map[
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1396,7 +1396,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroup(id string) (object map[
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroup", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointGroup", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -1455,7 +1455,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroupDestination(id string) (
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Destination"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroupDestination", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointGroupDestination", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1468,7 +1468,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroupDestination(id string) (
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroupDestination", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointGroupDestination", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -1528,7 +1528,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpoint(id string) (object map[strin
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpoint", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1541,7 +1541,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpoint(id string) (object map[strin
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpoint", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpoint", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -1601,7 +1601,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointTrafficPolicy(id string) (obj
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Policy"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointTrafficPolicy", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointTrafficPolicy", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1614,7 +1614,7 @@ func (s *GaService) DescribeGaCustomRoutingEndpointTrafficPolicy(id string) (obj
 	object = v.(map[string]interface{})
 
 	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointTrafficPolicy", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ga:CustomRoutingEndpointTrafficPolicy", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil

@@ -99,7 +99,7 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 
 	response, _ := raw.(*edas.BindSlbResponse)
 	if response.Code != 200 {
-		return WrapError(Error("bind slb failed for " + response.Message))
+		return WrapError(Error("bind slb failed for %s", response.Message))
 	}
 	d.SetId(appId + ":" + slbId)
 	return resourceAlicloudEdasSlbAttachmentRead(d, meta)
@@ -134,7 +134,7 @@ func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interfac
 
 	rs := raw.(*edas.GetApplicationResponse)
 	if rs.Applcation.SlbId != slbId && rs.Applcation.ExtSlbId != slbId {
-		return WrapError(Error("can not find slb:" + slbId))
+		return WrapError(Error("can not find slb: %s", slbId))
 	}
 
 	request := edas.CreateListSlbRequest()
@@ -151,7 +151,7 @@ func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interfac
 
 	response := raw.(*edas.ListSlbResponse)
 	if response.Code != 200 {
-		return WrapError(Error("List Slb failed for " + response.Message))
+		return WrapError(Error("List Slb failed for %s", response.Message))
 	}
 
 	for _, slb := range response.SlbList.SlbEntity {
@@ -186,7 +186,7 @@ func resourceAlicloudEdasSlbAttachmentDelete(d *schema.ResourceData, meta interf
 
 	response := raw.(*edas.UnbindSlbResponse)
 	if response.Code != 200 {
-		return WrapError(Error("unbind slb failed," + response.Message))
+		return WrapError(Error("unbind slb failed, %s", response.Message))
 	}
 
 	return nil

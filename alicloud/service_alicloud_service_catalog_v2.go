@@ -42,7 +42,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProduct(id string) (obje
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidProduct.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Product", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -121,7 +121,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductPortfolioAssociat
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ProductPortfolioAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ProductPortfolioAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -132,7 +132,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductPortfolioAssociat
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ProductPortfolioAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ProductPortfolioAssociation", id), NotFoundMsg, response)
 }
 
 func (s *ServiceCatalogServiceV2) ServiceCatalogProductPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -187,7 +187,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogProductVersion(id string
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidProductVersion.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ProductVersion", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ProductVersion", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -266,7 +266,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPrincipalPortfolioAssoci
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrincipalPortfolioAssociation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("PrincipalPortfolioAssociation", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -280,7 +280,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPrincipalPortfolioAssoci
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("PrincipalPortfolioAssociation", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("PrincipalPortfolioAssociation", id), NotFoundMsg, response)
 }
 
 func (s *ServiceCatalogServiceV2) ServiceCatalogPrincipalPortfolioAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -335,7 +335,7 @@ func (s *ServiceCatalogServiceV2) DescribeServiceCatalogPortfolio(id string) (ob
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidPortfolio.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Portfolio", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Portfolio", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

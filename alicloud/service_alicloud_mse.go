@@ -26,7 +26,7 @@ func (s *MseService) DescribeMseCluster(id string) (object map[string]interface{
 	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"mse-200-021"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("MseCluster", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("MseCluster", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -56,7 +56,7 @@ func (s *MseService) GetInstanceIdBYClusterId(clusterId string) (object map[stri
 	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"mse-200-021"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("MseCluster", clusterId)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("MseCluster", clusterId), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, clusterId, action, AlibabaCloudSdkGoERROR)
@@ -204,7 +204,7 @@ func (s *MseService) DescribeMseGateway(id string) (object map[string]interface{
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:Gateway", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:Gateway", id), NotFoundMsg, ProviderERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
@@ -261,7 +261,7 @@ func (s *MseService) ListGatewaySlb(id string) (object map[string]interface{}, e
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"404"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:Gateway", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:Gateway", id), NotFoundMsg, ProviderERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
@@ -305,7 +305,7 @@ func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{},
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:Znode", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:Znode", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
@@ -331,12 +331,12 @@ func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interf
 	response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, true)
 	// For delete check
 	if IsExpectedErrors(err, []string{"InternalError"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:MseNacosConfig", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:MseNacosConfig", id), NotFoundMsg, ProviderERROR)
 	}
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"mse-200-021"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("MseNacosConfig", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("MseNacosConfig", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -349,7 +349,7 @@ func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interf
 	v, err := jsonpath.Get("$.Configuration", response)
 	if err != nil {
 		if err.Error() == "unknown key Configuration" {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MSE", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("MSE", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Configuration", response)
 	}
@@ -385,23 +385,23 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 	addDebug(action, response, request)
 	// There is an API bug while query an Instance deleted.
 	if IsExpectedErrors(err, []string{"InternalError"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:EngineNamespace", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:EngineNamespace", id), NotFoundMsg, ProviderERROR)
 	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MSE cluster", parts[0])), NotFoundMsg, "")
+			return object, WrapErrorf(NotFoundErr("MSE cluster", parts[0]), NotFoundMsg, "")
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:EngineNamespace", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("MSE:EngineNamespace", id), NotFoundMsg, ProviderERROR)
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MSE", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Namespace"]) == parts[1] {
@@ -410,7 +410,7 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MSE", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("MSE", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

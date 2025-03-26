@@ -46,7 +46,7 @@ func (s *EmrService) DescribeEmrCluster(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ClusterInfo", response)
 	}
 	if v.(map[string]interface{})["Status"] == "RELEASED" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(NotFoundErr("EmrCluster", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -81,7 +81,7 @@ func (s *EmrService) GetEmrV2Cluster(id string) (object map[string]interface{}, 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Cluster", response)
 	}
 	if v.(map[string]interface{})["ClusterState"] == "TERMINATED" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EmrCluster", id), NotFoundWithResponse, response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil

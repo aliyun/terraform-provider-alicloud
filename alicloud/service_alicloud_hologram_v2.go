@@ -47,7 +47,7 @@ func (s *HologramServiceV2) DescribeHologramInstance(id string) (object map[stri
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"resource not exists failed"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

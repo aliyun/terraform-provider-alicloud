@@ -50,7 +50,7 @@ func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.VirtualHosts", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[1] {
@@ -66,7 +66,7 @@ func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -108,7 +108,7 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.Queues", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[2] {
@@ -124,7 +124,7 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -166,7 +166,7 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.Exchanges", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[2] {
@@ -182,7 +182,7 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -217,7 +217,7 @@ func (s *AmqpOpenService) DescribeAmqpInstance(id string) (object map[string]int
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.Instances", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == id {
@@ -233,7 +233,7 @@ func (s *AmqpOpenService) DescribeAmqpInstance(id string) (object map[string]int
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -303,7 +303,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp:Binding", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Amqp:Binding", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -321,7 +321,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp:Binding", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Amqp:Binding", id), NotFoundWithResponse, response)
 	}
 
 	return
@@ -370,10 +370,10 @@ func (s *AmqpOpenService) DescribeAmqpStaticAccount(id string) (object map[strin
 				return detail, nil
 			}
 		}
-		err = WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("Amqp", id), NotFoundMsg, ProviderERROR)
 		return object, err
 	} else {
-		err = WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(NotFoundErr("Amqp", id), NotFoundMsg, ProviderERROR)
 		return object, err
 	}
 }

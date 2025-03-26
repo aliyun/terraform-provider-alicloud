@@ -94,7 +94,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentCreate(d *schema.ResourceData,
 		response, _ := raw.(*edas.InstallAgentResponse)
 
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("insert instances to cluster failed for " + response.Message))
+			return resource.NonRetryableError(Error("insert instances to cluster failed for %s", response.Message))
 		}
 
 		var instanceIdFailed []string
@@ -196,7 +196,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentDelete(d *schema.ResourceData,
 				err = Error("there are still applications deployed in this cluster")
 				return resource.RetryableError(err)
 			} else if response.Code != 200 {
-				return resource.NonRetryableError(Error("delete instance:" + instanceId + " from cluster failed for " + response.Message))
+				return resource.NonRetryableError(Error("delete instance %s from cluster failed for %s", instanceId, response.Message))
 			}
 
 			return nil

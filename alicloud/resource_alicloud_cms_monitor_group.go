@@ -103,7 +103,7 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_monitor_group", action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("CreateMonitorGroup failed for " + response["Message"].(string)))
+		return WrapError(Error("CreateMonitorGroup failed for %s", response["Message"]))
 	}
 
 	d.SetId(fmt.Sprint(formatInt(response["GroupId"])))
@@ -211,7 +211,7 @@ func resourceAlicloudCmsMonitorGroupDelete(d *schema.ResourceData, meta interfac
 		return nil
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("DeleteMonitorGroup failed for " + response["Message"].(string)))
+		return WrapError(Error("DeleteMonitorGroup failed for %s", response["Message"]))
 	}
 	return nil
 }

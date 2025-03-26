@@ -73,7 +73,7 @@ func resourceAliCloudOssAccountPublicAccessBlockCreate(d *schema.ResourceData, m
 	}
 
 	accountId, err := client.AccountId()
-	d.SetId(fmt.Sprintf(accountId))
+	d.SetId(fmt.Sprint(accountId))
 
 	ossServiceV2 := OssServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("block_public_access"))}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssAccountPublicAccessBlockStateRefreshFunc(d.Id(), "BlockPublicAccess", []string{}))

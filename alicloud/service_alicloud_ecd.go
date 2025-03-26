@@ -44,10 +44,10 @@ func (s *EcdService) DescribeEcdPolicyGroup(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DescribePolicyGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PolicyGroupId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -188,10 +188,10 @@ func (s *EcdService) DescribeEcdSimpleOfficeSite(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.OfficeSites", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["OfficeSiteId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -242,10 +242,10 @@ func (s *EcdService) DescribeEcdNasFileSystem(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["FileSystemId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -282,10 +282,10 @@ func (s *EcdService) DescribeEcdNetworkPackage(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkPackages", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["NetworkPackageId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -437,10 +437,10 @@ func (s *EcdService) DescribeEcdDesktop(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Desktops", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DesktopId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -539,10 +539,10 @@ func (s *EcdService) DescribeEcdImage(id string) (object map[string]interface{},
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Images", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ImageId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -600,11 +600,11 @@ func (s *EcdService) DescribeEcdCommand(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Invocations", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InvokeId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -662,7 +662,7 @@ func (s *EcdService) DescribeEcdSnapshot(id string) (object map[string]interface
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Snapshot", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -703,7 +703,7 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD:Bundle", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD:Bundle", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -714,7 +714,7 @@ func (s *EcdService) DescribeEcdBundle(id string) (object map[string]interface{}
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD:Bundle", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD:Bundle", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -749,10 +749,10 @@ func (s *EcdService) DescribeEcdRamDirectory(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Directories", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DirectoryId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -788,10 +788,10 @@ func (s *EcdService) DescribeEcdAdConnectorDirectory(id string) (object map[stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Directories", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DirectoryId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -827,10 +827,10 @@ func (s *EcdService) DescribeEcdAdConnectorOfficeSite(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.OfficeSites", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["OfficeSiteId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

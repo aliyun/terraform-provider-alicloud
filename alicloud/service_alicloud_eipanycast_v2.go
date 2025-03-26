@@ -49,7 +49,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.AnycastInstance"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddress", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AnycastEipAddress", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -207,7 +207,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.AnycastInstance"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddressAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("AnycastEipAddressAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -218,7 +218,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddressAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("AnycastEipAddressAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	for _, item := range v.([]interface{}) {
@@ -228,7 +228,7 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id s
 		}
 	}
 
-	return object, WrapErrorf(Error(GetNotFoundMessage("EipanycastAnycastEipAddressAttachment", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("EipanycastAnycastEipAddressAttachment", id), NotFoundWithResponse, response)
 }
 
 func (s *EipanycastServiceV2) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

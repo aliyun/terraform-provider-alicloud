@@ -351,8 +351,12 @@ func (e ComplexError) Error() string {
 	return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
-func Error(msg string, args ...interface{}) error {
-	return fmt.Errorf(msg, args...)
+func Error(format string, args ...interface{}) error {
+	return fmt.Errorf(format, args...)
+}
+
+func NotFoundErr(args ...interface{}) error {
+	return fmt.Errorf(notFoundFmt, args...)
 }
 
 // Return a ComplexError which including error occurred file and path
@@ -380,7 +384,7 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
 		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
-		return WrapComplexError(cause, Error(msg), "", -1)
+		return WrapComplexError(cause, Error("%s", msg), "", -1)
 	}
 	parts := strings.Split(filepath, "/")
 	if len(parts) > 3 {
@@ -406,6 +410,7 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const ResponseCodeMsg = "Resource %s %s Failed!!! %v"
 const RequestIdMsg = "RequestId: %s"
+const notFoundFmt = "The specified %s %s is not found."
 const NotFoundMsg = ResourceNotfound + "!!! %s"
 const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"
 const NotFoundWithError = ResourceNotfound + "!!! Error: %v"

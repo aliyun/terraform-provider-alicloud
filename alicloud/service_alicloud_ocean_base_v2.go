@@ -41,7 +41,7 @@ func (s *OceanBaseServiceV2) DescribeOceanBaseInstance(id string) (object map[st
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalOperation.Resource", "UnknownError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -89,7 +89,7 @@ func (s *OceanBaseServiceV2) DescribeDescribeInstances(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

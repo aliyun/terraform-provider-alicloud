@@ -89,7 +89,7 @@ func resourceAlicloudCmsMonitorGroupInstancesCreate(d *schema.ResourceData, meta
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_monitor_group_instances", action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("CreateMonitorGroupInstances failed for " + response["Message"].(string)))
+		return WrapError(Error("CreateMonitorGroupInstances failed for %s", response["Message"]))
 	}
 
 	d.SetId(fmt.Sprint(request["GroupId"]))
@@ -162,7 +162,7 @@ func resourceAlicloudCmsMonitorGroupInstancesUpdate(d *schema.ResourceData, meta
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapError(Error("ModifyMonitorGroupInstances failed for " + response["Message"].(string)))
+			return WrapError(Error("ModifyMonitorGroupInstances failed for %s", response["Message"]))
 		}
 	}
 	return resourceAlicloudCmsMonitorGroupInstancesRead(d, meta)
@@ -207,7 +207,7 @@ func resourceAlicloudCmsMonitorGroupInstancesDelete(d *schema.ResourceData, meta
 			return nil
 		}
 		if fmt.Sprintf("%v", response["Code"]) != "200" {
-			return WrapError(Error("DeleteMonitorGroupInstances failed for " + response["Message"].(string)))
+			return WrapError(Error("DeleteMonitorGroupInstances failed for %s", response["Message"]))
 		}
 	}
 	return nil

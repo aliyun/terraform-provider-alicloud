@@ -71,7 +71,7 @@ func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{
 		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -113,7 +113,7 @@ func (s *RdsService) DescribeDBReadonlyInstance(id string) (object map[string]in
 	addDebug(action, response, request)
 	dBInstanceAttributes := response["Items"].(map[string]interface{})["DBInstanceAttribute"].([]interface{})
 	if len(dBInstanceAttributes) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBInstance", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return dBInstanceAttributes[0].(map[string]interface{}), nil
@@ -151,7 +151,7 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]in
 	}
 	dBInstanceAccounts := response["Accounts"].(map[string]interface{})["DBInstanceAccount"].([]interface{})
 	if len(dBInstanceAccounts) < 1 {
-		return ds, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
+		return ds, WrapErrorf(NotFoundErr("DBAccountPrivilege", id), NotFoundMsg, ProviderERROR)
 	}
 	return dBInstanceAccounts[0].(map[string]interface{}), nil
 }
@@ -189,7 +189,7 @@ func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{
 			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Databases.Database", response))
 		}
 		if len(v.([]interface{})) < 1 {
-			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("DBDatabase", dbName)), NotFoundMsg, ProviderERROR))
+			return resource.NonRetryableError(WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR))
 		}
 		ds = v.([]interface{})[0].(map[string]interface{})
 		return nil
@@ -400,7 +400,7 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 		return WrapError(err)
 	}
 	if desResponse["LastModifyStatus"] == "failed" {
-		return WrapError(Error(desResponse["ModifyStatusReason"].(string)))
+		return WrapError(Error("%v", desResponse["ModifyStatusReason"].(string)))
 	}
 	d.SetPartial(attribute)
 	return nil
@@ -643,7 +643,7 @@ func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, er
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
 }
 func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[string]interface{}, error) {
 	object, err := s.DescribeDBInstanceRwNetInfoByMssql(id)
@@ -669,7 +669,7 @@ func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[stri
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("ReadWriteSplittingConnection", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
@@ -1901,7 +1901,7 @@ func (s *RdsService) DescribeDBProxy(id string) (object map[string]interface{}, 
 	}
 	if dBProxyConnectStringItems, ok := v.(map[string]interface{})["DBProxyConnectStringItems"].([]interface{}); ok {
 		if len(dBProxyConnectStringItems) < 1 {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("DBProxyConnectStringItems", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("DBProxyConnectStringItems", id), NotFoundMsg, ProviderERROR)
 		}
 		dBProxyConnectStringItem := dBProxyConnectStringItems[0].(map[string]interface{})
 		object["DBProxyVpcId"] = dBProxyConnectStringItem["DBProxyVpcId"]
@@ -1960,7 +1960,7 @@ func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]int
 	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParamGroupsNotExistError"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RdsParameterGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RdsParameterGroup", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -1972,10 +1972,10 @@ func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ParamGroup.ParameterGroup", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["ParameterGroupId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -2000,7 +2000,7 @@ func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{
 	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("RdsAccount", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("RdsAccount", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -2012,7 +2012,7 @@ func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.DBInstanceAccount", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -2072,7 +2072,7 @@ func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.Backup", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -2108,10 +2108,10 @@ func (s *RdsService) DescribeBackupTasks(id string, backupJobId string) (object 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.BackupJob", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["BackupJobId"]) != backupJobId {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -2199,10 +2199,10 @@ func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -2303,10 +2303,10 @@ func (s *RdsService) DescribeUpgradeMajorVersionPrecheckTask(id string, taskId i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	} else {
 		if formatInt(v.([]interface{})[0].(map[string]interface{})["TaskId"]) != taskId {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -2392,14 +2392,14 @@ func (s *RdsService) GetDbProxyInstanceSsl(id string) (object map[string]interfa
 	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.DbProxyCertListItems.DbProxyCertListItems", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	}
 	if len(v.([]interface{})) < 1 {
 		return object, nil
@@ -2496,14 +2496,14 @@ func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, 
 		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
 	}
 
 	dbNodeList := v.([]interface{})[0].(map[string]interface{})
 	if dbNodesList, ok := dbNodeList["DBClusterNodes"]; ok && dbNodesList != nil {
 		if nodeList, ok := dbNodesList.(map[string]interface{})["DBClusterNode"].([]interface{}); ok {
 			if len(nodeList) < 3 {
-				return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+				return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
 			}
 			for _, node := range nodeList {
 				nodeId := node.(map[string]interface{})["NodeId"]
@@ -2561,7 +2561,7 @@ func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]i
 	}
 	if endpoints, ok := v.(map[string]interface{})["DBInstanceEndpoint"].([]interface{}); ok {
 		if len(endpoints) < 1 {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("DBInstanceEndpoint", id), NotFoundMsg, ProviderERROR)
 		}
 		endpoint := endpoints[0].(map[string]interface{})
 		object = make(map[string]interface{})
@@ -2641,7 +2641,7 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 	}
 	if endpoints, ok := v.(map[string]interface{})["DBInstanceEndpoint"].([]interface{}); ok {
 		if len(endpoints) < 1 {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("DBInstanceEndpoint", id), NotFoundMsg, ProviderERROR)
 		}
 		endpoint := endpoints[0].(map[string]interface{})
 		object = make(map[string]interface{})
@@ -2663,7 +2663,7 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 			}
 		}
 		if _, ok := object["IpType"]; !ok {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceEndpointPublicAddress", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(NotFoundErr("DBInstanceEndpointPublicAddress", id), NotFoundMsg, ProviderERROR)
 		}
 	}
 	return object, nil

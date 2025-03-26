@@ -59,7 +59,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaPairDrill(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ReplicaPairDrill", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ReplicaPairDrill", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -133,7 +133,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaGroupDrill(id string) (object map[strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ReplicaGroupDrill", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ReplicaGroupDrill", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -200,16 +200,16 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicy(id string) (object ma
 
 	v, err := jsonpath.Get("$.Policies[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Name"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -372,7 +372,7 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicyAttachment(id string) 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("EnterpriseSnapshotPolicyAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicyAttachment", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -438,16 +438,16 @@ func (s *EbsServiceV2) DescribeEbsSolutionInstance(id string) (object map[string
 
 	v, err := jsonpath.Get("$.Data[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -514,7 +514,7 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DiskReplicaPair", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DiskReplicaPair", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -587,7 +587,7 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaGroup(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DiskReplicaGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DiskReplicaGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

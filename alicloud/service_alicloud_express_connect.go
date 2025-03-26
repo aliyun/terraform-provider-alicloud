@@ -52,7 +52,7 @@ func (s *ExpressConnectService) DescribeExpressConnectVbrPconnAssociation(id str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VirtualBorderRouterSet.VirtualBorderRouterType[*].AssociatedPhysicalConnections.AssociatedPhysicalConnection[*]", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VbrPconnAssociation", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("VbrPconnAssociation", id), NotFoundWithResponse, response)
 	} else {
 		for _, vv := range v.([]interface{}) {
 			item := vv.(map[string]interface{})
@@ -62,7 +62,7 @@ func (s *ExpressConnectService) DescribeExpressConnectVbrPconnAssociation(id str
 			}
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("VbrPconnAssociation", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("VbrPconnAssociation", id), NotFoundWithResponse, response)
 }
 
 func (s *ExpressConnectService) ExpressConnectVbrPconnAssociationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
@@ -115,7 +115,7 @@ func (s *ExpressConnectService) DescribeExpressConnectVirtualPhysicalConnection(
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VirtualPhysicalConnections", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VirtualPhysicalConnections", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("VirtualPhysicalConnections", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }

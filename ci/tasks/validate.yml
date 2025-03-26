@@ -3,7 +3,7 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: golang, tag: 1.20.11}
+  source: {repository: golang, tag: 1.24.1}
 
 inputs:
   - name: terraform-provider-alicloud

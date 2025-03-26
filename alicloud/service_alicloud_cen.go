@@ -56,7 +56,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ParameterInstanceId"}) {
-				return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
+				return nil, WrapErrorf(NotFoundErr("CEN Instance Attachment", instanceId), NotFoundMsg, ProviderERROR)
 			}
 			return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 		}
@@ -70,7 +70,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 		}
 
 		if pageNum*response.PageSize >= response.TotalCount {
-			return c, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
+			return c, WrapErrorf(NotFoundErr("CEN Instance Attachment", instanceId), NotFoundMsg, ProviderERROR)
 		}
 	}
 }
@@ -135,7 +135,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 
 	response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 	if len(response.CenBandwidthPackages.CenBandwidthPackage) <= 0 || response.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("CEN Bandwidth Package", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("CEN Bandwidth Package", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.CenBandwidthPackages.CenBandwidthPackage[0]
 	return c, nil
@@ -172,7 +172,7 @@ func (s *CenService) DescribeCenBandwidthPackageAttachment(id string) (c cbn.Cen
 	}
 
 	if len(object.CenIds.CenId) != 1 || object.Status != string(InUse) {
-		return c, WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("CenBandwidthPackageAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -278,7 +278,7 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 		}
 
 		if pageNum*response.PageSize >= response.TotalCount {
-			return c, WrapErrorf(Error(GetNotFoundMessage("CenBandwidthLimit", id)), NotFoundMsg, ProviderERROR)
+			return c, WrapErrorf(NotFoundErr("CenBandwidthLimit", id), NotFoundMsg, ProviderERROR)
 		}
 	}
 }
@@ -370,7 +370,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 	}
 	response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
 	if len(response.PublishedRouteEntries.PublishedRouteEntry) <= 0 || response.PublishedRouteEntries.PublishedRouteEntry[0].PublishStatus == string(NOPUBLISHED) {
-		return c, WrapErrorf(Error(GetNotFoundMessage("CenRouteEntries", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("CenRouteEntries", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.PublishedRouteEntries.PublishedRouteEntry[0]
 

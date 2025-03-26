@@ -45,7 +45,7 @@ func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]inte
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessGroup", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -117,7 +117,7 @@ func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]inter
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -184,7 +184,7 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("FileSystem", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -262,7 +262,7 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound", "InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MountPoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("MountPoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -344,7 +344,7 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VscMountPoint.NotFound", "InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VscMountPoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -355,7 +355,7 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VscMountPoint", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

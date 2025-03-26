@@ -56,7 +56,7 @@ func (s *NlbServiceV2) DescribeNlbLoadbalancerCommonBandwidthPackageAttachment(i
 
 	currentStatus := response["BandwidthPackageId"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadbalancerCommonBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("LoadbalancerCommonBandwidthPackageAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return response, nil
@@ -127,7 +127,7 @@ func (s *NlbServiceV2) DescribeNlbListenerAdditionalCertificateAttachment(id str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ListenerAdditionalCertificateAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ListenerAdditionalCertificateAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -138,7 +138,7 @@ func (s *NlbServiceV2) DescribeNlbListenerAdditionalCertificateAttachment(id str
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ListenerAdditionalCertificateAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ListenerAdditionalCertificateAttachment", id), NotFoundMsg, response)
 }
 
 func (s *NlbServiceV2) NlbListenerAdditionalCertificateAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -247,7 +247,7 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancerSecurityGroupAttachment(id string)
 		}
 		return response, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("LoadBalancerSecurityGroupAttachment", id), NotFoundMsg, response)
 }
 
 func (s *NlbServiceV2) NlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -333,7 +333,7 @@ func (s *NlbServiceV2) DescribeNlbSecurityPolicy(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SecurityPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SecurityPolicy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -498,7 +498,7 @@ func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]inte
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -612,7 +612,7 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroupServerAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroupServerAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -626,7 +626,7 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroupServerAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ServerGroupServerAttachment", id), NotFoundMsg, response)
 }
 
 func (s *NlbServiceV2) NlbServerGroupServerAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -691,7 +691,7 @@ func (s *NlbServiceV2) DescribeNlbListener(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Listener", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Listener", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -792,7 +792,7 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancer(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.loadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LoadBalancer", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -942,7 +942,7 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancerZoneShiftedAttachment(id string) (
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerZoneShiftedAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LoadBalancerZoneShiftedAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -953,7 +953,7 @@ func (s *NlbServiceV2) DescribeNlbLoadBalancerZoneShiftedAttachment(id string) (
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerZoneShiftedAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("LoadBalancerZoneShiftedAttachment", id), NotFoundMsg, response)
 }
 
 func (s *NlbServiceV2) NlbLoadBalancerZoneShiftedAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

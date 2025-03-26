@@ -43,7 +43,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TEMPLATE.ITEM.NOT.FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("TemplateQuota", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -54,7 +54,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("TemplateQuota", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -110,7 +110,7 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaApplication", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("QuotaApplication", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -171,7 +171,7 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ALARM.NOT.FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaAlarm", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("QuotaAlarm", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -237,11 +237,11 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateApplications(id string) (object 
 
 	v, err := jsonpath.Get("$.QuotaBatchApplications[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TemplateApplications", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TemplateApplications", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TemplateApplications", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TemplateApplications", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

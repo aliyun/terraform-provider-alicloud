@@ -109,7 +109,7 @@ func dataSourceAlicloudEdasDeployGroupsRead(d *schema.ResourceData, meta interfa
 	response, _ := raw.(*edas.ListDeployGroupResponse)
 
 	if response.Code != 200 {
-		return WrapError(Error(response.Message))
+		return WrapError(Error("%s", response.Message))
 	}
 
 	var filteredGroups []edas.DeployGroup

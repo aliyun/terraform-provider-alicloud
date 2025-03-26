@@ -49,7 +49,7 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ACS.Account.NotExist", "InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LakeAccount", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LakeAccount", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -96,7 +96,7 @@ func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]in
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LakeAccount", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LakeAccount", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

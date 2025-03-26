@@ -25,7 +25,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (object map[string]interfa
 	response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "Resource.NotFound", "InvalidFileSystemStatus.Ordering"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundWithResponse, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("NasFileSystem", id), NotFoundWithResponse, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -37,7 +37,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (object map[string]interfa
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems.FileSystem", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -60,7 +60,7 @@ func (s *NasService) DescribeNasMountTarget(id string) (object map[string]interf
 	response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidFileSystem.NotFound", "InvalidLBid.NotFound", "InvalidMountTarget.NotFound", "VolumeUnavailable", "InvalidParam.MountTargetDomain"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("NasMountTarget", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -72,10 +72,10 @@ func (s *NasService) DescribeNasMountTarget(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.MountTargets.MountTarget", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["MountTargetDomain"].(string) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -99,7 +99,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (object map[string]interf
 	response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidAccessGroup.NotFound", "Resource.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("NasAccessGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("NasAccessGroup", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -111,7 +111,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessGroups.AccessGroup", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -134,7 +134,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 	response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -155,7 +155,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -164,7 +164,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessRules.AccessRule", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -232,7 +232,7 @@ func (s *NasService) DescribeNasSnapshot(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS:Snapshot", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("NAS:Snapshot", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -241,10 +241,10 @@ func (s *NasService) DescribeNasSnapshot(id string) (object map[string]interface
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots.Snapshot", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["SnapshotId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -300,7 +300,7 @@ func (s *NasService) DescribeNasFileset(id string) (object map[string]interface{
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("NAS:Snapshot", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("NAS:Snapshot", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -309,7 +309,7 @@ func (s *NasService) DescribeNasFileset(id string) (object map[string]interface{
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Entries.Entrie", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["FsetId"]) == parts[1] {
@@ -325,7 +325,7 @@ func (s *NasService) DescribeNasFileset(id string) (object map[string]interface{
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -495,7 +495,7 @@ func (s *NasService) DescribeNasAutoSnapshotPolicy(id string) (object map[string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidLifecyclePolicy.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS:AutoSnapshotPolicy", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("NAS:AutoSnapshotPolicy", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -504,10 +504,10 @@ func (s *NasService) DescribeNasAutoSnapshotPolicy(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AutoSnapshotPolicies.AutoSnapshotPolicy", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AutoSnapshotPolicyId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -565,7 +565,7 @@ func (s *NasService) DescribeNasLifecyclePolicy(id string) (object map[string]in
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("NAS:LifecyclePolicy", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("NAS:LifecyclePolicy", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -574,7 +574,7 @@ func (s *NasService) DescribeNasLifecyclePolicy(id string) (object map[string]in
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LifecyclePolicies", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["LifecyclePolicyName"]) == parts[1] {
@@ -588,7 +588,7 @@ func (s *NasService) DescribeNasLifecyclePolicy(id string) (object map[string]in
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -623,7 +623,7 @@ func (s *NasService) DescribeNasDataFlow(id string) (object map[string]interface
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("NAS:DataFlow", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("NAS:DataFlow", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -632,7 +632,7 @@ func (s *NasService) DescribeNasDataFlow(id string) (object map[string]interface
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DataFlowInfo.DataFlow", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DataFlowId"]) == parts[1] {
@@ -648,7 +648,7 @@ func (s *NasService) DescribeNasDataFlow(id string) (object map[string]interface
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -694,7 +694,7 @@ func (s *NasService) DescribeNasRecycleBin(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NAS:RecycleBin", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("NAS:RecycleBin", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -704,7 +704,7 @@ func (s *NasService) DescribeNasRecycleBin(id string) (object map[string]interfa
 	}
 	object = v.(map[string]interface{})
 	if fmt.Sprint(object["Status"]) == "Disable" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -733,7 +733,7 @@ func (s *NasService) DescribeNasSmbAcl(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidFileSystemId.NotFound", "Resource.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("NAS:SmbAcl", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("NAS:SmbAcl", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -745,7 +745,7 @@ func (s *NasService) DescribeNasSmbAcl(id string) (object map[string]interface{}
 	}
 	object = v.(map[string]interface{})
 	if fmt.Sprint(object["Enabled"]) == "false" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("NAS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

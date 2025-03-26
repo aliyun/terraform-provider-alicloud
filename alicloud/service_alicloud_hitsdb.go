@@ -26,7 +26,7 @@ func (s *HitsdbService) DescribeTsdbInstance(id string) (object map[string]inter
 	response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.IsNotValidError", "TSDB.Errorcode.InstanceDeleted", "TSDB.Errorcode.InstanceNotFound", "TSDB.Errorcode.ParameterInvaild"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("TsdbInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("TsdbInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -92,7 +92,7 @@ func (s *HitsdbService) GetInstanceIpWhiteList(id string) (object []interface{},
 		return object, nil
 	} else {
 		if fmt.Sprint(response["InstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Lindorm", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Lindorm", id), NotFoundWithResponse, response)
 		}
 	}
 	return v.([]interface{}), nil
@@ -151,7 +151,7 @@ func (s *HitsdbService) DescribeLindormInstance(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Lindorm.Errorcode.InstanceNotFound", "Instance.IsDeleted"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Lindorm:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Lindorm:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

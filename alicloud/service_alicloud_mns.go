@@ -36,7 +36,7 @@ func (s *MnsService) DescribeMnsQueue(id string) (response ali_mns.QueueAttribut
 	addDebug("GetQueueAttributes", raw)
 	response, _ = raw.(ali_mns.QueueAttribute)
 	if response.QueueName == "" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("MnsQueue", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(NotFoundErr("MnsQueue", id), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -77,7 +77,7 @@ func (s *MnsService) DescribeMnsTopic(id string) (*ali_mns.TopicAttribute, error
 	addDebug("GetTopicAttributes", raw)
 	resp, _ := raw.(ali_mns.TopicAttribute)
 	if resp.TopicName == "" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("MnsTopic", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(NotFoundErr("MnsTopic", id), NotFoundMsg, ProviderERROR)
 	}
 	return &resp, nil
 }
@@ -125,7 +125,7 @@ func (s *MnsService) DescribeMnsTopicSubscription(id string) (*ali_mns.Subscript
 	resp, _ := raw.(ali_mns.SubscriptionAttribute)
 	response = &resp
 	if response.SubscriptionName == "" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("MnsTopicSubscription", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(NotFoundErr("MnsTopicSubscription", id), NotFoundMsg, ProviderERROR)
 	}
 	return response, nil
 }

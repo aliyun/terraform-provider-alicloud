@@ -55,7 +55,7 @@ func (s *VpcServiceV2) DescribeVpcPublicIpAddressPool(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PublicIpAddressPool", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("PublicIpAddressPool", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -202,7 +202,7 @@ func (s *VpcServiceV2) DescribeVpcPrefixList(id string) (object map[string]inter
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrefixList", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PrefixList", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -212,7 +212,7 @@ func (s *VpcServiceV2) DescribeVpcPrefixList(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PrefixLists[*]", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PrefixList", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("PrefixList", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -246,7 +246,7 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListEntries(id string) (object map[st
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrefixList", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PrefixList", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -287,7 +287,7 @@ func (s *VpcServiceV2) DescribeGetVpcPrefixListAssociations(id string) (object m
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PrefixList", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("PrefixList", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -358,7 +358,7 @@ func (s *VpcServiceV2) DescribeVpcHaVip(id string) (object map[string]interface{
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidHaVipId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HaVip", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("HaVip", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -368,7 +368,7 @@ func (s *VpcServiceV2) DescribeVpcHaVip(id string) (object map[string]interface{
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HaVips.HaVip[*]", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HaVip", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("HaVip", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -432,7 +432,7 @@ func (s *VpcServiceV2) DescribeVpcVswitchCidrReservation(id string) (object map[
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VswitchCidrReservation", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("VswitchCidrReservation", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -442,7 +442,7 @@ func (s *VpcServiceV2) DescribeVpcVswitchCidrReservation(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VSwitchCidrReservations[*]", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VswitchCidrReservation", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("VswitchCidrReservation", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -499,7 +499,7 @@ func (s *VpcServiceV2) DescribeVpcFlowLog(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FlowLog", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("FlowLog", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -509,7 +509,7 @@ func (s *VpcServiceV2) DescribeVpcFlowLog(id string) (object map[string]interfac
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FlowLogs.FlowLog[*]", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("FlowLog", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("FlowLog", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -577,7 +577,7 @@ func (s *VpcServiceV2) DescribeVpcIpv4Gateway(id string) (object map[string]inte
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Ipv4Gateway"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4Gateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ipv4Gateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -637,14 +637,14 @@ func (s *VpcServiceV2) DescribeVpcIpv6Gateway(id string) (object map[string]inte
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6Gateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ipv6Gateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	currentStatus := response["Status"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6Gateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Ipv6Gateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return response, nil
@@ -715,7 +715,7 @@ func (s *VpcServiceV2) DescribeVpcPublicIpAddressPoolCidrBlock(id string) (objec
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PublicIpAddressPoolCidrBlock", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("PublicIpAddressPoolCidrBlock", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -776,14 +776,14 @@ func (s *VpcServiceV2) DescribeVpcVswitch(id string) (object map[string]interfac
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Vswitch", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	currentStatus := response["VSwitchId"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Vswitch", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return response, nil
@@ -843,7 +843,7 @@ func (s *VpcServiceV2) DescribeVpcVpc(id string) (object map[string]interface{},
 
 	currentStatus := response["VpcId"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Vpc", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Vpc", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -882,7 +882,7 @@ func (s *VpcServiceV2) DescribeVpcDescribeRouteTableList(id string) (object map[
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Vpc", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Vpc", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -896,7 +896,7 @@ func (s *VpcServiceV2) DescribeVpcDescribeRouteTableList(id string) (object map[
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Vpc", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Vpc", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcVpcStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -963,16 +963,16 @@ func (s *VpcServiceV2) DescribeVpcRouteTable(id string) (object map[string]inter
 
 	v, err := jsonpath.Get("$.RouterTableList.RouterTableListType[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteTable", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteTable", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteTable", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteTable", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteTable", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteTable", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1045,7 +1045,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayRouteTableAttachment(id string) (object
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GatewayRouteTableAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GatewayRouteTableAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1106,7 +1106,7 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("NetworkAcl", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -1187,7 +1187,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6EgressRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipv6EgressRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1248,7 +1248,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilter(id string) (object map[str
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilter", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("TrafficMirrorFilter", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1259,7 +1259,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilter(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilter", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorFilter", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1318,7 +1318,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorSession(id string) (object map[st
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorSession", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("TrafficMirrorSession", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1329,7 +1329,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorSession(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorSession", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorSession", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1388,7 +1388,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6InternetBandwidth(id string) (object map[s
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6InternetBandwidth", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ipv6InternetBandwidth", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1399,7 +1399,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6InternetBandwidth(id string) (object map[s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6InternetBandwidth", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Ipv6InternetBandwidth", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1461,7 +1461,7 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 
 	currentStatus := response["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("DhcpOptionsSet", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -1517,7 +1517,7 @@ func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("Vpc:PeerConnection", id)), NotFoundWithResponse, response)
+			return nil, WrapErrorf(NotFoundErr("Vpc:PeerConnection", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1561,7 +1561,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpoint(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.GatewayEndpoint"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GatewayEndpoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("GatewayEndpoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1634,7 +1634,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpointRouteTableAttachment(id string)
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.GatewayEndpoint"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GatewayEndpointRouteTableAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GatewayEndpointRouteTableAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1651,7 +1651,7 @@ func (s *VpcServiceV2) DescribeVpcGatewayEndpointRouteTableAttachment(id string)
 		}
 	}
 
-	return object, WrapErrorf(Error(GetNotFoundMessage("GatewayEndpointRouteTableAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	return object, WrapErrorf(NotFoundErr("GatewayEndpointRouteTableAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 }
 
 func (s *VpcServiceV2) VpcGatewayEndpointRouteTableAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -1714,7 +1714,7 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1725,12 +1725,12 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == "UNBINDING" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1793,18 +1793,18 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterEgressRule(id string) (obje
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterEgressRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.TrafficMirrorFilters[*].EgressRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterEgressRule", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterEgressRule", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -1818,7 +1818,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterEgressRule(id string) (obje
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterEgressRule", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcTrafficMirrorFilterEgressRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -1879,18 +1879,18 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterIngressRule(id string) (obj
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterIngressRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.TrafficMirrorFilters[*].IngressRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterIngressRule", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterIngressRule", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -1904,7 +1904,7 @@ func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterIngressRule(id string) (obj
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("TrafficMirrorFilterIngressRule", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcTrafficMirrorFilterIngressRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -1971,7 +1971,7 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("HaVipAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1982,7 +1982,7 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("HaVipAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -2006,7 +2006,7 @@ func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]
 			return item, nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("HaVipAttachment", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcHaVipAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -2066,7 +2066,7 @@ func (s *VpcServiceV2) DescribeVpcRouteTableAttachment(id string) (object map[st
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("RouteTableAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -2077,7 +2077,7 @@ func (s *VpcServiceV2) DescribeVpcRouteTableAttachment(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteTableAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -2101,7 +2101,7 @@ func (s *VpcServiceV2) DescribeVpcRouteTableAttachment(id string) (object map[st
 			return item, nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("RouteTableAttachment", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcRouteTableAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -2167,7 +2167,7 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipv4CidrBlock", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -2191,7 +2191,7 @@ func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]in
 			continue
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Ipv4CidrBlock", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcIpv4CidrBlockStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -2258,16 +2258,16 @@ func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]inte
 
 	v, err := jsonpath.Get("$.Ipv6Addresses.Ipv6Address[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6Address", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipv6Address", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6Address", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipv6Address", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6Address", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Ipv6Address", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -2338,7 +2338,7 @@ func (s *VpcServiceV2) DescribeVpcRouteEntry(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidRouteTable.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RouteEntry", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("RouteEntry", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -2349,7 +2349,7 @@ func (s *VpcServiceV2) DescribeVpcRouteEntry(id string) (object map[string]inter
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteEntry", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteEntry", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -2395,7 +2395,7 @@ func (s *VpcServiceV2) DescribeRouteEntryListVpcPublishedRouteEntries(id string)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RouteEntry", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RouteEntry", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

@@ -41,7 +41,7 @@ func (s *KmsService) DescribeKmsKey(id string) (object map[string]interface{}, e
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.AliasNotFound", "Forbidden.KeyNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Kms:Key", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Kms:Key", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -55,7 +55,7 @@ func (s *KmsService) DescribeKmsKey(id string) (object map[string]interface{}, e
 
 	if object["KeyState"] == "PendingDeletion" {
 		log.Printf("[WARN] Removing Kms:Key %s because it's already gone", id)
-		return object, WrapErrorf(Error(GetNotFoundMessage("Kms:Key", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Kms:Key", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil
@@ -183,7 +183,7 @@ func (s *KmsService) DescribeKmsSecret(id string) (object map[string]interface{}
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Kms:Secret", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Kms:Secret", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -305,7 +305,7 @@ func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{},
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Aliases.Alias", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("KMS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("KMS", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["AliasName"].(string) == id {
@@ -319,7 +319,7 @@ func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{},
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("KMS", id), NotFoundWithResponse, response)
 	}
 	return
 }

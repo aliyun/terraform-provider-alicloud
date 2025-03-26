@@ -46,7 +46,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResource.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Resource", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Resource", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -199,7 +199,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Product", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -210,7 +210,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Product", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
 }
 
 func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -281,7 +281,7 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceType", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ResourceType", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

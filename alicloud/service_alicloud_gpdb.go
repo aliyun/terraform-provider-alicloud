@@ -51,7 +51,7 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 	}
 
 	if len(response.Items.DBInstance) == 0 {
-		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, ProviderERROR)
+		return instanceAttribute, WrapErrorf(NotFoundErr("Gpdb Instance", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return response.Items.DBInstance[0], nil
@@ -79,7 +79,7 @@ func (s *GpdbService) DescribeDBInstanceAttribute(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -88,10 +88,10 @@ func (s *GpdbService) DescribeDBInstanceAttribute(id string) (object map[string]
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -132,7 +132,7 @@ func (s *GpdbService) DescribeGpdbElasticInstance(id string) (object map[string]
 		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Gpdb elastic instance", id)), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("Gpdb elastic instance", id), NotFoundMsg, ProviderERROR)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -227,7 +227,7 @@ func (s *GpdbService) DescribeGpdbConnection(id string) (*gpdb.DBInstanceNetInfo
 		}
 	}
 
-	return info, WrapErrorf(Error(GetNotFoundMessage("GpdbConnection", id)), NotFoundMsg, ProviderERROR)
+	return info, WrapErrorf(NotFoundErr("GpdbConnection", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *GpdbService) GpdbInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -390,7 +390,7 @@ func (s *GpdbService) DescribeGpdbAccount(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:Account", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:Account", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -399,10 +399,10 @@ func (s *GpdbService) DescribeGpdbAccount(id string) (object map[string]interfac
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.DBInstanceAccount", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AccountName"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -573,7 +573,7 @@ func (s *GpdbService) DescribeDBInstanceIPArrayList(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -608,7 +608,7 @@ func (s *GpdbService) DescribeDBInstanceSSL(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -643,7 +643,7 @@ func (s *GpdbService) DescribeDBResourceManagementMode(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -677,7 +677,7 @@ func (s *GpdbService) DescribeParameters(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -733,7 +733,7 @@ func (s *GpdbService) DescribeGpdbDbInstance(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:DBInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("GPDB:DBInstance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -742,10 +742,10 @@ func (s *GpdbService) DescribeGpdbDbInstance(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("GPDB", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -811,7 +811,7 @@ func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]i
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Gpdb:DbInstancePlan", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Gpdb:DbInstancePlan", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -822,7 +822,7 @@ func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]i
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Gpdb:DbInstancePlan", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Gpdb:DbInstancePlan", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

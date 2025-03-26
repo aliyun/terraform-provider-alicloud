@@ -114,10 +114,10 @@ func (s *CloudApiService) DescribeApiGatewayPlugin(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Plugins.PluginAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PluginId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ApiGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

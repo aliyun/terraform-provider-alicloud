@@ -37,7 +37,7 @@ func (s *ImmService) DescribeImmProject(id string) (object map[string]interface{
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidProject.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("IMM:Project", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("IMM:Project", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

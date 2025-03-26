@@ -560,7 +560,7 @@ func resourceAliCloudEcsImageDelete(d *schema.ResourceData, meta interface{}) er
 				errParts = append(errParts, fmt.Sprintf("%s: %s", snapshotId, err))
 			}
 			errParts = append(errParts, "These are no longer managed by Terraform and must be deleted manually.")
-			return WrapError(fmt.Errorf(strings.Join(errParts, "\n")))
+			return WrapError(fmt.Errorf("%s", strings.Join(errParts, "\n")))
 		}
 	}
 	return nil

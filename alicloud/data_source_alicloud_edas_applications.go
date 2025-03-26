@@ -105,7 +105,7 @@ func dataSourceAlicloudEdasApplicationsRead(d *schema.ResourceData, meta interfa
 
 	response, _ := raw.(*edas.ListApplicationResponse)
 	if response.Code != 200 {
-		return WrapError(Error(response.Message))
+		return WrapError(Error("%s", response.Message))
 	}
 	var filteredApps []edas.ApplicationInListApplication
 	nameRegex, ok := d.GetOk("name_regex")

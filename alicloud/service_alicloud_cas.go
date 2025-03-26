@@ -50,7 +50,7 @@ func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (objec
 	object = v.(map[string]interface{})
 
 	if _, idExist := response["Id"]; !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cas:Certificate", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cas:Certificate", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

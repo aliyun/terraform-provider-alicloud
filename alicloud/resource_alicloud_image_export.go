@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -98,7 +97,7 @@ func resourceAliCloudImageExportDelete(d *schema.ResourceData, meta interface{})
 	addDebug("oss_bucket", raw, requestInfo, map[string]string{"bucketName": d.Get("oss_bucket").(string)})
 	bucket, _ := raw.(*oss.Bucket)
 
-	objectName := fmt.Sprintf(d.Get("oss_prefix").(string) + "_" + d.Id() + "_system.raw.tar.gz")
+	objectName := d.Get("oss_prefix").(string) + "_" + d.Id() + "_system.raw.tar.gz"
 	err = bucket.DeleteObject(objectName)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"No Content", "Not Found"}) {

@@ -45,7 +45,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -57,7 +57,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 
 	currentStatus := v.(map[string]interface{})["status"]
 	if currentStatus == "RELEASED" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -158,7 +158,7 @@ func (s *RocketmqServiceV2) DescribeInstanceGetInstanceIpWhitelist(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceIpOrCidr.NotExisted", "Instance.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -306,7 +306,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqConsumerGroup(id string) (object map
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ConsumerGroup.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ConsumerGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ConsumerGroup", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -379,7 +379,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqTopic(id string) (object map[string]
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Topic.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Topic", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Topic", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -449,7 +449,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqAccount(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceAccount.NotExisted"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Account", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -529,7 +529,7 @@ func (s *RocketmqServiceV2) DescribeRocketmqAcl(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceAcl.NotExisted"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Acl", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Acl", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

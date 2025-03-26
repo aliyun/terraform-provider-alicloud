@@ -40,7 +40,7 @@ func (s *DevopsRdcService) ListUserOrganization(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Object", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDC", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -49,7 +49,7 @@ func (s *DevopsRdcService) ListUserOrganization(id string) (object map[string]in
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDC", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -81,7 +81,7 @@ func (s *DevopsRdcService) DescribeRdcOrganization(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Object", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDC", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -90,7 +90,7 @@ func (s *DevopsRdcService) DescribeRdcOrganization(id string) (object map[string
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RDC", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("RDC", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

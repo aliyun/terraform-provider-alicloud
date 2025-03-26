@@ -24,7 +24,7 @@ func (s *FnfService) DescribeFnfFlow(id string) (object map[string]interface{}, 
 	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("FnfFlow", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("FnfFlow", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -56,7 +56,7 @@ func (s *FnfService) DescribeFnfSchedule(id string) (object map[string]interface
 	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists", "ScheduleNotExists"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("FnfSchedule", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("FnfSchedule", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -99,7 +99,7 @@ func (s *FnfService) DescribeFnFExecution(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FnF:Execution", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("FnF:Execution", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -158,7 +158,7 @@ func (s *FnfService) DescribeExecution(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FlowNotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FnF:Execution", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("FnF:Execution", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -51,7 +51,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -125,7 +125,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("InstanceGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("InstanceGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -198,7 +198,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -271,7 +271,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("KeyPair", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -341,7 +341,7 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[str
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Image", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Image", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil

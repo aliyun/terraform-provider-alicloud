@@ -172,7 +172,7 @@ func resourceAlicloudSaeNamespaceUpdate(d *schema.ResourceData, meta interface{}
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidNamespaceId.NotFound"}) {
-				return WrapErrorf(Error(GetNotFoundMessage("SAE:Namespace", d.Id())), NotFoundMsg, ProviderERROR)
+				return WrapErrorf(NotFoundErr("SAE:Namespace", d.Id()), NotFoundMsg, ProviderERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}

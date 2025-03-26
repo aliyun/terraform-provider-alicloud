@@ -49,14 +49,14 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotfound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Status"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -105,7 +105,7 @@ func (s *AmqpServiceV2) DescribeQueryAvailableInstances(id string) (object map[s
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

@@ -130,7 +130,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 	changeOrderId = response.ApplicationInfo.ChangeOrderId
 	d.SetId(appId)
 	if response.Code != 200 {
-		return WrapError(Error("create application failed for " + response.Message))
+		return WrapError(Error("create application failed for %s", response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -177,7 +177,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 		response, _ := raw.(*edas.DeployApplicationResponse)
 		changeOrderId := response.ChangeOrderId
 		if response.Code != 200 {
-			return WrapError(Error("deploy application failed for " + response.Message))
+			return WrapError(Error("deploy application failed for %s", response.Message))
 		}
 
 		if len(changeOrderId) > 0 {

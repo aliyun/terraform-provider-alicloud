@@ -61,7 +61,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewallControlPolicy(i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NatFirewallControlPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NatFirewallControlPolicy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -128,7 +128,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallNatFirewall(id string) (ob
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NatFirewall", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("NatFirewall", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -194,7 +194,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcCenTrFirewall(id string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorTrFirewallNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcCenTrFirewall", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("VpcCenTrFirewall", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -281,7 +281,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallControlPolicy(id string) (
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudFirewall:ControlPolicy", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -299,7 +299,7 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallControlPolicy(id string) (
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:ControlPolicy", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

@@ -43,7 +43,7 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 
 	response, _ := raw.(*smartag.DescribeCloudConnectNetworksResponse)
 	if len(response.CloudConnectNetworks.CloudConnectNetwork) <= 0 || response.CloudConnectNetworks.CloudConnectNetwork[0].CcnId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("CloudConnectNetwork ", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("CloudConnectNetwork ", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.CloudConnectNetworks.CloudConnectNetwork[0]
 	return c, nil
@@ -87,7 +87,7 @@ func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.Gran
 			return value, nil
 		}
 	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("CloudConnectNetworkGrant", id)), NotFoundMsg, ProviderERROR)
+	return c, WrapErrorf(NotFoundErr("CloudConnectNetworkGrant", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag.SmartAccessGateway, err error) {
@@ -125,7 +125,7 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 
 	response, _ := raw.(*smartag.DescribeSmartAccessGatewaysResponse)
 	if len(response.SmartAccessGateways.SmartAccessGateway) <= 0 || response.SmartAccessGateways.SmartAccessGateway[0].AssociatedCcnId != ccnId || response.SmartAccessGateways.SmartAccessGateway[0].SmartAGId != sagId {
-		return c, WrapErrorf(Error(GetNotFoundMessage("SmartAccessGatewayAttachment", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("SmartAccessGatewayAttachment", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.SmartAccessGateways.SmartAccessGateway[0]
 	return c, nil
@@ -160,7 +160,7 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 
 	response, _ := raw.(*smartag.DescribeACLsResponse)
 	if len(response.Acls.Acl) <= 0 || response.Acls.Acl[0].AclId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Acl", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("Sag Acl", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.Acls.Acl[0]
 	return c, nil
@@ -204,7 +204,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 			return value, nil
 		}
 	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("Sag Acl Rule", id)), NotFoundMsg, ProviderERROR)
+	return c, WrapErrorf(NotFoundErr("Sag Acl Rule", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error) {
@@ -245,7 +245,7 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 			return value, nil
 		}
 	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("Sag Client User", id)), NotFoundMsg, ProviderERROR)
+	return c, WrapErrorf(NotFoundErr("Sag Client User", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err error) {
@@ -286,7 +286,7 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 			return value, nil
 		}
 	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("sag_snat_entry", id)), NotFoundMsg, ProviderERROR)
+	return c, WrapErrorf(NotFoundErr("sag_snat_entry", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err error) {
@@ -327,7 +327,7 @@ func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err e
 			return value, nil
 		}
 	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("sag_dnat_entry", id)), NotFoundMsg, ProviderERROR)
+	return c, WrapErrorf(NotFoundErr("sag_dnat_entry", id), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
@@ -359,7 +359,7 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 
 	response, _ := raw.(*smartag.DescribeQosesResponse)
 	if len(response.Qoses.Qos) <= 0 || response.Qoses.Qos[0].QosId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Qos", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("Sag Qos", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.Qoses.Qos[0]
 	return c, nil
@@ -400,7 +400,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 
 	response, _ := raw.(*smartag.DescribeQosPoliciesResponse)
 	if len(response.QosPolicies.QosPolicy) <= 0 || response.QosPolicies.QosPolicy[0].QosPolicyId != parts[1] {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Qos Policy", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("Sag Qos Policy", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.QosPolicies.QosPolicy[0]
 	return c, nil
@@ -441,7 +441,7 @@ func (s *SagService) DescribeSagQosCar(id string) (c smartag.QosCar, err error) 
 
 	response, _ := raw.(*smartag.DescribeQosCarsResponse)
 	if len(response.QosCars.QosCar) <= 0 || response.QosCars.QosCar[0].QosCarId != parts[1] {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Qos Car", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(NotFoundErr("Sag Qos Car", id), NotFoundMsg, ProviderERROR)
 	}
 	c = response.QosCars.QosCar[0]
 	return c, nil
@@ -765,10 +765,10 @@ func (s *SagService) DescribeSmartagFlowLog(id string) (object map[string]interf
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FlowLogs.FlowLogSetType", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Smartag", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Smartag", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["FlowLogId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Smartag", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Smartag", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

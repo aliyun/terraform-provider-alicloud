@@ -44,7 +44,7 @@ func (s *EdsUserService) DescribeEcdUser(id string) (object map[string]interface
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["EndUserId"]) == id {
@@ -60,7 +60,7 @@ func (s *EdsUserService) DescribeEcdUser(id string) (object map[string]interface
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -109,11 +109,11 @@ func (s *EdsUserService) DescribeEcdCustomProperty(id string) (object map[string
 
 	properties, ok := v.(map[string]interface{})["Properties"]
 	if !ok {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	}
 
 	if len(properties.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	}
 	for _, v := range properties.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["PropertyId"]) == id {
@@ -122,7 +122,7 @@ func (s *EdsUserService) DescribeEcdCustomProperty(id string) (object map[string
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

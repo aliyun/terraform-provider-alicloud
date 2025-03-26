@@ -44,7 +44,7 @@ func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"RegionNoResource"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Caster", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Caster", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -55,7 +55,7 @@ func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interfa
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Caster", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Caster", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

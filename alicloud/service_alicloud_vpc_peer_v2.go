@@ -43,7 +43,7 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnection(id string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnection", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("PeerConnection", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -199,7 +199,7 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnectionAccepter(id string) (obj
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnectionAccepter", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("PeerConnectionAccepter", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -66,7 +66,7 @@ func resourceAliCloudQuotasTemplateServiceCreate(d *schema.ResourceData, meta in
 	}
 
 	accountId, err := meta.(*connectivity.AliyunClient).AccountId()
-	d.SetId(fmt.Sprintf(accountId))
+	d.SetId(fmt.Sprint(accountId))
 
 	return resourceAliCloudQuotasTemplateServiceRead(d, meta)
 }

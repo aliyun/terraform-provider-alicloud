@@ -28,7 +28,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidOrganization(id stri
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.OrganizationList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BrainIndustrial", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("BrainIndustrial", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if v.(map[string]interface{})["OrganizationId"].(string) == id {
@@ -37,7 +37,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidOrganization(id stri
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BrainIndustrial", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("BrainIndustrial", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -65,7 +65,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PidProjectList", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("BrainIndustrial", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("BrainIndustrial", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["PidProjectId"].(string) == id {
@@ -79,7 +79,7 @@ func (s *Brain_industrialService) DescribeBrainIndustrialPidProject(id string) (
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BrainIndustrial", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("BrainIndustrial", id), NotFoundWithResponse, response)
 	}
 	return
 }

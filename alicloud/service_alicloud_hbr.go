@@ -83,7 +83,7 @@ func (s *HbrService) DescribeHbrVault(id string) (object map[string]interface{},
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR:Vault", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR:Vault", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -94,7 +94,7 @@ func (s *HbrService) DescribeHbrVault(id string) (object map[string]interface{},
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR:Vault", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR:Vault", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -157,10 +157,10 @@ func (s *HbrService) DescribeHbrEcsBackupPlan(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PlanId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -204,10 +204,10 @@ func (s *HbrService) DescribeHbrNasBackupPlan(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PlanId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -251,7 +251,7 @@ func (s *HbrService) DescribeHbrOssBackupPlan(id string) (object map[string]inte
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["PlanId"]) == id {
@@ -265,7 +265,7 @@ func (s *HbrService) DescribeHbrOssBackupPlan(id string) (object map[string]inte
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -305,7 +305,7 @@ func (s *HbrService) DescribeHbrOtsBackupPlan(id string) (object map[string]inte
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["PlanId"]) == id {
@@ -319,7 +319,7 @@ func (s *HbrService) DescribeHbrOtsBackupPlan(id string) (object map[string]inte
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -368,13 +368,13 @@ func (s *HbrService) DescribeHbrTask(id string) (object map[string]interface{}, 
 	var taskStatus []InstallClientTaskStatus
 	resultJson := v.(string)
 	if resultJson == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 
 	err = json.Unmarshal([]byte(resultJson), &taskStatus)
 
 	if len(taskStatus) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 
 	object = make(map[string]interface{})
@@ -438,10 +438,10 @@ func (s *HbrService) DescribeHbrEcsBackupClient(id string) (object map[string]in
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Clients", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ClientId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -510,7 +510,7 @@ func (s *HbrService) DescribeHbrRestoreJob(id string) (object map[string]interfa
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RestoreJobs.RestoreJob", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["RestoreId"]) == parts[0] {
@@ -524,7 +524,7 @@ func (s *HbrService) DescribeHbrRestoreJob(id string) (object map[string]interfa
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -584,7 +584,7 @@ func (s *HbrService) DescribeHbrServerBackupPlan(id string) (object map[string]i
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["PlanId"]) == id {
@@ -598,7 +598,7 @@ func (s *HbrService) DescribeHbrServerBackupPlan(id string) (object map[string]i
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -637,7 +637,7 @@ func (s *HbrService) DescribeHbrReplicationVault(id string) (object map[string]i
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Vaults.Vault", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["VaultId"]) == id {
@@ -651,7 +651,7 @@ func (s *HbrService) DescribeHbrReplicationVault(id string) (object map[string]i
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -693,10 +693,10 @@ func (s *HbrService) DescribeHbrHanaInstance(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Hanas.Hana", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ClusterId"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -744,7 +744,7 @@ func (s *HbrService) DescribeHbrHanaBackupPlan(id string) (object map[string]int
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HanaBackupPlans.HanaBackupPlan", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["PlanId"]) == parts[0] {
@@ -758,7 +758,7 @@ func (s *HbrService) DescribeHbrHanaBackupPlan(id string) (object map[string]int
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("HBR", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("HBR", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -795,7 +795,7 @@ func (s *HbrService) DescribeHbrHanaBackupClient(id string) (object map[string]i
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VaultNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Hbr:HanaBackupClient", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Hbr:HanaBackupClient", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -817,7 +817,7 @@ func (s *HbrService) DescribeHbrHanaBackupClient(id string) (object map[string]i
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Hbr:HanaBackupClient", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Hbr:HanaBackupClient", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

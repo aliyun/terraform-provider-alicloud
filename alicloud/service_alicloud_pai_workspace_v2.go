@@ -43,7 +43,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceWorkspace(id string) (object
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"100400008", "100700008", "100400027"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Workspace", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Workspace", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -102,7 +102,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object m
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"201300003"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Dataset", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Dataset", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -168,7 +168,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceExperiment(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalServerErrorProblem"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Experiment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Experiment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -238,7 +238,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDatasetversion(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"201300003"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Datasetversion", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Datasetversion", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -307,7 +307,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceRun(id string) (object map[s
 	}
 	currentStatus := response["Name"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Run", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Run", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -373,7 +373,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceCodeSource(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"201400002"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CodeSource", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("CodeSource", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

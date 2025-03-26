@@ -44,7 +44,7 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -55,7 +55,7 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -87,7 +87,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceConfig(id string) (
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -121,7 +121,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -143,7 +143,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -175,7 +175,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -186,7 +186,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -218,7 +218,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceSSL(id string) (obj
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -252,7 +252,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeIntranetAttribute(id string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -49,10 +49,10 @@ func (s *AntiddosPublicService) DescribeDdosBasicAntiddos(id string) (object map
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Thresholds.Threshold", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosBasic", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosBasic", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != parts[0] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DdosBasic", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DdosBasic", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

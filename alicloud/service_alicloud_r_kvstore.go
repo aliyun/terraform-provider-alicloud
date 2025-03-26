@@ -44,7 +44,7 @@ func (s *R_kvstoreService) DescribeInstanceSSL(id string) (object r_kvstore.Desc
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -79,7 +79,7 @@ func (s *R_kvstoreService) DescribeSecurityIps(id, securityIpGroupName string) (
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -188,7 +188,7 @@ func (s *R_kvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (obje
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -198,7 +198,7 @@ func (s *R_kvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (obje
 	response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
 
 	if len(response.Items.Item) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return object, err
 	}
 	return response.Items.Item[0], nil
@@ -228,7 +228,7 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -265,7 +265,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object map[string
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -276,7 +276,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if v == nil || len(v.([]interface{})) < 1 || fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -337,7 +337,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -348,7 +348,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[strin
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if v == nil || len(v.([]interface{})) < 1 || fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -396,7 +396,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -407,7 +407,7 @@ func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
 	if v == nil || len(v.([]interface{})) < 1 || fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -456,7 +456,7 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvst
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreConnection", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreConnection", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -466,7 +466,7 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvst
 	response, _ := raw.(*r_kvstore.DescribeDBInstanceNetInfoResponse)
 
 	if len(response.NetInfoItems.InstanceNetInfo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreConnection", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("KvstoreConnection", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.NetInfoItems.InstanceNetInfo, nil
@@ -502,7 +502,7 @@ func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.A
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreAccount", id), NotFoundMsg, ProviderERROR)
 			return
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -512,7 +512,7 @@ func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.A
 	response, _ := raw.(*r_kvstore.DescribeAccountsResponse)
 
 	if len(response.Accounts.Account) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		err = WrapErrorf(NotFoundErr("KvstoreAccount", id), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.Accounts.Account[0], nil
@@ -562,7 +562,7 @@ func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.Des
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("KvstoreInstance", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -595,7 +595,7 @@ func (s *RKvstoreService) DescribeKvstoreAuditLogConfig(id string) (object map[s
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis:AuditLogConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Redis:AuditLogConfig", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -630,7 +630,7 @@ func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[strin
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis:AuditLogConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Redis:AuditLogConfig", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -639,10 +639,10 @@ func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[strin
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -691,7 +691,7 @@ func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidOrderCharge.NotSupport"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -700,10 +700,10 @@ func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (objec
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.Item", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -732,7 +732,7 @@ func (s *RKvstoreService) DescribeInstanceSSL(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IncorrectEngineVersion"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -767,7 +767,7 @@ func (s *RKvstoreService) DescribeSecurityGroupConfiguration(id string) (object 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.EcsSecurityGroupRelation", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	}
 
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -802,7 +802,7 @@ func (s *RKvstoreService) DescribeSecurityIps(id string) (object map[string]inte
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityIpGroups.SecurityIpGroup", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	} else {
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["SecurityIpGroupName"]) != "default" {
@@ -905,7 +905,7 @@ func (s *R_kvstoreService) DescribeKvStoreInstanceNetInfo(id string) (objects []
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return objects, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		return objects, WrapErrorf(NotFoundErr("Redis", id), NotFoundWithResponse, response)
 	}
 
 	objects = resp.([]interface{})

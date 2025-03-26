@@ -35,7 +35,7 @@ func (s *CloudssoService) GetDirectory(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Directory", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Directory", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -68,7 +68,7 @@ func (s *CloudssoService) GetMFAAuthenticationStatus(id string) (object map[stri
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Directory", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Directory", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -101,7 +101,7 @@ func (s *CloudssoService) GetSCIMSynchronizationStatus(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Directory", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Directory", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -134,7 +134,7 @@ func (s *CloudssoService) GetDirectoryTasks(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Directory", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Directory", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -168,7 +168,7 @@ func (s *CloudssoService) GetExternalSAMLIdentityProvider(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Directory", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Directory", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -233,7 +233,7 @@ func (s *CloudssoService) DescribeCloudSsoScimServerCredential(id string) (objec
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:SCIMServerCredential", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:SCIMServerCredential", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -244,7 +244,7 @@ func (s *CloudssoService) DescribeCloudSsoScimServerCredential(id string) (objec
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:SCIMServerCredential", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudSSO:SCIMServerCredential", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -255,7 +255,7 @@ func (s *CloudssoService) DescribeCloudSsoScimServerCredential(id string) (objec
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:SCIMServerCredential", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudSSO:SCIMServerCredential", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -291,7 +291,7 @@ func (s *CloudssoService) DescribeCloudSsoGroup(id string) (object map[string]in
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Group"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Group", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:Group", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -330,7 +330,7 @@ func (s *CloudssoService) DescribeCloudSsoUser(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.User"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:User", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -370,7 +370,7 @@ func (s *CloudssoService) ListMFADevicesForUser(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory", "EntityNotExists.User"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:User", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -414,7 +414,7 @@ func (s *CloudssoService) DescribeCloudSsoAccessConfiguration(id string) (object
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfiguration"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudSSO:AccessConfiguration", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -461,7 +461,7 @@ func (s *CloudssoService) ListPermissionPoliciesInAccessConfiguration(id string)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfiguration"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudSSO:AccessConfiguration", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -503,7 +503,7 @@ func (s *CloudssoService) DescribeCloudSsoUserAttachment(id string) (object map[
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExists.Directory", "EntityNotExists.Group"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:UserAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("CloudSSO:UserAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -512,7 +512,7 @@ func (s *CloudssoService) DescribeCloudSsoUserAttachment(id string) (object map[
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GroupMembers", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["UserId"]) == parts[2] {
@@ -528,7 +528,7 @@ func (s *CloudssoService) DescribeCloudSsoUserAttachment(id string) (object map[
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -565,7 +565,7 @@ func (s *CloudssoService) DescribeCloudSsoAccessAssignment(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:AccessAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -574,10 +574,10 @@ func (s *CloudssoService) DescribeCloudSsoAccessAssignment(id string) (object ma
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessAssignments", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PrincipalId"]) != parts[5] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -607,7 +607,7 @@ func (s *CloudssoService) GetTaskStatus(directoryId, taskId string) (object map[
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Task"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", fmt.Sprint(directoryId, ":", taskId))), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO", fmt.Sprint(directoryId, ":", taskId)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, fmt.Sprint(directoryId, ":", taskId), action, AlibabaCloudSdkGoERROR)
 	}
@@ -670,7 +670,7 @@ func (s *CloudssoService) DescribeCloudSsoAccessConfigurationProvisioning(id str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfigurationProvisioning"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfigurationProvisioning", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudSSO:AccessConfigurationProvisioning", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -679,10 +679,10 @@ func (s *CloudssoService) DescribeCloudSsoAccessConfigurationProvisioning(id str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessConfigurationProvisionings", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["TargetId"]) != parts[3] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudSSO", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

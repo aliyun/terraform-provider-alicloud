@@ -45,7 +45,7 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.receiver", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["ReceiverId"].(string) == id {
@@ -59,7 +59,7 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 		request["PageNo"] = request["PageNo"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -85,7 +85,7 @@ func (s *DmService) DescribeDirectMailDomain(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail:Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DirectMail:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -118,7 +118,7 @@ func (s *DmService) DescDomain(id string) (object map[string]interface{}, err er
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail:Domain", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DirectMail:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -159,7 +159,7 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.mailAddress", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["MailAddressId"]) == id {
@@ -173,7 +173,7 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -201,7 +201,7 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidTag.NotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail:Tag", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("DirectMail:Tag", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -210,7 +210,7 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.tag", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["TagId"]) == id {
@@ -224,7 +224,7 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DirectMail", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
 	}
 	return
 }

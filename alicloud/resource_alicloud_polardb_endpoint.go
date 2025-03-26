@@ -431,7 +431,7 @@ func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	if object.EndpointType != "Custom" {
-		return WrapErrorf(Error(fmt.Sprintf("%s type endpoint can not be deleted.", object.EndpointType)), DefaultErrorMsg, d.Id(), "DeleteDBClusterEndpoint", ProviderERROR)
+		return WrapErrorf(Error("%s type endpoint can not be deleted.", object.EndpointType), DefaultErrorMsg, d.Id(), "DeleteDBClusterEndpoint", ProviderERROR)
 	}
 
 	request := polardb.CreateDeleteDBClusterEndpointRequest()

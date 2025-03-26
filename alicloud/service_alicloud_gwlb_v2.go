@@ -43,7 +43,7 @@ func (s *GwlbServiceV2) DescribeGwlbLoadBalancer(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LoadBalancer", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -198,7 +198,7 @@ func (s *GwlbServiceV2) DescribeGwlbListener(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Listener", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Listener", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -263,16 +263,16 @@ func (s *GwlbServiceV2) DescribeGwlbServerGroup(id string) (object map[string]in
 
 	v, err := jsonpath.Get("$.ServerGroups[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["ServerGroupId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

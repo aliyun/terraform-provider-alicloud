@@ -54,7 +54,7 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 
 	currentStatus := v.(map[string]interface{})["InstanceId"]
 	if fmt.Sprint(currentStatus) == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -121,7 +121,7 @@ func (s *KmsServiceV2) DescribeKmsNetworkRule(id string) (object map[string]inte
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("NetworkRule", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -181,7 +181,7 @@ func (s *KmsServiceV2) DescribeKmsPolicy(id string) (object map[string]interface
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -241,7 +241,7 @@ func (s *KmsServiceV2) DescribeKmsClientKey(id string) (object map[string]interf
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClientKey", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ClientKey", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -301,7 +301,7 @@ func (s *KmsServiceV2) DescribeKmsApplicationAccessPoint(id string) (object map[
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ApplicationAccessPoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ApplicationAccessPoint", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -358,7 +358,7 @@ func (s *KmsServiceV2) DescribeKmsKey(id string) (object map[string]interface{},
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.AliasNotFound", "Forbidden.KeyNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Kms:Key", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Kms:Key", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -372,7 +372,7 @@ func (s *KmsServiceV2) DescribeKmsKey(id string) (object map[string]interface{},
 
 	if object["KeyState"] == "PendingDeletion" {
 		log.Printf("[WARN] Removing Kms:Key %s because it's already gone", id)
-		return object, WrapErrorf(Error(GetNotFoundMessage("Kms:Key", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Kms:Key", id), NotFoundMsg, ProviderERROR)
 	}
 
 	return object, nil

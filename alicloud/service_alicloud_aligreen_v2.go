@@ -50,7 +50,7 @@ func (s *AligreenServiceV2) DescribeAligreenAuditCallback(id string) (object map
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AuditCallback", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AuditCallback", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -61,7 +61,7 @@ func (s *AligreenServiceV2) DescribeAligreenAuditCallback(id string) (object map
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("AuditCallback", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("AuditCallback", id), NotFoundMsg, response)
 }
 
 func (s *AligreenServiceV2) AligreenAuditCallbackStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -124,7 +124,7 @@ func (s *AligreenServiceV2) DescribeAligreenCallback(id string) (object map[stri
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Callback", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Callback", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -135,7 +135,7 @@ func (s *AligreenServiceV2) DescribeAligreenCallback(id string) (object map[stri
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Callback", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Callback", id), NotFoundMsg, response)
 }
 
 func (s *AligreenServiceV2) AligreenCallbackStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -197,7 +197,7 @@ func (s *AligreenServiceV2) DescribeAligreenBizType(id string) (object map[strin
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("BizType", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("BizType", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -208,7 +208,7 @@ func (s *AligreenServiceV2) DescribeAligreenBizType(id string) (object map[strin
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("BizType", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("BizType", id), NotFoundMsg, response)
 }
 
 func (s *AligreenServiceV2) AligreenBizTypeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -272,7 +272,7 @@ func (s *AligreenServiceV2) DescribeAligreenImageLib(id string) (object map[stri
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ImageLib", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ImageLib", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -286,7 +286,7 @@ func (s *AligreenServiceV2) DescribeAligreenImageLib(id string) (object map[stri
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ImageLib", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ImageLib", id), NotFoundMsg, response)
 }
 
 func (s *AligreenServiceV2) AligreenImageLibStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -349,7 +349,7 @@ func (s *AligreenServiceV2) DescribeAligreenKeywordLib(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("KeywordLib", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("KeywordLib", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -363,7 +363,7 @@ func (s *AligreenServiceV2) DescribeAligreenKeywordLib(id string) (object map[st
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("KeywordLib", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("KeywordLib", id), NotFoundMsg, response)
 }
 
 func (s *AligreenServiceV2) AligreenKeywordLibStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

@@ -56,7 +56,7 @@ func (s *EaisServiceV2) DescribeEaisClientInstanceAttachment(id string) (object 
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ClientInstanceAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ClientInstanceAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -67,7 +67,7 @@ func (s *EaisServiceV2) DescribeEaisClientInstanceAttachment(id string) (object 
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ClientInstanceAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("ClientInstanceAttachment", id), NotFoundMsg, response)
 }
 
 func (s *EaisServiceV2) EaisClientInstanceAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -130,7 +130,7 @@ func (s *EaisServiceV2) DescribeEaisInstance(id string) (object map[string]inter
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.InstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -141,7 +141,7 @@ func (s *EaisServiceV2) DescribeEaisInstance(id string) (object map[string]inter
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

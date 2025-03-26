@@ -39,7 +39,7 @@ func (s *TagService) ListTagValues(key string) (object []interface{}, err error)
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"MetaTagKeyNotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("TAG:MetaTag", key)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("TAG:MetaTag", key), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, key, action, AlibabaCloudSdkGoERROR)
 		}
@@ -82,7 +82,7 @@ func (s *TagService) DescribeTagPolicy(id string) (object map[string]interface{}
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Tag:Policy", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Tag:Policy", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -123,7 +123,7 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Tag:PolicyAttachment", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Tag:PolicyAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -132,7 +132,7 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Targets", response)
 	}
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Tag:PolicyAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Tag:PolicyAttachment", id), NotFoundWithResponse, response)
 	}
 	for _, v := range resp.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["TargetId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["TargetType"]) == parts[2] {
@@ -141,7 +141,7 @@ func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]i
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Tag:PolicyAttachment", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Tag:PolicyAttachment", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -176,7 +176,7 @@ func (s *TagService) DescribeTagValue(id string) (object []interface{}, err erro
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"MetaTagKeyNotFound"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("TAG:MetaTag", parts[0])), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("TAG:MetaTag", parts[0]), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, parts[0], action, AlibabaCloudSdkGoERROR)
 		}

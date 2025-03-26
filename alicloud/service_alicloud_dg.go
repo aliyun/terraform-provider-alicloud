@@ -52,7 +52,7 @@ func (s *DgService) DescribeDatabaseGatewayGateway(id string) (object map[string
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		if len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DatabaseGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DatabaseGateway", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v {
 			if fmt.Sprint(v.(map[string]interface{})["gatewayId"]) == id {
@@ -66,7 +66,7 @@ func (s *DgService) DescribeDatabaseGatewayGateway(id string) (object map[string
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DatabaseGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DatabaseGateway", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -106,10 +106,10 @@ func (s *DgService) GetUserGatewayInstances(id string) (object map[string]interf
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DatabaseGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DatabaseGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v[0].(map[string]interface{})["gatewayId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DatabaseGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("DatabaseGateway", id), NotFoundWithResponse, response)
 		}
 	}
 	return object, nil

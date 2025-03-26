@@ -36,7 +36,7 @@ func (s *ImsService) DescribeRamSamlProvider(id string) (object map[string]inter
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.SAMLProviderError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ram:SamlProvider", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Ram:SamlProvider", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

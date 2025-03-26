@@ -61,7 +61,7 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudFirewall:ControlPolicy", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -79,7 +79,7 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:ControlPolicy", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -126,7 +126,7 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:AddressBook", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudFirewall:AddressBook", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -144,7 +144,7 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:AddressBook", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:AddressBook", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -239,7 +239,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorVpcFirewallExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VpcFirewallCen", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("VpcFirewallCen", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -255,7 +255,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 	}
 
 	if status.(string) == "notconfigured" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcFirewallCen", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("VpcFirewallCen", id), NotFoundWithResponse, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -329,7 +329,7 @@ func (s *CloudfwService) DescribeVpcFirewallCenList(id string) (object map[strin
 	totalCount, _ := jsonpath.Get("$.TotalCount", response)
 	total, _ := totalCount.(json.Number).Int64()
 	if err != nil && total == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VpcFirewallCen", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("VpcFirewallCen", id), NotFoundWithResponse, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -393,7 +393,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 	}
 
 	if fmt.Sprint(switchStatus) == "notconfigured" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewall", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:VpcFirewall", id), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$", response)
@@ -443,7 +443,7 @@ func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]i
 	totalCount, _ := jsonpath.Get("$.TotalCount", response)
 	total, _ := totalCount.(json.Number).Int64()
 	if err != nil && total == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewall", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:VpcFirewall", id), NotFoundWithResponse, response)
 	}
 
 	v, err := jsonpath.Get("$.VpcFirewalls[0]", response)
@@ -518,7 +518,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewallControlPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:VpcFirewallControlPolicy", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -529,7 +529,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewallControlPolicy", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudFirewall:VpcFirewallControlPolicy", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

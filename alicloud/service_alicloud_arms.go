@@ -45,10 +45,10 @@ func (s *ArmsService) DescribeArmsAlertContact(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.Contacts", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ContactId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -85,10 +85,10 @@ func (s *ArmsService) DescribeArmsAlertContactGroup(id string) (object map[strin
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ContactGroups", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ContactGroupId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -125,10 +125,10 @@ func (s *ArmsService) DescribeArmsAlertRobot(id string) (object map[string]inter
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.AlertIMRobots", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["RobotId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -204,7 +204,7 @@ func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PrometheusAlertRules", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["AlertId"]) == parts[1] {
@@ -213,7 +213,7 @@ func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[str
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -249,14 +249,14 @@ func (s *ArmsService) ListArmsNotificationPolicies(id string) (object map[string
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
 			return v.(map[string]interface{}), nil
 		}
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("ARMS", id)), NotFoundWithResponse, response)
+	return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
 }
 
 func (s *ArmsService) ArmsDispatchRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {

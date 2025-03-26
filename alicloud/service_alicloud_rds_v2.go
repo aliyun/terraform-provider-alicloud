@@ -44,7 +44,7 @@ func (s *RdsServiceV2) DescribeRdsCustom(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceName.NotFound", "InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Custom", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Custom", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -238,12 +238,12 @@ func (s *RdsServiceV2) DescribeRdsCustomDeploymentSet(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CustomDeploymentSet", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CustomDeploymentSet", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["DeploymentSetId"]
 	if currentStatus == "" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CustomDeploymentSet", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("CustomDeploymentSet", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil

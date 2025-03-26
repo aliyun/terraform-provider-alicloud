@@ -46,7 +46,7 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("HttpApi", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("HttpApi", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -119,7 +119,7 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Domain", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -192,7 +192,7 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.GatewayNotFound", "Conflict.GatewayIsDeleted"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Gateway", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Gateway", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -369,7 +369,7 @@ func (s *ApigServiceV2) DescribeApigEnvironment(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.EnvironmentNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Environment", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Environment", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -441,7 +441,7 @@ func (s *ApigServiceV2) DescribeApigService(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.ServiceNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Service", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -512,7 +512,7 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Plugin", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -523,7 +523,7 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Plugin", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -534,7 +534,7 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("Plugin", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
 }
 
 func (s *ApigServiceV2) ApigPluginStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -596,7 +596,7 @@ func (s *ApigServiceV2) DescribeApigPluginClass(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PluginClass", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("PluginClass", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -672,9 +672,9 @@ func (s *ApigServiceV2) DescribeApigOperation(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Operation", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Operation", id), NotFoundMsg, err)
 		}
-		return object, WrapErrorf(Error(GetNotFoundMessage("Operation", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Operation", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -751,7 +751,7 @@ func (s *ApigServiceV2) DescribeApigApiAttachment(id string) (object map[string]
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if response == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Gateway", id)), NotFoundMsg, err)
+		return object, WrapErrorf(NotFoundErr("Gateway", id), NotFoundMsg, err)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -761,7 +761,7 @@ func (s *ApigServiceV2) DescribeApigApiAttachment(id string) (object map[string]
 
 	currentStatus := v.(map[string]interface{})["deployStatus"]
 	if currentStatus == "NotDeployed" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ApiAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ApiAttachment", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -830,7 +830,7 @@ func (s *ApigServiceV2) DescribeApigRoute(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound.RouteNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Route", id)), NotFoundMsg, err)
+			return object, WrapErrorf(NotFoundErr("Route", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

@@ -95,7 +95,7 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ClickHouse", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -104,10 +104,10 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.Account", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ClickHouse", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AccountName"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ClickHouse", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -143,7 +143,7 @@ func (s *ClickhouseService) DescribeClickHouseAccountAuthority(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ClickHouse", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -174,7 +174,7 @@ func (s *ClickhouseService) ClickhouseStateRefreshFunc(id string, failStates []s
 			return object, object["AccountStatus"].(string), nil
 		}
 
-		return nil, "", WrapErrorf(Error(GetNotFoundMessage("ClickHouse:Account", id)), NotFoundMsg, ProviderERROR)
+		return nil, "", WrapErrorf(NotFoundErr("ClickHouse:Account", id), NotFoundMsg, ProviderERROR)
 	}
 }
 
@@ -233,7 +233,7 @@ func (s *ClickhouseService) DescribeClickHouseBackupPolicy(id string) (object ma
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ClickHouse", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

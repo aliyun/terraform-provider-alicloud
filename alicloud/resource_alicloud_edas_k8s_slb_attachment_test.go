@@ -109,7 +109,7 @@ func testSweepEDASK8sSlbAttachment(region string) error {
 			addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 			response := raw.(*edas.DeleteK8sApplicationResponse)
 			if response.Code != 200 {
-				return resource.NonRetryableError(Error("[ERROR] Delete k8s application failed for " + response.Message))
+				return resource.NonRetryableError(Error("[ERROR] Delete k8s application failed for %s", response.Message))
 			}
 			return edasService.WaitForChangeOrderFinishedNonRetryable(appId, response.ChangeOrderId, 3*time.Minute)
 		})

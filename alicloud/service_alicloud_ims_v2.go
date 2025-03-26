@@ -44,7 +44,7 @@ func (s *ImsServiceV2) DescribeImsOidcProvider(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.OIDCProvider"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("OidcProvider", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("OidcProvider", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

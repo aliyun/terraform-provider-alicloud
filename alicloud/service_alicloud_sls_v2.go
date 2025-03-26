@@ -45,7 +45,7 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -81,7 +81,7 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Project", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -242,7 +242,7 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LogStore", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -281,7 +281,7 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LogStore", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -347,7 +347,7 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"JobNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alert", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Alert", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -413,7 +413,7 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"JobNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ScheduledSQL", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ScheduledSQL", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -475,7 +475,7 @@ func (s *SlsServiceV2) DescribeSlsCollectionPolicy(id string) (object map[string
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"PolicyNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CollectionPolicy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("CollectionPolicy", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -552,7 +552,7 @@ func (s *SlsServiceV2) DescribeSlsOssExportSink(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"JobNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("OssExportSink", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("OssExportSink", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

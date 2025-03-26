@@ -36,7 +36,7 @@ func (s *DfsService) DescribeDfsAccessGroup(id string) (object map[string]interf
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DFS:AccessGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DFS:AccessGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -71,7 +71,7 @@ func (s *DfsService) GetAccessGroup(id string) (object map[string]interface{}, e
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DFS:AccessGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DFS:AccessGroup", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -106,7 +106,7 @@ func (s *DfsService) DescribeDfsFileSystem(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DFS:FileSystem", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DFS:FileSystem", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -147,7 +147,7 @@ func (s *DfsService) DescribeDfsAccessRule(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DFS:AccessRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DFS:AccessRule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -188,7 +188,7 @@ func (s *DfsService) DescribeDfsMountPoint(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound", "InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DFS:MountPoint", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("DFS:MountPoint", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

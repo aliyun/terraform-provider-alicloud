@@ -49,7 +49,7 @@ func (s *DdosbgpService) DescribeDdosbgpInstance(id string) (object map[string]i
 		return object, nil
 	}
 	if len(v.([]interface{})) < 1 || fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DdosBgp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("DdosBgp", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -89,7 +89,7 @@ func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string) (object map[stri
 		return object, nil
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ddos", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ddos", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
@@ -135,7 +135,7 @@ func (s *DdosbgpService) DescribeDdosbgpIp(id string) (object map[string]interfa
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.IpList", response)
 	}
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ddosbgp Instance", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("Ddosbgp Instance", id), NotFoundMsg, ProviderERROR)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil

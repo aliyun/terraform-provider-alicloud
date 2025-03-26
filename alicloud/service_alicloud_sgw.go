@@ -24,7 +24,7 @@ func (s *SgwService) DescribeCloudStorageGatewayStorageBundle(id string) (object
 	response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"StorageBundleNotExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("CloudStorageGatewayStorageBundle", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(NotFoundErr("CloudStorageGatewayStorageBundle", id), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -65,7 +65,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGateway(id string) (object map[s
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:Gateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:Gateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -115,7 +115,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (objec
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:Gateway", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("CloudStorageGateway:Gateway", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -127,7 +127,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (objec
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users.User", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Username"]) == parts[1] {
@@ -141,7 +141,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewaySmbUser(id string) (objec
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -175,7 +175,7 @@ func (s *SgwService) DescribeTasks(id, taskId string) (object map[string]interfa
 		addDebug(action, response, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:Gateway:Task", id+":"+taskId)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+				return object, WrapErrorf(NotFoundErr("CloudStorageGateway:Gateway:Task", id+":"+taskId), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -187,7 +187,7 @@ func (s *SgwService) DescribeTasks(id, taskId string) (object map[string]interfa
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Tasks.SimpleTask", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway Task", id+":"+taskId)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway Task", id+":"+taskId), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if taskId != "" && fmt.Sprint(v.(map[string]interface{})["TaskId"]) == taskId {
@@ -201,7 +201,7 @@ func (s *SgwService) DescribeTasks(id, taskId string) (object map[string]interfa
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway Task", id+":"+taskId)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway Task", id+":"+taskId), NotFoundWithResponse, response)
 	}
 	return
 }
@@ -258,7 +258,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:GatewayCacheDisk", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:GatewayCacheDisk", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -273,7 +273,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:GatewayCacheDisk", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway:GatewayCacheDisk", id), NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -284,7 +284,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (obj
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:GatewayCacheDisk", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway:GatewayCacheDisk", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -312,7 +312,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayLogging(id string) (objec
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:GatewayLogging", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:GatewayLogging", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -325,7 +325,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayLogging(id string) (objec
 	}
 	object = v.(map[string]interface{})
 	if v, ok := object["GatewayLoggingStatus"]; ok && v == "None" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:GatewayLogging", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway:GatewayLogging", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 	return object, nil
 }
@@ -358,7 +358,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayBlockVolume(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:BlockVolume", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:BlockVolume", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -370,10 +370,10 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayBlockVolume(id string) (o
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BlockVolumes.BlockVolume", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["IndexId"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -409,7 +409,7 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayFileShare(id string) (obj
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:Gateway:CacheDisk", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:Gateway:CacheDisk", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -421,10 +421,10 @@ func (s *SgwService) DescribeCloudStorageGatewayGatewayFileShare(id string) (obj
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileShares.FileShare", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["IndexId"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -459,7 +459,7 @@ func (s *SgwService) DescribeExpressSyncShares(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist", "ExpressSyncNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:ExpressSyncShareAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:ExpressSyncShareAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -479,7 +479,7 @@ func (s *SgwService) DescribeExpressSyncShares(id string) (object map[string]int
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
@@ -505,7 +505,7 @@ func (s *SgwService) DescribeExpressSyncs(id string) (object map[string]interfac
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"GatewayNotExist", "ExpressSyncNotExist"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:ExpressSync", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("CloudStorageGateway:ExpressSync", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -517,7 +517,7 @@ func (s *SgwService) DescribeExpressSyncs(id string) (object map[string]interfac
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ExpressSyncs.ExpressSync", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["ExpressSyncId"]) == id {
@@ -526,7 +526,7 @@ func (s *SgwService) DescribeExpressSyncs(id string) (object map[string]interfac
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("CloudStorageGateway", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

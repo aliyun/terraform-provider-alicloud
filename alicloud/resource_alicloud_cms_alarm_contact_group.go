@@ -87,7 +87,7 @@ func resourceAlicloudCmsAlarmContactGroupCreate(d *schema.ResourceData, meta int
 	}
 
 	if response.Code != "200" {
-		return WrapError(Error("PutContactGroup failed for " + response.Message))
+		return WrapError(Error("PutContactGroup failed for %s", response.Message))
 	}
 	d.SetId(fmt.Sprintf("%v", request.ContactGroupName))
 
@@ -151,7 +151,7 @@ func resourceAlicloudCmsAlarmContactGroupUpdate(d *schema.ResourceData, meta int
 		})
 
 		if response.Code != "200" {
-			return WrapError(Error("PutContactGroup failed for " + response.Message))
+			return WrapError(Error("PutContactGroup failed for %s", response.Message))
 		}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -182,7 +182,7 @@ func resourceAlicloudCmsAlarmContactGroupDelete(d *schema.ResourceData, meta int
 	})
 
 	if response.Code != "200" {
-		return WrapError(Error("DeleteContactGroup failed for " + response.Message))
+		return WrapError(Error("DeleteContactGroup failed for %s", response.Message))
 	}
 	if err != nil {
 		if IsExpectedErrors(err, []string{"400", "403", "404", "ContactNotExists"}) {

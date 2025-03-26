@@ -45,7 +45,7 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	addDebug(action, response, request)
 	code, _ := jsonpath.Get("$.Code", response)
 	if InArray(fmt.Sprint(code), []string{"INSTANCE_NOT_EXIST"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -96,7 +96,7 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -282,7 +282,7 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cr:RepoSyncRule", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Cr:RepoSyncRule", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -300,7 +300,7 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cr:RepoSyncRule", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Cr:RepoSyncRule", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

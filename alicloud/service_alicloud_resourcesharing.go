@@ -50,7 +50,7 @@ func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceShare", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager:ResourceShare", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -68,7 +68,7 @@ func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string)
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceShare", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager:ResourceShare", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -138,7 +138,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:SharedResource", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager:SharedResource", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -156,7 +156,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedResource(id string
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:SharedResource", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager:SharedResource", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -225,7 +225,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) 
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:SharedTarget", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ResourceManager:SharedTarget", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -243,7 +243,7 @@ func (s *ResourcesharingService) DescribeResourceManagerSharedTarget(id string) 
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:SharedTarget", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ResourceManager:SharedTarget", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil

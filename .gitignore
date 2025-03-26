@@ -29,7 +29,7 @@ website/node_modules
 vars-pipeline*
 vars-publish*
 develop*
-!vendor/github.com/valyala/**/*.pem
+vendor/
 task-config
 website/vendor
 

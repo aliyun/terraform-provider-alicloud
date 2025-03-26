@@ -40,7 +40,7 @@ func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (obje
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ServiceInstanceNotFound"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("ComputeNest:ServiceInstance", id)), NotFoundWithResponse, response)
+			return nil, WrapErrorf(NotFoundErr("ComputeNest:ServiceInstance", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

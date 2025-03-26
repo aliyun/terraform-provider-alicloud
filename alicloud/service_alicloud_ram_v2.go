@@ -58,7 +58,7 @@ func (s *RamServiceV2) DescribeRamUserGroupAttachment(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("UserGroupAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("UserGroupAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -69,7 +69,7 @@ func (s *RamServiceV2) DescribeRamUserGroupAttachment(id string) (object map[str
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("UserGroupAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("UserGroupAttachment", id), NotFoundMsg, response)
 }
 
 func (s *RamServiceV2) RamUserGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -132,7 +132,7 @@ func (s *RamServiceV2) DescribeRamGroup(id string) (object map[string]interface{
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Group", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Group", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -204,7 +204,7 @@ func (s *RamServiceV2) DescribeRamLoginProfile(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.User.LoginProfile"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoginProfile", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("LoginProfile", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -277,7 +277,7 @@ func (s *RamServiceV2) DescribeRamSamlProvider(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.SAMLProvider"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SamlProvider", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SamlProvider", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -359,7 +359,7 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("RolePolicyAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -370,7 +370,7 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("RolePolicyAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -384,7 +384,7 @@ func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[st
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("RolePolicyAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
 }
 
 func (s *RamServiceV2) RamRolePolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -447,7 +447,7 @@ func (s *RamServiceV2) DescribeRamSystemPolicy(id string) (object map[string]int
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SystemPolicy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("SystemPolicy", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -516,7 +516,7 @@ func (s *RamServiceV2) DescribeRamPolicy(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Policy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -766,7 +766,7 @@ func (s *RamServiceV2) DescribeRamAccessKey(id, userName string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessKey", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessKey", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -777,7 +777,7 @@ func (s *RamServiceV2) DescribeRamAccessKey(id, userName string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AccessKey", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AccessKey", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -788,7 +788,7 @@ func (s *RamServiceV2) DescribeRamAccessKey(id, userName string) (object map[str
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("AccessKey", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("AccessKey", id), NotFoundMsg, response)
 }
 
 // DescribeRamAccessKey >>> Encapsulated.
@@ -826,7 +826,7 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("UserPolicyAttachment", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("UserPolicyAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -837,7 +837,7 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("UserPolicyAttachment", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("UserPolicyAttachment", id), NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -851,7 +851,7 @@ func (s *RamServiceV2) DescribeRamUserPolicyAttachment(id string) (object map[st
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("UserPolicyAttachment", id)), NotFoundMsg, response)
+	return object, WrapErrorf(NotFoundErr("UserPolicyAttachment", id), NotFoundMsg, response)
 }
 
 func (s *RamServiceV2) RamUserPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

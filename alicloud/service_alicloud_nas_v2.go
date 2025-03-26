@@ -50,7 +50,7 @@ func (s *NasServiceV2) DescribeNasAccessRule(id string) (object map[string]inter
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccessRule.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -62,7 +62,7 @@ func (s *NasServiceV2) DescribeNasAccessRule(id string) (object map[string]inter
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -126,7 +126,7 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Resource.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessGroup", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessGroup", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -138,7 +138,7 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AccessGroup", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AccessGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -199,7 +199,7 @@ func (s *NasServiceV2) DescribeNasFileSystem(id string) (object map[string]inter
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "Resource.NotFound", "InvalidFileSystemStatus.Ordering"}) {
-				return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+				return object, WrapErrorf(NotFoundErr("Nas:FileSystem", id), NotFoundWithResponse, response)
 			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
@@ -210,7 +210,7 @@ func (s *NasServiceV2) DescribeNasFileSystem(id string) (object map[string]inter
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Nas:FileSystem", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -228,7 +228,7 @@ func (s *NasServiceV2) DescribeNasFileSystem(id string) (object map[string]inter
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Nas:FileSystem", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Nas:FileSystem", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -258,7 +258,7 @@ func (s *NasServiceV2) DescribeGetRecycleBinAttribute(id string) (object map[str
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("FileSystem", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -298,7 +298,7 @@ func (s *NasServiceV2) DescribeListTagResources(id string) (object map[string]in
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidResourceId.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("FileSystem", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -477,7 +477,7 @@ func (s *NasServiceV2) DescribeNasAutoSnapshotPolicy(id string) (object map[stri
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidLifecyclePolicy.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AutoSnapshotPolicy", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, query)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -489,7 +489,7 @@ func (s *NasServiceV2) DescribeNasAutoSnapshotPolicy(id string) (object map[stri
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AutoSnapshotPolicy", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AutoSnapshotPolicy", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -562,7 +562,7 @@ func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]inte
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AccessPoint", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("AccessPoint", id), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

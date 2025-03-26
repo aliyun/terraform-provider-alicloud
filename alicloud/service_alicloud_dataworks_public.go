@@ -47,7 +47,7 @@ func (s *DataworksPublicService) DescribeDataWorksFolder(id string) (object map[
 	}
 	object = v.(map[string]interface{})
 	if len(object) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("dataworks", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("dataworks", id), NotFoundWithResponse, response)
 	}
 	return object, nil
 }

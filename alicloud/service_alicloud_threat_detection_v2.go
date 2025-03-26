@@ -49,14 +49,14 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	currentStatus := response["InstanceId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -105,12 +105,12 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["InstanceID"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -175,12 +175,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientUserDefineRule(i
 
 	v, err := jsonpath.Get("$.UserDefineRuleDetail", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ClientUserDefineRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ClientUserDefineRule", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ClientUserDefineRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ClientUserDefineRule", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -242,12 +242,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 
 	v, err := jsonpath.Get("$.LogMeta", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LogMeta", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LogMeta", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["LogStore"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("LogMeta", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("LogMeta", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -319,7 +319,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientFileProtect(id s
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ClientFileProtect", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ClientFileProtect", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -386,12 +386,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionFileUploadLimit(id str
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("FileUploadLimit", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("FileUploadLimit", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Limit"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("FileUploadLimit", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("FileUploadLimit", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -455,7 +455,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelist
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MaliciousFileWhitelistConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("MaliciousFileWhitelistConfig", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -515,7 +515,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionImageEventOperation(id
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DataNotExists"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ImageEventOperation", id)), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("ImageEventOperation", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -595,7 +595,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionSasTrail(id string) (o
 
 	currentStatus := v.(map[string]interface{})["Config"]
 	if currentStatus == "off" {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SasTrail", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("SasTrail", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -659,12 +659,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("OssScanConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("OssScanConfig", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Enable"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("OssScanConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("OssScanConfig", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -727,16 +727,16 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAntiBruteForceRule(id 
 
 	v, err := jsonpath.Get("$.Rules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AntiBruteForceRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AntiBruteForceRule", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AntiBruteForceRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AntiBruteForceRule", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AntiBruteForceRule", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AntiBruteForceRule", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -806,12 +806,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAssetSelectionConfig(i
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AssetSelectionConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AssetSelectionConfig", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["TargetType"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AssetSelectionConfig", id)), NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("AssetSelectionConfig", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil

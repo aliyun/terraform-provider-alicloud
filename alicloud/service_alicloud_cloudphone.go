@@ -43,10 +43,10 @@ func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECP", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("ECP", id), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["KeyPairName"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECP", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("ECP", id), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -91,7 +91,7 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ecp:Instance", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Ecp:Instance", id), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -109,7 +109,7 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ecp:Instance", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("Ecp:Instance", id), NotFoundWithResponse, response)
 	}
 
 	return object, nil
