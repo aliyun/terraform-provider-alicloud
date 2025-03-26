@@ -12,7 +12,7 @@ Provides a OSS Bucket Worm resource.
 
 Bucket Retention Policy.
 
-For information about OSS Bucket Worm and how to use it, see [What is Bucket Worm](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Worm and how to use it, see [What is Bucket Worm](https://www.alibabacloud.com/help/en/oss/developer-reference/initiatebucketworm).
 
 -> **NOTE:** Available since v1.240.0.
 

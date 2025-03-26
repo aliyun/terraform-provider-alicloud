@@ -12,7 +12,7 @@ Provides a OSS Access Point resource.
 
 You can create multiple Access points for buckets and configure different Access control permissions and network control policies for different Access points.
 
-For information about OSS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/en/).
+For information about OSS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/en/oss/developer-reference/createaccesspoint).
 
 -> **NOTE:** Available since v1.240.0.
 

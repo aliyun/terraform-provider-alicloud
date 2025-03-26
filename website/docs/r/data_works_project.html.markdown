@@ -12,7 +12,7 @@ Provides a Data Works Project resource.
 
 
 
-For information about Data Works Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/).
+For information about Data Works Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createproject).
 
 -> **NOTE:** Available since v1.229.0.
 

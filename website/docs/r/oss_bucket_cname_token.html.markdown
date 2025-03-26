@@ -12,7 +12,7 @@ Provides a OSS Bucket Cname Token resource.
 
 The token used to verify the ownership of the bucket custom domain name.
 
-For information about OSS Bucket Cname Token and how to use it, see [What is Bucket Cname Token](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Cname Token and how to use it, see [What is Bucket Cname Token](https://www.alibabacloud.com/help/en/oss/developer-reference/createcnametoken).
 
 -> **NOTE:** Available since v1.233.0.
 
@@ -42,7 +42,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "tftestacc.com"
+  domain = "terraform-example.com"
 }
 ```
 

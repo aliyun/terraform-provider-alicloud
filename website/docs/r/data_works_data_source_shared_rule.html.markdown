@@ -12,7 +12,7 @@ Provides a Data Works Data Source Shared Rule resource.
 
 Data source sharing rule, which expresses A data source, from space A to space B (A user).
 
-For information about Data Works Data Source Shared Rule and how to use it, see [What is Data Source Shared Rule](https://www.alibabacloud.com/help/en/).
+For information about Data Works Data Source Shared Rule and how to use it, see [What is Data Source Shared Rule](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createdatasourcesharedrule).
 
 -> **NOTE:** Available since v1.237.0.
 

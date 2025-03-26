@@ -12,7 +12,7 @@ Provides a Data Works Di Alarm Rule resource.
 
 Data Integration alarm rules.
 
-For information about Data Works Di Alarm Rule and how to use it, see [What is Di Alarm Rule](https://www.alibabacloud.com/help/en/).
+For information about Data Works Di Alarm Rule and how to use it, see [What is Di Alarm Rule](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createdialarmrule).
 
 -> **NOTE:** Available since v1.241.0.
 
