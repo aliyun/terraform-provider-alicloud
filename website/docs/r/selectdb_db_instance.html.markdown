@@ -48,6 +48,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_description = var.name
   cache_size              = 200
   payment_type            = "PayAsYouGo"
+  engine_minor_version    = "3.0.12"
   vpc_id                  = data.alicloud_vswitches.default.vswitches.0.vpc_id
   zone_id                 = data.alicloud_vswitches.default.vswitches.0.zone_id
   vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
@@ -63,13 +64,14 @@ The following arguments are supported:
 * `cache_size` - (Required) The cache size in DBInstance on creating default cluster. The number should be divided by 100.
 * `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
 * `db_instance_description` - (Required) The DBInstance description.
+* `engine_minor_version` - (Optional, Available since 1.248.0) The DBInstance minor version. Valid values: `3.0.12`,`4.0.4`.
+* `upgraded_engine_minor_version` - (Deprecated since 1.248.0) Field `upgraded_engine_minor_version` has been deprecated from provider version 1.248.0. New field `engine_minor_version` instead.
 * `period` - (Optional) It is valid when payment_type is `Subscription`. Valid values are `Year`, `Month`.
 * `period_time` - (Optional) The duration that you will buy DBInstance. It is valid when payment_type is `Subscription`. Valid values: [1~9], 12, 24, 36.
 * `zone_id` - (Required, ForceNew) The ID of zone for DBInstance.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC for DBInstance.
 * `vswitch_id` - (Required, ForceNew) The ID of vswitch for DBInstance.
 * `enable_public_network` - (Optional) If DBInstance need to open public network, set it to `true`.
-* `upgraded_engine_minor_version` - (Optional) The DBInstance minor version want to upgraded to. (Available since 1.245.0) Can be set to `4.0` in creating SelectDB 4.0 DBInstance.
 * `admin_pass` - (Optional, Available since 1.245.0) The password for DBInstance using admin account.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
@@ -90,7 +92,6 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of DBInstance. 
 * `region_id` - The region ID of the instance.
 * `engine` - The engine of DBInstance. Always `selectdb`.
-* `engine_minor_version` - The current DBInstance minor version.
 * `status` - The status of the resource. Valid values: `ACTIVATION`,`STOPPED`,`STARTING`,`RESTART`.
 * `cpu_prepaid` - The sum of cpu resource amount for every `Subscription` clusters in DBInstance.
 * `memory_prepaid` - The sum of memory resource amount offor every `Subscription` clusters in DBInstance.

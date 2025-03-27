@@ -72,6 +72,18 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"engine_minor_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "3.0.12",
+				ConflictsWith: []string{"upgraded_engine_minor_version"},
+			},
+			"upgraded_engine_minor_version": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"engine_minor_version"},
+				Deprecated:    "Field `upgraded_engine_minor_version` has been deprecated from provider version 1.248.0. New field `engine_minor_version` instead.",
+			},
 			"tags": tagsSchema(),
 			// flag for public network and update
 			"enable_public_network": {
@@ -82,10 +94,6 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 				Type:      schema.TypeString,
 				Sensitive: true,
 				Optional:  true,
-			},
-			"upgraded_engine_minor_version": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"desired_security_ip_lists": {
 				Type:     schema.TypeList,
@@ -110,10 +118,6 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 				Computed: true,
 			},
 			"engine": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"engine_minor_version": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -365,8 +369,14 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 
 	}
 
-	if d.HasChange("upgraded_engine_minor_version") && d.Get("upgraded_engine_minor_version") != "" {
-		_, newVersion := d.GetChange("upgraded_engine_minor_version")
+	if !d.IsNewResource() && (d.HasChange("engine_minor_version") || d.HasChange("upgraded_engine_minor_version")) {
+		var newVersion interface{} = ""
+		if d.HasChange("upgraded_engine_minor_version") {
+			_, newVersion = d.GetChange("upgraded_engine_minor_version")
+		} else if d.HasChange("engine_minor_version") {
+			_, newVersion = d.GetChange("engine_minor_version")
+		}
+
 		instanceId := fmt.Sprint(d.Id())
 		instanceResp, err := selectDBService.DescribeSelectDBDbInstance(instanceId)
 		if err != nil {
@@ -409,6 +419,7 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 		d.SetPartial("upgraded_engine_minor_version")
+		d.SetPartial("engine_minor_version")
 	}
 
 	cacheSizeModified := false
@@ -693,7 +704,6 @@ func buildSelectDBCreateInstanceRequest(d *schema.ResourceData, meta interface{}
 
 	request := map[string]interface{}{
 		"Engine":                "SelectDB",
-		"EngineVersion":         "3.0",
 		"DBInstanceClass":       d.Get("db_instance_class").(string),
 		"RegionId":              client.RegionId,
 		"ZoneId":                d.Get("zone_id").(string),
@@ -701,6 +711,13 @@ func buildSelectDBCreateInstanceRequest(d *schema.ResourceData, meta interface{}
 		"VSwitchId":             d.Get("vswitch_id").(string),
 		"DBInstanceDescription": d.Get("db_instance_description").(string),
 	}
+
+	if v, ok := d.GetOk("engine_minor_version"); ok {
+		request["EngineVersion"] = v.(string)
+	} else if v, ok := d.GetOk("upgraded_engine_minor_version"); ok {
+		request["EngineVersion"] = v.(string)
+	}
+
 	cache_size, exist := d.GetOkExists("cache_size")
 	if exist {
 		request["CacheSize"] = cache_size.(int)

@@ -108,6 +108,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_class       = "selectdb.2xlarge"
   db_instance_description = var.name
   cache_size              = "400"
+  engine_minor_version    = "3.0.12"
   payment_type            = "PayAsYouGo"
   vpc_id                  = "${data.alicloud_vpcs.default.ids.0}"
   zone_id                 = "${data.alicloud_zones.default.ids.0}"

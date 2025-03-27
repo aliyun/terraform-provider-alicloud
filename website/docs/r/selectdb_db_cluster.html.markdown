@@ -49,6 +49,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_description = var.name
   cache_size              = 200
   payment_type            = "PayAsYouGo"
+  engine_minor_version    = "3.0.12"
   vpc_id                  = data.alicloud_vswitches.default.vswitches.0.vpc_id
   zone_id                 = data.alicloud_vswitches.default.vswitches.0.zone_id
   vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
@@ -95,7 +96,6 @@ The following attributes are exported:
 * `status` - The current status of the resource.
 * `cpu` - The cpu resource amount of DBCluster. Depends on `db_cluster_class`.
 * `memory` - The memory resource amount of DBCluster. Depends on `db_cluster_class`.
-* `cache_size` - The cache size of DBCluster.
 * `region_id` - The ID of region for the cluster.
 * `zone_id` - The ID of zone for the cluster.
 * `vpc_id` - The ID of the VPC for the cluster.

@@ -31,7 +31,7 @@ func TestAccAlicloudSelectDBDbClustersDataSource(t *testing.T) {
 			"clusters.0.engine":              "selectdb",
 			"clusters.0.create_time":         CHECKSET,
 			"clusters.0.cpu":                 "8",
-			"clusters.0.memory":              "64",
+			"clusters.0.memory":              "32",
 			"clusters.0.cache_size":          CHECKSET,
 			"clusters.0.region_id":           CHECKSET,
 			"clusters.0.vpc_id":              CHECKSET,
@@ -82,6 +82,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_class       = "selectdb.2xlarge"
   db_instance_description = var.name
   cache_size              = "400"
+  engine_minor_version    = "3.0.12"
   payment_type            = "PayAsYouGo"
   vpc_id                  = "${data.alicloud_vpcs.default.ids.0}"
   zone_id                 = "${data.alicloud_zones.default.ids.0}"
