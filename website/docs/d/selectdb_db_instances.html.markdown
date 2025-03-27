@@ -40,6 +40,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_description = var.name
   cache_size              = 200
   payment_type            = "PayAsYouGo"
+  engine_minor_version    = "3.0.12"
   vpc_id                  = data.alicloud_vswitches.default.vswitches.0.vpc_id
   zone_id                 = data.alicloud_vswitches.default.vswitches.0.zone_id
   vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
