@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -35,6 +36,10 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 			"vpc_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"vpc_intranet_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -132,6 +137,11 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("description", apiGroup.Description)
 	d.Set("sub_domain", apiGroup.SubDomain)
 	d.Set("vpc_domain", apiGroup.VpcDomain)
+	if apiGroup.VpcDomain != "" {
+		d.Set("vpc_intranet_enable", true)
+	} else {
+		d.Set("vpc_intranet_enable", false)
+	}
 	d.Set("instance_id", apiGroup.InstanceId)
 	d.Set("base_path", apiGroup.BasePath)
 	if apiGroup.UserLogConfig != "" {
@@ -187,6 +197,25 @@ func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
+
+	update = false
+	request2 := cloudapi.CreateModifyIntranetDomainPolicyRequest()
+	request2.RegionId = client.RegionId
+	request2.GroupId = d.Id()
+	if d.HasChanges("vpc_intranet_enable") {
+		request2.VpcIntranetEnable = requests.NewBoolean(d.Get("vpc_intranet_enable").(bool))
+		update = true
+	}
+	if update {
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.ModifyIntranetDomainPolicy(request2)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request2.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request2.GetActionName(), raw, request2.RpcRequest, request2)
+	}
+
 	return resourceAliyunApigatewayGroupRead(d, meta)
 }
 

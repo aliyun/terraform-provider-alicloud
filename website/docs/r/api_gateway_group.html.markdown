@@ -51,6 +51,7 @@ The following arguments are supported:
 * `instance_id` - (Optional, ForceNew, Available in 1.179.0+)	The id of the api gateway.
 * `base_path` - (Optional, Computed, Available since v1.228.0) The base path of the api gateway group. Defaults to `/`.
 * `user_log_config` - (Optional, Available since v1.246.0) user_log_config defines the config of user log of the group. See [`user_log_config`](#user_log_config) below.
+* `vpc_intranet_enable` - (Optional, Available since v1.247.0) Whether to enable `vpc_domain`. Defaults to `false`.
 
 ### `user_log_config`
 
