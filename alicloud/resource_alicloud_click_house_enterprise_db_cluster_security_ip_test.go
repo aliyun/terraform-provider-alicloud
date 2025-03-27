@@ -57,6 +57,16 @@ func TestAccAliCloudClickHouseEnterpriseDbClusterSecurityIP_basic10562(t *testin
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": "127.0.0.2,127.0.0.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_list": CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

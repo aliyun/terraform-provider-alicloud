@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -41,6 +42,21 @@ func resourceAliCloudClickHouseEnterpriseDbClusterSecurityIP() *schema.Resource 
 			"security_ip_list": {
 				Type:     schema.TypeString,
 				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					oldIps := strings.Split(old, ",")
+					newIps := strings.Split(new, ",")
+					if len(oldIps) != len(newIps) {
+						return false
+					}
+					sort.Strings(oldIps)
+					sort.Strings(newIps)
+					for i, _ := range oldIps {
+						if oldIps[i] != newIps[i] {
+							return false
+						}
+					}
+					return true
+				},
 			},
 		},
 	}
