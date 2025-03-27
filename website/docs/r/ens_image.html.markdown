@@ -8,9 +8,11 @@ description: |-
 
 # alicloud_ens_image
 
-Provides a ENS Image resource. 
+Provides a ENS Image resource.
 
-For information about ENS Image and how to use it, see [What is Image](https://www.alibabacloud.com/help/en/).
+
+
+For information about ENS Image and how to use it, see [What is Image](https://www.alibabacloud.com/help/en/ens/developer-reference/api-ens-2017-11-10-createimage).
 
 -> **NOTE:** Available since v1.216.0.
 
@@ -50,10 +52,8 @@ resource "alicloud_ens_instance" "default" {
   status                     = "Stopped"
 }
 
-
 resource "alicloud_ens_image" "default" {
-  image_name = var.name
-
+  image_name                = var.name
   instance_id               = alicloud_ens_instance.default.id
   delete_after_image_upload = "false"
 }
@@ -62,21 +62,25 @@ resource "alicloud_ens_image" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `delete_after_image_upload` - (Optional) Whether the instance is automatically released after the image is packaged and uploaded successfully, only the build machine is supported.  Optional values: true: When the instance is released, the image is released together with the instance. false: When the instance is released, the image is retained and is not released together with the instance. Empty means false by default.
-* `image_name` - (Required) Image Name.
-* `instance_id` - (Optional, ForceNew) The ID of the instance corresponding to the image.
+* `delete_after_image_upload` - (Optional) Specifies whether to automatically release the instance after the image is packaged and uploaded. Only image builders are supported. Default value: `false`. Valid values:
+  - `true`: When the instance is released, the image is released together with the instance.
+  - `false`: When the instance is released, the image is retained and is not released together with the instance.
+  Empty means false by default.
+* `image_name` - (Required) The name of the image. The name must be 2 to 128 characters in length. The name can contain letters, digits, colons (:), underscores (_), and hyphens (-). It must start with a letter but cannot start with http:// or https://. The name can contain letters, digits, colons (:), underscores (_), and hyphens (-).
+* `instance_id` - (Optional, ForceNew) The ID of the instance.
+* `target_oss_region_id` - (Optional, ForceNew, Available since v1.247.0) The region of the target OSS where the image is to be stored.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - Image creation time.
-* `status` - Mirror Status  Optional values: Creating: Creating Packing: Packing Uploading: Uploading Pack_failed: Packing failed Upload_failed: Upload failed Available: Only images in the Available state can be used and operated. Unavailable: Not available Copying: Copying.
+* `id` - The resource ID in terraform of Image.
+* `create_time` - The image creation time.
+* `status` - The state of the image.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Image.
+* `create` - (Defaults to 120 mins) Used when create the Image.
 * `delete` - (Defaults to 5 mins) Used when delete the Image.
 * `update` - (Defaults to 5 mins) Used when update the Image.
 

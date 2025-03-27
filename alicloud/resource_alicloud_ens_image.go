@@ -22,8 +22,8 @@ func resourceAliCloudEnsImage() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(120 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -33,7 +33,7 @@ func resourceAliCloudEnsImage() *schema.Resource {
 			"delete_after_image_upload": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"true", "false"}, true),
+				ValidateFunc: StringInSlice([]string{"true", "false"}, false),
 			},
 			"image_name": {
 				Type:     schema.TypeString,
@@ -47,6 +47,12 @@ func resourceAliCloudEnsImage() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"target_oss_region_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -70,10 +76,12 @@ func resourceAliCloudEnsImageCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("instance_id"); ok {
 		request["InstanceId"] = v
 	}
+	if v, ok := d.GetOk("target_oss_region_id"); ok {
+		request["TargetOSSRegionId"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -81,9 +89,9 @@ func resourceAliCloudEnsImageCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_image", action, AlibabaCloudSdkGoERROR)
@@ -118,6 +126,7 @@ func resourceAliCloudEnsImageRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("image_name", objectRaw["ImageName"])
 	d.Set("instance_id", objectRaw["InstanceId"])
 	d.Set("status", objectRaw["Status"])
+	d.Set("target_oss_region_id", objectRaw["RegionId"])
 
 	return nil
 }
@@ -128,11 +137,13 @@ func resourceAliCloudEnsImageUpdate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "ModifyImageAttribute"
+
 	var err error
+	action := "ModifyImageAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ImageId"] = d.Id()
+	request["ImageId"] = d.Id()
+
 	if d.HasChange("image_name") {
 		update = true
 	}
@@ -141,7 +152,6 @@ func resourceAliCloudEnsImageUpdate(d *schema.ResourceData, meta interface{}) er
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -149,9 +159,9 @@ func resourceAliCloudEnsImageUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -174,7 +184,7 @@ func resourceAliCloudEnsImageDelete(d *schema.ResourceData, meta interface{}) er
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["ImageId"] = d.Id()
+	request["ImageId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -187,18 +197,22 @@ func resourceAliCloudEnsImageDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ensServiceV2.EnsImageStateRefreshFunc(d.Id(), "ImageId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ensServiceV2.EnsImageStateRefreshFunc(d.Id(), "$.ImageId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
