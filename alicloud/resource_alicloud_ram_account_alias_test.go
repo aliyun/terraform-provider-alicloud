@@ -72,7 +72,7 @@ func testSweepAccountAliases(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRAMAccountAlias_basic(t *testing.T) {
+func TestAccAliCloudRAMAccountAlias_basic(t *testing.T) {
 	randInt := acctest.RandIntRange(1000, 9999)
 	var v *ram.GetAccountAliasResponse
 	resourceId := "alicloud_ram_account_alias.default"
@@ -140,3 +140,115 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 	}
 	return nil
 }
+
+// Test Ram AccountAlias. >>> Resource test cases, automatically generated.
+// Case  AccountAlias测试 9000
+func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_account_alias.default"
+	ra := resourceAttrInit(resourceId, AlicloudRamAccountAliasMap9000)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamAccountAlias")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamAccountAliasBasicDependence9000)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forcreate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forcreate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forcreate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_alias": "1511928242963727forupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudRamAccountAliasMap9000 = map[string]string{}
+
+func AlicloudRamAccountAliasBasicDependence9000(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Ram AccountAlias. <<< Resource test cases, automatically generated.
