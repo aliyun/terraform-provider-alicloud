@@ -64,7 +64,7 @@ resource "alicloud_data_works_project" "defaultQeRfvU" {
 
 resource "alicloud_data_works_project_member" "default" {
   user_id    = alicloud_ram_user.defaultKCTrB2.id
-  project_id = alicloud_data_works_project.defaultCoMnk8.id
+  project_id = alicloud_data_works_project.defaultQeRfvU.id
   roles {
     code = var.admin_code
   }
