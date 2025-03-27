@@ -12,7 +12,7 @@ Provides a ECS Image Pipeline Execution resource.
 
 The mirror template performs the build mirror task.
 
-For information about ECS Image Pipeline Execution and how to use it, see [What is Image Pipeline Execution](https://www.alibabacloud.com/help/en/).
+For information about ECS Image Pipeline Execution and how to use it, see [What is Image Pipeline Execution](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ecs-2014-05-26-startimagepipelineexecution).
 
 -> **NOTE:** Available since v1.237.0.
 
