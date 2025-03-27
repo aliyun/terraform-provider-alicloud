@@ -221,8 +221,8 @@ func (s *ArmsServiceV2) ArmsEnvironmentStateRefreshFunc(id string, field string,
 // SetResourceTags <<< Encapsulated tag function for Arms.
 func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -240,15 +240,19 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
 			request["ResourceType"] = resourceType
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
-
+				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -256,9 +260,9 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -270,6 +274,7 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -280,8 +285,7 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, false)
-
+				response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -289,15 +293,14 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -790,11 +793,11 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetGrafanaWorkspace"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["GrafanaWorkspaceId"] = id
+	request["GrafanaWorkspaceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "GetGrafanaWorkspace"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -807,10 +810,9 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -821,7 +823,7 @@ func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[stri
 	}
 
 	currentStatus := v.(map[string]interface{})["status"]
-	if currentStatus == "DeleteSucceed" {
+	if fmt.Sprint(currentStatus) == "DeleteSucceed" {
 		return object, WrapErrorf(NotFoundErr("GrafanaWorkspace", id), NotFoundMsg, response)
 	}
 
@@ -840,6 +842,13 @@ func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field st
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
