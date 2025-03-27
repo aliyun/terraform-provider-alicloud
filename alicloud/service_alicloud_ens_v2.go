@@ -587,6 +587,7 @@ func (s *EnsServiceV2) EnsSecurityGroupStateRefreshFunc(id string, field string,
 }
 
 // DescribeEnsSecurityGroup >>> Encapsulated.
+
 // DescribeEnsImage <<< Encapsulated get interface for Ens Image.
 
 func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{}, err error) {
@@ -594,10 +595,11 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeSelfImages"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ImageId"] = id
+	request["ImageId"] = id
+
+	action := "DescribeSelfImages"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -610,12 +612,10 @@ func (s *EnsServiceV2) DescribeEnsImage(id string) (object map[string]interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -643,6 +643,13 @@ func (s *EnsServiceV2) EnsImageStateRefreshFunc(id string, field string, failSta
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
