@@ -11,7 +11,7 @@ description: |-
 
 Provides a VPN Ipsec Server resource.
 
-For information about VPN Ipsec Server and how to use it, see [What is Ipsec Server](https://www.alibabacloud.com/help/en/doc-detail/205454.html).
+For information about VPN Ipsec Server and how to use it, see [What is Ipsec Server](https://www.alibabacloud.com/help/en/vpn/sub-product-ssl-vpn/developer-reference/api-vpc-2016-04-28-createipsecserver-ssl-vpn).
 
 -> **NOTE:** Available since v1.161.0+.
 

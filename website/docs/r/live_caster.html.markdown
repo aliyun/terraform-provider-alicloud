@@ -12,7 +12,7 @@ Provides a Live Caster resource.
 
 Relying on Alibaba Cloud's powerful technologies such as live video broadcasting, media processing, and video AI, cloud guide integrates capabilities such as graphic packaging, real-time keying, multi-language translation, and multi-channel mixed streaming to innovate traditional guide services in the cloud. Provide easy-to-use cloud-based guide services for event performances, news reports, live events, off-site broadcasts and other scenes, without hardware, reduce user guide costs, and create a better live broadcast experience.
 
-For information about Live Caster and how to use it, see [What is Caster](https://www.alibabacloud.com/help/en/).
+For information about Live Caster and how to use it, see [What is Caster](https://www.alibabacloud.com/help/en/live/developer-reference/api-live-2016-11-01-createcaster).
 
 -> **NOTE:** Available since v1.238.0.
 

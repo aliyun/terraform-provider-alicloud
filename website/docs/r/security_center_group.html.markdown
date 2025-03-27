@@ -11,7 +11,7 @@ description: |-
 
 Provides a Security Center Group resource.
 
-For information about Security Center Group and how to use it, see [What is Group](https://www.alibabacloud.com/help/doc-detail/129195.htm).
+For information about Security Center Group and how to use it, see [What is Group](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createorupdateassetgroup).
 
 -> **NOTE:** Available since v1.133.0.
 

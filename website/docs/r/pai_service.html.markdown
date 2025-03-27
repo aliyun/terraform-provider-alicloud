@@ -12,7 +12,7 @@ Provides a PAI Service resource.
 
 Eas service instance.
 
-For information about PAI Service and how to use it, see [What is Service](https://next.api.alibabacloud.com/document/eas/2021-07-01/CreateService).
+For information about PAI Service and how to use it, see [What is Service](https://www.alibabacloud.com/help/en/pai/developer-reference/api-eas-2021-07-01-createservice).
 
 -> **NOTE:** Field `labels` has been removed since version 1.245.0. Please use new field `tags`.
 
