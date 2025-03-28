@@ -33,6 +33,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
 data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
@@ -52,8 +53,8 @@ locals {
 }
 
 resource "alicloud_log_project" "log" {
-  name        = "${var.name}"
-  description = "created by terraform for managedkubernetes cluster"
+  project_name = "${var.name}"
+  description  = "created by terraform for managedkubernetes cluster"
 }
 
 resource "alicloud_db_instance" "default" {
@@ -68,10 +69,10 @@ resource "alicloud_db_instance" "default" {
 }
 
 resource "alicloud_snapshot_policy" "default" {
-	name            = "${var.name}"
-	repeat_weekdays = ["1", "2", "3"]
-	retention_days  = -1
-	time_points     = ["1", "22", "23"]
+	auto_snapshot_policy_name = "${var.name}"
+	repeat_weekdays           = ["1", "2", "3"]
+	retention_days            = -1
+	time_points               = ["1", "22", "23"]
 }
 `
 
@@ -116,7 +117,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 					"version":                     "1.20.11-aliyunedge.1",
 					"worker_number":               "2",
 					"password":                    "Test12345",
-					"pod_cidr":                    "10.99.0.0/16",
+					"pod_cidr":                    "10.100.0.0/16",
 					"service_cidr":                "172.30.0.0/16",
 					"worker_instance_charge_type": "PostPaid",
 					"new_nat_gateway":             "false",
@@ -134,6 +135,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 					"deletion_protection":          "true",
 					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"rds_instances":                []string{"${alicloud_db_instance.default.id}"},
+					"set_certificate_authority":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -141,7 +143,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 						"version":                       "1.20.11-aliyunedge.1",
 						"worker_number":                 "2",
 						"password":                      "Test12345",
-						"pod_cidr":                      "10.99.0.0/16",
+						"pod_cidr":                      "10.100.0.0/16",
 						"service_cidr":                  "172.30.0.0/16",
 						"new_nat_gateway":               "false",
 						"slb_internet_enabled":          "true",
@@ -153,6 +155,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 						"worker_data_disks.0.category":  "cloud_ssd",
 						"worker_data_disks.0.size":      "200",
 						"worker_data_disks.0.encrypted": "false",
+						"set_certificate_authority":     "true",
 					}),
 				),
 			},
@@ -160,7 +163,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
@@ -238,7 +241,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 					"new_nat_gateway":              "true",
 					"is_enterprise_security_group": "true",
 					"deletion_protection":          "true",
-					"pod_cidr":                     "10.99.0.0/16",
+					"pod_cidr":                     "10.101.0.0/16",
 					"service_cidr":                 "172.30.0.0/16",
 					// worker args
 					"password":                       "Test12345",
@@ -261,6 +264,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
+					"set_certificate_authority": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -271,7 +275,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 						"slb_internet_enabled":         "true",
 						"is_enterprise_security_group": "true",
 						"deletion_protection":          "true",
-						"pod_cidr":                     "10.99.0.0/16",
+						"pod_cidr":                     "10.101.0.0/16",
 						"service_cidr":                 "172.30.0.0/16",
 						// check worker args
 						"password": "Test12345",
@@ -282,6 +286,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 						"worker_data_disks.#":            "1",
 						"tags.%":                         "1",
 						"tags.Platform":                  "TF",
+						"set_certificate_authority":      "true",
 					}),
 				),
 			},
@@ -289,7 +294,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "worker_number", "slb_internet_enabled", "tags", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config",
 					"worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
@@ -390,7 +395,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 					"version":                     "1.22.15-aliyunedge.1",
 					"worker_number":               "1",
 					"password":                    "Test12345",
-					"pod_cidr":                    "10.99.0.0/16",
+					"pod_cidr":                    "10.102.0.0/16",
 					"service_cidr":                "172.30.0.0/16",
 					"worker_instance_charge_type": "PostPaid",
 					"new_nat_gateway":             "true",
@@ -412,6 +417,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 					"is_enterprise_security_group": "true",
 					"deletion_protection":          "false",
 					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"set_certificate_authority":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -420,7 +426,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 						"version":                       "1.22.15-aliyunedge.1",
 						"worker_number":                 "1",
 						"password":                      "Test12345",
-						"pod_cidr":                      "10.99.0.0/16",
+						"pod_cidr":                      "10.102.0.0/16",
 						"service_cidr":                  "172.30.0.0/16",
 						"slb_internet_enabled":          "true",
 						"is_enterprise_security_group":  "true",
@@ -433,6 +439,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 						"runtime.name":                  "containerd",
 						"runtime.version":               "1.6.28",
 						"load_balancer_spec":            "slb.s2.small",
+						"set_certificate_authority":     "true",
 					}),
 				),
 			},
@@ -440,7 +447,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+				ImportStateVerifyIgnore: []string{"set_certificate_authority", "certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks",
