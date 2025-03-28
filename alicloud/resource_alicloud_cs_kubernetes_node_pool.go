@@ -979,8 +979,10 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := d.GetOk("desired_size"); ok {
-		desiredSize, _ := strconv.ParseInt(v.(string), 10, 64)
-		objectDataLocalMap1["desired_size"] = desiredSize
+		if v != nil && v != "" {
+			desiredSize, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap1["desired_size"] = desiredSize
+		}
 	}
 
 	if v, ok := d.GetOk("image_id"); ok {
@@ -1012,13 +1014,17 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
-		onDemandBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
-		objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
+		if v != nil && v != "" {
+			onDemandBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
+		}
 	}
 
 	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
-		onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
-		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		if v != nil && v != "" {
+			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		}
 	}
 
 	if v, ok := d.GetOk("period_unit"); ok {
@@ -2133,9 +2139,11 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("desired_size") {
-		update = true
-		desiredSize, _ := strconv.ParseInt(d.Get("desired_size").(string), 10, 64)
-		objectDataLocalMap1["desired_size"] = desiredSize
+		if d.Get("desired_size") != nil && d.Get("desired_size") != "" {
+			update = true
+			desiredSize, _ := strconv.ParseInt(d.Get("desired_size").(string), 10, 64)
+			objectDataLocalMap1["desired_size"] = desiredSize
+		}
 	}
 
 	if d.HasChange("image_id") {
@@ -2169,15 +2177,19 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("on_demand_base_capacity") {
-		update = true
-		onDemandBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_base_capacity").(string), 10, 64)
-		objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
+		if d.Get("on_demand_base_capacity") != nil && d.Get("on_demand_base_capacity") != "" {
+			update = true
+			onDemandBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_base_capacity").(string), 10, 64)
+			objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
+		}
 	}
 
 	if d.HasChange("on_demand_percentage_above_base_capacity") {
-		update = true
-		onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_percentage_above_base_capacity").(string), 10, 64)
-		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		if d.Get("on_demand_percentage_above_base_capacity") != nil && d.Get("on_demand_percentage_above_base_capacity") != "" {
+			update = true
+			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_percentage_above_base_capacity").(string), 10, 64)
+			objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		}
 	}
 
 	if d.HasChange("period_unit") {
