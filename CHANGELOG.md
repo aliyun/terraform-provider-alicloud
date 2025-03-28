@@ -1,4 +1,51 @@
 ## 1.247.0 (Unreleased)
+
+- **New Resource:** `alicloud_esa_cache_reserve_instance` [GH-8545]
+- **New Resource:** `alicloud_esa_site_delivery_task` [GH-8550]
+- **New Resource:** `alicloud_ram_password_policy` [GH-8569]
+- **New Resource:** `alicloud_esa_edge_container_app` [GH-8576]
+- **New Resource:** `alicloud_threat_detection_asset_bind` [GH-8579]
+- **New Resource:** `alicloud_max_compute_quota` [GH-8581]
+- **New Resource:** `alicloud_rds_custom_disk` [GH-8583]
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster` ([1f639f6](https://github.com/aliyun/terraform-provider-alicloud/commit/1f639f69a9370c7536f36d9646ade6789b9731db))
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster_account` ([a98e94f](https://github.com/aliyun/terraform-provider-alicloud/commit/a98e94fc31c84b25559850a85d9f08b917e6350a))
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster_public_endpoint` ([8aa5a15](https://github.com/aliyun/terraform-provider-alicloud/commit/8aa5a15386bb90fa501f3a50b45ac7e4daf85c3c))
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster_backup_policy` ([3ef5f4a](https://github.com/aliyun/terraform-provider-alicloud/commit/3ef5f4af583f3fa438c867a8e959fad088a4bfa0))
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster_security_ip` ([78638f7](https://github.com/aliyun/terraform-provider-alicloud/commit/78638f7dd2ea20a79b8d5fcf3589dd40d4987ac7))
+
+ENHANCEMENTS:
+
+- resource/alicloud_ram_group_policy_attachment: Improves the invkoing api method. [GH-8527]
+- resource/alicloud_instance: support update for attribute 'system_disk_performance_level'. [GH-8539]
+- resource/alicloud_alikafka_sasl_acl: Support new acl_resource_type. [GH-8540]
+- resource/alicloud_resource_manager_shared_resource: Remove enumeration check for resource_type. [GH-8549]
+- resource/alicloud_cen_transit_router: Improves the invkoing api method. [GH-8551]
+- resource/alicloud_cen_transit_router_cidr: Improves the invkoing api method. [GH-8554]
+- resource/alicloud_rocketmq_topic: Added the field max_send_tps, region_id. [GH-8555]
+- resource/alicloud_nas_mount_target: Add new attribute dual_stack. [GH-8557]
+- resource/alicloud_cen_transit_router_peer_attachment: Add new attribute tags. [GH-8558]
+- resource/alicloud_rocketmq_consumer_group: Added the field max_receive_tps, region_id, consume_retry_policy.dead_letter_target_topic. [GH-8559]
+- resource/alicloud_cen_transit_router_route_table_association: Improves the invkoing api method. [GH-8562]
+- resource/alicloud_ram_account_alias: Supports modify account_alias. [GH-8567]
+- resource/alicloud_api_gateway_group: Supports enable vpc intranet domain. [GH-8570]
+- resource/alicloud_ens_image: Added the target_oss_region_id. [GH-8571]
+- resource/alicloud_arms_grafana_workspace: Add new attribute account_number, aliyun_lang and etc. [GH-8572]
+- resource/alicloud_threat_detection_instance: add new attributes post_paid_flag and post_pay_module_switch. [GH-8580]
+- resource/alicloud_click_house_enterprise_db_cluster_security_ip: added diff suppress func for ip check. ([f6f5dce](https://github.com/aliyun/terraform-provider-alicloud/commit/f6f5dce03493b75ef3c60d3635eb47d5aad96076))
+- docs: Improves example for esa. [GH-8563]
+- docs: Fixed gpdb invalid links. [GH-8564]
+- docs: Fixed data_works, oss invalid links. [GH-8566]
+- docs: Fixed invalid links. [GH-8573]
+- docs: Fixed redis, arms, ebs invalid links. [GH-8585]
+- docs: Fixed ecp, esa, dbs, maxcompute invalid links. [GH-8586]
+- docs: Improves description for ram. [GH-8587]
+- docs: Fix invalid id formulated description for ram_role_policy_attachment. [GH-8588]
+
+BUG FIXES:
+
+- resource/alicloud_express_connect_virtual_border_router: Fixed the diff error caused by field vlan_id. [GH-8544]
+- resource/alicloud_api_gateway_instance: Fixed error when ingress_vpc_id is not set. [GH-8552]
+
 ## 1.246.0 (March 21, 2025)
 
 - **New Resource:** `alicloud_eais_client_instance_attachment` ([#8513](https://github.com/aliyun/terraform-provider-alicloud/issues/8513))
