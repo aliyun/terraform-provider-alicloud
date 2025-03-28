@@ -899,6 +899,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_asset_bind":                          resourceAliCloudThreatDetectionAssetBind(),
 			"alicloud_esa_edge_container_app":                               resourceAliCloudEsaEdgeContainerApp(),
 			"alicloud_max_compute_quota":                                    resourceAliCloudMaxComputeQuota(),
+			"alicloud_rds_custom_disk":                                      resourceAliCloudRdsCustomDisk(),
 			"alicloud_ram_password_policy":                                  resourceAliCloudRamPasswordPolicy(),
 			"alicloud_click_house_enterprise_db_cluster_security_ip":        resourceAliCloudClickHouseEnterpriseDbClusterSecurityIP(),
 			"alicloud_click_house_enterprise_db_cluster_backup_policy":      resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicy(),
