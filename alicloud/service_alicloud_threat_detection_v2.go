@@ -26,7 +26,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 	action := "GetInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["InstanceId"] = id
+	request["InstanceId"] = id
 
 	request["CommodityCode"] = "sas"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -61,7 +61,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 
 	return response, nil
 }
-func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
+func (s *ThreatDetectionServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -70,7 +70,7 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 	action := "QueryAvailableInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["InstanceIDs"] = id
+	request["InstanceIDs"] = id
 
 	request["ProductCode"] = "sas"
 	request["ProductType"] = "sas"
@@ -80,6 +80,7 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -92,9 +93,9 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -128,6 +129,13 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionInstanceStateRefreshFunc(id st
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

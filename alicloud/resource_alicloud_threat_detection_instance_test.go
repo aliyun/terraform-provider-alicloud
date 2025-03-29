@@ -15,7 +15,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap1826)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ThreatDetectionService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -171,7 +171,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 					"payment_type":   "Subscription",
 					"version_code":   "level3",
 					"period":         "12",
-					"buy_number":     "40",
+					"buy_number":     "50",
 					"renewal_status": "ManualRenewal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -179,7 +179,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 						"payment_type":   "Subscription",
 						"version_code":   "level3",
 						"period":         "12",
-						"buy_number":     "40",
+						"buy_number":     "50",
 						"renewal_status": "ManualRenewal",
 					}),
 				),
@@ -439,11 +439,11 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"buy_number": "50",
+					"buy_number": "55",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"buy_number": "50",
+						"buy_number": "55",
 					}),
 				),
 			},
@@ -722,7 +722,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, IntlSite)
+			//testAccPreCheckWithAccountSiteType(t, IntlSite)
 			testAccPreCheckForCleanUpInstances(t, "", "sas", "sas", "sas", "")
 		},
 		IDRefreshName: resourceId,
