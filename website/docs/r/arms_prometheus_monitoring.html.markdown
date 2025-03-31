@@ -10,7 +10,7 @@ description: |-
 
 Provides a ARMS Prometheus Monitoring resource. Including serviceMonitor, podMonitor, customJob, probe and other four types of monitoring.
 
-For information about ARMS Prometheus Monitoring and how to use it, see [What is Prometheus Monitoring](https://www.alibabacloud.com/help/en/arms/developer-reference/api-arms-2019-08-08-dir-managed-service-for-prometheus/).
+For information about ARMS Prometheus Monitoring and how to use it, see [What is Prometheus Monitoring](https://www.alibabacloud.com/help/en/arms/prometheus-monitoring/api-arms-2019-08-08-createprometheusmonitoring).
 
 -> **NOTE:** Available since v1.209.0.
 

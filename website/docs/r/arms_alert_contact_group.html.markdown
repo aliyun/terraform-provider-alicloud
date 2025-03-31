@@ -11,7 +11,7 @@ description: |-
 
 Provides a Application Real-Time Monitoring Service (ARMS) Alert Contact Group resource.
 
-For information about Application Real-Time Monitoring Service (ARMS) Alert Contact Group and how to use it, see [What is Alert Contact Group](https://www.alibabacloud.com/help/en/doc-detail/130677.htm).
+For information about Application Real-Time Monitoring Service (ARMS) Alert Contact Group and how to use it, see [What is Alert Contact Group](https://next.api.aliyun.com/api/ARMS/2019-08-08/CreateAlertContactGroup).
 
 -> **NOTE:** Available since v1.131.0.
 
