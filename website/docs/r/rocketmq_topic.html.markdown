@@ -19,7 +19,7 @@ For information about RocketMQ Topic and how to use it, see [What is Topic](http
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_rocketmq_topic&exampleId=5a629ae9-5d2b-ec55-5961-9a5e6a50dfb5d71847e4&activeTab=example&spm=docs.r.rocketmq_topic.0.5a629ae95d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rocketmq_topic&exampleId=cc041f76-f391-834e-7ab8-73ce42034f311cd55635&activeTab=example&spm=docs.r.rocketmq_topic.0.cc041f76f3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

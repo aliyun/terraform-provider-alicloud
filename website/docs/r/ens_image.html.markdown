@@ -21,7 +21,7 @@ For information about ENS Image and how to use it, see [What is Image](https://w
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_image&exampleId=1841648a-a784-d4be-baa1-166241099c9d86003eca&activeTab=example&spm=docs.r.ens_image.0.1841648aa7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ens_image&exampleId=a4a5c27d-c610-17ef-f6cf-5ca936426d306a5c5b36&activeTab=example&spm=docs.r.ens_image.0.a4a5c27dc6&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

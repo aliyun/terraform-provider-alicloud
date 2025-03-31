@@ -20,6 +20,12 @@ For information about RDS Custom Disk and how to use it, see [What is Custom Dis
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_custom_disk&exampleId=1d1c1d87-40c4-9be8-e1fd-6315ae33fa5812959a3e&activeTab=example&spm=docs.r.rds_custom_disk.0.1d1c1d8740&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

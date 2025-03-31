@@ -20,6 +20,12 @@ For information about ESA Cache Reserve Instance and how to use it, see [What is
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_cache_reserve_instance&exampleId=47a5e858-308c-c1b4-9ebd-c694f5b5915c37c9017c&activeTab=example&spm=docs.r.esa_cache_reserve_instance.0.47a5e85830&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
