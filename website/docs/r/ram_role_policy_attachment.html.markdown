@@ -91,7 +91,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. The value is formulated as `role: <policy_name>:<policy_type>:<role_name>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
 
 ## Timeouts
 
