@@ -11,6 +11,7 @@ description: |-
 Provides a RAM Role Policy Attachment resource.
 
 
+
 For information about RAM Role Policy Attachment and how to use it, see [What is Role Policy Attachment](https://next.api.alibabacloud.com/document/Ram/2015-05-01/AttachPolicyToRole).
 
 -> **NOTE:** Available since v1.0.0.
@@ -18,12 +19,6 @@ For information about RAM Role Policy Attachment and how to use it, see [What is
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role_policy_attachment&exampleId=d1fa1b9b-e7df-bcf0-7fdb-5ab39b581203ff08373e&activeTab=example&spm=docs.r.ram_role_policy_attachment.0.d1fa1b9be7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 # Create a RAM Role Policy attachment.
@@ -88,13 +83,15 @@ resource "alicloud_ram_role_policy_attachment" "attach" {
 
 The following arguments are supported:
 * `policy_name` - (Required, ForceNew) The name of the policy.
-* `policy_type` - (Required, ForceNew) The type of the policy. Valid values: `System` and `Custom`.
-* `role_name` - (Required, ForceNew) The name of the RAM role.
+* `policy_type` - (Required, ForceNew) Policy type.
+  - Custom: Custom policy.
+  - System: System policy.
+* `role_name` - (Required, ForceNew) The RAM role name.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The resource ID in terraform of Role Policy Attachment. It formats as `role:<policy_name>:<policy_type>:<role_name>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `role: <policy_name>:<policy_type>:<role_name>`.
 
 ## Timeouts
 

@@ -20,12 +20,6 @@ For information about RAM Login Profile and how to use it, see [What is Login Pr
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_login_profile&exampleId=442ec83a-6fe5-90e2-17a2-351fa3abb6a2738d91e8&activeTab=example&spm=docs.r.ram_login_profile.0.442ec83a6f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "alicloud_ram_user" "user" {
   name         = "terraform_example"
@@ -45,11 +39,14 @@ resource "alicloud_ram_login_profile" "profile" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `user_name` - (Required, ForceNew) The name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
-* `password` - (Required, Sensitive) The logon password of the RAM user. The password must meet the password strength requirements.
-* `password_reset_required` - (Optional, Bool) Specifies whether the RAM user must change the password upon logon. Default value: `false`. Valid values: `true`, `false`.
-* `mfa_bind_required` - (Optional, Bool) Specifies whether an MFA device must be attached to the RAM user upon logon. Valid values: `true`, `false`. [To enhance the security of your resources and data, the default value has been changed to `true`](https://www.alibabacloud.com/en/notice/mfa20240524?_p_lc=1) .
+* `mfa_bind_required` - (Optional, Computed) Specifies whether to forcefully enable multi-factor authentication (MFA) for the RAM user. Valid values:
+  - true: forcefully enables MFA for the RAM user. The RAM user must bind an MFA device upon the next logon.
+  - false (default): does not forcefully enable MFA for the RAM user.
+* `password` - (Required, Sensitive) The password must meet the Password strength requirements. For more information about password strength setting requirements, see [GetPasswordPolicy](https://help.aliyun.com/document_detail/2337691.html).
+* `password_reset_required` - (Optional) Whether the user must reset the password at the next logon. Value:
+  - true
+  - false (default)
+* `user_name` - (Required, ForceNew) The user name.
 
 ## Attributes Reference
 

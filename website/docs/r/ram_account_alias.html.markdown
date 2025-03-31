@@ -36,13 +36,13 @@ Terraform cannot destroy resource `alicloud_ram_account_alias`. Terraform will r
 ## Argument Reference
 
 The following arguments are supported:
-
-* `account_alias` - (Required) Alias of cloud account. This name can have a string of 3 to 32 characters, must contain only alphanumeric characters or hyphens, such as "-", and must not begin with a hyphen.
+* `account_alias` - (Required) The alias of the account.
+It can be 3 to 32 characters in length and can contain lowercase letters, digits, and dashes (-).
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as ``.
+* `id` - The ID of the resource supplied above. This field is set to your Alibaba Cloud Account ID.
 
 ## Timeouts
 
@@ -55,5 +55,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 RAM Account Alias can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_account_alias.example 
+$ terraform import alicloud_ram_account_alias.example <id>
 ```
