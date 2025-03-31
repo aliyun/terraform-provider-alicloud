@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_ram_access_key
 
-Provides a RAM User access key resource.
+Provides a RAM Access Key resource.
 
 
 
@@ -115,16 +115,18 @@ output "encrypted_secret" {
 ## Argument Reference
 
 The following arguments are supported:
-* `status` - (Optional) The status of the AccessKey pair. Default value: `Active`. Valid values: `Active` and `Inactive`.
-* `user_name` - (Optional, ForceNew) The name of the RAM user.
+* `status` - (Optional, Computed) The status of the AccessKey. Value:
+  - Active: Activated.
+  - Inactive: Disabled.
+* `user_name` - (Optional, ForceNew) The RAM user name.
 * `secret_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
 * `pgp_key` - (Optional, ForceNew, Available since v1.47.0) Either a base-64 encoded PGP public key, or a keybase username in the form `keybase:some_person_that_exists`
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The resource ID in terraform of Access Key.
-* `create_time` - (Available since v1.246.0) The time when the AccessKey pair was created.
+* `id` - The ID of the resource supplied above.
+* `create_time` - (Available since v1.246.0) The create time of the AccessKey.
 * `secret` - (Available since v1.98.0) The secret access key. Note that this will be written to the state file. 
 If you use this, please protect your backend state file judiciously. 
 Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext, 

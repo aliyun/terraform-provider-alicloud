@@ -65,14 +65,16 @@ resource "alicloud_ram_group_policy_attachment" "attach" {
 ## Argument Reference
 
 The following arguments are supported:
-* `group_name` - (Required, ForceNew) Specifies the user group name.
-* `policy_name` - (Required, ForceNew) The permission policy name.
-* `policy_type` - (Required, ForceNew) Permission policy type.
+* `group_name` - (Required, ForceNew) The name of the group.
+* `policy_name` - (Required, ForceNew) The name of the policy.
+* `policy_type` - (Required, ForceNew) Policy type.
+  - Custom: Custom policy.
+  - System: System policy.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<policy_name>:<policy_type>:<group_name>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `group:<policy_name>:<policy_type>:<group_name>`.
 
 ## Timeouts
 
@@ -85,5 +87,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 RAM Group Policy Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_group_policy_attachment.example <policy_name>:<policy_type>:<group_name>
+$ terraform import alicloud_ram_group_policy_attachment.example group:<policy_name>:<policy_type>:<group_name>
 ```
