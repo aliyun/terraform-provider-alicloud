@@ -11,9 +11,9 @@ description: |-
 
 Provides a Elastic Cloud Phone (ECP) Key Pair resource.
 
-For information about Elastic Cloud Phone (ECP) Key Pair and how to use it, see [What is Key Pair](https://help.aliyun.com/document_detail/257197.html).
+For information about Elastic Cloud Phone (ECP) Key Pair and how to use it, see [What is Key Pair](https://next.api.aliyun.com/document/cloudphone/2020-12-30/ImportImage).
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 

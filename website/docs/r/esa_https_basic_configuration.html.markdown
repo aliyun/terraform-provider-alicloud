@@ -84,7 +84,7 @@ The following arguments are supported:
   - on: open.
   - off: close.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
+* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](https://next.api.alibabacloud.com/document/ESA/2024-09-10/ListSites) interface.
 * `tls10` - (Optional) Whether to enable TLS1.0. Default is disabled. Possible values:
   - on: Enable.
   - off: Disable.

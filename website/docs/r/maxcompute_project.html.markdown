@@ -12,7 +12,7 @@ Provides a Max Compute Project resource.
 
 MaxCompute project .
 
-For information about Max Compute Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/maxcompute/).
+For information about Max Compute Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/maxcompute/user-guide/api-maxcompute-2022-01-04-createproject).
 
 -> **NOTE:** Available since v1.77.0.
 
@@ -83,7 +83,7 @@ You can turn on storage encryption only for projects that have not turned on sto
 The effective policy after adjusting the backup cycle is:
 Extend the backup cycle: The new backup cycle takes effect on the same day.
 Shorten the backup cycle: The system will automatically delete backup data that has exceeded the retention cycle.
-* `sql_metering_max` - (Optional) Set the maximum threshold for single SQL Consumption, that is, set the ODPS. SQL. metering.value.max attribute. For more information, see [Consumption control](https://www.alibabacloud.com/help/en/maxcompute/product-overview/consumption-controll).
+* `sql_metering_max` - (Optional) Set the maximum threshold for single SQL Consumption, that is, set the ODPS. SQL. metering.value.max attribute. For more information, see [Consumption control](https://www.alibabacloud.com/help/en/maxcompute/product-overview/consumption-control).
 Unit: scan volume (GB)* complexity.
 * `table_lifecycle` - (Optional, List) Set whether the lifecycle of the table in the project needs to be configured, that is, set the ODPS. table.lifecycle property, See [`table_lifecycle`](#properties-table_lifecycle) below.
 * `timezone` - (Optional) Project time zone, example value: Asia/Shanghai
