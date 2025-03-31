@@ -15,7 +15,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap1826)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ThreatDetectionService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -42,7 +42,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 					"sas_webguard_order_num": "100",
 					"sas_sc":                 "true",
 					"version_code":           "level2",
-					"buy_number":             "30",
+					"buy_number":             "55",
 					"honeypot_switch":        "1",
 					"sas_sdk_switch":         "1",
 					"sas_sdk":                "1000",
@@ -60,7 +60,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 						"sas_webguard_order_num": "100",
 						"sas_sc":                 "true",
 						"version_code":           "level2",
-						"buy_number":             "30",
+						"buy_number":             "55",
 						"honeypot_switch":        "1",
 						"sas_sdk_switch":         "1",
 						"sas_sdk":                "1000",
@@ -77,7 +77,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 					"container_image_scan":   "200",
 					"sas_sc":                 "true",
 					"version_code":           "level2",
-					"buy_number":             "30",
+					"buy_number":             "60",
 					"modify_type":            "Upgrade",
 					"honeypot_switch":        "1",
 					"sas_sdk_switch":         "1",
@@ -94,7 +94,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 						"container_image_scan":   "200",
 						"sas_sc":                 "true",
 						"version_code":           "level2",
-						"buy_number":             "30",
+						"buy_number":             "60",
 						"modify_type":            "Upgrade",
 						"honeypot_switch":        "1",
 						"sas_sdk_switch":         "1",
@@ -144,8 +144,6 @@ variable "name" {
 `, name)
 }
 
-// Test ThreatDetection Instance. >>> Resource test cases, automatically generated.
-// Case 4253
 func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -171,7 +169,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 					"payment_type":   "Subscription",
 					"version_code":   "level3",
 					"period":         "12",
-					"buy_number":     "40",
+					"buy_number":     "55",
 					"renewal_status": "ManualRenewal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -179,7 +177,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 						"payment_type":   "Subscription",
 						"version_code":   "level3",
 						"period":         "12",
-						"buy_number":     "40",
+						"buy_number":     "55",
 						"renewal_status": "ManualRenewal",
 					}),
 				),
@@ -439,11 +437,11 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"buy_number": "50",
+					"buy_number": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"buy_number": "50",
+						"buy_number": "60",
 					}),
 				),
 			},
@@ -632,7 +630,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckForCleanUpInstances(t, "", "sas", "sas", "sas", "")
+			// testAccPreCheckForCleanUpInstances(t, "", "sas", "sas", "sas", "")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -645,7 +643,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 					"v_core":                   "20",
 					"sas_sc":                   "true",
 					"sas_cspm_switch":          "1",
-					"buy_number":               "40",
+					"buy_number":               "60",
 					"sas_webguard_boolean":     "1",
 					"honeypot_switch":          "1",
 					"payment_type":             "Subscription",
@@ -658,7 +656,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 					"rasp_count":               "2",
 					"vul_count":                "30",
 					"version_code":             "level2",
-					"sas_cspm":                 "1200",
+					"sas_cspm":                 "15000",
 					"sas_sdk_switch":           "1",
 					"renewal_period_unit":      "Y",
 					"container_image_scan_new": "200",
@@ -674,7 +672,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 						"v_core":                   "20",
 						"sas_sc":                   "true",
 						"sas_cspm_switch":          "1",
-						"buy_number":               "40",
+						"buy_number":               "60",
 						"sas_webguard_boolean":     "1",
 						"honeypot_switch":          "1",
 						"payment_type":             "Subscription",
@@ -687,7 +685,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 						"rasp_count":               "2",
 						"vul_count":                "30",
 						"version_code":             "level2",
-						"sas_cspm":                 "1200",
+						"sas_cspm":                 "15000",
 						"sas_sdk_switch":           "1",
 						"renewal_period_unit":      "Y",
 						"container_image_scan_new": "200",
@@ -722,8 +720,8 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, IntlSite)
-			testAccPreCheckForCleanUpInstances(t, "", "sas", "sas", "sas", "")
+			//testAccPreCheckWithAccountSiteType(t, IntlSite)
+			//testAccPreCheckForCleanUpInstances(t, "", "sas", "sas", "sas", "")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -873,6 +871,79 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 			},
 		},
 	})
+}
+
+// Test ThreatDetection Instance. >>> Resource test cases, automatically generated.
+// Case 中国站资源测试用例_20250217_后付费 10249
+func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_threat_detection_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap10249)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeThreatDetectionInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence10249)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "PayAsYouGo",
+					"post_paid_flag": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":   "PayAsYouGo",
+						"post_paid_flag": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"subscription_type":      "PayAsYouGo",
+					"post_pay_module_switch": "{\\\"VUL\\\":1}",
+					"modify_type":            "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"subscription_type":      "PayAsYouGo",
+						"post_pay_module_switch": CHECKSET,
+						"modify_type":            "Upgrade",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "period", "post_paid_flag", "post_pay_module_switch", "product_type", "subscription_type"},
+			},
+		},
+	})
+}
+
+var AlicloudThreatDetectionInstanceMap10249 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudThreatDetectionInstanceBasicDependence10249(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
 }
 
 // Test ThreatDetection Instance. <<< Resource test cases, automatically generated.
