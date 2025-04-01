@@ -1023,6 +1023,38 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+					"status":               "Stopped",
+					"stopped_mode":         "StopCharging",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+						"status":               "Stopped",
+						"stopped_mode":         "StopCharging",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"period":               "1",
+					"period_unit":          "Month",
+					"instance_charge_type": "PrePaid",
+					"status":               "Running",
+					"stopped_mode":         REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"period":               "1",
+						"period_unit":          "Month",
+						"instance_charge_type": "PrePaid",
+						"status":               "Running",
+						"stopped_mode":         "Not-applicable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"image_id": "${data.alicloud_images.default.images.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2273,12 +2305,12 @@ func TestAccAliCloudECSInstance_StatusUpdated(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status":       "Stopped",
-					"stopped_mode": "KeepCharging",
+					"stopped_mode": "StopCharging",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status":       "Stopped",
-						"stopped_mode": "KeepCharging",
+						"stopped_mode": "StopCharging",
 					}),
 				),
 			},

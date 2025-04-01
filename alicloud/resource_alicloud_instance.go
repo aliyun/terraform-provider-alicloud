@@ -1678,6 +1678,11 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
+
+	if err := modifyInstanceChargeType(d, meta, false); err != nil {
+		return WrapError(err)
+	}
+
 	target, targetExist := d.GetOk("status")
 	statusUpdate := d.HasChange("status")
 	if d.IsNewResource() && targetExist && target.(string) == string(Running) {
@@ -1779,10 +1784,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if d.HasChange("force_delete") {
 		d.SetPartial("force_delete")
-	}
-
-	if err := modifyInstanceChargeType(d, meta, false); err != nil {
-		return WrapError(err)
 	}
 
 	// Only PrePaid instance can support modifying renewal attribute
