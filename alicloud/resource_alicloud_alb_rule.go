@@ -600,7 +600,7 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		removeHeaderConfigMap := map[string]interface{}{}
 		for _, removeHeaderConfig := range ruleActionsArg["remove_header_config"].(*schema.Set).List() {
 			removeHeaderConfigArg := removeHeaderConfig.(map[string]interface{})
-			insertHeaderConfigMap["Key"] = removeHeaderConfigArg["key"]
+			removeHeaderConfigArg["Key"] = removeHeaderConfigArg["key"]
 			ruleActionsMap["RemoveHeaderConfig"] = removeHeaderConfigMap
 		}
 
@@ -725,8 +725,8 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		responseHeaderConfigMap := map[string]interface{}{}
 		for _, headerConfig := range ruleConditionsArg["response_header_config"].(*schema.Set).List() {
 			headerConfigArg := headerConfig.(map[string]interface{})
-			headerConfigMap["Key"] = headerConfigArg["key"]
-			headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+			responseHeaderConfigMap["Key"] = headerConfigArg["key"]
+			responseHeaderConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
 			ruleConditionsMap["ResponseHeaderConfig"] = responseHeaderConfigMap
 		}
 
