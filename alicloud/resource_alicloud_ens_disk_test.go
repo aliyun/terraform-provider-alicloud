@@ -14,7 +14,7 @@ import (
 func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ens_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEnsDiskMap5178)
+	ra := resourceAttrInit(resourceId, AliCloudEnsDiskMap5178)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEnsDisk")
@@ -22,7 +22,7 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sensdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsDiskBasicDependence5178)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEnsDiskBasicDependence5178)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -49,27 +49,63 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"size": "40",
+					"size": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"size": "40",
+						"size": "60",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":      "cloud_ssd",
-					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "cn-chongqing-11",
-					"size":          "60",
+					"disk_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":      "cloud_ssd",
-						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "cn-chongqing-11",
-						"size":          "60",
+						"disk_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -83,12 +119,12 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 	})
 }
 
-var AlicloudEnsDiskMap5178 = map[string]string{
+var AliCloudEnsDiskMap5178 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudEnsDiskBasicDependence5178(name string) string {
+func AliCloudEnsDiskBasicDependence5178(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -102,7 +138,7 @@ variable "name" {
 func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ens_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEnsDiskMap5179)
+	ra := resourceAttrInit(resourceId, AliCloudEnsDiskMap5179)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEnsDisk")
@@ -110,7 +146,7 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-ensdisk%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsDiskBasicDependence5179)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEnsDiskBasicDependence5179)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -125,59 +161,77 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 					"category":      "cloud_efficiency",
 					"payment_type":  "PayAsYouGo",
 					"ens_region_id": "ch-zurich-1",
-					"disk_name":     name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"size":          "20",
-						"category":      "cloud_efficiency",
-						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "ch-zurich-1",
-						"disk_name":     name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"size": "20",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"size": "20",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_name": name + "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_name": name + "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"snapshot_id":   "${alicloud_ens_snapshot.createsnapshot.id}",
-					"category":      "cloud_efficiency",
-					"kms_key_id":    "${alicloud_ens_disk.createdisk.kms_key_id}",
-					"size":          "20",
 					"encrypted":     "true",
-					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "ch-zurich-1",
-					"disk_name":     name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snapshot_id":   CHECKSET,
-						"category":      "cloud_efficiency",
-						"kms_key_id":    CHECKSET,
 						"size":          "20",
-						"encrypted":     "true",
+						"category":      "cloud_efficiency",
 						"payment_type":  "PayAsYouGo",
 						"ens_region_id": "ch-zurich-1",
-						"disk_name":     name,
+						"encrypted":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"size": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"size": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -191,12 +245,13 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 	})
 }
 
-var AlicloudEnsDiskMap5179 = map[string]string{
+var AliCloudEnsDiskMap5179 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"kms_key_id":  CHECKSET,
 }
 
-func AlicloudEnsDiskBasicDependence5179(name string) string {
+func AliCloudEnsDiskBasicDependence5179(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -226,7 +281,7 @@ resource "alicloud_ens_snapshot" "createsnapshot" {
 func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ens_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEnsDiskMap5178)
+	ra := resourceAttrInit(resourceId, AliCloudEnsDiskMap5178)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEnsDisk")
@@ -234,7 +289,7 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sensdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsDiskBasicDependence5178)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEnsDiskBasicDependence5178)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -249,6 +304,11 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 					"size":          "20",
 					"payment_type":  "PayAsYouGo",
 					"ens_region_id": "cn-chongqing-18",
+					"disk_name":     name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -256,6 +316,10 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 						"size":          "20",
 						"payment_type":  "PayAsYouGo",
 						"ens_region_id": "cn-chongqing-18",
+						"disk_name":     name,
+						"tags.%":        "2",
+						"tags.Created":  "TF",
+						"tags.For":      "Test",
 					}),
 				),
 			},
@@ -273,7 +337,7 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ens_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEnsDiskMap5179)
+	ra := resourceAttrInit(resourceId, AliCloudEnsDiskMap5179)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEnsDisk")
@@ -281,7 +345,7 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sensdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsDiskBasicDependence5179)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEnsDiskBasicDependence5179)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -300,6 +364,10 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 					"payment_type":  "PayAsYouGo",
 					"ens_region_id": "ch-zurich-1",
 					"disk_name":     name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -311,6 +379,9 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 						"payment_type":  "PayAsYouGo",
 						"ens_region_id": "ch-zurich-1",
 						"disk_name":     name,
+						"tags.%":        "2",
+						"tags.Created":  "TF",
+						"tags.For":      "Test",
 					}),
 				),
 			},

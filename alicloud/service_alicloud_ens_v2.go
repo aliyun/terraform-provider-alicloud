@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type EnsServiceV2 struct {
@@ -130,10 +131,11 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeDisks"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DiskId"] = id
+	request["DiskId"] = id
+
+	action := "DescribeDisks"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -146,10 +148,9 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -164,6 +165,39 @@ func (s *EnsServiceV2) DescribeEnsDisk(id string) (object map[string]interface{}
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EnsServiceV2) DescribeDiskListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+
+	request["ResourceType"] = "disk"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
 }
 
 func (s *EnsServiceV2) EnsDiskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -182,6 +216,13 @@ func (s *EnsServiceV2) EnsDiskStateRefreshFunc(id string, field string, failStat
 			e := jsonata.MustCompile("$number($.Size & '') / 1024")
 			v, _ = e.Eval(object)
 			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
 		}
 
 		for _, failState := range failStates {
@@ -1023,3 +1064,89 @@ func (s *EnsServiceV2) EnsKeyPairStateRefreshFunc(id string, field string, failS
 }
 
 // DescribeEnsKeyPair >>> Encapsulated.
+
+// SetResourceTags <<< Encapsulated tag function for Ens.
+func (s *EnsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+
+			request["ResourceType"] = resourceType
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+
+			request["ResourceType"] = resourceType
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.
