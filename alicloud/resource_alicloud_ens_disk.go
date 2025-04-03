@@ -23,7 +23,7 @@ func resourceAliCloudEnsDisk() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(7 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -55,8 +55,8 @@ func resourceAliCloudEnsDisk() *schema.Resource {
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -77,6 +77,7 @@ func resourceAliCloudEnsDisk() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -95,7 +96,7 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	request["EnsRegionId"] = d.Get("ens_region_id")
 	request["Category"] = d.Get("category")
-	if v, ok := d.GetOk("size"); ok {
+	if v, ok := d.GetOkExists("size"); ok {
 		request["Size"] = v
 	}
 	if v, ok := d.GetOk("snapshot_id"); ok {
@@ -110,10 +111,14 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("disk_name"); ok {
 		request["DiskName"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -121,9 +126,9 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_disk", action, AlibabaCloudSdkGoERROR)
@@ -133,7 +138,7 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(fmt.Sprint(id))
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, ensServiceV2.EnsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, ensServiceV2.EnsDiskStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -169,6 +174,14 @@ func resourceAliCloudEnsDiskRead(d *schema.ResourceData, meta interface{}) error
 	evaluation, _ := e.Eval(objectRaw)
 	d.Set("size", formatInt(evaluation))
 
+	objectRaw, err = ensServiceV2.DescribeDiskListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	tagsMaps := objectRaw["TagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
 	return nil
 }
 
@@ -179,21 +192,22 @@ func resourceAliCloudEnsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "ResizeDisk"
+
 	var err error
+	action := "ResizeDisk"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DiskId"] = d.Id()
+	request["DiskId"] = d.Id()
 	if d.HasChange("size") {
 		update = true
-		request["NewSize"] = d.Get("size")
 	}
-
+	if v, ok := d.GetOkExists("size"); ok {
+		request["NewSize"] = v
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -201,9 +215,9 @@ func resourceAliCloudEnsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -212,23 +226,22 @@ func resourceAliCloudEnsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("size")
 	}
 	update = false
 	action = "ModifyDiskAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DiskId"] = d.Id()
+	request["DiskId"] = d.Id()
 	if d.HasChange("disk_name") {
 		update = true
-		request["DiskName"] = d.Get("disk_name")
 	}
-
+	if v, ok := d.GetOk("disk_name"); ok {
+		request["DiskName"] = v
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -236,15 +249,20 @@ func resourceAliCloudEnsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("disk_name")
 	}
 
+	if d.HasChange("tags") {
+		ensServiceV2 := EnsServiceV2{client}
+		if err := ensServiceV2.SetResourceTags(d, "disk"); err != nil {
+			return WrapError(err)
+		}
+	}
 	d.Partial(false)
 	return resourceAliCloudEnsDiskRead(d, meta)
 }
@@ -258,7 +276,7 @@ func resourceAliCloudEnsDiskDelete(d *schema.ResourceData, meta interface{}) err
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["DiskId"] = d.Id()
+	request["DiskId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -271,19 +289,23 @@ func resourceAliCloudEnsDiskDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsDiskStateRefreshFunc(d.Id(), "DiskId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsDiskStateRefreshFunc(d.Id(), "$.DiskId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 
@@ -294,6 +316,7 @@ func convertEnsDisksDisksDiskChargeTypeResponse(source interface{}) interface{} 
 	}
 	return source
 }
+
 func convertEnsDiskChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
