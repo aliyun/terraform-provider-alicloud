@@ -57,8 +57,8 @@ func resourceAliCloudEnsEip() *schema.Resource {
 			"isp": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -85,8 +85,10 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	var err error
 	request = make(map[string]interface{})
 
+	request["ClientToken"] = buildClientToken(action)
+
 	request["EnsRegionId"] = d.Get("ens_region_id")
-	if v, ok := d.GetOk("bandwidth"); ok {
+	if v, ok := d.GetOkExists("bandwidth"); ok {
 		request["Bandwidth"] = v
 	}
 	request["InternetChargeType"] = d.Get("internet_charge_type")
@@ -103,7 +105,6 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,9 +112,9 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_eip", action, AlibabaCloudSdkGoERROR)
@@ -163,31 +164,36 @@ func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) erro
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "ModifyEnsEipAddressAttribute"
+
 	var err error
+	action := "ModifyEnsEipAddressAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AllocationId"] = d.Id()
+	request["AllocationId"] = d.Id()
+
 	if d.HasChange("eip_name") {
 		update = true
-		request["Name"] = d.Get("eip_name")
 	}
-
+	if v, ok := d.GetOk("eip_name"); ok {
+		request["Name"] = v
+	}
 	if d.HasChange("bandwidth") {
 		update = true
-		request["Bandwidth"] = d.Get("bandwidth")
-	}
 
+		if v, ok := d.GetOkExists("bandwidth"); ok {
+			request["Bandwidth"] = v
+		}
+	}
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
 	}
-
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -195,9 +201,9 @@ func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -215,7 +221,7 @@ func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) erro
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["InstanceId"] = d.Id()
+	request["InstanceId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -228,19 +234,23 @@ func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "AllocationId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "$.AllocationId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 
