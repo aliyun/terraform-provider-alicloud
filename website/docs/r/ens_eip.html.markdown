@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_ens_eip
 
-Provides a ENS Eip resource. Edge elastic public network IP. When you use it for the first time, please contact the product classmates to add a resource whitelist.
+Provides a ENS Eip resource.
+
+Edge elastic public network IP. When you use it for the first time, please contact the product classmates to add a resource whitelist.
 
 For information about ENS Eip and how to use it, see [What is Eip](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createeipinstance).
 
@@ -30,13 +32,12 @@ variable "name" {
 }
 
 resource "alicloud_ens_eip" "default" {
-  description   = "EipDescription_autotest"
-  bandwidth     = "5"
-  isp           = "cmcc"
-  payment_type  = "PayAsYouGo"
-  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
-  eip_name      = var.name
-
+  description          = "EipDescription_autotest"
+  bandwidth            = "5"
+  isp                  = "cmcc"
+  payment_type         = "PayAsYouGo"
+  ens_region_id        = "cn-chenzhou-telecom_unicom_cmcc"
+  eip_name             = var.name
   internet_charge_type = "95BandwidthByMonth"
 }
 ```
@@ -44,20 +45,20 @@ resource "alicloud_ens_eip" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Optional, Computed) The peak bandwidth of the EIP to be specified.Rules:Default value: 5, value range: 5~10000, unit: Mbps. Example value: 5.
+* `bandwidth` - (Optional, Computed) The maximum bandwidth of the EIP. Default value: `5`. Valid values: `5` to `10000`. Unit: Mbit/s.
 * `description` - (Optional) The description of the EIP.
-* `eip_name` - (Optional) Name of the EIP instance.
+* `eip_name` - (Optional) The name of the EIP.
 * `ens_region_id` - (Required, ForceNew) Ens node ID.
-* `internet_charge_type` - (Required, ForceNew) Billing type of the EIP instance. Valid value: 95bandwidthbymonth.
-* `isp` - (Optional, ForceNew) Internet service provider, if not filled in, it will be assigned according to the default rules.
-* `payment_type` - (Required, ForceNew) The billing type of the EIP instanceValue: PayAsYouGo.
+* `internet_charge_type` - (Required, ForceNew) The metering method of the EIP. Valid value: `95BandwidthByMonth`.
+* `isp` - (Optional, ForceNew) The Internet service provider. Valid value: `cmcc`, `unicom`, `telecom`.
+* `payment_type` - (Required, ForceNew) The billing method of the EIP. Valid value: `PayAsYouGo`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the EIP instance.
-* `status` - The status of the EIP instance.Rules:Associating: bindingUnassociating: UnbindingInUse: AssignedAvailable: AvailableCreating: CreatingReleasing: Releasing.
+* `status` - The status of the EIP.
 
 ## Timeouts
 
