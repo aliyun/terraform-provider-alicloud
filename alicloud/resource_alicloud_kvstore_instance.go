@@ -602,7 +602,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 180*time.Second, r_kvstoreService.KvstoreInstancesStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 180*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -1739,7 +1739,7 @@ func resourceAliCloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Released"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, r_kvstoreService.KvstoreInstanceDeletedStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
