@@ -11,7 +11,7 @@ description: |-
 
 Provides a DTS Synchronization Job resource.
 
-For information about DTS Synchronization Job and how to use it, see [What is Synchronization Job](https://www.alibabacloud.com/product/data-transmission-service).
+For information about DTS Synchronization Job and how to use it, see [What is Synchronization Job](https://www.alibabacloud.com/help/en/dts/developer-reference/api-configuredtsjob).
 
 -> **NOTE:** Available since v1.138.0.
 

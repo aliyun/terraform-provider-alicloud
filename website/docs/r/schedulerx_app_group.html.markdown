@@ -12,7 +12,7 @@ Provides a Schedulerx App Group resource.
 
 
 
-For information about Schedulerx App Group and how to use it, see [What is App Group](https://www.alibabacloud.com/help/en/).
+For information about Schedulerx App Group and how to use it, see [What is App Group](https://www.alibabacloud.com/help/en/schedulerx/schedulerx-serverless/developer-reference/api-schedulerx2-2019-04-30-createappgroup).
 
 -> **NOTE:** Available since v1.240.0.
 

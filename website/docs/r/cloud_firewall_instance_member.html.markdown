@@ -11,9 +11,9 @@ description: |-
 
 Provides a Cloud Firewall Instance Member resource.
 
-For information about Cloud Firewall Instance Member and how to use it, see [What is Instance Member](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createloadbalancer).
+For information about Cloud Firewall Instance Member and how to use it, see [What is Instance Member](https://www.alibabacloud.com/help/en/cloud-firewall/cloudfirewall/developer-reference/api-cloudfw-2017-12-07-addinstancemembers).
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
@@ -52,9 +52,7 @@ resource "alicloud_cloud_firewall_instance_member" "default" {
 
 The following arguments are supported:
 * `member_desc` - (Optional) Remarks of cloud firewall member accounts.
-* `member_uid` - (Required,ForceNew) The UID of the cloud firewall member account.
-
-
+* `member_uid` - (Required, ForceNew) The UID of the cloud firewall member account.
 
 ## Attributes Reference
 
@@ -65,7 +63,7 @@ The following attributes are exported:
 * `modify_time` - The last modification time of the cloud firewall member account.> use second-level timestamp format.
 * `status` - The resource attribute field that represents the resource status.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Instance Member.
