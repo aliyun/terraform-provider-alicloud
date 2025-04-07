@@ -12,7 +12,7 @@ Provides a GWLB Load Balancer resource.
 
 
 
-For information about GWLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/).
+For information about GWLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/slb/gateway-based-load-balancing-gwlb/developer-reference/api-gwlb-2024-04-15-createloadbalancer).
 
 -> **NOTE:** Available since v1.234.0.
 
