@@ -2,12 +2,84 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func testSweepCloudSsoDirectoryAccessConfiguration(region, directoryId string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"",
+	}
+	action := "ListAccessConfigurations"
+	request := map[string]interface{}{}
+	request["DirectoryId"] = directoryId
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.AccessConfigurations", response)
+	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.AccessAssignments", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(item["AccessConfigurationName"].(string)), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Cloud Sso AccessConfigurationName: %s", item["AccessConfigurationName"].(string))
+			continue
+		}
+		action := "DeleteAccessConfiguration"
+		req := map[string]interface{}{
+			"DirectoryId":                   directoryId,
+			"AccessConfigurationId":         item["AccessConfigurationId"],
+			"ForceRemovePermissionPolicies": true,
+		}
+		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Cloud Sso AccessAssignment (%s): %s", item["AccessConfigurationName"].(string), err)
+		}
+		log.Printf("[INFO] Delete Cloud Sso AccessAssignment success: %s ", item["AccessConfigurationName"].(string))
+	}
+	return nil
+}
 
 func TestAccAliCloudCloudSSOAccessConfiguration_basic0(t *testing.T) {
 	var v map[string]interface{}

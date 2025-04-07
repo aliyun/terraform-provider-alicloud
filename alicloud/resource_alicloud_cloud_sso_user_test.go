@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -17,6 +20,74 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"",
+	}
+	action := "ListUsers"
+	request := map[string]interface{}{}
+	request["DirectoryId"] = directoryId
+	request["MaxResults"] = 100
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.Users", response)
+	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Users", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(item["UserName"].(string)), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Cloud Sso User: %s", item["UserName"].(string))
+			continue
+		}
+		action := "DeleteUser"
+		req := map[string]interface{}{
+			"UserId":      item["UserId"],
+			"DirectoryId": directoryId,
+		}
+		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Cloud Sso User (%s): %s", item["UserName"].(string), err)
+		}
+		log.Printf("[INFO] Delete Cloud Sso User success: %s ", item["UserName"].(string))
+	}
+	return nil
+}
 
 func TestAccAlicloudCloudSSOUser_basic0(t *testing.T) {
 	var v map[string]interface{}
