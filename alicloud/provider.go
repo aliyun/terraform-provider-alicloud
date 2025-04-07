@@ -896,7 +896,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_scheduled_preload_execution":                      resourceAliCloudEsaScheduledPreloadExecution(),
 			"alicloud_sls_etl":                                              resourceAliCloudSlsEtl(),
+			"alicloud_esa_scheduled_preload_job":                            resourceAliCloudEsaScheduledPreloadJob(),
 			"alicloud_esa_edge_container_app_record":                        resourceAliCloudEsaEdgeContainerAppRecord(),
 			"alicloud_threat_detection_asset_bind":                          resourceAliCloudThreatDetectionAssetBind(),
 			"alicloud_esa_edge_container_app":                               resourceAliCloudEsaEdgeContainerApp(),
