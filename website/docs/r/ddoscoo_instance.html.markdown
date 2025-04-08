@@ -60,52 +60,57 @@ The following arguments are supported:
 * `base_bandwidth` - (Optional) Base defend bandwidth of the instance. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `base_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `bandwidth` - (Optional) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `service_bandwidth` - (Optional) Business bandwidth of the instance. At leaset 100. Increased 100 per step, such as 100, 200, 300. The unit is Mbps. Only support upgrade. **NOTE:** `service_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
-* `normal_bandwidth` - (Optional, ForceNew, Available since v1.214.0) The clean bandwidth provided by the instance. **NOTE:** `normal_bandwidth` is valid only when `product_type` is set to `ddosDip`.
-* `normal_qps` - (Optional, ForceNew, Available since v1.214.0) The clean QPS provided by the instance. **NOTE:** `normal_qps` is valid only when `product_type` is set to `ddosDip`.
+* `normal_bandwidth` - (Optional, Available since v1.214.0) The clean bandwidth provided by the instance. **NOTE:** `normal_bandwidth` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_bandwidth` can be modified.
+* `normal_qps` - (Optional, Available since v1.214.0) The clean QPS provided by the instance. **NOTE:** `normal_qps` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_qps` can be modified.
 * `edition_sale` - (Optional, ForceNew, Available since v1.212.0) The mitigation plan of the instance. Default value: `coop`. Valid values:
   - `coop`: Anti-DDoS Pro instance of the Profession mitigation plan.
-* `product_plan` - (Optional, ForceNew, Available since v1.214.0) The mitigation plan of the instance. Valid values:
+* `product_plan` - (Optional, Available since v1.214.0) The mitigation plan of the instance. Valid values:
   - `0`: The Insurance mitigation plan.
   - `1`: The Unlimited mitigation plan.
   - `2`: The Chinese Mainland Acceleration (CMA) mitigation plan.
   - `3`: The Secure Chinese Mainland Acceleration (Sec-CMA) mitigation plan.
-**NOTE:** `product_plan` is valid only when `product_type` is set to `ddosDip`.
+**NOTE:** `product_plan` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `product_plan` can be modified.
 * `address_type` - (Optional, ForceNew, Available since v1.212.0) The IP version of the IP address. Default value: `Ipv4`. Valid values: `Ipv4`, `Ipv6`. **NOTE:** `address_type` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `bandwidth_mode` - (Optional, Available since v1.212.0) The mitigation plan of the instance. Valid values:
   - `0`: Disables the burstable clean bandwidth feature.
   - `1`: Enables the burstable clean bandwidth feature and uses the daily 95th percentile metering method.
   - `2`: Enables the burstable clean bandwidth feature and uses the monthly 95th percentile metering method.
 **NOTE:** `bandwidth_mode` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
-* `function_version` - (Optional, ForceNew, Available since v1.214.0) The function plan of the instance. Valid values:
+* `function_version` - (Optional, Available since v1.214.0) The function plan of the instance. Valid values:
   - `0`: The Standard function plan.
   - `1`: The Enhanced function plan.
+**NOTE:** From version 1.248.0, `function_version` can be modified.
 * `product_type` - (Optional, Available since v1.125.0) The product type for purchasing DDOSCOO instances used to differ different account type. Default value: `ddoscoo`. Valid values:
   - `ddoscoo`: Anti-DDoS Pro. Only supports domestic account.
   - `ddoscoo_intl`: Anti-DDoS Pro. Only supports to international account.
   - `ddosDip`: Anti-DDoS Premium.
-**NOTE:** From version 1.214.0, `product_type` can be set to `ddosDip`. At present, if you set to `product_type` to `ddosDip`, only `name` can be modified.
+**NOTE:** From version 1.214.0, `product_type` can be set to `ddosDip`.
 * `period` - (Optional, Int) The duration that you will buy DdosCoo instance (in month). Valid values: [1~9], `12`, `24`, `36`. Default value: `1`. At present, the provider does not support modify `period`.
+* `tags` - (Optional, Map, Available since v1.248.0) A mapping of tags to assign to the resource.
+* `modify_type` - (Optional, Available since v1.248.0) The type of modification. Valid values: `UPGRADE`, `DOWNGRADE`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the instance resource of DdosCoo.
-* `ip` - (Available since v1.212.0) The IP address of the instance.
+* `id` - The resource ID in terraform of DdosCoo.
+* `ip` - (Available since v1.212.0) The IP address of the Instance.
+* `status` - (Available since v1.248.0) The status of the instance.
+* `create_time` - (Available since v1.248.0) The time when the instance was created.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.212.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when create the DdosCoo instance.
-* `delete` - (Defaults to 3 mins) Used when delete the DdosCoo instance.
+* `create` - (Defaults to 18 mins) Used when create the Instance.
+* `update` - (Defaults to 6 mins) Used when update the Instance.
+* `delete` - (Defaults to 5 mins) Used when delete the Instance.
 
 ## Import
 
-DdosCoo instance can be imported using the id, e.g.
+DdosCoo Instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ddoscoo_instance.example ddoscoo-cn-123456
+$ terraform import alicloud_ddoscoo_instance.example <id>
 ```
