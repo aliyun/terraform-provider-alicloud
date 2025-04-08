@@ -2,13 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"time"
 )
 
 func resourceAliCloudOssBucketHttpsConfig() *schema.Resource {
@@ -70,6 +69,7 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 
 	objectDataLocalMap["TLS"] = tLS
 	request["HttpsConfiguration"] = objectDataLocalMap
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -90,6 +90,12 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 	}
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
+
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#TLSVersion", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudOssBucketHttpsConfigRead(d, meta)
 }
@@ -130,13 +136,15 @@ func resourceAliCloudOssBucketHttpsConfigUpdate(d *schema.ResourceData, meta int
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	action := fmt.Sprintf("/?httpsConfig")
+
 	var err error
+	action := fmt.Sprintf("/?httpsConfig")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
+
 	objectDataLocalMap := make(map[string]interface{})
 
 	if d.HasChanges("enable", "tls_versions") {
@@ -169,6 +177,11 @@ func resourceAliCloudOssBucketHttpsConfigUpdate(d *schema.ResourceData, meta int
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#TLSVersion", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
