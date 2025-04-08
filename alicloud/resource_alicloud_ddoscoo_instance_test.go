@@ -2,15 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-
-	"log"
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -20,11 +18,11 @@ import (
 func init() {
 	resource.AddTestSweepers("alicloud_ddoscoo_instance", &resource.Sweeper{
 		Name: "alicloud_ddoscoo_instance",
-		F:    testSweepDdoscooInstances,
+		F:    testSweepDdosCooInstances,
 	})
 }
 
-func testSweepDdoscooInstances(region string) error {
+func testSweepDdosCooInstances(region string) error {
 	if testSweepPreCheckWithRegions(region, true, connectivity.DdoscooSupportedRegions) {
 		log.Printf("[INFO] Skipping ddoscoo unsupported region: %s", region)
 		return nil
@@ -227,16 +225,15 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -347,10 +344,52 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
 			},
 		},
 	})
@@ -361,16 +400,15 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -393,6 +431,10 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 					"bandwidth_mode":    "2",
 					"product_type":      "ddoscoo",
 					"period":            "1",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -404,6 +446,9 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 						"domain_count":      "50",
 						"edition_sale":      "coop",
 						"address_type":      "Ipv6",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
 					}),
 				),
 			},
@@ -411,7 +456,7 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
 			},
 		},
 	})
@@ -422,16 +467,15 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -545,10 +589,52 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
 			},
 		},
 	})
@@ -558,19 +644,19 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicDipMap)
-	serviceFunc := func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -610,10 +696,113 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"port_count": "55",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port_count": "55",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_count": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_count": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"normal_bandwidth": "150",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"normal_bandwidth": "150",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"normal_qps": "3000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"normal_qps": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_plan": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_plan": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_version": "1",
+					"modify_type":      "UPGRADE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
 			},
 		},
 	})
@@ -624,19 +813,19 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicDipMap)
-	serviceFunc := func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -649,7 +838,7 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 					"domain_count":     "10",
 					"normal_bandwidth": "100",
 					"normal_qps":       "500",
-					"product_plan":     "3",
+					"product_plan":     "0",
 					"function_version": "0",
 					"product_type":     "ddosDip",
 				}),
@@ -660,7 +849,7 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 						"domain_count":     "10",
 						"normal_bandwidth": "100",
 						"normal_qps":       "500",
-						"product_plan":     "3",
+						"product_plan":     "0",
 						"function_version": "0",
 					}),
 				),
@@ -676,17 +865,120 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"port_count": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port_count": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_count": "15",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_count": "15",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"normal_bandwidth": "150",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"normal_bandwidth": "150",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"normal_qps": "3000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"normal_qps": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_plan": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_plan": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_version": "1",
+					"modify_type":      "UPGRADE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
 			},
 		},
 	})
 
 }
 
-var ddosCooInstanceBasicMap = map[string]string{
+var AliCloudDdosCooInstanceMap0 = map[string]string{
 	"normal_bandwidth": CHECKSET,
 	"normal_qps":       CHECKSET,
 	"edition_sale":     CHECKSET,
@@ -694,17 +986,21 @@ var ddosCooInstanceBasicMap = map[string]string{
 	"address_type":     CHECKSET,
 	"function_version": CHECKSET,
 	"ip":               CHECKSET,
+	"status":           CHECKSET,
+	"create_time":      CHECKSET,
 }
 
-var ddoscooInstanceBasicDipMap = map[string]string{
+var AliCloudDdosCooInstanceMap1 = map[string]string{
 	"normal_bandwidth": CHECKSET,
 	"normal_qps":       CHECKSET,
 	"product_plan":     CHECKSET,
 	"address_type":     CHECKSET,
 	"function_version": CHECKSET,
 	"ip":               CHECKSET,
+	"status":           CHECKSET,
+	"create_time":      CHECKSET,
 }
 
-func resourceDdoscooInstanceDependence(name string) string {
+func AliCloudDdosCooInstanceBasicDependence0(name string) string {
 	return ""
 }

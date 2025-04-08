@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
@@ -21,8 +22,9 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(18 * time.Minute),
+			Update: schema.DefaultTimeout(6 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -56,13 +58,11 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 			"normal_bandwidth": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"normal_qps": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"edition_sale": {
@@ -75,7 +75,6 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 			"product_plan": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"address_type": {
@@ -93,7 +92,6 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 			"function_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
 			},
@@ -107,8 +105,22 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 			},
+			"modify_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+			},
+			"tags": tagsSchema(),
 			"ip": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 		},
@@ -270,55 +282,60 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 
 func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddoscooService := DdoscooService{client}
+	ddosCooServiceV2 := DdosCooServiceV2{client}
 
-	instanceInfo, err := ddoscooService.DescribeDdoscooInstance(d.Id())
+	objectRaw, err := ddosCooServiceV2.DescribeDdosCooInstance(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ddoscoo_instance DescribeDdosCooInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	instanceSpecInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
-	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
+	d.Set("address_type", objectRaw["IpVersion"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("edition_sale", convertEditionResponse(formatInt(objectRaw["Edition"])))
+	d.Set("name", objectRaw["Remark"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("ip", objectRaw["Ip"])
+
+	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeInstanceSpecs(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	instanceExtInfo, err := ddoscooService.DescribeDdoscooInstanceExt(d.Id())
-	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
+	d.Set("bandwidth", objectRaw["ElasticBandwidth"])
+	d.Set("base_bandwidth", objectRaw["BaseBandwidth"])
+	d.Set("domain_count", objectRaw["DomainLimit"])
+	d.Set("normal_qps", objectRaw["QpsLimit"])
+	d.Set("port_count", objectRaw["PortLimit"])
+	d.Set("service_bandwidth", objectRaw["BandwidthMbps"])
+
+	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeInstanceExt(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	d.Set("name", instanceInfo["Remark"])
-	d.Set("port_count", instanceSpecInfo["PortLimit"])
-	d.Set("domain_count", instanceSpecInfo["DomainLimit"])
-	d.Set("base_bandwidth", instanceSpecInfo["BaseBandwidth"])
-	d.Set("bandwidth", instanceSpecInfo["ElasticBandwidth"])
-	d.Set("service_bandwidth", instanceSpecInfo["BandwidthMbps"])
-	d.Set("normal_bandwidth", instanceExtInfo["NormalBandwidth"])
-	d.Set("normal_qps", instanceSpecInfo["QpsLimit"])
-	d.Set("edition_sale", convertEditionResponse(formatInt(instanceInfo["Edition"])))
-	d.Set("product_plan", instanceExtInfo["ProductPlan"])
-	d.Set("address_type", instanceInfo["IpVersion"])
-	d.Set("function_version", instanceExtInfo["FunctionVersion"])
-	d.Set("ip", instanceInfo["Ip"])
+	d.Set("function_version", objectRaw["FunctionVersion"])
+	d.Set("normal_bandwidth", objectRaw["NormalBandwidth"])
+	d.Set("product_plan", objectRaw["ProductPlan"])
+
+	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
 
 func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddoscooService := DdoscooService{client}
+	ddosCooServiceV2 := DdosCooServiceV2{client}
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
@@ -347,13 +364,19 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if d.HasChange("tags") {
+		if err := ddosCooServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAliCloudDdoscooInstanceRead(d, meta)
 	}
 
 	if d.HasChange("bandwidth") {
-		if err := ddoscooService.UpdateInstanceSpec("bandwidth", "Bandwidth", d, meta); err != nil {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("bandwidth", "Bandwidth", d); err != nil {
 			return WrapError(err)
 		}
 
@@ -361,7 +384,7 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("base_bandwidth") {
-		if err := ddoscooService.UpdateInstanceSpec("base_bandwidth", "BaseBandwidth", d, meta); err != nil {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("base_bandwidth", "BaseBandwidth", d); err != nil {
 			return WrapError(err)
 		}
 
@@ -369,7 +392,7 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("domain_count") {
-		if err := ddoscooService.UpdateInstanceSpec("domain_count", "DomainCount", d, meta); err != nil {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("domain_count", "DomainCount", d); err != nil {
 			return WrapError(err)
 		}
 
@@ -377,7 +400,7 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("port_count") {
-		if err := ddoscooService.UpdateInstanceSpec("port_count", "PortCount", d, meta); err != nil {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("port_count", "PortCount", d); err != nil {
 			return WrapError(err)
 		}
 
@@ -385,14 +408,46 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("service_bandwidth") {
-		if err := ddoscooService.UpdateInstanceSpec("service_bandwidth", "ServiceBandwidth", d, meta); err != nil {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("service_bandwidth", "ServiceBandwidth", d); err != nil {
 			return WrapError(err)
 		}
 
 		d.SetPartial("service_bandwidth")
 	}
 
-	stateConf := BuildStateConf([]string{""}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
+	if d.HasChange("normal_bandwidth") {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("normal_bandwidth", "NormalBandwidth", d); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("normal_bandwidth")
+	}
+
+	if d.HasChange("normal_qps") {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("normal_qps", "NormalQps", d); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("normal_qps")
+	}
+
+	if d.HasChange("product_plan") {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("product_plan", "ProductPlan", d); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("product_plan")
+	}
+
+	if d.HasChange("function_version") {
+		if err := ddosCooServiceV2.ModifyDdosCooInstance("function_version", "FunctionVersion", d); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("function_version")
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddosCooServiceV2.DdosCooInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
