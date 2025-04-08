@@ -224,21 +224,24 @@ func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field str
 
 // DescribeOssBucketHttpsConfig >>> Encapsulated.
 
-// DescribeOssBucketCors
+// DescribeOssBucketCors <<< Encapsulated get interface for Oss BucketCors.
+
 func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	action := fmt.Sprintf("/?cors")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
+	action := fmt.Sprintf("/?cors")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketCors", action), query, nil, nil, hostMap, true)
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketCors", action), query, nil, nil, hostMap, false)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -249,6 +252,7 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NoSuchBucket", "NoSuchCORSConfiguration"}) {
 			return object, WrapErrorf(NotFoundErr("BucketCors", id), NotFoundMsg, response)
@@ -280,6 +284,13 @@ func (s *OssServiceV2) OssBucketCorsStateRefreshFunc(id string, field string, fa
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

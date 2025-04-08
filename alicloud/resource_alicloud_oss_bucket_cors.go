@@ -51,12 +51,12 @@ func resourceAliCloudOssBucketCors() *schema.Resource {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
-						"allowed_headers": {
+						"expose_header": {
 							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"expose_header": {
+						"allowed_headers": {
 							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -89,7 +89,7 @@ func resourceAliCloudOssBucketCorsCreate(d *schema.ResourceData, meta interface{
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v, ok := d.GetOk("response_vary"); ok {
+	if v, ok := d.GetOkExists("response_vary"); ok {
 		objectDataLocalMap["ResponseVary"] = v
 	}
 
@@ -97,24 +97,29 @@ func resourceAliCloudOssBucketCorsCreate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("cors_rule"); ok {
 			localData, err := jsonpath.Get("$", v)
 			if err != nil {
-				return WrapError(err)
+				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
 			for _, dataLoop := range localData.(*schema.Set).List() {
-				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["AllowedOrigin"] = dataLoopTmp["allowed_origins"].(*schema.Set).List()
 				dataLoopMap["AllowedMethod"] = dataLoopTmp["allowed_methods"].(*schema.Set).List()
 				dataLoopMap["AllowedHeader"] = dataLoopTmp["allowed_headers"].(*schema.Set).List()
-				dataLoopMap["ExposeHeader"] = dataLoopTmp["expose_header"].(*schema.Set).List()
 				dataLoopMap["MaxAgeSeconds"] = dataLoopTmp["max_age_seconds"]
+				dataLoopMap["ExposeHeader"] = dataLoopTmp["expose_header"].(*schema.Set).List()
 				localMaps = append(localMaps, dataLoopMap)
 			}
 			objectDataLocalMap["CORSRule"] = localMaps
 		}
+
 	}
 
 	request["CORSConfiguration"] = objectDataLocalMap
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -126,15 +131,21 @@ func resourceAliCloudOssBucketCorsCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_cors", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
+
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketCorsStateRefreshFunc(d.Id(), "#CORSRule", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudOssBucketCorsRead(d, meta)
 }
@@ -155,42 +166,44 @@ func resourceAliCloudOssBucketCorsRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("response_vary", objectRaw["ResponseVary"])
 
-	cORSRule1Raw := objectRaw["CORSRule"]
+	cORSRuleRaw := objectRaw["CORSRule"]
 	corsRuleMaps := make([]map[string]interface{}, 0)
-	if cORSRule1Raw != nil {
-		for _, cORSRuleChild1Raw := range cORSRule1Raw.([]interface{}) {
+	if cORSRuleRaw != nil {
+		for _, cORSRuleChildRaw := range cORSRuleRaw.([]interface{}) {
 			corsRuleMap := make(map[string]interface{})
-			cORSRuleChild1Raw := cORSRuleChild1Raw.(map[string]interface{})
-			corsRuleMap["max_age_seconds"] = cORSRuleChild1Raw["MaxAgeSeconds"]
+			cORSRuleChildRaw := cORSRuleChildRaw.(map[string]interface{})
+			corsRuleMap["max_age_seconds"] = cORSRuleChildRaw["MaxAgeSeconds"]
 
-			allowedHeader1Raw := make([]interface{}, 0)
-			if cORSRuleChild1Raw["AllowedHeader"] != nil {
-				allowedHeader1Raw = cORSRuleChild1Raw["AllowedHeader"].([]interface{})
+			allowedHeaderRaw := make([]interface{}, 0)
+			if cORSRuleChildRaw["AllowedHeader"] != nil {
+				allowedHeaderRaw = cORSRuleChildRaw["AllowedHeader"].([]interface{})
 			}
 
-			corsRuleMap["allowed_headers"] = allowedHeader1Raw
-			allowedMethod1Raw := make([]interface{}, 0)
-			if cORSRuleChild1Raw["AllowedMethod"] != nil {
-				allowedMethod1Raw = cORSRuleChild1Raw["AllowedMethod"].([]interface{})
+			corsRuleMap["allowed_headers"] = allowedHeaderRaw
+			allowedMethodRaw := make([]interface{}, 0)
+			if cORSRuleChildRaw["AllowedMethod"] != nil {
+				allowedMethodRaw = cORSRuleChildRaw["AllowedMethod"].([]interface{})
 			}
 
-			corsRuleMap["allowed_methods"] = allowedMethod1Raw
-			allowedOrigin1Raw := make([]interface{}, 0)
-			if cORSRuleChild1Raw["AllowedOrigin"] != nil {
-				allowedOrigin1Raw = cORSRuleChild1Raw["AllowedOrigin"].([]interface{})
+			corsRuleMap["allowed_methods"] = allowedMethodRaw
+			allowedOriginRaw := make([]interface{}, 0)
+			if cORSRuleChildRaw["AllowedOrigin"] != nil {
+				allowedOriginRaw = cORSRuleChildRaw["AllowedOrigin"].([]interface{})
 			}
 
-			corsRuleMap["allowed_origins"] = allowedOrigin1Raw
-			exposeHeader1Raw := make([]interface{}, 0)
-			if cORSRuleChild1Raw["ExposeHeader"] != nil {
-				exposeHeader1Raw = cORSRuleChild1Raw["ExposeHeader"].([]interface{})
+			corsRuleMap["allowed_origins"] = allowedOriginRaw
+			exposeHeaderRaw := make([]interface{}, 0)
+			if cORSRuleChildRaw["ExposeHeader"] != nil {
+				exposeHeaderRaw = cORSRuleChildRaw["ExposeHeader"].([]interface{})
 			}
 
-			corsRuleMap["expose_header"] = exposeHeader1Raw
+			corsRuleMap["expose_header"] = exposeHeaderRaw
 			corsRuleMaps = append(corsRuleMaps, corsRuleMap)
 		}
 	}
-	d.Set("cors_rule", corsRuleMaps)
+	if err := d.Set("cors_rule", corsRuleMaps); err != nil {
+		return err
+	}
 
 	d.Set("bucket", d.Id())
 
@@ -204,19 +217,24 @@ func resourceAliCloudOssBucketCorsUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	action := fmt.Sprintf("/?cors")
+
 	var err error
+	action := fmt.Sprintf("/?cors")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
+
 	objectDataLocalMap := make(map[string]interface{})
 
 	if d.HasChange("response_vary") {
 		update = true
 	}
-	objectDataLocalMap["ResponseVary"] = d.Get("response_vary")
+	if v, ok := d.GetOk("response_vary"); ok {
+		objectDataLocalMap["ResponseVary"] = v
+	}
+
 	if d.HasChange("cors_rule") {
 		update = true
 	}
@@ -224,24 +242,29 @@ func resourceAliCloudOssBucketCorsUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("cors_rule"); ok {
 			localData, err := jsonpath.Get("$", v)
 			if err != nil {
-				return WrapError(err)
+				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
 			for _, dataLoop := range localData.(*schema.Set).List() {
-				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["MaxAgeSeconds"] = dataLoopTmp["max_age_seconds"]
-				dataLoopMap["ExposeHeader"] = dataLoopTmp["expose_header"].(*schema.Set).List()
 				dataLoopMap["AllowedHeader"] = dataLoopTmp["allowed_headers"].(*schema.Set).List()
 				dataLoopMap["AllowedMethod"] = dataLoopTmp["allowed_methods"].(*schema.Set).List()
 				dataLoopMap["AllowedOrigin"] = dataLoopTmp["allowed_origins"].(*schema.Set).List()
+				dataLoopMap["ExposeHeader"] = dataLoopTmp["expose_header"].(*schema.Set).List()
 				localMaps = append(localMaps, dataLoopMap)
 			}
 			objectDataLocalMap["CORSRule"] = localMaps
 		}
+
 	}
 
 	request["CORSConfiguration"] = objectDataLocalMap
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -254,11 +277,16 @@ func resourceAliCloudOssBucketCorsUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ossServiceV2.OssBucketCorsStateRefreshFunc(d.Id(), "#CORSRule", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -272,16 +300,15 @@ func resourceAliCloudOssBucketCorsDelete(d *schema.ResourceData, meta interface{
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Id())
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketCors", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketCors", action), query, nil, nil, hostMap, false)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -289,11 +316,14 @@ func resourceAliCloudOssBucketCorsDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
