@@ -82,7 +82,7 @@ func resourceAliCloudOssBucketAccessMonitorCreate(d *schema.ResourceData, meta i
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
 
 	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutCreate), 0, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -104,9 +104,7 @@ func resourceAliCloudOssBucketAccessMonitorRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
+	d.Set("status", objectRaw["Status"])
 
 	d.Set("bucket", d.Id())
 
@@ -121,8 +119,8 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 	var body map[string]interface{}
 	update := false
 
-	action := fmt.Sprintf("/?accessmonitor")
 	var err error
+	action := fmt.Sprintf("/?accessmonitor")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -135,7 +133,10 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("status"); v != nil {
-		objectDataLocalMap["Status"] = d.Get("status")
+		if v, ok := d.GetOk("status"); ok {
+			objectDataLocalMap["Status"] = v
+		}
+
 		request["AccessMonitorConfiguration"] = objectDataLocalMap
 	}
 
@@ -158,7 +159,7 @@ func resourceAliCloudOssBucketAccessMonitorUpdate(d *schema.ResourceData, meta i
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ossServiceV2 := OssServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutUpdate), 0, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("status"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ossServiceV2.OssBucketAccessMonitorStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
