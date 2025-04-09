@@ -309,6 +309,7 @@ var productCodeToLocationCode = map[string]string{
 	"eds_aic":              "wycloudphone",    // CloudPhone
 	"cloudcontrol":         "cloudcontrol",    // CloudControl
 	"eflo_controller":      "efloctrl",        // Eflo
+	"eflo_cnp":             "eflocnp",         // Eflo-CNP
 }
 
 // irregularProductEndpoint specially records those product codes that
