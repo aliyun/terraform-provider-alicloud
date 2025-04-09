@@ -70,33 +70,13 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   new_nat_gateway                = true
   endpoint_public_access_enabled = true
   deletion_protection            = false
-
-  load_balancer_spec      = "slb.s2.small"
-  time_zone               = "Asia/Shanghai"
-  service_cidr            = "172.21.0.0/20"
-  service_discovery_types = ["PrivateZone"]
-  # Enable log service, A project named k8s-log-{ClusterID} will be automatically created
-  logging_type = "SLS"
+  time_zone                      = "Asia/Shanghai"
+  service_cidr                   = "172.21.0.0/20"
 
   # tags
   tags = {
     "k-aa" = "v-aa"
-    "k-bb" = "v-aa"
-  }
-
-  # addons
-  addons {
-    # ALB Ingress
-    name = "alb-ingress-controller"
-  }
-  addons {
-    name = "metrics-server"
-  }
-  addons {
-    name = "knative"
-  }
-  addons {
-    name = "arms-prometheus"
+    "k-bb" = "v-bb"
   }
 }
 ```
@@ -118,10 +98,10 @@ The following arguments are supported:
     - false: Disable deletion protection.
 * `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
-* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like `~/.kube/config`.
-* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
-* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
-* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
+* `client_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-cert.pem) for replace it.
+* `client_key` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
+* `cluster_ca_cert` - (Optional, Deprecated  from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 

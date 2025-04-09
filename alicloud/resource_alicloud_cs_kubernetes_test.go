@@ -221,9 +221,8 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"name":                           name,
 					"version":                        "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.2.version}",
 					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
-					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"master_disk_category":           "cloud_essd",
-					"master_disk_performance_level":  "PL0",
+					"master_instance_types":          []string{"${var.instance_type}", "${var.instance_type}", "${var.instance_type}"},
+					"master_disk_category":           "cloud_ssd",
 					"master_disk_size":               "80",
 					"master_disk_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
 					"key_name":                       "${alicloud_key_pair.default.key_pair_name}",
@@ -251,46 +250,43 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"api_audiences":                  []string{"https://kubernetes.default.svc"},
 					"service_account_issuer":         "https://kubernetes.default.svc",
 					"user_ca":                        tmpCAFile.Name(),
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                          name,
-						"master_disk_category":          "cloud_essd",
-						"master_disk_performance_level": "PL0",
-						"master_disk_size":              "80",
-						"key_name":                      name,
-						"pod_cidr":                      "10.72.0.0/16",
-						"service_cidr":                  "172.18.0.0/16",
-						"enable_ssh":                    "false",
-						"install_cloud_monitor":         "true",
-						"resource_group_id":             CHECKSET,
-						"security_group_id":             CHECKSET,
-						"deletion_protection":           "false",
-						"timezone":                      "Asia/Shanghai",
-						"os_type":                       "Linux",
-						"platform":                      "AliyunLinux3",
-						"cluster_domain":                "cluster.local",
-						"custom_san":                    "www.terraform.io",
-						"rds_instances.#":               "1",
-						"tags.%":                        "1",
-						"tags.Platform":                 "TF",
-						"proxy_mode":                    "ipvs",
-						"new_nat_gateway":               "true",
-						"nat_gateway_id":                CHECKSET,
-						"slb_internet_enabled":          "true",
-						"node_cidr_mask":                "24",
+						"name":                           name,
+						"master_disk_category":           "cloud_ssd",
+						"master_disk_size":               "80",
+						"key_name":                       name,
+						"pod_cidr":                       "10.72.0.0/16",
+						"service_cidr":                   "172.18.0.0/16",
+						"enable_ssh":                     "false",
+						"install_cloud_monitor":          "true",
+						"resource_group_id":              CHECKSET,
+						"security_group_id":              CHECKSET,
+						"deletion_protection":            "false",
+						"timezone":                       "Asia/Shanghai",
+						"os_type":                        "Linux",
+						"platform":                       "AliyunLinux3",
+						"cluster_domain":                 "cluster.local",
+						"custom_san":                     "www.terraform.io",
+						"rds_instances.#":                "1",
+						"tags.%":                         "1",
+						"tags.Platform":                  "TF",
+						"proxy_mode":                     "ipvs",
+						"new_nat_gateway":                "true",
+						"nat_gateway_id":                 CHECKSET,
+						"slb_internet_enabled":           "true",
+						"node_cidr_mask":                 "24",
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "rds_instances",
-					"cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password",
-					"retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime",
-					"api_audiences", "service_account_issuer", "load_balancer_spec", "platform",
-				},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "password", "user_ca", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime", "api_audiences", "service_account_issuer", "load_balancer_spec", "platform"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -434,71 +430,68 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":                  "tf-testAccKubernetes_prepaid",
-					"master_vswitch_ids":           []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
-					"master_instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"master_disk_category":         "cloud_ssd",
-					"master_auto_renew":            "true",
-					"master_auto_renew_period":     "1",
-					"master_instance_charge_type":  "PrePaid",
-					"master_period":                "1",
-					"master_period_unit":           "Month",
-					"pod_vswitch_ids":              []string{"${local.vswitch_id}"},
-					"password":                     "Yourpassword1234",
-					"service_cidr":                 "172.18.0.0/16",
-					"enable_ssh":                   "false",
-					"install_cloud_monitor":        "true",
-					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"deletion_protection":          "false",
-					"timezone":                     "Asia/Shanghai",
-					"os_type":                      "Linux",
-					"platform":                     "AliyunLinux3",
-					"cluster_domain":               "cluster.local",
-					"custom_san":                   "www.terraform.io",
-					"proxy_mode":                   "ipvs",
-					"new_nat_gateway":              "true",
-					"is_enterprise_security_group": "true",
-					"addons":                       []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
-					"cluster_ca_cert":              clusterCaCertFile.Name(),
-					"client_key":                   clientKeyFile.Name(),
-					"client_cert":                  clientCertFile.Name(),
+					"name_prefix":                    "tf-testAccKubernetes_prepaid",
+					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"master_disk_category":           "cloud_ssd",
+					"master_auto_renew":              "true",
+					"master_auto_renew_period":       "1",
+					"master_instance_charge_type":    "PrePaid",
+					"master_period":                  "1",
+					"master_period_unit":             "Month",
+					"pod_vswitch_ids":                []string{"${local.vswitch_id}"},
+					"password":                       "Yourpassword1234",
+					"service_cidr":                   "172.18.0.0/16",
+					"enable_ssh":                     "false",
+					"install_cloud_monitor":          "true",
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"deletion_protection":            "false",
+					"timezone":                       "Asia/Shanghai",
+					"os_type":                        "Linux",
+					"platform":                       "AliyunLinux3",
+					"cluster_domain":                 "cluster.local",
+					"custom_san":                     "www.terraform.io",
+					"proxy_mode":                     "ipvs",
+					"new_nat_gateway":                "true",
+					"is_enterprise_security_group":   "true",
+					"addons":                         []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"cluster_ca_cert":                clusterCaCertFile.Name(),
+					"client_key":                     clientKeyFile.Name(),
+					"client_cert":                    clientCertFile.Name(),
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                         CHECKSET,
-						"master_disk_category":         "cloud_ssd",
-						"master_auto_renew":            "true",
-						"master_auto_renew_period":     "1",
-						"master_instance_charge_type":  "PrePaid",
-						"master_period":                "1",
-						"master_period_unit":           "Month",
-						"password":                     "Yourpassword1234",
-						"service_cidr":                 "172.18.0.0/16",
-						"enable_ssh":                   "false",
-						"install_cloud_monitor":        "true",
-						"resource_group_id":            CHECKSET,
-						"deletion_protection":          "false",
-						"timezone":                     "Asia/Shanghai",
-						"os_type":                      "Linux",
-						"platform":                     "AliyunLinux3",
-						"cluster_domain":               "cluster.local",
-						"custom_san":                   "www.terraform.io",
-						"proxy_mode":                   "ipvs",
-						"new_nat_gateway":              "true",
-						"nat_gateway_id":               CHECKSET,
-						"is_enterprise_security_group": "true",
+						"name":                           CHECKSET,
+						"master_disk_category":           "cloud_ssd",
+						"master_auto_renew":              "true",
+						"master_auto_renew_period":       "1",
+						"master_instance_charge_type":    "PrePaid",
+						"master_period":                  "1",
+						"master_period_unit":             "Month",
+						"password":                       "Yourpassword1234",
+						"service_cidr":                   "172.18.0.0/16",
+						"enable_ssh":                     "false",
+						"install_cloud_monitor":          "true",
+						"resource_group_id":              CHECKSET,
+						"deletion_protection":            "false",
+						"timezone":                       "Asia/Shanghai",
+						"os_type":                        "Linux",
+						"platform":                       "AliyunLinux3",
+						"cluster_domain":                 "cluster.local",
+						"custom_san":                     "www.terraform.io",
+						"proxy_mode":                     "ipvs",
+						"new_nat_gateway":                "true",
+						"nat_gateway_id":                 CHECKSET,
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "runtime",
-					"rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context",
-					"kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons",
-					"load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform",
-				},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "is_enterprise_security_group", "new_nat_gateway", "password", "user_ca", "runtime", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons", "load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform"},
 			},
 		},
 	})
@@ -525,16 +518,15 @@ func resourceCSKubernetesConfigDependence(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+
+variable "instance_type" {
+  default = "ecs.c6.xlarge"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 4
-  memory_size          = 8
-  kubernetes_node_role = "Master"
-  system_disk_category = "cloud_essd"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_essd"
+  available_instance_type     = var.instance_type
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -542,30 +534,25 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
-  cluster_type       = "Kubernetes"
+  cluster_type = "Kubernetes"
 }
 
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "vpc" {
+  count      = 1
   cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vswitch" "vswitches" {
+  count        = 1
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = format("192.168.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.default.zones[count.index].id
   vswitch_name = var.name
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitches.0.id
 }
 
 resource "alicloud_db_instance" "default" {
@@ -587,25 +574,26 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.vpc.0.id
 }
 
 resource "alicloud_ecs_auto_snapshot_policy" "default" {
-  name            = var.name
-  repeat_weekdays = ["1", "2", "3"]
-  retention_days  = -1
-  time_points     = ["1", "22", "23"]
+  auto_snapshot_policy_name = var.name
+  repeat_weekdays           = ["1", "2", "3"]
+  retention_days            = -1
+  time_points               = ["1", "22", "23"]
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
-  instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
+  instance_types                = [var.instance_type]
   password                      = "Test12345"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
+  instance_charge_type          = "PostPaid"
   system_disk_performance_level = "PL0"
   desired_size                  = 2
 }
@@ -628,7 +616,8 @@ data "alicloud_instance_types" "default" {
   system_disk_category = "cloud_essd"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
@@ -654,7 +643,7 @@ locals {
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
   password                      = "Test12345"
@@ -668,7 +657,6 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 
 var csKubernetesBasicMap = map[string]string{
 	"name":                               CHECKSET,
-	"is_enterprise_security_group":       CHECKSET,
 	"security_group_id":                  CHECKSET,
 	"image_id":                           CHECKSET,
 	"version":                            CHECKSET,

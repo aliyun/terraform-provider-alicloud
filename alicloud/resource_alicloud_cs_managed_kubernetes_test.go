@@ -51,24 +51,23 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                    name,
-					"worker_vswitch_ids":      []string{"${local.vswitch_id}"},
-					"pod_cidr":                "10.93.0.0/16",
-					"service_cidr":            "172.21.0.0/16",
-					"slb_internet_enabled":    "true",
-					"cluster_spec":            "ack.pro.small",
-					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"security_group_id":       "${alicloud_security_group.default.0.id}",
-					"deletion_protection":     "false",
-					"enable_rrsa":             "false",
-					"timezone":                "Asia/Shanghai",
-					"proxy_mode":              "ipvs",
-					"new_nat_gateway":         "true",
-					"api_audiences":           []string{"https://kubernetes.default.svc"},
-					"service_account_issuer":  "https://kubernetes.default.svc",
-					"cluster_domain":          "cluster.test",
-					"custom_san":              "www.terraform.io",
-					"encryption_provider_key": "${data.alicloud_kms_keys.default.keys.0.id}",
+					"name":                   name,
+					"worker_vswitch_ids":     []string{"${local.vswitch_id}"},
+					"pod_cidr":               "10.93.0.0/16",
+					"service_cidr":           "172.21.0.0/16",
+					"slb_internet_enabled":   "true",
+					"cluster_spec":           "ack.pro.small",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"security_group_id":      "${alicloud_security_group.default.0.id}",
+					"deletion_protection":    "false",
+					"enable_rrsa":            "false",
+					"timezone":               "Asia/Shanghai",
+					"proxy_mode":             "ipvs",
+					"new_nat_gateway":        "true",
+					"api_audiences":          []string{"https://kubernetes.default.svc"},
+					"service_account_issuer": "https://kubernetes.default.svc",
+					"cluster_domain":         "cluster.test",
+					"custom_san":             "www.terraform.io",
 					"maintenance_window": []map[string]string{
 						{
 							"enable":           "true",
@@ -87,9 +86,11 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 							},
 						},
 					},
-					"cluster_ca_cert": clusterCaCertFile.Name(),
-					"client_key":      clientKeyFile.Name(),
-					"client_cert":     clientCertFile.Name(),
+					"cluster_ca_cert":                clusterCaCertFile.Name(),
+					"client_key":                     clientKeyFile.Name(),
+					"client_cert":                    clientCertFile.Name(),
+					"skip_set_certificate_authority": "false",
+					"depends_on":                     []string{"alicloud_security_group.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -116,16 +117,15 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"operation_policy.0.cluster_auto_upgrade.#":         "1",
 						"operation_policy.0.cluster_auto_upgrade.0.enabled": "true",
 						"operation_policy.0.cluster_auto_upgrade.0.channel": "patch",
+						"skip_set_certificate_authority":                    "false",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences",
-					"service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert", "worker_vswitch_ids",
-				},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences", "service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert", "worker_vswitch_ids"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -263,21 +263,24 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						// cluster args
-						"name":                name,
-						"version":             CHECKSET,
-						"pod_cidr":            "10.94.0.0/16",
-						"service_cidr":        "172.22.0.0/16",
-						"deletion_protection": "false",
-						"cluster_spec":        "ack.standard",
-						"new_nat_gateway":     "true",
-						"nat_gateway_id":      CHECKSET,
-						"proxy_mode":          "ipvs",
-						"tags.%":              "1",
-						"tags.Platform":       "TF",
+						"name":                           name,
+						"version":                        CHECKSET,
+						"pod_cidr":                       "10.94.0.0/16",
+						"service_cidr":                   "172.22.0.0/16",
+						"deletion_protection":            "false",
+						"cluster_spec":                   "ack.standard",
+						"new_nat_gateway":                "true",
+						"nat_gateway_id":                 CHECKSET,
+						"proxy_mode":                     "ipvs",
+						"vswitch_ids.#":                  "1",
+						"tags.%":                         "1",
+						"tags.Platform":                  "TF",
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
@@ -322,7 +325,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled"},
 			},
 		},
 	})
@@ -368,22 +371,23 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":                  "tf-testaccmanagedkubernetes",
-					"cluster_spec":                 "ack.pro.small",
-					"is_enterprise_security_group": "true",
-					"deletion_protection":          "false",
-					"new_nat_gateway":              "true",
-					"node_cidr_mask":               "26",
-					"service_cidr":                 "172.23.0.0/16",
-					"proxy_mode":                   "ipvs",
-					"ip_stack":                     "ipv4",
-					"vswitch_ids":                  []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
-					"pod_vswitch_ids":              []string{"${local.vswitch_id}"},
-					"control_plane_log_ttl":        "30",
-					"control_plane_log_components": []string{"apiserver", "kcm", "scheduler"},
-					"control_plane_log_project":    "",
-					"user_ca":                      tmpCAFile.Name(),
-					"addons":                       []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"name_prefix":                    "tf-testaccmanagedkubernetes",
+					"cluster_spec":                   "ack.pro.small",
+					"is_enterprise_security_group":   "true",
+					"deletion_protection":            "false",
+					"new_nat_gateway":                "true",
+					"node_cidr_mask":                 "26",
+					"service_cidr":                   "172.23.0.0/16",
+					"proxy_mode":                     "ipvs",
+					"ip_stack":                       "ipv4",
+					"vswitch_ids":                    []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
+					"pod_vswitch_ids":                []string{"${local.vswitch_id}"},
+					"control_plane_log_ttl":          "30",
+					"control_plane_log_components":   []string{"apiserver", "kcm", "scheduler"},
+					"control_plane_log_project":      "",
+					"user_ca":                        tmpCAFile.Name(),
+					"addons":                         []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -401,6 +405,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"control_plane_log_components.1": "kcm",
 						"control_plane_log_components.2": "scheduler",
 						"control_plane_log_project":      CHECKSET,
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
@@ -437,11 +442,10 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					})),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "addons",
-					"is_enterprise_security_group", "pod_vswitch_ids", "slb_internet_enabled", "load_balancer_spec"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "addons", "is_enterprise_security_group", "pod_vswitch_ids", "slb_internet_enabled", "load_balancer_spec"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -492,31 +496,33 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                 name,
-					"zone_ids":             []string{"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
-					"cluster_spec":         "ack.pro.small",
-					"new_nat_gateway":      "false",
-					"slb_internet_enabled": "false",
-					"deletion_protection":  "false",
-					"node_cidr_mask":       "26",
-					"service_cidr":         "172.23.0.0/16",
-					"proxy_mode":           "ipvs",
-					"ip_stack":             "ipv4",
-					"timezone":             "Asia/Shanghai",
-					"addons":               []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"name":                           name,
+					"zone_ids":                       []string{"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
+					"cluster_spec":                   "ack.pro.small",
+					"new_nat_gateway":                "false",
+					"slb_internet_enabled":           "false",
+					"deletion_protection":            "false",
+					"node_cidr_mask":                 "26",
+					"service_cidr":                   "172.23.0.0/16",
+					"proxy_mode":                     "ipvs",
+					"ip_stack":                       "ipv4",
+					"timezone":                       "Asia/Shanghai",
+					"addons":                         []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 name,
-						"vswitch_ids.#":        "1",
-						"cluster_spec":         "ack.pro.small",
-						"vpc_id":               CHECKSET,
-						"deletion_protection":  "false",
-						"new_nat_gateway":      "false",
-						"slb_internet_enabled": "false",
-						"ip_stack":             "ipv4",
-						"timezone":             "Asia/Shanghai",
-						"resource_group_id":    CHECKSET,
+						"name":                           name,
+						"vswitch_ids.#":                  "1",
+						"cluster_spec":                   "ack.pro.small",
+						"vpc_id":                         CHECKSET,
+						"deletion_protection":            "false",
+						"new_nat_gateway":                "false",
+						"slb_internet_enabled":           "false",
+						"ip_stack":                       "ipv4",
+						"timezone":                       "Asia/Shanghai",
+						"resource_group_id":              CHECKSET,
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
@@ -524,7 +530,7 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -577,34 +583,17 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "vpc" {
+  count      = 1
   cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-data "alicloud_vswitches" "default_1" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = length(data.alicloud_zones.default.zones) > 0 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = var.name
-}
-
-resource "alicloud_vswitch" "vswitch_1" {
-  count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 9)
-  zone_id      = length(data.alicloud_zones.default.zones) > 0 ? data.alicloud_zones.default.zones.1.id : data.alicloud_zones.default.zones.0.id
+resource "alicloud_vswitch" "vswitches" {
+  count        = 2
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = format("192.168.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.default.zones[count.index].id
   vswitch_name = var.name
 }
 
@@ -619,8 +608,8 @@ resource "alicloud_log_project" "log" {
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id_1 = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitches.0.id
+  vswitch_id_1 = alicloud_vswitch.vswitches.1.id
 }
 `, name)
 }
@@ -631,53 +620,38 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_enhanced_nat_available_zones" "enhanced" {
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
-  cluster_type       = "ManagedKubernetes"
-  profile            = "Default"
+  cluster_type = "ManagedKubernetes"
+  profile      = "Default"
 }
-
-data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
-  cpu_core_count       = 4
-  memory_size          = 8
-  kubernetes_node_role = "Worker"
-}
-
+	
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_kms_keys" "default" {
-  status  = "Enabled"
-  filters = "[{\"Key\":\"CreatorType\", \"Values\":[\"User\"]}]"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "vpc" {
+  count      = 1
   cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+resource "alicloud_vswitch" "vswitches" {
+  count        = 1
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = format("192.168.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.default.zones[count.index].id
   vswitch_name = var.name
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitches.0.id
 }
 
 resource "alicloud_security_group" "default" {
   count  = 2
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.vpc.0.id
 }
 `, name)
 }
@@ -688,55 +662,51 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+variable "instance_type" {
+  default = "ecs.c6.xlarge"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 4
-  memory_size          = 8
-  system_disk_category = "cloud_essd"
-  kubernetes_node_role = "Worker"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_essd"
+  available_instance_type     = var.instance_type
 }
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
-  cluster_type       = "ManagedKubernetes"
-  profile            = "Default"
+  cluster_type = "ManagedKubernetes"
+  profile      = "Default"
+}
+	
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "vpc" {
+  count      = 1
   cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vswitch" "vswitches" {
+  count        = 1
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = format("192.168.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.default.zones[count.index].id
   vswitch_name = var.name
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitches.0.id
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_managed_kubernetes.default.id
-  name                          = var.name
+  node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
-  instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
+  instance_types                = [var.instance_type]
   password                      = "Test12345"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
+  instance_charge_type          = "PostPaid"
   system_disk_performance_level = "PL0"
   desired_size                  = 1
 }
