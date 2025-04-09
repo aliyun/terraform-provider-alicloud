@@ -64,20 +64,22 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_cs_edge_kubernetes" "default" {
-  name_prefix                  = var.name
-  worker_vswitch_ids           = [alicloud_vswitch.default.id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  version                      = "1.26.3-aliyun.1"
-  worker_number                = "1"
-  password                     = "Test12345"
-  pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "172.16.0.0/16"
-  worker_instance_charge_type  = "PostPaid"
-  new_nat_gateway              = "true"
-  node_cidr_mask               = "24"
-  install_cloud_monitor        = "true"
-  slb_internet_enabled         = "true"
-  is_enterprise_security_group = "true"
+  name_prefix                    = var.name
+  worker_vswitch_ids             = [alicloud_vswitch.default.id]
+  worker_instance_types          = [data.alicloud_instance_types.default.instance_types.0.id]
+  version                        = "1.26.3-aliyun.1"
+  worker_number                  = 1
+  password                       = "Test12345"
+  pod_cidr                       = "10.99.0.0/16"
+  service_cidr                   = "172.16.0.0/16"
+  worker_instance_charge_type    = "PostPaid"
+  new_nat_gateway                = true
+  node_cidr_mask                 = 24
+  install_cloud_monitor          = true
+  slb_internet_enabled           = true
+  is_enterprise_security_group   = true
+  skip_set_certificate_authority = true
+
   worker_data_disks {
     category  = "cloud_ssd"
     size      = "200"
@@ -120,21 +122,22 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_cs_edge_kubernetes" "default" {
-  name_prefix                  = var.name
-  worker_vswitch_ids           = [alicloud_vswitch.default.id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  cluster_spec                 = "ack.pro.small"
-  worker_number                = "1"
-  password                     = "Test12345"
-  pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "172.16.0.0/16"
-  worker_instance_charge_type  = "PostPaid"
-  new_nat_gateway              = "true"
-  node_cidr_mask               = "24"
-  load_balancer_spec           = "slb.s2.small"
-  install_cloud_monitor        = "true"
-  slb_internet_enabled         = "true"
-  is_enterprise_security_group = "true"
+  name_prefix                    = var.name
+  worker_vswitch_ids             = [alicloud_vswitch.default.id]
+  worker_instance_types          = [data.alicloud_instance_types.default.instance_types.0.id]
+  cluster_spec                   = "ack.pro.small"
+  worker_number                  = 1
+  password                       = "Test12345"
+  pod_cidr                       = "10.99.0.0/16"
+  service_cidr                   = "172.16.0.0/16"
+  worker_instance_charge_type    = "PostPaid"
+  new_nat_gateway                = true
+  node_cidr_mask                 = 24
+  load_balancer_spec             = "slb.s2.small"
+  install_cloud_monitor          = true
+  slb_internet_enabled           = true
+  is_enterprise_security_group   = true
+  skip_set_certificate_authority = true
 
   worker_data_disks {
     category  = "cloud_ssd"
@@ -157,7 +160,6 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 * `rds_instances` - (Optional, Available since v1.103.2) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `resource_group_id` - (Optional, Available since v1.103.2) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `deletion_protection` - (Optional, Available since v1.103.2)  Whether to enable cluster deletion protection.
-* `force_update` - (Optional, ForceNew, Available since v1.113.0) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional, Available since v1.120.0) Default nil, A map of tags assigned to the kubernetes cluster and work node.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `cluster_spec` - (Optional, Available since v1.185.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
@@ -165,6 +167,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   * ack.pro.small : Professional edge clusters.
 * `runtime` - (Optional, Available since v1.185.0) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
 * `availability_zone` - (Optional) The ID of availability zone.
+* `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`. For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 
 *Network params*
 
@@ -197,14 +200,15 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 
 You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
 
-* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like `~/.kube/config`.
-* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
-* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
-* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
+* `client_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-cert.pem) for replace it.
+* `client_key` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
+* `cluster_ca_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 
 *Removed params*
 
 * `log_config` - (Optional, Deprecated) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
+* `force_update` - (Removed) Whether to force the update of kubernetes cluster arguments. Default to false.
 
 ### `addons`
 
@@ -282,7 +286,7 @@ The following attributes are exported:
   * `api_server_intranet` - API Server Intranet endpoint.
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
-* `certificate_authority` - (Map, Available since v1.105.0) Nested attribute containing certificate authority data for your cluster.
+* `certificate_authority` - (Map, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.

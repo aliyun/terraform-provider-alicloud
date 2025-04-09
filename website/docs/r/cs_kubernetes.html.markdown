@@ -176,22 +176,23 @@ data "alicloud_instance_types" "cloud_essd" {
 }
 
 resource "alicloud_cs_kubernetes" "default" {
-  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  pod_vswitch_ids       = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
-  master_instance_types = [data.alicloud_instance_types.cloud_essd.0.instance_types.0.id, data.alicloud_instance_types.cloud_essd.1.instance_types.0.id, data.alicloud_instance_types.cloud_essd.2.instance_types.0.id]
-  master_disk_category  = "cloud_essd"
-  password              = "Yourpassword1234"
-  service_cidr          = "172.18.0.0/16"
-  install_cloud_monitor = "true"
-  resource_group_id     = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  deletion_protection   = "false"
-  timezone              = "Asia/Shanghai"
-  os_type               = "Linux"
-  platform              = "AliyunLinux3"
-  cluster_domain        = "cluster.local"
-  proxy_mode            = "ipvs"
-  custom_san            = "www.terraform.io"
-  new_nat_gateway       = "true"
+  master_vswitch_ids             = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  pod_vswitch_ids                = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
+  master_instance_types          = [data.alicloud_instance_types.cloud_essd.0.instance_types.0.id, data.alicloud_instance_types.cloud_essd.1.instance_types.0.id, data.alicloud_instance_types.cloud_essd.2.instance_types.0.id]
+  master_disk_category           = "cloud_essd"
+  password                       = "Yourpassword1234"
+  service_cidr                   = "172.18.0.0/16"
+  install_cloud_monitor          = true
+  resource_group_id              = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  deletion_protection            = false
+  timezone                       = "Asia/Shanghai"
+  os_type                        = "Linux"
+  platform                       = "AliyunLinux3"
+  cluster_domain                 = "cluster.local"
+  proxy_mode                     = "ipvs"
+  custom_san                     = "www.terraform.io"
+  new_nat_gateway                = true
+  skip_set_certificate_authority = true
   dynamic "addons" {
     for_each = var.cluster_addons
     content {
@@ -237,6 +238,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `platform` - (Optional, ForceNew, Available since v1.103.2) The architecture of the nodes that run pods, its valid value `AliyunLinux`, `AliyunLinux3`. Default to `AliyunLinux3`.
 * `node_name_mode` - (Optional, ForceNew, Available since v1.88.0) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
+* `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`.For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 
 *Network params*
 
@@ -266,9 +268,9 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 
 *Computed params*
 
-* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
-* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
-* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `client_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-cert.pem) for replace it.
+* `client_key` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
+* `cluster_ca_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 
 *Removed params*
 
@@ -284,7 +286,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 * `worker_numbers` - (Removed) The number of workers, use `worker_number` to instead it.
 * `nodes` - (Removed) The master nodes, use `master_nodes` to instead it.
 * `exclude_autoscaler_nodes` - (Removed since v1.212.0) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
-* `kube_config` - (Removed since v1.212.0) The path of kube config, like `~/.kube/config`. You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
+* `kube_config` - (Removed since v1.212.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
 * `availability_zone` - (Removed since v1.212.0) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, its value will be vswitch's zone.
 * `worker_number` - (Removed since v1.212.0) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_vswitch_ids` - (Removed since v1.212.0) The vswitches used by workers.
@@ -421,7 +423,7 @@ The following attributes are exported:
   * `api_server_intranet` - API Server Intranet endpoint.
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
-* `certificate_authority` - (Map, Available since v1.105.0) Nested attribute containing certificate authority data for your cluster.
+* `certificate_authority` - (Map, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.

@@ -1238,7 +1238,7 @@ func (s *CsClient) DescribeUserPermission(uid string) ([]*client.DescribeUserPer
 	return body.Body, err
 }
 
-func setCerts(d *schema.ResourceData, meta interface{}, setCertificateAuthority bool) error {
+func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthority bool) error {
 	client := meta.(*connectivity.AliyunClient)
 	roaClient, err := client.NewRoaCsClient()
 	if err != nil {
@@ -1272,8 +1272,13 @@ func setCerts(d *schema.ResourceData, meta interface{}, setCertificateAuthority 
 		writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
 	}
 
-	if setCertificateAuthority {
-		// write cluster conn authority to tf state
+	if skipSetCertificateAuthority {
+		if _, ok := d.GetOk("certificate_authority"); ok {
+			if err := d.Set("certificate_authority", map[string]string{}); err != nil {
+				return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
+			}
+		}
+	} else {
 		if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 			return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 		}

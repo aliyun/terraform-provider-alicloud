@@ -493,19 +493,22 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"kube_config": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'kube_config' has been removed from provider version 1.212.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
+				Removed:  "Field 'kube_config' has been removed from provider version 1.212.0. Please use the attribute 'output_file' of new DataSource 'alicloud_cs_cluster_credential' to replace it",
 			},
 			"client_cert": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'client_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.client_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/client-cert.pem) for replace it.",
 			},
 			"client_key": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'client_key' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.client_key' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/client-key.pem) for replace it.",
 			},
 			"cluster_ca_cert": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
 				Type:     schema.TypeMap,
@@ -526,6 +529,11 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'certificate_authority' has been deprecated from provider version 1.248.0. Please use the attribute 'certificate_authority' of new DataSource 'alicloud_cs_cluster_credential' to replace it.",
+			},
+			"skip_set_certificate_authority": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"connections": {
 				Type:     schema.TypeMap,
@@ -571,6 +579,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"is_enterprise_security_group": {
 				Type:          schema.TypeBool,
 				Optional:      true,
+				ForceNew:      true,
 				Computed:      true,
 				ConflictsWith: []string{"security_group_id"},
 			},
@@ -1224,7 +1233,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		return nil
 	}
 
-	if err = setCerts(d, meta, true); err != nil {
+	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool)); err != nil {
 		return WrapError(err)
 	}
 
