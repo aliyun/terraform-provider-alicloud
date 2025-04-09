@@ -896,6 +896,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_eflo_experiment_plan_template":                        resourceAliCloudEfloExperimentPlanTemplate(),
 			"alicloud_esa_scheduled_preload_execution":                      resourceAliCloudEsaScheduledPreloadExecution(),
 			"alicloud_sls_etl":                                              resourceAliCloudSlsEtl(),
 			"alicloud_esa_scheduled_preload_job":                            resourceAliCloudEsaScheduledPreloadJob(),
@@ -2607,6 +2608,8 @@ func init() {
 
 		"eflo_controller_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom efloctrl endpoints.",
 
+		"eflo_cnp": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eflocnp endpoints.",
+
 		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 
 		"beebot_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom beebot endpoints.",
@@ -2767,6 +2770,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["eflo_controller_endpoint"],
+				},
+
+				"eflo_cnp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eflo_cnp_endpoint"],
 				},
 
 				"srvcatalog": {

@@ -294,3 +294,4 @@ var VPNSingleConnectRegions = []Region{MEEast1}
 var DdosBgpRegions = []Region{Beijing}
 var EcsDedicatedHostRegions = []Region{Hangzhou}
 var NasExtremeTypeRegions = []Region{Hangzhou}
+var EfloExperimentPlanTemplateSupportRegions = []Region{WuLanChaBu, HeYuan}
