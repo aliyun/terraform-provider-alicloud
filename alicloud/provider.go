@@ -896,6 +896,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_eflo_experiment_plan":                                 resourceAliCloudEfloExperimentPlan(),
 			"alicloud_eflo_experiment_plan_template":                        resourceAliCloudEfloExperimentPlanTemplate(),
 			"alicloud_esa_scheduled_preload_execution":                      resourceAliCloudEsaScheduledPreloadExecution(),
 			"alicloud_sls_etl":                                              resourceAliCloudSlsEtl(),
