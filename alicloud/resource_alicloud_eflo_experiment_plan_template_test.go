@@ -331,6 +331,7 @@ func TestAccAliCloudEfloExperimentPlanTemplate_basic10580_twin(t *testing.T) {
 
 var AliCloudEfloExperimentPlanTemplateMap10580 = map[string]string{
 	"create_time": CHECKSET,
+	"template_id": CHECKSET,
 }
 
 func AliCloudEfloExperimentPlanTemplateBasicDependence10580(name string) string {
