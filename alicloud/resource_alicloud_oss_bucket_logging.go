@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -89,7 +88,7 @@ func resourceAliCloudOssBucketLoggingCreate(d *schema.ResourceData, meta interfa
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
 
 	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("target_bucket"))}, d.Timeout(schema.TimeoutCreate), 0, ossServiceV2.OssBucketLoggingStateRefreshFunc(d.Id(), "TargetBucket", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("target_bucket"))}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketLoggingStateRefreshFunc(d.Id(), "TargetBucket", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -174,7 +173,7 @@ func resourceAliCloudOssBucketLoggingUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ossServiceV2 := OssServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("target_bucket"))}, d.Timeout(schema.TimeoutUpdate), 0, ossServiceV2.OssBucketLoggingStateRefreshFunc(d.Id(), "TargetBucket", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("target_bucket"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ossServiceV2.OssBucketLoggingStateRefreshFunc(d.Id(), "TargetBucket", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
