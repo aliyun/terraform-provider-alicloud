@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -33,7 +32,7 @@ func resourceAliCloudOssBucketServerSideEncryption() *schema.Resource {
 			"kms_data_encryption": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"SM4"}, true),
+				ValidateFunc: StringInSlice([]string{"SM4"}, false),
 			},
 			"kms_master_key_id": {
 				Type:     schema.TypeString,
@@ -42,7 +41,7 @@ func resourceAliCloudOssBucketServerSideEncryption() *schema.Resource {
 			"sse_algorithm": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"KMS", "AES256", "SM4"}, true),
+				ValidateFunc: StringInSlice([]string{"KMS", "AES256", "SM4"}, false),
 			},
 		},
 	}
@@ -80,6 +79,7 @@ func resourceAliCloudOssBucketServerSideEncryptionCreate(d *schema.ResourceData,
 	objectDataLocalMap["ApplyServerSideEncryptionByDefault"] = applyServerSideEncryptionByDefault
 
 	request["ServerSideEncryptionRule"] = objectDataLocalMap
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -91,15 +91,21 @@ func resourceAliCloudOssBucketServerSideEncryptionCreate(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_server_side_encryption", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
+
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketServerSideEncryptionStateRefreshFunc(d.Id(), "#SSEAlgorithm", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudOssBucketServerSideEncryptionRead(d, meta)
 }
@@ -134,13 +140,15 @@ func resourceAliCloudOssBucketServerSideEncryptionUpdate(d *schema.ResourceData,
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	action := fmt.Sprintf("/?encryption")
+
 	var err error
+	action := fmt.Sprintf("/?encryption")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
+
 	objectDataLocalMap := make(map[string]interface{})
 	applyServerSideEncryptionByDefault := make(map[string]interface{})
 	if d.HasChange("sse_algorithm") {
@@ -165,6 +173,7 @@ func resourceAliCloudOssBucketServerSideEncryptionUpdate(d *schema.ResourceData,
 	}
 	objectDataLocalMap["ApplyServerSideEncryptionByDefault"] = applyServerSideEncryptionByDefault
 	request["ServerSideEncryptionRule"] = objectDataLocalMap
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -177,11 +186,16 @@ func resourceAliCloudOssBucketServerSideEncryptionUpdate(d *schema.ResourceData,
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ossServiceV2.OssBucketServerSideEncryptionStateRefreshFunc(d.Id(), "#SSEAlgorithm", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -195,16 +209,15 @@ func resourceAliCloudOssBucketServerSideEncryptionDelete(d *schema.ResourceData,
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Id())
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketEncryption", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteBucketEncryption", action), query, nil, nil, hostMap, false)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -212,12 +225,12 @@ func resourceAliCloudOssBucketServerSideEncryptionDelete(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"404"}) {
+		if IsExpectedErrors(err, []string{"404"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
