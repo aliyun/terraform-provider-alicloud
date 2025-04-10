@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -94,6 +93,7 @@ func resourceAliCloudOssBucketRefererCreate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap["RefererBlacklist"] = refererBlacklist
 
 	request["RefererConfiguration"] = objectDataLocalMap
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -105,15 +105,21 @@ func resourceAliCloudOssBucketRefererCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_referer", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
+
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketRefererStateRefreshFunc(d.Id(), "#$.RefererList", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudOssBucketRefererRead(d, meta)
 }
@@ -165,13 +171,15 @@ func resourceAliCloudOssBucketRefererUpdate(d *schema.ResourceData, meta interfa
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	action := fmt.Sprintf("/?referer")
+
 	var err error
+	action := fmt.Sprintf("/?referer")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
+
 	objectDataLocalMap := make(map[string]interface{})
 
 	if d.HasChange("allow_empty_referer") {
@@ -209,6 +217,7 @@ func resourceAliCloudOssBucketRefererUpdate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap["RefererBlacklist"] = refererBlacklist
 
 	request["RefererConfiguration"] = objectDataLocalMap
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -221,11 +230,16 @@ func resourceAliCloudOssBucketRefererUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketRefererStateRefreshFunc(d.Id(), "#RefererList", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -258,10 +272,12 @@ func resourceAliCloudOssBucketRefererDelete(d *schema.ResourceData, meta interfa
 	objectDataLocalMap["RefererBlacklist"] = refererBlacklist
 
 	request["RefererConfiguration"] = objectDataLocalMap
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutBucketReferer", action), query, body, nil, hostMap, false)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -269,11 +285,14 @@ func resourceAliCloudOssBucketRefererDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

@@ -94,16 +94,17 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	action := fmt.Sprintf("/?referer")
-
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
+	action := fmt.Sprintf("/?referer")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketReferer", action), query, nil, nil, hostMap, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,11 +112,13 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
+		if IsExpectedErrors(err, []string{"NoSuchBucket"}) {
+			return object, WrapErrorf(NotFoundErr("BucketReferer", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if response == nil {
@@ -142,6 +145,13 @@ func (s *OssServiceV2) OssBucketRefererStateRefreshFunc(id string, field string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
