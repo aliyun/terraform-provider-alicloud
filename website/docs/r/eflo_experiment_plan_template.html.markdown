@@ -92,6 +92,7 @@ The template_pipeline-env_params supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
+* `template_id` - The ID of the template.
 
 ## Timeouts
 

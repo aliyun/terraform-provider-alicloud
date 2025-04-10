@@ -46,6 +46,10 @@ func resourceAliCloudEfloExperimentPlanTemplate() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"template_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"template_pipeline": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -240,6 +244,7 @@ func resourceAliCloudEfloExperimentPlanTemplateRead(d *schema.ResourceData, meta
 	d.Set("privacy_level", objectRaw["PrivacyLevel"])
 	d.Set("template_description", objectRaw["TemplateDescription"])
 	d.Set("template_name", objectRaw["TemplateName"])
+	d.Set("template_id", objectRaw["TemplateId"])
 
 	templatePipelineParamRaw := objectRaw["TemplatePipelineParam"]
 	templatePipelineMaps := make([]map[string]interface{}, 0)
