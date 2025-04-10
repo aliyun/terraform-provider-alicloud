@@ -791,21 +791,23 @@ func (s *OssServiceV2) OssBucketLoggingStateRefreshFunc(id string, field string,
 
 // DescribeOssBucketLogging >>> Encapsulated.
 
-// DescribeOssBucketServerSideEncryption
+// DescribeOssBucketServerSideEncryption <<< Encapsulated get interface for Oss BucketServerSideEncryption.
 func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	action := fmt.Sprintf("/?encryption")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(id)
 
+	action := fmt.Sprintf("/?encryption")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketEncryption", action), query, nil, nil, hostMap, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -813,14 +815,13 @@ func (s *OssServiceV2) DescribeOssBucketServerSideEncryption(id string) (object 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"NoSuchServerSideEncryptionRule"}) {
+		if IsExpectedErrors(err, []string{"NoSuchServerSideEncryptionRule", "NoSuchBucket"}) {
 			return object, WrapErrorf(NotFoundErr("BucketServerSideEncryption", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if response == nil {
@@ -847,6 +848,13 @@ func (s *OssServiceV2) OssBucketServerSideEncryptionStateRefreshFunc(id string, 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
