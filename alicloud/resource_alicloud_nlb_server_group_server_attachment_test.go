@@ -281,6 +281,10 @@ func TestAccAliCloudNlbServerGroupServerAttachment_Ip(t *testing.T) {
 
 var AlicloudNlbServerGroupServerAttachmentMap0 = map[string]string{}
 
+var AlicloudNlbServerGroupServerAttachmentMapWeightDefault = map[string]string{
+	"weight": "100",
+}
+
 func AlicloudNlbServerGroupServerAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -354,7 +358,7 @@ resource "alicloud_nlb_server_group" "default" {
 func TestAccAliCloudNlbServerGroupServerAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group_server_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMap1)
+	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMapWeightDefault)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroupServerAttachment")

@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -203,6 +202,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	action := "UpdateServerGroupServersAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	request["ServerGroupId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	objectDataLocalMap := make(map[string]interface{})
@@ -210,27 +210,45 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	if d.HasChange("server_id") {
 		update = true
 	}
-	objectDataLocalMap["ServerId"] = d.Get("server_id")
+	if v, ok := d.GetOk("server_id"); ok {
+		objectDataLocalMap["ServerId"] = v
+	}
+
 	if d.HasChange("server_type") {
 		update = true
 	}
-	objectDataLocalMap["ServerType"] = d.Get("server_type")
+	if v, ok := d.GetOk("server_type"); ok {
+		objectDataLocalMap["ServerType"] = v
+	}
+
 	if d.HasChange("port") {
 		update = true
 	}
-	objectDataLocalMap["Port"] = d.Get("port")
+	if v, ok := d.GetOk("port"); ok {
+		objectDataLocalMap["Port"] = v
+	}
+
 	if d.HasChange("weight") {
 		update = true
 	}
-	objectDataLocalMap["Weight"] = d.Get("weight")
+	if v, ok := d.GetOk("weight"); ok {
+		objectDataLocalMap["Weight"] = v
+	}
+
 	if d.HasChange("description") {
 		update = true
 	}
-	objectDataLocalMap["Description"] = d.Get("description")
+	if v, ok := d.GetOk("description"); ok {
+		objectDataLocalMap["Description"] = v
+	}
+
 	if d.HasChange("server_ip") {
 		update = true
 	}
-	objectDataLocalMap["ServerIp"] = d.Get("server_ip")
+	if v, ok := d.GetOk("server_ip"); ok {
+		objectDataLocalMap["ServerIp"] = v
+	}
+
 	ServersMap := make([]interface{}, 0)
 	ServersMap = append(ServersMap, objectDataLocalMap)
 	request["Servers"] = ServersMap
