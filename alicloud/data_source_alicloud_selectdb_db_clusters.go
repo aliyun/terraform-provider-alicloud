@@ -105,7 +105,7 @@ func dataSourceAlicloudSelectDBDbClusters() *schema.Resource {
 										Computed: true,
 									},
 									"optional": {
-										Type:     schema.TypeInt,
+										Type:     schema.TypeString,
 										Computed: true,
 									},
 									"comment": {
@@ -274,7 +274,7 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 			temp1 := map[string]interface{}{
 				"comment":            m1["Comment"].(string),
 				"default_value":      m1["DefaultValue"].(string),
-				"optional":           m1["Optional"],
+				"optional":           m1["Optional"].(string),
 				"param_category":     m1["ParamCategory"].(string),
 				"value":              m1["Value"].(string),
 				"is_user_modifiable": m1["IsUserModifiable"],
