@@ -1164,6 +1164,7 @@ func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_name":            name,
 					"dns_hostname_status": "ENABLED",
+					"force_delete":        "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1211,6 +1212,16 @@ func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cidr_block": "172.16.0.0/12",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_route_table_route_propagation_enable": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_route_table_route_propagation_enable": "false",
 					}),
 				),
 			},
@@ -1308,7 +1319,7 @@ func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "ipv6_isp"},
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "ipv6_isp", "force_delete"},
 			},
 		},
 	})
@@ -1321,6 +1332,7 @@ var AlicloudVpcVpcMap3113 = map[string]string{
 	"router_id":         CHECKSET,
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
+	"system_route_table_route_propagation_enable": "true",
 }
 
 func AlicloudVpcVpcBasicDependence3113(name string) string {
@@ -1361,6 +1373,7 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 					"cidr_block":           "172.16.0.0/12",
 					"vpc_name":             name,
 					"classic_link_enabled": "false",
+					"system_route_table_route_propagation_enable": "false",
 					"secondary_cidr_blocks": []string{
 						"192.168.0.0/16"},
 					"tags": map[string]string{
@@ -1370,15 +1383,16 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipv6_isp":                "BGP",
-						"description":             "test-update",
-						"cidr_block":              "172.16.0.0/12",
-						"vpc_name":                name,
-						"classic_link_enabled":    "false",
-						"secondary_cidr_blocks.#": "1",
-						"tags.%":                  "2",
-						"tags.Created":            "TF",
-						"tags.For":                "Test",
+						"ipv6_isp":             "BGP",
+						"description":          "test-update",
+						"cidr_block":           "172.16.0.0/12",
+						"vpc_name":             name,
+						"classic_link_enabled": "false",
+						"system_route_table_route_propagation_enable": "false",
+						"secondary_cidr_blocks.#":                     "1",
+						"tags.%":                                      "2",
+						"tags.Created":                                "TF",
+						"tags.For":                                    "Test",
 					}),
 				),
 			},

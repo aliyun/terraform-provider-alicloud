@@ -108,16 +108,16 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -138,6 +138,7 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -145,7 +146,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
-			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
@@ -818,14 +818,15 @@ func (s *VpcServiceV2) DescribeVpcVpc(id string) (object map[string]interface{},
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeVpcAttribute"
+	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["VpcId"] = id
-	query["RegionId"] = client.RegionId
+	request["VpcId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeVpcAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -842,7 +843,7 @@ func (s *VpcServiceV2) DescribeVpcVpc(id string) (object map[string]interface{},
 	}
 
 	currentStatus := response["VpcId"]
-	if currentStatus == "" {
+	if fmt.Sprint(currentStatus) == "" {
 		return object, WrapErrorf(NotFoundErr("Vpc", id), NotFoundMsg, response)
 	}
 
@@ -853,14 +854,15 @@ func (s *VpcServiceV2) DescribeVpcDescribeRouteTableList(id string) (object map[
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeRouteTableList"
+	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["VpcId"] = id
-	query["RegionId"] = client.RegionId
+	request["VpcId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeRouteTableList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
