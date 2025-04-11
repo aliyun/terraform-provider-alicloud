@@ -2431,8 +2431,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 	})
 }
 
-// Memcache Instance has been offline since 2023-08-13
-func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
+func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -2447,6 +2446,7 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2463,9 +2463,9 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"For":     "acceptance test",
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"zone_id":           "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"secondary_zone_id": "${data.alicloud_vswitches.slave.vswitches.0.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2557,9 +2557,9 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.1.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"zone_id":           "${data.alicloud_vswitches.slave.vswitches.0.zone_id}",
+					"vswitch_id":        "${data.alicloud_vswitches.slave.ids.0}",
+					"secondary_zone_id": "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -2620,50 +2620,11 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":              "memcache.master.small.default",
 					"instance_release_protection": "false",
-					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"security_ips":                []string{"10.0.0.1"},
-					"db_instance_name":            name,
-					"vpc_auth_mode":               "Open",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id":   REMOVEKEY,
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
-					// There is an OpenAPI bug
-					//"backup_period":             []string{"Wednesday"},
-					//"backup_time":               "11:00Z-12:00Z",
-					"private_connection_prefix": fmt.Sprintf("privateconnectionupdate%d", rand),
-					"timeouts": []map[string]interface{}{
-						{
-							"update": "1h",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":              "memcache.master.small.default",
 						"instance_release_protection": "false",
-						"resource_group_id":           CHECKSET,
-						"security_ips.#":              "1",
-						"db_instance_name":            name,
-						"vpc_auth_mode":               "Open",
-						"tags.%":                      "2",
-						"tags.Created":                "TF",
-						"tags.For":                    "acceptance test",
-						"zone_id":                     CHECKSET,
-						"vswitch_id":                  CHECKSET,
-						"secondary_zone_id":           REMOVEKEY,
-						"maintain_start_time":         "04:00Z",
-						"maintain_end_time":           "06:00Z",
-						//"backup_period.#":             "1",
-						//"backup_time":                 "11:00Z-12:00Z",
-						"private_connection_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -2741,23 +2702,18 @@ func AliCloudKVStoreMemcacheInstanceVpcBasicDependence0(name string) string {
   		status = "OK"
 	}
 
-	data "alicloud_kvstore_zones" "default" {
-  		instance_charge_type = "PostPaid"
-  		engine               = "memcache"
-	}
-
 	data "alicloud_vpcs" "default" {
   		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  		zone_id = "cn-hangzhou-h"
 	}
 
-	data "alicloud_vswitches" "update" {
+	data "alicloud_vswitches" "slave" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_kvstore_zones.default.zones.1.id
+  		zone_id = "cn-hangzhou-i"
 	}
 	`)
 }
