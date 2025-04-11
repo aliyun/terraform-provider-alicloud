@@ -3396,79 +3396,6 @@ data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
-resource "alicloud_ram_policy" "default" {
-  policy_name = "${var.name}"
-  policy_document = <<EOF
-	{
-	  "Statement": [
-		{
-          "Action": [
-              "kms:List*",
-              "kms:DescribeKey",
-              "kms:TagResource",
-              "kms:UntagResource"
-          ],
-          "Resource": [
-              "acs:kms:*:*:*"
-          ],
-          "Effect": "Allow"
-      	},
-      	{
-          "Action": [
-              "kms:Encrypt",
-              "kms:Decrypt",
-              "kms:GenerateDataKey"
-          ],
-          "Resource": [
-              "acs:kms:*:*:*"
-          ],
-          "Effect": "Allow",
-          "Condition": {
-              "StringEqualsIgnoreCase": {
-                  "kms:tag/acs:rds:instance-encryption": "true"
-              }
-          }
-      	}
-	  ],
-		"Version": "1"
-	}
-  EOF
-  description = "this is a policy test"
-  force = true
-}
-resource "alicloud_ram_role" "default" {
-  name = "${var.name}"
-  document = <<EOF
-	{
-	  "Statement": [
-		{
-		  "Action": "sts:AssumeRole",
-		  "Effect": "Allow",
-		  "Principal": {
-			"Service": [
-			  "rds.aliyuncs.com"
-			]
-		  }
-		}
-	  ],
-	  "Version": "1"
-	}
-  EOF
-  description = "this is a test"
-  force = true
-}
-resource "alicloud_ram_role_policy_attachment" "default" {
-  policy_name = "${alicloud_ram_policy.default.policy_name}"
-  role_name = "${alicloud_ram_role.default.name}"
-  policy_type = "${alicloud_ram_policy.default.type}"
-}
-
-resource "alicloud_kms_key" "default" {
-  description = var.name
-  pending_window_in_days  = 7
-  status               = "Enabled"
-}
-
 `, name)
 }
 func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
@@ -3486,6 +3413,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
 
 		// module name
@@ -3499,12 +3427,11 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 					"engine":                   "MySQL",
 					"engine_version":           "8.0",
 					"instance_type":            "mysql.x4.medium.2c",
-					"instance_storage":         "100",
+					"instance_storage":         "30",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "cloud_essd",
-					"encryption_key":           "${alicloud_kms_key.default.id}",
 					"optimized_writes":         "optimized",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -3525,7 +3452,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -4049,10 +3976,21 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":         "Enabled",
+					"tde_encryption_key": "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key"},
 			},
 		},
 	})
@@ -4074,6 +4012,14 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+data "alicloud_kms_service" "default" {
+  enable = "On"
+}
+resource "alicloud_kms_key" "default" {
+  description = var.name
+  pending_window_in_days  = 7
+  status            = "Enabled"
 }
 `, name)
 }
