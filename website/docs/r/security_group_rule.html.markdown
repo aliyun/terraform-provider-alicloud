@@ -31,12 +31,12 @@ Basic Usage
 
 ```terraform
 resource "alicloud_security_group" "default" {
-  name = "default"
+  security_group_name = "default"
 }
 resource "alicloud_security_group_rule" "allow_all_tcp" {
   type              = "ingress"
   ip_protocol       = "tcp"
-  nic_type          = "internet"
+  nic_type          = "intranet"
   policy            = "accept"
   port_range        = "1/65535"
   priority          = 1
@@ -77,7 +77,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Security Group Rule.
+* `security_group_rule_id` - The ID of the Security Group Rule.
+* `id` - The resource ID in terraform, which is composed by terraform provider.
 
 **NOTE:**  if `cidr_ip` is set, the `id` formats as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<cidr_ip>:<policy>:<priority>`.
 

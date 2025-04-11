@@ -110,6 +110,10 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"security_group_rule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -321,6 +325,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("policy", strings.ToLower(string(object.Policy)))
 	d.Set("port_range", object.PortRange)
 	d.Set("description", object.Description)
+	d.Set("security_group_rule_id", object.SecurityGroupRuleId)
 	if pri, err := strconv.Atoi(object.Priority); err != nil {
 		return WrapError(err)
 	} else {
