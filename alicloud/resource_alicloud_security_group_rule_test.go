@@ -366,6 +366,7 @@ var testAccCheckSecurityGroupRuleBasicMap = map[string]string{
 	"priority":                 "100",
 	"security_group_id":        CHECKSET,
 	"source_security_group_id": CHECKSET,
+	"security_group_rule_id":   CHECKSET,
 	"cidr_ip":                  "",
 }
 
