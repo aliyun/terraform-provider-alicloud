@@ -1598,7 +1598,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host":                                      resourceAlicloudBastionhostHost(),
 			"alicloud_amqp_binding":                                          resourceAliCloudAmqpBinding(),
 			"alicloud_slb_tls_cipher_policy":                                 resourceAlicloudSlbTlsCipherPolicy(),
-			"alicloud_cloud_sso_directory":                                   resourceAlicloudCloudSsoDirectory(),
+			"alicloud_cloud_sso_directory":                                   resourceAliCloudCloudSSODirectory(),
 			"alicloud_bastionhost_host_account":                              resourceAlicloudBastionhostHostAccount(),
 			"alicloud_bastionhost_host_attachment":                           resourceAlicloudBastionhostHostAttachment(),
 			"alicloud_bastionhost_host_account_user_group_attachment":        resourceAlicloudBastionhostHostAccountUserGroupAttachment(),
