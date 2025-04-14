@@ -2795,9 +2795,10 @@ func (s *EcsService) DescribeEcsSystemDisk(id string) (object map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDiskChargeType.NotFound", "InvalidDiskIds.ValueNotSupported", "InvalidFilterKey.NotFound", "InvalidFilterValue", "InvalidLockReason.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("ECS:Disk", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))

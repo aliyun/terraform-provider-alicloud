@@ -3783,7 +3783,6 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 
 func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 	var v ecs.Instance
-
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
 	serviceFunc := func() interface{} {
@@ -3808,12 +3807,14 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
 					"launch_template_name":    "${alicloud_ecs_launch_template.default.launch_template_name}",
 					"launch_template_version": "1",
+					"system_disk_category":    "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"launch_template_id":      CHECKSET,
 						"launch_template_name":    CHECKSET,
 						"launch_template_version": "1",
+						"system_disk_category":    "cloud_essd",
 					}),
 				),
 			},
@@ -4401,7 +4402,7 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
 	}
 
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
@@ -4411,11 +4412,9 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
-		cpu_core_count       = 2
-  		memory_size          = 8
-  		instance_type_family = "ecs.g6"
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		image_id             = data.alicloud_images.default.images.0.id
+		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -4451,6 +4450,12 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
   		zone_id                       = data.alicloud_zones.default.zones.0.id
   		security_enhancement_strategy = "Active"
   		user_data                     = "I_am_user_data"
+  		system_disk {
+    		category             = "cloud_ssd"
+    		description          = "Test For Terraform"
+    		name                 = "terraform-example"
+    		size                 = "40"
+  		}
   		template_tags = {
     		Created = "tf"
     		For     = "example"
