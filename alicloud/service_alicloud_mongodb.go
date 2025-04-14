@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -1576,4 +1577,81 @@ func (s *MongoDBService) DescribeParameters(id string) (map[string]interface{}, 
 	})
 	addDebug(action, response, request)
 	return response, err
+}
+
+func (s *MongoDBService) DescribeReplicaSetRole(id string) (map[string]interface{}, error) {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "DescribeReplicaSetRole"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return response, err
+}
+
+func transferToMongoReplicaSets(objects map[string]interface{}, sortByRoleId bool) []map[string]interface{} {
+	if replicaSetsMap, ok := objects["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
+		if replicaSetsListInterface, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsListInterface != nil {
+			replicaSetsList := replicaSetsListInterface.([]interface{})
+			ret := make([]map[string]interface{}, 0, len(replicaSetsList))
+			for _, replicaSets := range replicaSetsList {
+				replicaSetsArg := replicaSets.(map[string]interface{})
+				replicaSetsItemMap := make(map[string]interface{})
+
+				if connectionPort, ok := replicaSetsArg["ConnectionPort"]; ok {
+					replicaSetsItemMap["connection_port"] = connectionPort
+				}
+
+				if replicaSetRole, ok := replicaSetsArg["ReplicaSetRole"]; ok {
+					replicaSetsItemMap["replica_set_role"] = replicaSetRole
+				}
+
+				if connectionDomain, ok := replicaSetsArg["ConnectionDomain"]; ok {
+					replicaSetsItemMap["connection_domain"] = connectionDomain
+				}
+
+				if networkType, ok := replicaSetsArg["NetworkType"]; ok {
+					replicaSetsItemMap["network_type"] = networkType
+				}
+
+				if roleID, ok := replicaSetsArg["RoleId"]; ok {
+					replicaSetsItemMap["role_id"] = roleID
+				}
+
+				ret = append(ret, replicaSetsItemMap)
+			}
+
+			if sortByRoleId {
+				sort.Slice(ret, func(i, j int) bool {
+					r1, ok := ret[i]["role_id"]
+					if !ok {
+						return false
+					}
+					r2, ok := ret[j]["role_id"]
+					if !ok {
+						return true
+					}
+					return strings.Compare(r1.(string), r2.(string)) >= 0
+				})
+			}
+
+			return ret
+		}
+	}
+	return nil
 }
