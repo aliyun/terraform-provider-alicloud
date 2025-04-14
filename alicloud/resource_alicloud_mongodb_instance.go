@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/samber/lo"
 )
 
 func resourceAliCloudMongoDBInstance() *schema.Resource {
@@ -242,7 +244,7 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"enabled"}, false),
+				ValidateFunc:  StringInSlice([]string{"enabled", "disabled"}, false),
 				ConflictsWith: []string{"encrypted", "cloud_disk_encryption_key"},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine_version").(string) < "4.0"
@@ -326,6 +328,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 							Computed: true,
 						},
 						"connection_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -519,8 +525,6 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("network_type", object["NetworkType"])
 	d.Set("name", object["DBInstanceDescription"])
 	d.Set("instance_charge_type", object["ChargeType"])
-	d.Set("encrypted", object["Encrypted"])
-	d.Set("cloud_disk_encryption_key", object["EncryptionKey"])
 	d.Set("replication_factor", formatInt(object["ReplicationFactor"]))
 	d.Set("readonly_replicas", formatInt(object["ReadonlyReplicas"]))
 	d.Set("resource_group_id", object["ResourceGroupId"])
@@ -574,7 +578,8 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 
-	if object["ReplicationFactor"] != "" && object["ReplicationFactor"] != "1" {
+	// https://next.api.aliyun.com/api/Dds/2015-12-01/DescribeDBInstanceAttribute
+	if object["KindCode"] == "0" || object["StorageType"] == "local_ssd" {
 		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -584,6 +589,9 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("encryptor_name", tdeInfo["EncryptorName"])
 		d.Set("encryption_key", tdeInfo["EncryptionKey"])
 		d.Set("role_arn", tdeInfo["RoleARN"])
+	} else {
+		d.Set("encrypted", object["Encrypted"])
+		d.Set("cloud_disk_encryption_key", object["EncryptionKey"])
 	}
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
@@ -602,6 +610,22 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if err = ddsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
 	}
+
+	replicaSetsObjects, err := ddsService.DescribeReplicaSetRole(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	replicaSets := transferToMongoReplicaSets(replicaSetsObjects, false)
+	// connection domain -> replica
+	allPrivateNetworkAddresses := lo.FilterSliceToMap(replicaSets, func(replica map[string]interface{}) (string, map[string]interface{}, bool) {
+		if networkType, ok := replica["network_type"]; ok && networkType.(string) == "VPC" {
+			if connectionDomain, ok := replica["connection_domain"]; ok {
+				return connectionDomain.(string), replica, true
+			}
+		}
+		return "", replica, false
+	})
 
 	if replicaSetsMap, ok := object["ReplicaSets"].(map[string]interface{}); ok && replicaSetsMap != nil {
 		if replicaSetsList, ok := replicaSetsMap["ReplicaSet"]; ok && replicaSetsList != nil {
@@ -632,6 +656,11 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 
 				if connectionDomain, ok := replicaSetsArg["ConnectionDomain"]; ok {
 					replicaSetsItemMap["connection_domain"] = connectionDomain
+					if replica, ok := allPrivateNetworkAddresses[connectionDomain.(string)]; ok {
+						if roleID, ok := replica["role_id"]; ok {
+							replicaSetsItemMap["role_id"] = roleID
+						}
+					}
 				}
 
 				if connectionPort, ok := replicaSetsArg["ConnectionPort"]; ok {
@@ -641,6 +670,18 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 				replicaSetsMaps = append(replicaSetsMaps, replicaSetsItemMap)
 			}
 
+			// make the output attributes more stable.
+			sort.Slice(replicaSetsMaps, func(i, j int) bool {
+				r1, ok := replicaSetsMaps[i]["role_id"]
+				if !ok {
+					return false
+				}
+				r2, ok := replicaSetsMaps[j]["role_id"]
+				if !ok {
+					return true
+				}
+				return strings.Compare(r1.(string), r2.(string)) >= 0
+			})
 			d.Set("replica_sets", replicaSetsMaps)
 		}
 	}
