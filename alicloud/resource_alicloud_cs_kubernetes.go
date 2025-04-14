@@ -1630,10 +1630,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.ClusterSpec = v.(string)
 	}
 
-	if encryptionProviderKey, ok := d.GetOk("encryption_provider_key"); ok {
-		creationArgs.EncryptionProviderKey = encryptionProviderKey.(string)
-	}
-
 	if rdsInstances, ok := d.GetOk("rds_instances"); ok {
 		creationArgs.RdsInstances = expandStringList(rdsInstances.([]interface{}))
 	}
