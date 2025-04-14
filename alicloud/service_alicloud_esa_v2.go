@@ -127,7 +127,7 @@ func (s *EsaServiceV2) DescribeSiteGetManagedTransform(id string) (object map[st
 
 	return response, nil
 }
-func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interface{}, err error) {
+func (s *EsaServiceV2) DescribeSiteGetCacheTag(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -136,6 +136,40 @@ func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interfa
 	query = make(map[string]interface{})
 	query["SiteId"] = id
 	query["RegionId"] = client.RegionId
+	action := "GetCacheTag"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "101", "32"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+
 	action := "GetIPv6"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -154,6 +188,40 @@ func (s *EsaServiceV2) DescribeSiteGetIPv6(id string) (object map[string]interfa
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetCacheReserve(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetCacheReserve"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "101", "32"}) {
 			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -188,6 +256,210 @@ func (s *EsaServiceV2) DescribeSiteGetTieredCache(id string) (object map[string]
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetCrossBorderOptimization(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetCrossBorderOptimization"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetSiteNameExclusive(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetSiteNameExclusive"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetCnameFlattening(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetCnameFlattening"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "32", "101"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetSeoBypass(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetSeoBypass"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "101", "32"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetDevelopmentMode(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetDevelopmentMode"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "101", "32"}) {
+			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EsaServiceV2) DescribeSiteGetSitePause(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SiteId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetSitePause"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "101", "32"}) {
 			return object, WrapErrorf(NotFoundErr("Site", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -280,11 +552,11 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			request["ResourceType"] = resourceType
 			jsonString := convertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "ResourceId.0", d.Id())
 			_ = json.Unmarshal([]byte(jsonString), &request)
@@ -313,7 +585,6 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -321,6 +592,7 @@ func (s *EsaServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
+			request["ResourceType"] = resourceType
 			jsonString := convertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "ResourceId.0", d.Id())
 			_ = json.Unmarshal([]byte(jsonString), &request)
