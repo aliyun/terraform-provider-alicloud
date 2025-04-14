@@ -222,7 +222,7 @@ The following arguments are supported:
 * `cluster_spec` - (Optional, Available since v1.101.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
   * ack.standard : Standard managed clusters.
   * ack.pro.small : Professional managed clusters.
-* `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The disk encryption key.
+* `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
 * `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.

@@ -487,7 +487,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "disk encryption key, only in ack-pro",
+				Description: "The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.",
 			},
 			// computed parameters
 			"kube_config": {
