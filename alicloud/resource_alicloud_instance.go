@@ -1163,8 +1163,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	var disk ecs.Disk
-	disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId, d.Get("system_disk_id").(string))
+	disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 	if err != nil {
 		// if old resource happenes an not found error, there may system has been detached
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -1173,17 +1172,19 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 	} else {
-		d.Set("system_disk_category", disk.Category)
-		d.Set("system_disk_name", disk.DiskName)
-		d.Set("system_disk_description", disk.Description)
-		d.Set("system_disk_size", disk.Size)
-		d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
-		d.Set("system_disk_storage_cluster_id", disk.StorageClusterId)
-		d.Set("system_disk_encrypted", disk.Encrypted)
-		d.Set("system_disk_kms_key_id", disk.KMSKeyId)
-		d.Set("system_disk_id", disk.DiskId)
-		d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
-		d.Set("system_disk_performance_level", disk.PerformanceLevel)
+		d.Set("system_disk_category", disk["Category"])
+		d.Set("system_disk_name", disk["DiskName"])
+		d.Set("system_disk_description", disk["Description"])
+		d.Set("system_disk_size", disk["Size"])
+		d.Set("system_disk_auto_snapshot_policy_id", disk["AutoSnapshotPolicyId"])
+		d.Set("system_disk_storage_cluster_id", disk["StorageClusterId"])
+		d.Set("system_disk_encrypted", disk["Encrypted"])
+		d.Set("system_disk_kms_key_id", disk["KMSKeyId"])
+		d.Set("system_disk_id", disk["DiskId"])
+		d.Set("system_disk_performance_level", disk["PerformanceLevel"])
+		if v, ok := disk["Tags"].(map[string]interface{}); ok {
+			d.Set("volume_tags", tagsToMap(v["Tag"]))
+		}
 	}
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
@@ -2347,7 +2348,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			if errDesc != nil {
 				return update, WrapError(errDesc)
 			}
-			disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId, d.Get("system_disk_id").(string))
+			disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), "", d.Get("system_disk_id").(string))
 			if err != nil {
 				return update, WrapError(err)
 			}
