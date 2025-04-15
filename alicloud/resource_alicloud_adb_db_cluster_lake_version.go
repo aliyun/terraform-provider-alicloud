@@ -55,6 +55,16 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
+			"secondary_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"product_form": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -204,6 +214,14 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 	request["ZoneId"] = d.Get("zone_id")
 	request["PayType"] = convertAdbDbClusterLakeVersionPaymentTypeRequest(d.Get("payment_type"))
 
+	if v, ok := d.GetOk("secondary_vswitch_id"); ok {
+		request["SecondaryVSwitchId"] = v
+	}
+
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		request["SecondaryZoneId"] = v
+	}
+
 	if v, ok := d.GetOk("product_form"); ok {
 		request["ProductForm"] = v
 	}
@@ -329,6 +347,8 @@ func resourceAliCloudAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta in
 	d.Set("compute_resource", object["ComputeResource"])
 	d.Set("storage_resource", object["StorageResource"])
 	d.Set("payment_type", convertAdbDbClusterLakeVersionPaymentTypeResponse(object["PayType"]))
+	d.Set("secondary_vswitch_id", object["SecondaryVSwitchId"])
+	d.Set("secondary_zone_id", object["SecondaryZoneId"])
 	d.Set("product_form", object["ProductForm"])
 	d.Set("product_version", object["ProductVersion"])
 	d.Set("reserved_node_size", object["ReservedNodeSize"])
@@ -429,7 +449,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
