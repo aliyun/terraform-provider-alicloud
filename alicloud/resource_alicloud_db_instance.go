@@ -400,6 +400,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					engine := d.Get("engine").(string)
 					encryptionKey := d.Get("encryption_key").(string)
@@ -1030,7 +1031,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"SourceIp":     client.SourceIp,
 		}
 
-		if "MySQL" == d.Get("engine").(string) {
+		if "MySQL" == d.Get("engine").(string) || string(PostgreSQL) == d.Get("engine").(string) {
 			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 				request["RoleARN"] = v.(string)
 			}
