@@ -3052,6 +3052,7 @@ func adaptAutoScalingPolicyRequest(r map[string]interface{}) map[string]interfac
 				constraint["MinCapacity"] = constraintValue
 			}
 			scalingPolicy["constraints"] = constraint
+			scalingPolicy["Constraints"] = constraint
 		}
 	}
 	if value, exists := r["scaling_rules"]; exists {
@@ -3177,6 +3178,7 @@ func adaptAutoScalingPolicyRequest(r map[string]interface{}) map[string]interfac
 			scalingRules = append(scalingRules, scalingRule)
 		}
 		scalingPolicy["scalingRules"] = scalingRules
+		scalingPolicy["ScalingRules"] = scalingRules
 	}
 	return scalingPolicy
 }
