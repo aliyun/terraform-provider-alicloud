@@ -182,6 +182,8 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
 					"payment_type":                  "Subscription",
+					"secondary_vswitch_id":          "${data.alicloud_vswitches.secondary.ids.0}",
+					"secondary_zone_id":             "${data.alicloud_adb_zones.default.ids.1}",
 					"compute_resource":              "16ACU",
 					"storage_resource":              "0ACU",
 					"disk_encryption":               "true",
@@ -200,6 +202,8 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 						"vswitch_id":             CHECKSET,
 						"zone_id":                CHECKSET,
 						"payment_type":           "Subscription",
+						"secondary_vswitch_id":   CHECKSET,
+						"secondary_zone_id":      CHECKSET,
 						"compute_resource":       "16ACU",
 						"storage_resource":       "0ACU",
 						"disk_encryption":        "true",
@@ -489,6 +493,11 @@ func AliCloudAdbDbClusterLakeVersionBasicDependence0Twin(name string) string {
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
   		zone_id = data.alicloud_adb_zones.default.ids.0
+	}
+
+	data "alicloud_vswitches" "secondary" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_adb_zones.default.ids.1
 	}
 
 	resource "alicloud_kms_key" "default" {
