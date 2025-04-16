@@ -11,7 +11,7 @@ description: |-
 
 Provides a RDC Organization resource.
 
-For information about RDC Organization and how to use it, see [What is Organization](https://help.aliyun.com/document_detail/51678.html).
+For information about RDC Organization and how to use it, see [What is Organization](https://www.alibabacloud.com/help/en/yunxiao/product-overview/what-is-cloud-effect).
 
 -> **NOTE:** Available since v1.137.0.
 
