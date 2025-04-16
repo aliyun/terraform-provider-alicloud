@@ -89,7 +89,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix          = "terraform-example-${random_integer.default.result}"
   cluster_spec         = "ack.pro.small"
-  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  vswitch_ids          = [alicloud_vswitch.default.id]
   new_nat_gateway      = true
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
@@ -197,7 +197,7 @@ resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
   key_name             = alicloud_key_pair.default.key_pair_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  desired_size = 1
+  desired_size = 0
 
   # spot config
   spot_strategy = "SpotWithPriceLimit"

@@ -2400,25 +2400,23 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("taints") {
 		update = true
 		if v := d.Get("taints"); v != nil {
-			if v, ok := d.GetOk("taints"); ok {
-				localData3, err := jsonpath.Get("$", v)
-				if err != nil {
-					localData3 = make([]interface{}, 0)
-				}
-				localMaps3 := make([]interface{}, 0)
-				for _, dataLoop3 := range localData3.([]interface{}) {
-					dataLoop3Tmp := make(map[string]interface{})
-					if dataLoop3 != nil {
-						dataLoop3Tmp = dataLoop3.(map[string]interface{})
-					}
-					dataLoop3Map := make(map[string]interface{})
-					dataLoop3Map["key"] = dataLoop3Tmp["key"]
-					dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
-					dataLoop3Map["value"] = dataLoop3Tmp["value"]
-					localMaps3 = append(localMaps3, dataLoop3Map)
-				}
-				objectDataLocalMap2["taints"] = localMaps3
+			localData3, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData3 = make([]interface{}, 0)
 			}
+			localMaps3 := make([]interface{}, 0)
+			for _, dataLoop3 := range localData3.([]interface{}) {
+				dataLoop3Tmp := make(map[string]interface{})
+				if dataLoop3 != nil {
+					dataLoop3Tmp = dataLoop3.(map[string]interface{})
+				}
+				dataLoop3Map := make(map[string]interface{})
+				dataLoop3Map["key"] = dataLoop3Tmp["key"]
+				dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
+				dataLoop3Map["value"] = dataLoop3Tmp["value"]
+				localMaps3 = append(localMaps3, dataLoop3Map)
+			}
+			objectDataLocalMap2["taints"] = localMaps3
 
 		}
 	}
@@ -2431,25 +2429,22 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("labels") {
 		update = true
 		if v := d.Get("labels"); v != nil {
-			if v, ok := d.GetOk("labels"); ok {
-				localData4, err := jsonpath.Get("$", v)
-				if err != nil {
-					localData4 = make([]interface{}, 0)
-				}
-				localMaps4 := make([]interface{}, 0)
-				for _, dataLoop4 := range localData4.([]interface{}) {
-					dataLoop4Tmp := make(map[string]interface{})
-					if dataLoop4 != nil {
-						dataLoop4Tmp = dataLoop4.(map[string]interface{})
-					}
-					dataLoop4Map := make(map[string]interface{})
-					dataLoop4Map["key"] = dataLoop4Tmp["key"]
-					dataLoop4Map["value"] = dataLoop4Tmp["value"]
-					localMaps4 = append(localMaps4, dataLoop4Map)
-				}
-				objectDataLocalMap2["labels"] = localMaps4
+			localData4, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData4 = make([]interface{}, 0)
 			}
-
+			localMaps4 := make([]interface{}, 0)
+			for _, dataLoop4 := range localData4.([]interface{}) {
+				dataLoop4Tmp := make(map[string]interface{})
+				if dataLoop4 != nil {
+					dataLoop4Tmp = dataLoop4.(map[string]interface{})
+				}
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["key"] = dataLoop4Tmp["key"]
+				dataLoop4Map["value"] = dataLoop4Tmp["value"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			objectDataLocalMap2["labels"] = localMaps4
 		}
 	}
 
