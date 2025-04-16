@@ -1704,6 +1704,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_chart_namespace":                                    resourceAlicloudCrChartNamespace(),
 			"alicloud_fnf_execution":                                         resourceAlicloudFnFExecution(),
 			"alicloud_cr_chart_repository":                                   resourceAlicloudCrChartRepository(),
+			"alicloud_mongodb_public_network_address":                        resourceAlicloudMongoDBPublicNetworkAddress(),
+			"alicloud_mongodb_replica_set_role":                              resourceAlicloudMongoDBReplicaSetRole(),
 			"alicloud_mongodb_sharding_network_public_address":               resourceAlicloudMongodbShardingNetworkPublicAddress(),
 			"alicloud_ga_acl":                                                resourceAliCloudGaAcl(),
 			"alicloud_ga_acl_attachment":                                     resourceAliCloudGaAclAttachment(),
