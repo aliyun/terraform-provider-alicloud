@@ -135,7 +135,7 @@ The following arguments are supported:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
     **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
-* `tde_status` - (Optional, Available since v1.73.0) The TDE(Transparent Data Encryption) status. Valid values: `enabled`.
+* `tde_status` - (Optional, Available since v1.73.0) The TDE(Transparent Data Encryption) status. Note: `tde_status` cannot be set to `disabled` after it is enabled, see [Transparent Data Encryption](https://www.alibabacloud.com/help/en/mongodb/user-guide/configure-tde-for-an-apsaradb-for-mongodb-instance) for more details.
 * `encryptor_name` - (Optional, Available since v1.212.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
 * `encryption_key` - (Optional, Available since v1.212.0) The ID of the custom key.
 * `role_arn` - (Optional, Available since v1.212.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
