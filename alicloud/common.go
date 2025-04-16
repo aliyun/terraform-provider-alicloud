@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/denverdino/aliyungo/cs"
 
@@ -1884,4 +1884,8 @@ func compressIPv6OrCIDR(input string) (string, error) {
 		return input, nil
 	}
 	return ip.String(), nil
+}
+
+func randIntRange(min int, max int) int {
+	return min + acctest.RandIntRange(min, max)
 }
