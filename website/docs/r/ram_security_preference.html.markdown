@@ -2,7 +2,6 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_security_preference"
-sidebar_current: "docs-alicloud-resource-ram-security-preference"
 description: |-
   Provides a Alicloud RAM Security Preference resource.
 ---
@@ -10,6 +9,8 @@ description: |-
 # alicloud_ram_security_preference
 
 Provides a RAM Security Preference resource.
+
+
 
 For information about RAM Security Preference and how to use it, see [What is Security Preference](https://www.alibabacloud.com/help/en/doc-detail/186694.htm).
 
@@ -19,12 +20,6 @@ For information about RAM Security Preference and how to use it, see [What is Se
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_security_preference&exampleId=a8427f8a-f030-814f-bcfd-9c52d5811d5d82082bb0&activeTab=example&spm=docs.r.ram_security_preference.0.a8427f8af0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "alicloud_ram_security_preference" "example" {
   enable_save_mfa_ticket        = false
@@ -32,41 +27,73 @@ resource "alicloud_ram_security_preference" "example" {
 }
 ```
 
+### Deleting `alicloud_ram_security_preference` or removing it from your configuration
+
+Terraform cannot destroy resource `alicloud_ram_security_preference`. Terraform will remove this resource from the state file, however resources may remain.
+
 ## Argument Reference
 
 The following arguments are supported:
+* `allow_user_to_change_password` - (Optional, Computed) Whether to allow RAM users to manage their own passwords. Value:
+  - true (default): Allowed.
+  - false: not allowed.
+* `allow_user_to_login_with_passkey` - (Optional, Available since v1.248.0) Whether to allow RAM users to log on using a passkey. Value:
+  - true (default): Allowed.
+  - false: not allowed.
+* `allow_user_to_manage_access_keys` - (Optional, Computed) Whether to allow RAM users to manage their own access keys. Value:
+  - true: Allow.
+  - false (default): Not allowed.
+* `allow_user_to_manage_mfa_devices` - (Optional, Computed) Whether to allow RAM users to manage multi-factor authentication devices. Value:
+  - true (default): Allowed.
+  - false: not allowed.
+* `allow_user_to_manage_personal_ding_talk` - (Optional, Available since v1.248.0) Whether to allow RAM users to independently manage the binding and unbinding of personal DingTalk. Value:
+  - true (default): Allowed.
+  - false: not allowed.
+* `enable_save_mfa_ticket` - (Optional, Computed) Whether to save the verification status of a RAM user after logging in using multi-factor authentication. The validity period is 7 days. Value:
+  - true: Allow.
+  - false (default): Not allowed.
+* `login_network_masks` - (Optional) The login mask. The logon mask determines which IP addresses are affected by the logon console, including password logon and single sign-on (SSO), but API calls made using the access key are not affected.
+  - If the mask is specified, RAM users can only log on from the specified IP address.
+  - If you do not specify any mask, the login console function will apply to the entire network.
 
-* `enable_save_mfa_ticket` - (Optional) Specifies whether to remember the MFA devices for seven days. Valid values: `true` and `false`
-  * `true` - remembers the MFA devices for seven days.
-  * `false` - does not remember the MFA devices. This is the default value.
-* `allow_user_to_change_password` - (Optional) Specifies whether RAM users can change their passwords. Valid values: `true` and `false`
-  * `true` - RAM users can change their passwords. This is the default value.
-  * `false` - RAM users cannot change their passwords.
-* `allow_user_to_manage_access_keys` - (Optional) Specifies whether RAM users can manage their AccessKey pairs. Valid values: `true` and `false`
-  * `true` - RAM users can manage their AccessKey pairs.
-  * `false` - RAM users cannot manage their AccessKey pairs. This is the default value.
-* `allow_user_to_manage_mfa_devices` - (Optional) Specifies whether RAM users can manage their MFA devices. Valid values: `true` and `false`
-  * `true` - RAM users can manage their MFA devices. This is the default value.
-  * `false` - RAM users cannot manage their MFA devices.
-* `login_session_duration` - (Optional) The validity period of the logon session of RAM users. Valid values: 6 to 24. Unit: hours. Default value: 6.
-* `enforce_mfa_for_login` - (Optional) Specifies whether MFA is required for all RAM users when they log on to the Alibaba Cloud Management Console by using usernames and passwords. Valid values: `true` and `false`
-  * `true` - MFA is required for all RAM users when they log on to the Alibaba Cloud Management Console by using usernames and passwords.
-  * `false` - User-specific settings are applied. This is the default value.
-* `login_network_masks` - (Optional) The subnet mask that specifies the IP addresses from which you can log on to the Alibaba Cloud Management Console. This parameter takes effect on password-based logon and single sign-on (SSO). However, this parameter does not take effect on API calls that are authenticated by using AccessKey pairs.**NOTE:** You can specify up to 25 subnet masks. The total length of the subnet masks can be a maximum of 512 characters.
-  * If you specify a subnet mask, RAM users can use only the IP addresses in the subnet mask to log on to the Alibaba Cloud Management Console.  
-  * If you do not specify a subnet mask, RAM users can use all IP addresses to log on to the Alibaba Cloud Management Console.
-  * If you need to specify multiple subnet masks, separate the subnet masks with semicolons (;). Example: 192.168.0.0/16;10.0.0.0/8.
+When you need to configure multiple login masks, use a semicolon (;) to separate them, for example: 192.168.0.0/16;10.0.0.0/8.
+
+Configure a maximum of 40 logon masks, with a total length of 512 characters.
+* `login_session_duration` - (Optional, Computed, Int) The validity period of the logon session of RAM users.
+Valid values: 1 to 24. Unit: hours.
+Default value: 6.
+* `mfa_operation_for_login` - (Optional, Computed, Available since v1.248.0) MFA must be used during logon (replace the original EnforceMFAForLogin parameter, the original parameter is still valid, we recommend that you update it to a new parameter). Value:
+  - mandatory: mandatory for all RAM users. The original value of EnforceMFAForLogin is true.
+  - independent (default): depends on the independent configuration of each RAM user. The original value of EnforceMFAForLogin is false.
+  - adaptive: Used only during abnormal login.
+* `operation_for_risk_login` - (Optional, Computed, Available since v1.248.0) Whether MFA is verified twice during abnormal logon. Value:
+  - autonomous (default): Skip, do not force binding.
+  - enforceVerify: Force binding validation.
+* `verification_types` - (Optional, Set, Available since v1.248.0) Means of multi-factor authentication. Value:
+  - sms: secure phone.
+  - email: Secure mailbox.
+
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `enforce_mfa_for_login` - (Optional, Deprecated since v1.248.0) Field `enforce_mfa_for_login` has been deprecated from provider version 1.248.0. New field `mfa_operation_for_login` instead. 
+Specifies whether MFA is required for all RAM users when they log on to the Alibaba Cloud Management Console by using usernames and passwords. Valid values: `true` and `false`
+  - `true` - MFA is required for all RAM users when they log on to the Alibaba Cloud Management Console by using usernames and passwords.
+  - `false` - User-specific settings are applied. This is the default value.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above. The value is formulated as Alibaba Account ID.
 
-* `id` - The resource ID in terraform of Security Preference. The ID is set as `RamSecurityPreference`. 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Security Preference.
+* `update` - (Defaults to 5 mins) Used when update the Security Preference.
 
 ## Import
 
 RAM Security Preference can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_security_preference.example <id>
+$ terraform import alicloud_ram_security_preference.example 
 ```
