@@ -20,12 +20,6 @@ For information about Application Real-Time Monitoring Service (ARMS) Grafana Wo
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_arms_grafana_workspace&exampleId=a1305a5b-7e08-ac51-2ea2-69366274c76a2e4bcd03&activeTab=example&spm=docs.r.arms_grafana_workspace.0.a1305a5b7e&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -59,7 +53,9 @@ GrafanaWorkspaceEdition is standard, this parameter is invalid.
 GrafanaWorkspaceEdition is personal_edition. This parameter is invalid. Default value: 1.
 The value of GrafanaWorkspaceEdition is experts_edition. The values are respectively 10, 30, and 50. The default value is 10.
 The value of GrafanaWorkspaceEdition is advanced_edition. This parameter is invalid. The default value is 100.
-* `aliyun_lang` - (Optional, Available since v1.247.0) Language environment (if not filled in, default is zh): zh, en.
+* `aliyun_lang` - (Optional, Available since v1.247.0) Language environment (if not filled in, default is zh):
+  - zh
+  - en
 * `auto_renew` - (Optional, Available since v1.247.0) Whether to automatically renew. Value range:
   - true: Automatic renewal. Default value: true.
   - false: Do not renew automatically.
@@ -73,7 +69,11 @@ The value of GrafanaWorkspaceEdition is advanced_edition. This parameter is inva
   - PricingCycle is Month, indicating monthly payment. The value range is 1 to 9.
   - PricingCycle is set to Year, indicating annual payment. The value range is 1 to 3. Default value: 1.
 * `grafana_version` - (Optional) Grafana version
-* `grafana_workspace_edition` - (Optional, ForceNew) Edition
+* `grafana_workspace_edition` - (Optional, ForceNew) The edition. **Valid values:**
+  - standard: `Beta Edition(For internal testing only) `
+  - personal_edition: Developer Edition
+  - experts_edition: Pro Edition
+  - advanced_edition: Advanced Edition
 * `grafana_workspace_name` - (Required) The name of the resource
 * `password` - (Optional, Available since v1.247.0) The password of the instance. It is 8 to 30 characters in length and must contain three types of characters: uppercase and lowercase letters, numbers, and special symbols. Special symbols can be:()'~! @#$%^& *-_+ =
 * `pricing_cycle` - (Optional, Available since v1.247.0) The billing cycle of the package year and Month. Value: Month (default): purchase by Month. Year: Purchased by Year.
