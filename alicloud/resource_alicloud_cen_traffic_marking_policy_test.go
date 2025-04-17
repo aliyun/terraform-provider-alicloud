@@ -71,6 +71,7 @@ func TestAccAliCloudCenTrafficMarkingPolicy_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"traffic_marking_policy_name": "${var.name}_update",
+					"force":                       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -82,7 +83,7 @@ func TestAccAliCloudCenTrafficMarkingPolicy_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 		},
 	})

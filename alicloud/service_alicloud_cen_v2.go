@@ -280,13 +280,13 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "ListTrafficMarkingPolicies"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TrafficMarkingPolicyId"] = parts[1]
+	request["TrafficMarkingPolicyId"] = parts[1]
+	request["TransitRouterId"] = parts[0]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	action := "ListTrafficMarkingPolicies"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
@@ -298,11 +298,10 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -341,6 +340,13 @@ func (s *CenServiceV2) CenTrafficMarkingPolicyStateRefreshFunc(id string, field 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
