@@ -899,6 +899,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_pai_flow_pipeline":                                    resourceAliCloudPaiFlowPipeline(),
+			"alicloud_eflo_experiment_plan":                                 resourceAliCloudEfloExperimentPlan(),
 			"alicloud_eflo_resource":                                        resourceAliCloudEfloResource(),
 			"alicloud_eflo_experiment_plan_template":                        resourceAliCloudEfloExperimentPlanTemplate(),
 			"alicloud_esa_scheduled_preload_execution":                      resourceAliCloudEsaScheduledPreloadExecution(),
