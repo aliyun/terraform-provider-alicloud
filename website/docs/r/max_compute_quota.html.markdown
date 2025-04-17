@@ -16,6 +16,8 @@ For information about Max Compute Quota and how to use it, see [What is Quota](h
 
 -> **NOTE:** Available since v1.247.0.
 
+-> **NOTE:** This resource will be reconstructed in future versions due to breaking changes and should not be used in production. We recommend upgrading to the latest provider version after May 20, 2025 (subject to change). For assistance, please file a support ticket with the MaxCompute product team directly.
+
 ## Example Usage
 
 Basic Usage
