@@ -36,7 +36,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_serverless_kubernetes&exampleId=d818bebd-0275-45d3-0929-c5c965ef152289c52fa8&activeTab=example&spm=docs.r.cs_serverless_kubernetes.0.d818bebd02&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_serverless_kubernetes&exampleId=ce5590c1-b1d0-5f35-3f42-f786fe12839c630ca7b8&activeTab=example&spm=docs.r.cs_serverless_kubernetes.0.ce5590c1b1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

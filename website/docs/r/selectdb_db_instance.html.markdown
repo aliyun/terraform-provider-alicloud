@@ -20,7 +20,7 @@ For information about SelectDB DBInstance and how to use it, see [What is DBInst
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_selectdb_db_instance&exampleId=0fae39d5-eb29-e67d-8b1e-b0e6249e253b62b438b1&activeTab=example&spm=docs.r.selectdb_db_instance.0.0fae39d5eb&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_selectdb_db_instance&exampleId=28f6d0af-3c3a-d2ab-1cf8-ffa3a1c01b03249fea15&activeTab=example&spm=docs.r.selectdb_db_instance.0.28f6d0af3c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

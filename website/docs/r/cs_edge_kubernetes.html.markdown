@@ -33,7 +33,7 @@ after creating cluster successfully, and you can put them into the specified loc
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_edge_kubernetes&exampleId=1e873019-8f12-c5f1-576f-acfb3aa509d70d647237&activeTab=example&spm=docs.r.cs_edge_kubernetes.0.1e8730198f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_edge_kubernetes&exampleId=6ee7e192-4503-b08d-2813-7f0849ea44ff9c8945d8&activeTab=example&spm=docs.r.cs_edge_kubernetes.0.6ee7e19245&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -91,7 +91,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 You could create a professional kubernetes edge cluster now.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_edge_kubernetes&exampleId=2b1f9be2-6c52-34a2-ae95-da79427c424682461c1d&activeTab=example&spm=docs.r.cs_edge_kubernetes.1.2b1f9be26c&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_edge_kubernetes&exampleId=edb46713-c344-72e1-9513-e5cd38937431d9719edd&activeTab=example&spm=docs.r.cs_edge_kubernetes.1.edb46713c3&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

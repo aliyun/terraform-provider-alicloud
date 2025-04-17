@@ -24,7 +24,7 @@ Represents a single `ingress` or `egress` group rule, which can be added to exte
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group_rule&exampleId=a52eccbb-c323-784b-a99d-acf4a0d03bcd98f6d5fc&activeTab=example&spm=docs.r.security_group_rule.0.a52eccbbc3&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_security_group_rule&exampleId=826097b5-1e18-25b8-4202-c2c01604cc554a0810a6&activeTab=example&spm=docs.r.security_group_rule.0.826097b51e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
