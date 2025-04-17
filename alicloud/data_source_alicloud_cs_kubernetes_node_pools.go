@@ -3,14 +3,13 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"time"
-
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"strconv"
+	"time"
 )
 
 func dataSourceAliCloudAckNodepools() *schema.Resource {
@@ -20,14 +19,18 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"node_pool_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
 			},
 			"nodepools": {
@@ -721,6 +724,9 @@ func dataSourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["ClusterId"] = d.Get("cluster_id")
+	if v, ok := d.GetOk("node_pool_name"); ok {
+		query["NodepoolName"] = StringPointer(v.(string))
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
