@@ -95,7 +95,7 @@ resource "alicloud_rocketmq_instance" "default" {
 
 ### Deleting `alicloud_rocketmq_instance` or removing it from your configuration
 
-The `alicloud_rocketmq_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
+The `alicloud_rocketmq_instance` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
