@@ -1,4 +1,54 @@
 ## 1.248.0 (Unreleased)
+
+- **New Resource:** `alicloud_mongodb_public_network_address` [GH-8590]
+- **New Resource:** `alicloud_mongodb_replica_set_role` [GH-8590]
+- **New Resource:** `alicloud_sls_etl` [GH-8593]
+- **New Resource:** `alicloud_esa_scheduled_preload_job` [GH-8605]
+- **New Resource:** `alicloud_esa_scheduled_preload_execution` [GH-8605]
+- **New Resource:** `alicloud_eflo_experiment_plan_template` [GH-8610]
+- **New Resource:** `alicloud_eflo_resource` [GH-8622]
+- **New Resource:** `alicloud_pai_flow_pipeline` [GH-8631]
+- **New Resource:** `alicloud_eflo_experiment_plan` [GH-8638]
+- **New Data Source:** `alicloud_ram_role_policy_attachments` [GH-8624]
+- **New Data Source:** `alicloud_ims_oidc_providers` [GH-8628]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_edge_kubernetes: add set_certificate_authority attribute, deprecated client_cert,client_key,cluster_ca_cert,certificate_authority attribute, fix test; resource/alicloud_cs_managed_kubernetes: deprecated client_cert,client_key,cluster_ca_cert,certificate_authority attribute, fix test; resource/alicloud_cs_kubernetes: deprecated client_cert,client_key,cluster_ca_cert,certificate_authority attribute, fix test; resource/alicloud_cs_serverless_kubernetes: deprecated client_cert,client_key,cluster_ca_cert attribute, fix test; docs: deprecated client_cert,client_key,cluster_ca_cert,certificate_authority attribute. [GH-8523]
+- resource/alicloud_instance: Improved the update action for field instance_charge_type, status, stopped_mode. [GH-8591]
+- resource/alicloud_ens_disk: Added the field tags; Improved alicloud_ens_disk testcase. [GH-8597]
+- resource/alicloud_ens_eip: Refactored the resource alicloud_ens_eip; Improved alicloud_ens_eip testcase; Fixed resource alicloud_ens_eip document error. [GH-8599]
+- resource/alicloud_cloud_sso_directory: Add new attribute directory_global_access_status, login_preference, mfa_authentication_setting_info etc. [GH-8601]
+- resource/alicloud_kvstore_instance: Supported instance_type set to Memcache. [GH-8602]
+- resource/alicloud_selectdb_db_instance: Optimize creating 4.0.X instance. resource/alicloud_selectdb_db_cluster: fix config Optional scope bug. data-source/alicloud_selectdb_db_clusters: fix flavor bug in memory. [GH-8603]
+- resource/alicloud_oss_bucket_access_monitor: add wait for status while create and update opertion; resource/alicloud_oss_bucket_cors: add wait for status while create and update opertion. [GH-8607]
+- resource/alicloud_oss_bucket_https_config: add wait for status while create and update opertion. [GH-8608]
+- resource/alicloud_ddoscoo_instance: Added the field tags, modify_type, status, create_time; Removed the ForceNew for field normal_bandwidth, normal_qps, product_plan, function_version. [GH-8609]
+- resource/alicloud_oss_bucket_referer: add wait for status while create and update opertion; resource/alicloud_oss_bucket_logging: add wait for status while create and update opertion. [GH-8612]
+- resource/alicloud_oss_bucket_server_side_encryption: add wait for status while create and update opertion. [GH-8613]
+- resource/alicloud_nlb_server_group_server_attachment: Fixed the issue where the update operation accidentally set the weight to 0 when the weight is not specified. [GH-8614]
+- resource/alicloud_eflo_experiment_plan_template: Added the field template_id. [GH-8615]
+- resource/alicloud_vpc: add new attribute system_route_table_route_propagation_enable, force_delete. [GH-8617]
+- resource/alicloud_security_group_rule: add new attribute security_group_rule_id. [GH-8619]
+- resource/alicloud_emrv2_cluster: Improves emr cluster resizing with auto scaling policies. [GH-8625]
+- resource/alicloud_adb_db_cluster_lake_version: Added the field secondary_vswitch_id, secondary_zone_id. [GH-8626]
+- resource/alicloud_cs_kubernetes_node_pool: Fix bug while set labels, taints to empty list. [GH-8630]
+- resource/alicloud_ram_security_preference: Add new attribute allow_user_to_manage_personal_ding_talk, mfa_operation_for_login, operation_for_risk_login and verification_types. [GH-8636]
+- docs: Fixed apig, cloud_firewall, dts, schedulerx, sae, gwlb invalid links. [GH-8604]
+- docs: Improved the document instance_types. [GH-8627]
+- docs: enhance the doc for mongodb_instance tde_status. [GH-8632]
+- docs: Improved the document ecs. [GH-8633]
+- docs: Fix expired link for rdc. [GH-8634]
+- docs: Fix invalid description for rocketmq_instance. [GH-8637]
+- docs: Imporves description for arms_grafana_workspace. [GH-8640]
+- testcase: Improves sweeper for cloudsso. [GH-8600]
+
+BUG FIXES:
+
+- resource/alicloud_db_instance: fix_Increase_engine_coverage. [GH-8592]
+- resource/alicloud_instance: Fixed the diff error caused by field system_disk_id. [GH-8620]
+- resource/alicloud_mongodb_instance: fix tde_status & add role_id. [GH-8621]
+
 ## 1.247.0 (March 31, 2025)
 
 - **New Resource:** `alicloud_esa_cache_reserve_instance` ([#8545](https://github.com/aliyun/terraform-provider-alicloud/issues/8545))
