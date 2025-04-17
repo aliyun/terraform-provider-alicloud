@@ -1056,3 +1056,475 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Nas FileSystem. >>> Resource test cases, automatically generated.
+// Case 通用型性能型文件系统（SMB_ACL）_20250328 10635
+func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap10635)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence10635)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_type":     "Performance",
+					"encrypt_type":     "0",
+					"protocol_type":    "SMB",
+					"file_system_type": "standard",
+					"zone_id":          "cn-hangzhou-g",
+					"description":      "testyaya",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type":     "Performance",
+						"encrypt_type":     "0",
+						"protocol_type":    "SMB",
+						"file_system_type": "standard",
+						"zone_id":          "cn-hangzhou-g",
+						"description":      "testyaya",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"options": []map[string]interface{}{
+						{
+							"enable_oplock": "true",
+						},
+					},
+					"keytab_md5": "${var.key_tab_md5}",
+					"smb_acl": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
+					"keytab": "${var.key_tab}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"keytab_md5": CHECKSET,
+						"keytab":     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"options": []map[string]interface{}{
+						{
+							"enable_oplock": "false",
+						},
+					},
+					"keytab_md5": "${var.key_tab_1_md5}",
+					"smb_acl": []map[string]interface{}{
+						{
+							"enable_anonymous_access":   "true",
+							"encrypt_data":              "true",
+							"reject_unencrypted_access": "true",
+							"super_admin_sid":           "S-1-5-22",
+							"home_dir_path":             "/home",
+						},
+					},
+					"keytab": "${var.key_tab_1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"keytab_md5": CHECKSET,
+						"keytab":     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"smb_acl": []map[string]interface{}{
+						{
+							"enable_anonymous_access":   "false",
+							"encrypt_data":              "false",
+							"reject_unencrypted_access": "false",
+							"super_admin_sid":           "S-1-5-22-23",
+							"home_dir_path":             "/home/A",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"smb_acl": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemMap10635 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasFileSystemBasicDependence10635(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "key_tab_1_md5" {
+  default = "E3CCF7E2416DF04FA958AA4513EA29E8"
+}
+
+variable "key_tab_md5" {
+  default = "91224BCF548214F4DF3F7CA1898354CE"
+}
+
+variable "key_tab_1" {
+  default = "BQIAAABHAAIADUFMSUFEVEVTVC5DT00ABGNpZnMAGXNtYnNlcnZlcjI0LmFsaWFkdGVzdC5jb20AAAABAAAAAAEAAQAIqIx6v7p11oUAAABHAAIADUFMSUFEVEVTVC5DT00ABGNpZnMAGXNtYnNlcnZlcjI0LmFsaWFkdGVzdC5jb20AAAABAAAAAAEAAwAIqIx6v7p11oUAAABPAAIADUFMSUFEVEVTVC5DT00ABGNpZnMAGXNtYnNlcnZlcjI0LmFsaWFkdGVzdC5jb20AAAABAAAAAAEAFwAQnQZWB3RAPHU7PMIJyBWePAAAAF8AAgANQUxJQURURVNULkNPTQAEY2lmcwAZc21ic2VydmVyMjQuYWxpYWR0ZXN0LmNvbQAAAAEAAAAAAQASACAGJ7F0s+bcBjf6jD5HlvlRLmPSOW+qDZe0Qk0lQcf8WwAAAE8AAgANQUxJQURURVNULkNPTQAEY2lmcwAZc21ic2VydmVyMjQuYWxpYWR0ZXN0LmNvbQAAAAEAAAAAAQARABDdFmanrSIatnDDhoOXYadj"
+}
+
+variable "key_tab" {
+  default = "BQIAAABZAAIAC1RFU1ROQVMuQ09NAARjaWZzAC0wMjUyYzRiZmFlLXR4YTc5LmNuLWhhbmd6aG91Lm5hcy5hbGl5dW5jcy5jb20AAAABAAAAAAMAAQAIvJLQj+BefzEAAABZAAIAC1RFU1ROQVMuQ09NAARjaWZzAC0wMjUyYzRiZmFlLXR4YTc5LmNuLWhhbmd6aG91Lm5hcy5hbGl5dW5jcy5jb20AAAABAAAAAAMAAwAIvJLQj+BefzEAAABhAAIAC1RFU1ROQVMuQ09NAARjaWZzAC0wMjUyYzRiZmFlLXR4YTc5LmNuLWhhbmd6aG91Lm5hcy5hbGl5dW5jcy5jb20AAAABAAAAAAMAFwAQmnGFGg9wrGIckBGRDz3ZEAAAAHEAAgALVEVTVE5BUy5DT00ABGNpZnMALTAyNTJjNGJmYWUtdHhhNzkuY24taGFuZ3pob3UubmFzLmFsaXl1bmNzLmNvbQAAAAEAAAAAAwASACB8NytHr3V2sFcEmV0p/k+7gxk4nbRvRotJ19NTmP1GigAAAGEAAgALVEVTVE5BUy5DT00ABGNpZnMALTAyNTJjNGJmYWUtdHhhNzkuY24taGFuZ3pob3UubmFzLmFsaXl1bmNzLmNvbQAAAAEAAAAAAwARABBz8lgg+jF54cqR2WZ7nltq"
+}
+
+
+`, name)
+}
+
+// Case 极速型标准型文件系统 5328
+func TestAccAliCloudNasFileSystem_basic5328(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap5328)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence5328)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_type":      "standard",
+					"encrypt_type":      "0",
+					"protocol_type":     "NFS",
+					"file_system_type":  "extreme",
+					"zone_id":           "${var.zone_id}",
+					"capacity":          "100",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type":      "standard",
+						"encrypt_type":      "0",
+						"protocol_type":     "NFS",
+						"file_system_type":  "extreme",
+						"zone_id":           CHECKSET,
+						"capacity":          "100",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"capacity":          "200",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity":          "200",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemMap5328 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasFileSystemBasicDependence5328(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-h"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case 极速型快照创标准型文件系统 7668
+func TestAccAliCloudNasFileSystem_basic7668(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap7668)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence7668)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_type":     "standard",
+					"protocol_type":    "NFS",
+					"file_system_type": "extreme",
+					"zone_id":          "${var.zone_id}",
+					"capacity":         "100",
+					"snapshot_id":      "${alicloud_nas_snapshot.defaultLXp8tf.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type":     "standard",
+						"protocol_type":    "NFS",
+						"file_system_type": "extreme",
+						"zone_id":          CHECKSET,
+						"capacity":         "100",
+						"snapshot_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemMap7668 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasFileSystemBasicDependence7668(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-h"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+resource "alicloud_nas_file_system" "defaultEHlvST" {
+  storage_type     = "standard"
+  zone_id          = var.zone_id
+  encrypt_type     = "0"
+  capacity         = "100"
+  protocol_type    = "NFS"
+  file_system_type = "extreme"
+}
+
+resource "alicloud_nas_snapshot" "defaultLXp8tf" {
+  file_system_id = alicloud_nas_file_system.defaultEHlvST.id
+  retention_days = "1"
+  snapshot_name  = "testSnapshotCreateFs"
+}
+
+
+`, name)
+}
+
+// Test Nas FileSystem. <<< Resource test cases, automatically generated.
