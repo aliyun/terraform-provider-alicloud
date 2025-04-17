@@ -98,6 +98,7 @@ output "alicloud_cs_kubernetes_node_pool_example_id" {
 
 The following arguments are supported:
 * `cluster_id` - (Required, ForceNew) The id of kubernetes cluster.
+* `node_pool_name` - (ForceNew, Optional) The name of node pool.
 * `ids` - (Optional, ForceNew, Computed) A list of Nodepool IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
@@ -194,6 +195,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `surge_percentage` - Proportion of additional nodes. You have to specify one of surge, surge_percentage.
   * `multi_az_policy` - The scaling policy for ECS instances in a multi-zone scaling group. Valid value: `PRIORITY`, `COST_OPTIMIZED` and `BALANCE`. `PRIORITY`: scales the capacity according to the virtual switches you define (VSwitchIds.N). When an ECS instance cannot be created in the zone where the higher-priority vSwitch is located, the next-priority vSwitch is automatically used to create an ECS instance. `COST_OPTIMIZED`: try to create by vCPU unit price from low to high. When the scaling configuration is configured with multiple instances of preemptible billing, preemptible instances are created first. You can continue to use the `CompensateWithOnDemand` parameter to specify whether to automatically try to create a preemptible instance by paying for it. It takes effect only when the scaling configuration has multi-instance specifications or preemptible instances. `BALANCE`: distributes ECS instances evenly among the multi-zone specified by the scaling group. If the zones become unbalanced due to insufficient inventory, you can use the API [RebalanceInstances](~~ 71516 ~~) to balance resources.
   * `node_name_mode` - Each node name consists of a prefix, its private network IP, and a suffix, separated by commas. The input format is `customized,,ip,`.- The prefix and suffix can be composed of one or more parts separated by '.', each part can use lowercase letters, numbers and '-', and the beginning and end of the node name must be lowercase letters and numbers.- The node IP address is the complete private IP address of the node.- For example, if the string `customized,aliyun,ip,com` is passed in (where 'customized' and 'ip' are fixed strings, 'aliyun' is the prefix, and 'com' is the suffix), the name of the node is `aliyun192.168.xxx.xxxcom`.
+  * `node_pool_id` - The first ID of the resource.
   * `node_pool_name` - The name of node pool.
   * `on_demand_base_capacity` - The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
   * `on_demand_percentage_above_base_capacity` - The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
@@ -250,4 +252,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `unschedulable` - Whether the node after expansion can be scheduled.
   * `user_data` - Node custom data, base64-encoded.
   * `vswitch_ids` - The vswitches used by node pool workers.
-  * `node_pool_id` - The ID of node pool.

@@ -24,18 +24,31 @@ func TestAccAlicloudAckNodepoolDataSource(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	NodePoolNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAckNodepoolSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_cs_kubernetes_node_pool.default.node_pool_id}"]`,
-			"cluster_id": `"${alicloud_cs_managed_kubernetes.default.id}"`,
+			"node_pool_name": `"${var.name}"`,
+			"cluster_id":     `"${alicloud_cs_managed_kubernetes.default.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAckNodepoolSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_cs_kubernetes_node_pool.default.node_pool_id}_fake"]`,
-			"cluster_id": `"${alicloud_cs_managed_kubernetes.default.id}"`,
+			"node_pool_name": `"${var.name}_fake"`,
+			"cluster_id":     `"${alicloud_cs_managed_kubernetes.default.id}"`,
 		}),
 	}
 
-	AckNodepoolCheckInfo.dataSourceTestCheck(t, rand, ClusterIdConf, allConf)
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAckNodepoolSourceConfig(rand, map[string]string{
+			"ids":            `["${alicloud_cs_kubernetes_node_pool.default.node_pool_id}"]`,
+			"node_pool_name": `"${var.name}"`,
+			"cluster_id":     `"${alicloud_cs_managed_kubernetes.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAckNodepoolSourceConfig(rand, map[string]string{
+			"ids":            `["${alicloud_cs_kubernetes_node_pool.default.node_pool_id}_fake"]`,
+			"node_pool_name": `"${var.name}_fake"`,
+			"cluster_id":     `"${alicloud_cs_managed_kubernetes.default.id}"`,
+		}),
+	}
+
+	AckNodepoolCheckInfo.dataSourceTestCheck(t, rand, ClusterIdConf, NodePoolNameConf, allConf)
 }
 
 var existAckNodepoolMapFunc = func(rand int) map[string]string {
@@ -154,7 +167,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  node_pool_name       = "spot_auto_scaling"
+  node_pool_name       = var.name
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
