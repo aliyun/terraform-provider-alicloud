@@ -121,6 +121,7 @@ func (s *EfloServiceV2) DescribeEfloCluster(id string) (object map[string]interf
 
 	return response, nil
 }
+
 func (s *EfloServiceV2) DescribeClusterListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -187,6 +188,14 @@ func (s *EfloServiceV2) EfloClusterStateRefreshFunc(id string, field string, fai
 
 // SetResourceTags <<< Encapsulated tag function for Eflo.
 func (s *EfloServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	apiProductCode := "eflo-controller"
+	apiVersion := "2022-12-15"
+
+	if resourceType == "ExperimentPlan" {
+		apiProductCode = "eflo-cnp"
+		apiVersion = "2023-08-28"
+	}
+
 	if d.HasChange("tags") {
 		var action string
 		var err error
@@ -215,7 +224,7 @@ func (s *EfloServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+				response, err = client.RpcPost(apiProductCode, apiVersion, action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -248,7 +257,7 @@ func (s *EfloServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+				response, err = client.RpcPost(apiProductCode, apiVersion, action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -323,6 +332,7 @@ func (s *EfloServiceV2) DescribeEfloNodeGroup(id string) (object map[string]inte
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *EfloServiceV2) DescribeNodeGroupListClusterNodes(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -714,3 +724,76 @@ func (s *EfloServiceV2) EfloResourceStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeEfloResource >>> Encapsulated.
+
+// DescribeEfloExperimentPlan <<< Encapsulated get interface for Eflo ExperimentPlan.
+
+func (s *EfloServiceV2) DescribeEfloExperimentPlan(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PlanId"] = id
+	request["RegionId"] = client.RegionId
+	action := "GetExperimentPlan"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-cnp", "2023-08-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("ExperimentPlan", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *EfloServiceV2) EfloExperimentPlanStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEfloExperimentPlan(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEfloExperimentPlan >>> Encapsulated.
