@@ -82,6 +82,38 @@ func dataSourceAlicloudThreatDetectionAssets() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
+						"instance_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"instance_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"cluster_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"cluster_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"vpc_instance_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"internet_ip": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"intranet_ip": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"status": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
 					},
 				},
 			},
@@ -184,9 +216,17 @@ func dataSourceAlicloudThreatDetectionAssetsRead(d *schema.ResourceData, meta in
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
-			"id":          fmt.Sprint(object["Uuid"]),
-			"create_time": object["CreatedTime"],
-			"uuid":        object["Uuid"],
+			"id":              fmt.Sprint(object["Uuid"]),
+			"create_time":     object["CreatedTime"],
+			"uuid":            object["Uuid"],
+			"instance_id":     object["InstanceId"],
+			"instance_name":   object["InstanceName"],
+			"cluster_id":      object["ClusterId"],
+			"cluster_name":    object["ClusterName"],
+			"vpc_instance_id": object["VpcInstanceId"],
+			"internet_ip":     object["InternetIp"],
+			"intranet_ip":     object["IntranetIp"],
+			"status":          object["Status"],
 		}
 
 		ids = append(ids, fmt.Sprint(object["Uuid"]))
