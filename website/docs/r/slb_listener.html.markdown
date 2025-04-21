@@ -74,7 +74,7 @@ resource "alicloud_slb_listener" "listener" {
   }
   acl_status      = "on"
   acl_type        = "white"
-  acl_id          = alicloud_slb_acl.listener.id
+  acl_ids         = [alicloud_slb_acl.listener.id]
   request_timeout = 80
   idle_timeout    = 30
 }
@@ -124,7 +124,7 @@ The HTTP Listener supports the following:
 * `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
 * `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
 * `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
-* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `acl_ids` - (Optional, List, Available since v1.249.0) The IDs of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_ids` is required. Otherwise, it will be ignored.
 * `sticky_session` - (Optional) Specifies whether to enable session persistence. Default value: `off`. Valid values: `on`, `off`.
 * `sticky_session_type` - (Optional) The method that is used to handle a cookie. Valid values: `insert`, `server`. **NOTE:** If `sticky_session` is set to `on`, `sticky_session_type` is required. Otherwise, it will be ignored.
 * `cookie_timeout` - (Optional, Int) The timeout period of a cookie. Unit: seconds. Valid values: `1` to `86400`. **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `insert`, `cookie_timeout` is required. Otherwise, it will be ignored.
@@ -148,6 +148,7 @@ The HTTP Listener supports the following:
 * `x_forwarded_for` - (Optional, Set, Available since v1.13.0) Whether to set additional HTTP Header field "X-Forwarded-For". See [`x_forwarded_for`](#x_forwarded_for) below.
 * `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+* `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
 ### HTTPS Listener
 
@@ -167,7 +168,7 @@ The HTTPS Listener supports the following:
 * `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
 * `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
 * `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
-* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `acl_ids` - (Optional, List, Available since v1.249.0) The IDs of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_ids` is required. Otherwise, it will be ignored.
 * `sticky_session` - (Optional) Specifies whether to enable session persistence. Default value: `off`. Valid values: `on`, `off`.
 * `sticky_session_type` - (Optional) The method that is used to handle a cookie. Valid values: `insert`, `server`. **NOTE:** If `sticky_session` is set to `on`, `sticky_session_type` is required. Otherwise, it will be ignored.
 * `cookie_timeout` - (Optional, Int) The timeout period of a cookie. Unit: seconds. Valid values: `1` to `86400`. **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `insert`, `cookie_timeout` is required. Otherwise, it will be ignored.
@@ -194,6 +195,7 @@ The HTTPS Listener supports the following:
 * `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
 * `ssl_certificate_id` - (Deprecated since v1.59.0) The ID of the server certificate. **NOTE:** Field `ssl_certificate_id` has been deprecated from provider version 1.59.0. New field `server_certificate_id` instead.
+* `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
 ### TCP Listener
 
@@ -217,7 +219,7 @@ The TCP Listener supports the following:
 * `master_slave_server_group_id` - (Optional) The ID of the primary/secondary server group. **NOTE:** You cannot set both `server_group_id` and `master_slave_server_group_id`.
 * `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
 * `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
-* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `acl_ids` - (Optional, List, Available since v1.249.0) The IDs of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_ids` is required. Otherwise, it will be ignored.
 * `persistence_timeout` - (Optional, Int) The timeout period of session persistence. Unit: seconds. Default value: `0`. Valid values: `0` to `3600`.
 * `health_check_type` - (Optional) The type of health checks. Default value: `tcp`. Valid values: `tcp`, `http`.
 * `health_check_domain` - (Optional) The domain name that is used for health checks.
@@ -233,6 +235,7 @@ The TCP Listener supports the following:
 * `proxy_protocol_v2_enabled` - (Optional, Bool, Available since v1.187.0) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Default value: `false`. Valid values: `true`, `false`.
 * `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+* `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
 ### UDP Listener
 
@@ -257,7 +260,7 @@ The UDP Listener supports the following:
 * `master_slave_server_group_id` - (Optional) The ID of the primary/secondary server group. **NOTE:** You cannot set both `server_group_id` and `master_slave_server_group_id`.
 * `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
 * `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
-* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `acl_ids` - (Optional, List, Available since v1.249.0) The IDs of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_ids` is required. Otherwise, it will be ignored.
 * `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks. Valid values: `0` to `65535`. **NOTE:** If `health_check_connect_port` is not set, the backend port specified by `backend_port` is used for health checks.
 * `healthy_threshold` - (Optional, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. Default value: `3`. Valid values: `2` to `10`.
 * `unhealthy_threshold` - (Optional, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. Default value: `3`. Valid values: `2` to `10`.
@@ -266,6 +269,7 @@ The UDP Listener supports the following:
 * `proxy_protocol_v2_enabled` - (Optional, Bool, Available since v1.187.0) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Default value: `false`. Valid values: `true`, `false`.
 * `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+* `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
 -> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port, listener_forward, load_balancer_id, frontend_port, protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 

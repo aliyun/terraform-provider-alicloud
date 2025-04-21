@@ -43,9 +43,9 @@ func resourceAliCloudSlbListener() *schema.Resource {
 				ForceNew:     true,
 			},
 			"lb_port": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'lb_port' has been removed since 1.211.0.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Removed:  "Field 'lb_port' has been removed since 1.211.0.",
 			},
 
 			"backend_port": {
@@ -62,9 +62,9 @@ func resourceAliCloudSlbListener() *schema.Resource {
 			},
 
 			"lb_protocol": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'lb_protocol' has been removed since 1.211.0.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'lb_protocol' has been removed since 1.211.0.",
 			},
 
 			"protocol": {
@@ -108,10 +108,19 @@ func resourceAliCloudSlbListener() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: slbAclDiffSuppressFunc,
 			},
+			"acl_ids": {
+				Type:             schema.TypeSet,
+				Optional:         true,
+				Computed:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: slbAclDiffSuppressFunc,
+			},
 			"acl_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				DiffSuppressFunc: slbAclDiffSuppressFunc,
+				Deprecated:       "Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.",
 			},
 			//http & https
 			"sticky_session": {
@@ -565,6 +574,11 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 
+	if d.HasChange("acl_ids") {
+		commonRequest.QueryParams["AclId"] = convertArrayToString(d.Get("acl_ids").(*schema.Set).List(), ",")
+		update = true
+	}
+
 	if d.HasChange("proxy_protocol_v2_enabled") {
 		commonRequest.QueryParams["ProxyProtocolV2Enabled"] = convertBoolToString(d.Get("proxy_protocol_v2_enabled").(bool))
 		update = true
@@ -868,7 +882,9 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 		request.QueryParams["AclType"] = aclType.(string)
 	}
 	// acl id
-	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
+	if v, ok := d.GetOk("acl_ids"); ok {
+		request.QueryParams["AclId"] = convertArrayToString(v.(*schema.Set).List(), ",")
+	} else if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
 		request.QueryParams["AclId"] = aclId.(string)
 	}
 	// description
@@ -1030,6 +1046,13 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["AclId"]; ok {
 		d.Set("acl_id", val.(string))
+	}
+	if val, ok := listener["AclIds"]; ok {
+		aclIdsArg := val.(map[string]interface{})
+
+		if aclId, ok := aclIdsArg["AclId"]; ok {
+			d.Set("acl_ids", aclId)
+		}
 	}
 	if val, ok := listener["HealthCheck"]; ok {
 		d.Set("health_check", val.(string))
