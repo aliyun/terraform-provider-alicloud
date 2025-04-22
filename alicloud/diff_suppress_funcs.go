@@ -436,6 +436,14 @@ func polardbCompressStorageDiffSuppressFunc(k, old, new string, d *schema.Resour
 	return true
 }
 
+func polardbStandbyAzDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	creationOption, optionOk := d.GetOk("creation_option")
+	if (creationOption == "Normal" || !optionOk) && d.Get("hot_standby_cluster").(string) != "OFF" && old != "auto" && new != "auto" {
+		return false
+	}
+	return true
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false

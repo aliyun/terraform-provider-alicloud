@@ -260,6 +260,7 @@ var ActiontrailGlobalEventsStorageRegionSupportRegions = []Region{Hangzhou, APSo
 var OceanBaseSupportRegions = []Region{Hangzhou}
 var ChatbotSupportRegions = []Region{Shanghai}
 var SENormalPolarDBSupportRegions = []Region{EUWest1, APNorthEast2, APSouthEast2, APSouthEast3, APSouthEast6, APSouthEast7, Huhehaote, Qingdao}
+var SENormalPolarDBEqualTestRegions = []Region{Hangzhou}
 var Cluster3AZPolarDBSupportRegions = []Region{EUCentral1, Huhehaote, Qingdao, ChengDu, APNorthEast2, APSouthEast6, APSouthEast7}
 var GDNPolarDBSupportRegions = []Region{ChengDu}
 var VpcVSwitchCidrReservationSupportRegions = []Region{APSouthEast2}

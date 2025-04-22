@@ -1039,7 +1039,9 @@ func (s *PolarDBService) setClusterTags(d *schema.ResourceData) error {
 		if len(remove) > 0 {
 			var tagKey []string
 			for _, v := range remove {
-				tagKey = append(tagKey, v.Key)
+				if !ignoredTags(v.Key, v.Value) {
+					tagKey = append(tagKey, v.Key)
+				}
 			}
 			request := polardb.CreateUntagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
@@ -1122,7 +1124,7 @@ func (s *PolarDBService) ignoreTag(t polardb.TagResource) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagValue)
+		ok, _ := regexp.MatchString(v, t.TagKey)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
 			return true
@@ -1972,5 +1974,40 @@ func (s *PolarDBService) PolarDBClusterProxyStateRefreshFunc(id string, failStat
 			}
 		}
 		return object, object.ProxyStatus, nil
+	}
+}
+func (s *PolarDBService) DescribeDBClusterStandbyAz(id string, timeout int) (zoneId string, err error) {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	standbyAz := ""
+	for {
+		clusterAttribute, err := s.DescribePolarDBClusterAttribute(id)
+		if err != nil {
+			return "", WrapError(err)
+		}
+
+		primaryZone := ""
+		if len(clusterAttribute.DBNodes) > 0 {
+			primaryZone = clusterAttribute.DBNodes[0].ZoneId
+		}
+
+		exist := true
+		if clusterAttribute.HotStandbyCluster != "OFF" {
+			exist = false
+			for _, zoneId := range strings.Split(clusterAttribute.ZoneIds, ",") {
+				if zoneId != primaryZone && zoneId != "" {
+					standbyAz = zoneId
+					exist = true
+					break
+				}
+			}
+		}
+
+		if exist {
+			return standbyAz, nil
+		}
+		if time.Now().After(deadline) {
+			return standbyAz, WrapErrorf(err, RequiredWhenMsg, "standby_az", "hot_standby_cluster", clusterAttribute.HotStandbyCluster)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 }
