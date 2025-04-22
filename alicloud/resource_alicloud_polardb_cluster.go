@@ -73,6 +73,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"standby_az": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: polardbStandbyAzDiffSuppressFunc,
+			},
 			"pay_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
@@ -296,7 +302,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"hot_standby_cluster": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
+				ValidateFunc: StringInSlice([]string{"ON", "OFF", "EQUAL"}, false),
 				Computed:     true,
 				ForceNew:     true,
 			},
@@ -1045,7 +1051,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskExists"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -1437,6 +1443,38 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("standby_az") {
+		action := "ModifyDBClusterPrimaryZone"
+		standby_az := d.Get("standby_az").(string)
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+			"ZoneId":      standby_az,
+			"ZoneType":    "Standby",
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// wait cluster status change from ClassChanging/ConfigSwitching to running
+		stateConf := BuildStateConf([]string{"StandbyTransing"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("standby_az")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -1707,6 +1745,22 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("hot_standby_cluster", convertPolarDBHotStandbyClusterStatusReadResponse(clusterAttribute.HotStandbyCluster))
 	d.Set("strict_consistency", clusterAttribute.StrictConsistency)
 
+	standbyAz, err := polarDBService.DescribeDBClusterStandbyAz(d.Id(), DefaultTimeoutMedium)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("standby_az", standbyAz)
+
+	primaryZone := d.Get("zone_id")
+	if clusterAttribute.HotStandbyCluster != "OFF" {
+		for _, zoneId := range strings.Split(clusterAttribute.ZoneIds, ",") {
+			if zoneId != primaryZone && zoneId != "" {
+				d.Set("standby_az", zoneId)
+				break
+			}
+		}
+	}
+
 	versionInfo, err := polarDBService.DescribeDBClusterVersion(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -1867,6 +1921,10 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request["ZoneId"] = Trim(zone.(string))
+	}
+
+	if standbyAz, ok := d.GetOk("standby_az"); ok && Trim(standbyAz.(string)) != "" {
+		request["StandbyAZ"] = Trim(standbyAz.(string))
 	}
 
 	if v, ok := d.GetOk("vpc_id"); ok {
@@ -2077,6 +2135,8 @@ func convertPolarDBHotStandbyClusterStatusReadResponse(source string) string {
 	switch source {
 	case "StandbyClusterON":
 		return "ON"
+	case "equal":
+		return "EQUAL"
 	}
 	return "OFF"
 }

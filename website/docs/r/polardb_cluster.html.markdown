@@ -184,7 +184,10 @@ The following arguments are supported:
 -> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
 -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
 * `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
-* `hot_standby_cluster` - (Optional, Computed, ForceNew, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`.
+* `hot_standby_cluster` - (Optional, Computed, ForceNew, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`, `EQUAL`.
+-> **NOTE:** From version 1.249.0, `hot_standby_cluster` can be set to `EQUAL`, and this value is only valid for MySQL.
+* `standby_az` - (Optional, Computed, Available since 1.249.0) The availability zone where the hot standby cluster is stored, takes effect when `hot_standby_cluster` is `ON` or `EQUAL`.
+-> **NOTE:** `standby_az` is required when `hot_standby_cluster` is `EQUAL`.
 * `strict_consistency` - (Optional, Computed, ForceNew, Available since v1.239.0) Whether the cluster has enabled strong data consistency across multiple zones. Valid values are `ON`, `OFF`. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1)
 * `serverless_type` - (Optional, Available since v1.204.0) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `serverless_steady_switch` - (Optional, Available since v1.211.1) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
