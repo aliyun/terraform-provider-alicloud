@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudKvstoreAccount() *schema.Resource {
+func resourceAliCloudKvstoreAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudKvstoreAccountCreate,
-		Read:   resourceAlicloudKvstoreAccountRead,
-		Update: resourceAlicloudKvstoreAccountUpdate,
-		Delete: resourceAlicloudKvstoreAccountDelete,
+		Create: resourceAliCloudKvstoreAccountCreate,
+		Read:   resourceAliCloudKvstoreAccountRead,
+		Update: resourceAliCloudKvstoreAccountUpdate,
+		Delete: resourceAliCloudKvstoreAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -79,7 +79,7 @@ func resourceAlicloudKvstoreAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudKvstoreAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKvstoreAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
 
@@ -118,7 +118,7 @@ func resourceAlicloudKvstoreAccountCreate(d *schema.ResourceData, meta interface
 			return r_kvstoreClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDeniedDBStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDeniedDBStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -137,9 +137,10 @@ func resourceAlicloudKvstoreAccountCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudKvstoreAccountRead(d, meta)
+	return resourceAliCloudKvstoreAccountRead(d, meta)
 }
-func resourceAlicloudKvstoreAccountRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudKvstoreAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
 	object, err := r_kvstoreService.DescribeKvstoreAccount(d.Id())
@@ -165,7 +166,8 @@ func resourceAlicloudKvstoreAccountRead(d *schema.ResourceData, meta interface{}
 	}
 	return nil
 }
-func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -243,9 +245,10 @@ func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("account_password")
 	}
 	d.Partial(false)
-	return resourceAlicloudKvstoreAccountRead(d, meta)
+	return resourceAliCloudKvstoreAccountRead(d, meta)
 }
-func resourceAlicloudKvstoreAccountDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudKvstoreAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
