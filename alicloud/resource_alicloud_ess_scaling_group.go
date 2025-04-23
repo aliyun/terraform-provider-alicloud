@@ -213,6 +213,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"capacity_options_price_comparison_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -436,6 +441,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 		if m["SpotAutoReplaceOnDemand"] != nil {
 			d.Set("capacity_options_spot_auto_replace_on_demand", m["SpotAutoReplaceOnDemand"])
 		}
+		if m["PriceComparisonMode"] != nil {
+			d.Set("capacity_options_price_comparison_mode", m["PriceComparisonMode"])
+		}
 	}
 
 	if v := object["AlbServerGroups"]; v != nil {
@@ -606,6 +614,12 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("capacity_options_spot_auto_replace_on_demand") {
 		if v, ok := d.GetOkExists("capacity_options_spot_auto_replace_on_demand"); ok {
 			request["CapacityOptions.SpotAutoReplaceOnDemand"] = requests.NewBoolean(v.(bool))
+		}
+	}
+
+	if d.HasChange("capacity_options_price_comparison_mode") {
+		if v, ok := d.GetOk("capacity_options_price_comparison_mode"); ok && v.(string) != "" {
+			request["CapacityOptions.PriceComparisonMode"] = d.Get("capacity_options_price_comparison_mode").(string)
 		}
 	}
 
@@ -853,6 +867,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOkExists("capacity_options_spot_auto_replace_on_demand"); ok {
 		request["CapacityOptions.SpotAutoReplaceOnDemand"] = v
+	}
+
+	if v, ok := d.GetOk("capacity_options_price_comparison_mode"); ok && v.(string) != "" {
+		request["CapacityOptions.PriceComparisonMode"] = v
 	}
 
 	if v, ok := d.GetOk("spot_instance_remedy"); ok {
