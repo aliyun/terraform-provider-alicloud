@@ -634,7 +634,7 @@ The configs mapping supports the following:
 * `refresh_host_config` - (Optional, Available in 1.182.0+) Cluster service configuration modification refresh host config, ’true’ or ’false’.
 * `gateway_cluster_id_list` - (Optional, Available in 1.182.0+) Cluster service configuration modification related gateway cluster id list.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

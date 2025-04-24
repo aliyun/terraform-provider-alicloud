@@ -120,7 +120,7 @@ The following attributes are exported:
 * `cluster_id` - The ID of the SAP HANA instance.
 * `status` - The status of the Hana Backup Client.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

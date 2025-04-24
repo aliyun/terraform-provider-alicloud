@@ -95,7 +95,7 @@ The following attributes are exported:
 * `forward_entry_id` - The id of the forward entry on the server.
 * `status` - (Available since 1.119.1+) The status of forward entry.
 
-### Timeouts
+## Timeouts
 -> **NOTE:** Available since 1.119.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:

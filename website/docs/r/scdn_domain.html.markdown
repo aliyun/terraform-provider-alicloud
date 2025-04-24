@@ -89,7 +89,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Domain. Its value is same as `domain_name`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

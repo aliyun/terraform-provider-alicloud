@@ -95,7 +95,7 @@ The following attributes are exported:
 * `connection_string` - (Available in 1.93.0+) The connection string of the ADB cluster.
 * `port` - (Available in 1.196.0+) The connection port of the ADB cluster.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

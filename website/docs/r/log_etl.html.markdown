@@ -141,7 +141,7 @@ The following attributes are exported:
 
 * `id` - The ID of the log etl. It formats of `<project>:<etl_name>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

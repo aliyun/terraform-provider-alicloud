@@ -70,7 +70,7 @@ The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<group_name>`.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.98.0+.
 

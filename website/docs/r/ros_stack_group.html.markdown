@@ -69,7 +69,7 @@ The following attributes are exported:
 * `stack_group_id` - The id of Stack Group.
 * `status` - The status of Stack Group.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

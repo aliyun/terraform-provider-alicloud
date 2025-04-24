@@ -48,7 +48,7 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `patch_baseline_id` - The ID of the patch baseline.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Default Patch Baseline.

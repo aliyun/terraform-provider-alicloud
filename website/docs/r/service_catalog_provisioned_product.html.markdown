@@ -87,7 +87,7 @@ The following attributes are exported:
 * `status` - Instance status
 * `status_message` - The status message of the product instance
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 3 mins) Used when create the Provisioned Product.

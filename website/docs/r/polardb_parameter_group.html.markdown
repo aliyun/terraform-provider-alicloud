@@ -61,7 +61,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Parameter Group.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

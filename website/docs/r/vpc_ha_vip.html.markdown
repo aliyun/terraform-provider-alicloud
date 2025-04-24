@@ -93,7 +93,7 @@ The following attributes are exported:
 * `status` - The status of this resource instance.
 * `vpc_id` - The VPC ID to which the HaVip instance belongs.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ha Vip.

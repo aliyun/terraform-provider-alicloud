@@ -81,7 +81,7 @@ The following arguments are supported:
 * `encryption_type` - (Optional, ForceNew, Available in v1.158.0+)  The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
 
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.127.0+.
 

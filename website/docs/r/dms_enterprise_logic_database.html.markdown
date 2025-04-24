@@ -53,7 +53,7 @@ The following attributes are exported:
 * `schema_name` - Logical Library name.
 * `search_name` - Logical library search name.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Logic Database.

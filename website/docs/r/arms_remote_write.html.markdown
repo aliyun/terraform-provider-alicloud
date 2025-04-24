@@ -10,7 +10,7 @@ description: |-
 
 Provides a Application Real-Time Monitoring Service (ARMS) Remote Write resource.
 
-For information about Application Real-Time Monitoring Service (ARMS) Remote Write and how to use it, see [What is Remote Write](https://www.alibabacloud.com/help/en/arms/developer-reference/api-arms-2019-08-08-addprometheusremotewrite).
+For information about Application Real-Time Monitoring Service (ARMS) Remote Write and how to use it, see [What is Remote Write](https://next.api.aliyun.com/api/ARMS/2019-08-08/AddPrometheusInstance).
 
 -> **NOTE:** Available since v1.204.0.
 
@@ -83,7 +83,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Remote Write.
 * `delete` - (Defaults to 5 mins) Used when delete the Remote Write.
 * `update` - (Defaults to 5 mins) Used when update the Remote Write.

@@ -43,7 +43,7 @@ The following attributes are exported:
 * `instance_id` - The first ID of the resource
 * `status` - The status of the resource
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 1 mins) Used when create the Instance.

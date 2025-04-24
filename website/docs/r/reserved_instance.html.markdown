@@ -81,7 +81,7 @@ The following attributes are exported:
 * `start_time` -  The time when the reserved instance took effect.
 * `status` -  The status of the reserved instance.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.194.0+.
 

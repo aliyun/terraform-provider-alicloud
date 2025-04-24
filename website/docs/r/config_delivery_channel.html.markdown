@@ -74,7 +74,7 @@ The following attributes are exported:
 
 * `id` - This ID of Config Delivery Channel.  
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.104.0+.
 

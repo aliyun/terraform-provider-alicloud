@@ -63,7 +63,7 @@ The following attributes are exported:
 * `used_capacity` - The used (created disk) capacity of the current cluster, in GB
 * `resource_group_id` - The ID of the resource group
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 10 mins) Used when create the Dedicated Block Storage Cluster.

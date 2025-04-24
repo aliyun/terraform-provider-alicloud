@@ -103,14 +103,18 @@ The following arguments are supported:
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group.
 * `process` - (Required, ForceNew) Activity type N that you want to suspend. Valid values are: `SCALE_OUT`,`SCALE_IN`,`HealthCheck`,`AlarmNotification` and `ScheduledAction`.
 
-
-
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - (Required, ForceNew) The ESS suspend process resource ID，in the follwing format: scaling_group_id:process.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the process.
+* `delete` - (Defaults to 1 mins) Used when delete the process.
 
 ## Import
 
@@ -119,10 +123,3 @@ ESS suspend process can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_suspend_process.example asg-xxx:sgp-xxx:5000 
 ```
-
-## Timeouts
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the process.
-* `delete` - (Defaults to 1 mins) Used when delete the process.
