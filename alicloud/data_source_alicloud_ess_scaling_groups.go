@@ -1,9 +1,11 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
 	"regexp"
+	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -252,6 +254,46 @@ func dataSourceAliCloudEssScalingGroups() *schema.Resource {
 							Type:     schema.TypeMap,
 							Computed: true,
 						},
+						"capacity_options_on_demand_base_capacity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"capacity_options_on_demand_percentage_above_base_capacity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"capacity_options_compensate_with_on_demand": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"capacity_options_spot_auto_replace_on_demand": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"compensate_with_on_demand": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"launch_template_override": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"weighted_capacity": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"spot_price_limit": {
+										Type:     schema.TypeFloat,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -390,6 +432,45 @@ func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []i
 		if object["DesiredCapacity"] != nil {
 			mapping["desired_capacity"] = object["DesiredCapacity"]
 		}
+		if v := object["CapacityOptions"]; v != nil {
+			m := v.(map[string]interface{})
+			if m["OnDemandBaseCapacity"] != nil {
+				mapping["capacity_options_on_demand_base_capacity"] = m["OnDemandBaseCapacity"]
+			}
+			if m["OnDemandPercentageAboveBaseCapacity"] != nil {
+				mapping["capacity_options_on_demand_percentage_above_base_capacity"] = m["OnDemandPercentageAboveBaseCapacity"]
+			}
+			if m["CompensateWithOnDemand"] != nil {
+				mapping["capacity_options_compensate_with_on_demand"] = m["CompensateWithOnDemand"]
+			}
+			if m["SpotAutoReplaceOnDemand"] != nil {
+				mapping["capacity_options_spot_auto_replace_on_demand"] = m["SpotAutoReplaceOnDemand"]
+			}
+		}
+		if object["CompensateWithOnDemand"] != nil {
+			mapping["compensate_with_on_demand"] = object["CompensateWithOnDemand"]
+		}
+
+		if v := object["LaunchTemplateOverrides"]; v != nil {
+			result := make([]map[string]interface{}, 0)
+			for _, i := range v.(map[string]interface{})["LaunchTemplateOverride"].([]interface{}) {
+				launchTemplateOverride := i.(map[string]interface{})
+				l := map[string]interface{}{
+					"instance_type": launchTemplateOverride["InstanceType"],
+				}
+				if launchTemplateOverride["SpotPriceLimit"] != nil {
+					spotPriceLimitFloatformat, _ := launchTemplateOverride["SpotPriceLimit"].(json.Number).Float64()
+					spotPriceLimit, _ := strconv.ParseFloat(strconv.FormatFloat(spotPriceLimitFloatformat, 'f', 2, 64), 64)
+					l["spot_price_limit"] = spotPriceLimit
+				}
+				if launchTemplateOverride["WeightedCapacity"] != nil {
+					l["weighted_capacity"] = launchTemplateOverride["WeightedCapacity"]
+				}
+				result = append(result, l)
+			}
+			mapping["launch_template_override"] = result
+		}
+
 		if object["AzBalance"] != nil {
 			mapping["az_balance"] = object["AzBalance"]
 		}
