@@ -69,9 +69,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.99.0+.
+-> **NOTE:** Available since v1.99.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 4 mins) Used when create the Alidns record instance.
 * `update` - (Defaults to 3 mins) Used when update the Alidns record instance.

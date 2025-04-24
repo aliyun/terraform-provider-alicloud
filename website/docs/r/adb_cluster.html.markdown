@@ -7,15 +7,15 @@ description: |-
   Provides a ADB cluster resource.
 ---
 
-# alicloud\_adb\_cluster
+# alicloud_adb_cluster
 
 Provides a ADB cluster resource. An ADB cluster is an isolated database
 environment in the cloud. An ADB cluster can contain multiple user-created
 databases.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster).
+-> **NOTE:** Deprecated since v1.121.0.
 
--> **NOTE:** Available in v1.71.0+.
+-> **DEPRECATED:** This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster).
 
 ## Example Usage
 
@@ -92,12 +92,12 @@ The alicloud_adb_cluster resource allows you to manage your adb cluster, but Ter
 The following attributes are exported:
 
 * `id` - The ADB cluster ID.
-* `connection_string` - (Available in 1.93.0+) The connection string of the ADB cluster.
-* `port` - (Available in 1.196.0+) The connection port of the ADB cluster.
+* `connection_string` - (Available since v1.93.0) The connection string of the ADB cluster.
+* `port` - (Available since v1.196.0) The connection port of the ADB cluster.
 
 ### Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 72 mins) Used when updating the adb cluster (until it reaches the initial `Running` status). 
