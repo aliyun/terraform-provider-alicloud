@@ -53,7 +53,7 @@ The following arguments are supported:
     - ENABLE: enable resolution.
     - DISABLE: pause parsing.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.109.0+.
 

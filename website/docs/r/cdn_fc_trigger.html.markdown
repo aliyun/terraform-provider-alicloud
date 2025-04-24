@@ -13,7 +13,7 @@ Provides a CDN Fc Trigger resource.
 
 For information about CDN Fc Trigger and how to use it, see [What is Fc Trigger](https://www.alibabacloud.com/help/en/cdn/developer-reference/api-cdn-2018-05-10-addfctrigger).
 
--> **NOTE:** Available in v1.165.0+.
+-> **NOTE:** Available since v1.165.0.
 
 ## Example Usage
 
@@ -59,9 +59,9 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Fc Trigger. Its value is same as `trigger_arn`.
 
-### Timeouts
+## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Fc Trigger.
 * `update` - (Defaults to 1 mins) Used when updating the Fc Trigger.

@@ -81,7 +81,7 @@ The following attributes are exported:
 * `time_slot` - This parameter is under test and is not yet open for use.
 * `start_time` - time of the capacity reservation which become active.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Capacity Reservation.

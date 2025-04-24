@@ -98,7 +98,7 @@ The following arguments are supported:
 * `id` - The ID of the dedicated host.
 * `status` - The status of the dedicated host.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

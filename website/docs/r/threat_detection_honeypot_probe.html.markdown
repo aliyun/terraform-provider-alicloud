@@ -84,7 +84,7 @@ The following attributes are exported:
 * `service_ip_list` - Listen to the IP address list.
 * `status` - The status of the resource
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Honeypot Probe.

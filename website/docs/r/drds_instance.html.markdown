@@ -80,7 +80,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
 * `mysql_version` - (Optional, ForceNew, Available in v1.201.0+) The MySQL version supported by the instance, with the following range of values. `5`: Fully compatible with MySQL 5.x (default) `8`: Fully compatible with MySQL 8.0. This parameter takes effect when the primary instance is created, and the read-only instance has the same MySQL version as the primary instance by default.
        
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.49.0+.
 

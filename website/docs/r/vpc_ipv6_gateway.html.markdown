@@ -77,7 +77,7 @@ The following attributes are exported:
 * `ipv6_gateway_id` - Resource primary key attribute field.
 * `status` - The status of the resource. Valid values: Available, Pending and Deleting.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Gateway.

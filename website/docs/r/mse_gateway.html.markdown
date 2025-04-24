@@ -88,7 +88,7 @@ The following attributes are exported:
   * `gateway_slb_mode` - The Mode of the gateway slb.
   * `gateway_slb_status` - The Status of the gateway slb.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

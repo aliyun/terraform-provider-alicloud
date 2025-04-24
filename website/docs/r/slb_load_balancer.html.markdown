@@ -113,7 +113,7 @@ The following attributes are exported:
 * `id` - The ID of the load balancer.
 * `address` - The IP address of the load balancer.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

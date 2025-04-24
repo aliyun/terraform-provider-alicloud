@@ -39,7 +39,7 @@ It cannot start with auto, because snapshot names starting with auto are recogni
 * `description` - (Optional, ForceNew) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.51.0+.
 

@@ -76,7 +76,7 @@ The following attributes are exported:
 * `ipv4_gateway_route_table_id` - ID of the route table associated with IPv4 Gateway.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ipv4 Gateway.

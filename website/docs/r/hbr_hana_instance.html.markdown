@@ -81,7 +81,7 @@ The following attributes are exported:
 * `hana_instance_id` - The id of the Hana Instance.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
