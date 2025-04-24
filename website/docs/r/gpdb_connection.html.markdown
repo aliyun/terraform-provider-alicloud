@@ -80,7 +80,7 @@ The following arguments are supported:
 
 -> **NOTE:** Available since v1.53.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status). 
 * `update` - (Defaults to 10 mins) Used when activating the DB instance during update.

@@ -93,6 +93,14 @@ The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<topic>`.
 
+## Timeouts
+
+-> **NOTE:** Available since v1.119.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the topic (until it reaches the initial `Running` status).
+
 ## Import
 
 ALIKAFKA TOPIC can be imported using the id, e.g.
@@ -100,11 +108,3 @@ ALIKAFKA TOPIC can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
 ```
-
-## Timeouts
-
--> **NOTE:** Available since v1.119.0.
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the topic (until it reaches the initial `Running` status). 
