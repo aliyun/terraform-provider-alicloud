@@ -85,7 +85,7 @@ The following arguments are supported:
 * `file_engine_specification` - (Optional) The specification of file engine. Valid values: `lindorm.c.xlarge`.
 * `group_name` - (Removed since v1.211.0) The group name. **NOTE:** Field `group_name` has been removed from provider version 1.211.0.
 * `instance_name` - (Optional) The name of the instance.
-* `instance_storage` - (Optional) The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
+* `instance_storage` - (Optional) The storage capacity of the instance. Unit: GB. Valid values: [80, 10485760], and the value must be divisible by 80.
 * `ip_white_list` - (Optional, List) The ip white list of instance.
 * `lts_node_count` - (Optional, Int) The count of lindorm tunnel service.
 * `lts_node_specification` - (Optional) The specification of lindorm tunnel service. Valid values: `lindorm.g.2xlarge`, `lindorm.g.xlarge`.
@@ -119,6 +119,8 @@ The following arguments are supported:
 * `primary_vswitch_id` - (Optional, ForceNew, Available since v1.192.0) Multi-available zone instances, the virtual switch ID of the primary available zone, must be under the available zone corresponding to the PrimaryZoneId. required if you need to create multiple availability zone instances.
 * `primary_zone_id` - (Optional, ForceNew, Available since v1.192.0) Multi-availability zone instance with the availability zone ID of the main availability zone. required if you need to create multiple availability zone instances.
 * `tags` - (Optional, Available since v1.177.0) A mapping of tags to assign to the resource.
+* `auto_renew` - (Optional, Available since v1.249.0) Specifies whether to enable auto-renewal for the instance. Valid when the `payment_type` is `Subscription`. Default value: false. Valid values: true(enables auto-renewal), false(disables auto-renewal).
+* `auto_renew_period` - (Optional, Available since v1.249.0) The subscription duration that is supported by auto-renewal. Unit: months. Valid values: `1` to `12`. This parameter is required only if the AutoRenew parameter is set to true.
 
 ## Attributes Reference
 

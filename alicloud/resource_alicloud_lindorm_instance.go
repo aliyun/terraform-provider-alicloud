@@ -310,6 +310,20 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"auto_renew": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("payment_type").(string) != "Subscription"
+				},
+			},
+			"auto_renew_period": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("payment_type").(string) != "Subscription"
+				},
+			},
 		},
 	}
 }
@@ -443,6 +457,14 @@ func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("arch_version"); ok {
 		request["ArchVersion"] = v
+	}
+
+	if v, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenewal"] = v
+	}
+
+	if v, ok := d.GetOk("auto_renew_period"); ok {
+		request["AutoRenewDuration"] = v
 	}
 
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {

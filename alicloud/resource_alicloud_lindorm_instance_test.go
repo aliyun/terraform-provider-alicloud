@@ -160,6 +160,17 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 					}),
 				),
 			},
+			// Field `file_engine_specification` only support lindorm.c.xlarge, so disable this upgrade test case
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"file_engine_specification": "lindorm.c.2xlarge",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"file_engine_specification": "lindorm.c.2xlarge",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"time_series_engine_specification": "lindorm.g.2xlarge",
@@ -427,7 +438,7 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -515,7 +526,7 @@ func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -637,7 +648,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -739,7 +750,7 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
@@ -792,6 +803,8 @@ func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 					"vpc_id":                           "${data.alicloud_vpcs.default.ids.0}",
 					"zone_id":                          "${data.alicloud_zones.default.zones.0.id}",
 					"resource_group_id":                "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"auto_renew":                       "true",
+					"auto_renew_period":                "1",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "HITS",
@@ -832,7 +845,7 @@ func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"pricing_cycle", "duration", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})
