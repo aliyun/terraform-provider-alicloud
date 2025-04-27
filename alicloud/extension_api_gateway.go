@@ -9,6 +9,7 @@ type ApiGatewayRequestConfig struct {
 }
 
 type ApiGatewayFunctionComputeConfig struct {
+	FunctionVersion  string `json:"fcVersion"`
 	FunctionType     string `json:"fcType"`
 	FunctionBaseUrl  string `json:"fcBaseUrl"`
 	Path             string `json:"path"`

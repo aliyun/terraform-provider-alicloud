@@ -31,11 +31,11 @@ func resourceAlicloudApiGatewayBackend() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"HTTP", "VPC", "FC_EVENT", "FC_HTTP", "OSS", "MOCK"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "VPC", "FC_EVENT", "FC_EVENT_V3", "FC_HTTP", "FC_HTTP_V3", "OSS", "MOCK"}, false),
 			},
 			"create_event_bridge_service_linked_role": {
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 				Type:     schema.TypeBool,
 			},
 			"description": {

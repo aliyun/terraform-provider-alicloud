@@ -41,7 +41,7 @@ resource "alicloud_api_gateway_backend" "default" {
 
 The following arguments are supported:
 
-* `backend_type` - (Required, ForceNew) The type of the Backend. Valid values: `HTTP`, `VPC`, `FC_EVENT`, `FC_HTTP`, `OSS`, `MOCK`.
+* `backend_type` - (Required, ForceNew) The type of the Backend. Valid values: `HTTP`, `VPC`, `FC_EVENT`, `FC_EVENT_V3`, `FC_HTTP`, `FC_HTTP_V3`, `OSS`, `MOCK`.
 * `backend_name` - (Required) The name of the Backend.
 * `create_event_bridge_service_linked_role` - (Optional, ForceNew) Whether to create an Event bus service association role.
 * `description` - (Optional) The description of the Backend.
