@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudApiGatewayBackend_basic0(t *testing.T) {
+func TestAccAliCloudApiGatewayBackend_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_api_gateway_backend.default"
 	ra := resourceAttrInit(resourceId, AlicloudApiGatewayBackendMap0)
@@ -75,7 +75,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudApiGatewayBackend_basic1(t *testing.T) {
+func TestAccAliCloudApiGatewayBackend_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_api_gateway_backend.default"
 	ra := resourceAttrInit(resourceId, AlicloudApiGatewayBackendMap1)
@@ -133,6 +133,48 @@ func TestAccAlicloudApiGatewayBackend_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"backend_name": name,
 						"description":  "tf-testAcc-desc",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudApiGatewayBackend_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_api_gateway_backend.default"
+	ra := resourceAttrInit(resourceId, AlicloudApiGatewayBackendMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApiGatewayBackend")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sapigatewaybackend%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApiGatewayBackendBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backend_name": name,
+					"backend_type": "FC_EVENT_V3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_name": name,
+						"backend_type": "FC_EVENT_V3",
 					}),
 				),
 			},

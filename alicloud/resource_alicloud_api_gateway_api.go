@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -175,6 +176,11 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"function_version": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "2.0",
+						},
 						"function_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -384,23 +390,16 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	request := cloudapi.CreateDescribeApiRequest()
-	request.RegionId = client.RegionId
-	parts, err := ParseResourceId(d.Id(), 2)
+	apiGatewayServiceV2 := ApiGatewayServiceV2{client}
+	objectRaw, err := apiGatewayServiceV2.DescribeApiGatewayApi(d.Id())
 	if err != nil {
-		return WrapError(err)
-	}
-	request.ApiId = parts[1]
-	request.GroupId = parts[0]
-	object, err := cloudApiService.DescribeApiGatewayApi(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_api_gateway_api DescribeApiGatewayApi Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
 	stageNames, err := getStageNameList(d, cloudApiService)
 	if err != nil {
 		if !NotFoundError(err) {
@@ -411,134 +410,53 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("api_id", object.ApiId)
-	d.Set("group_id", object.GroupId)
-	d.Set("name", object.ApiName)
-	d.Set("description", object.Description)
-	d.Set("auth_type", object.AuthType)
-	d.Set("force_nonce_check", object.ForceNonceCheck)
+	d.Set("api_id", objectRaw["ApiId"])
+	d.Set("group_id", objectRaw["GroupId"])
+	d.Set("name", objectRaw["ApiName"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("auth_type", objectRaw["AuthType"])
+	d.Set("force_nonce_check", objectRaw["ForceNonceCheck"])
 
-	requestConfig := map[string]interface{}{}
-	requestConfig["protocol"] = object.RequestConfig.RequestProtocol
-	requestConfig["method"] = object.RequestConfig.RequestHttpMethod
-	requestConfig["path"] = object.RequestConfig.RequestPath
-	requestConfig["mode"] = object.RequestConfig.RequestMode
-	if object.RequestConfig.BodyFormat != "" {
-		requestConfig["body_format"] = object.RequestConfig.BodyFormat
-	}
-	if err := d.Set("request_config", []map[string]interface{}{requestConfig}); err != nil {
+	v := convertApiGatewayApiRequestConfigResponse(objectRaw["RequestConfig"])
+	if err := d.Set("request_config", []map[string]interface{}{v}); err != nil {
 		return WrapError(err)
 	}
 
-	if object.ServiceConfig.Mock == "TRUE" {
+	serviceConfig, ok := objectRaw["ServiceConfig"].(map[string]interface{})
+	if !ok {
+		return WrapError(Error("ApiGateway resource Api service_config is not valid."))
+	}
+	if mock, ok := serviceConfig["Mock"]; ok && mock == "TRUE" {
 		d.Set("service_type", "MOCK")
-		MockServiceConfig := map[string]interface{}{}
-		MockServiceConfig["result"] = object.ServiceConfig.MockResult
-		MockServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
-		if err := d.Set("mock_service_config", []map[string]interface{}{MockServiceConfig}); err != nil {
+		v := convertApiGatewayApiServiceConfigMockServiceConfigResponse(serviceConfig)
+		if err := d.Set("mock_service_config", []map[string]interface{}{v}); err != nil {
 			return WrapError(err)
 		}
-	} else if object.ServiceConfig.ServiceVpcEnable == "TRUE" {
+	} else if vpcEnable, ok := serviceConfig["ServiceVpcEnable"]; ok && vpcEnable == "TRUE" {
 		d.Set("service_type", "HTTP-VPC")
-		vpcServiceConfig := map[string]interface{}{}
-		vpcServiceConfig["name"] = object.ServiceConfig.VpcConfig.Name
-		vpcServiceConfig["path"] = object.ServiceConfig.ServicePath
-		vpcServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
-		vpcServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
-		vpcServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
-		vpcServiceConfig["vpc_scheme"] = object.ServiceConfig.VpcConfig.VpcScheme
-		vpcServiceConfig["content_type_category"] = object.ServiceConfig.ContentTypeCatagory
-		vpcServiceConfig["content_type_value"] = object.ServiceConfig.ContentTypeValue
-		if err := d.Set("http_vpc_service_config", []map[string]interface{}{vpcServiceConfig}); err != nil {
+		v := convertApiGatewayApiServiceConfigVpcServiceConfigResponse(serviceConfig)
+		if err := d.Set("http_vpc_service_config", []map[string]interface{}{v}); err != nil {
 			return WrapError(err)
 		}
-	} else if object.ServiceConfig.ServiceProtocol == "FunctionCompute" {
+	} else if serviceProtocol, ok := serviceConfig["ServiceProtocol"]; ok && serviceProtocol == "FunctionCompute" {
 		d.Set("service_type", "FunctionCompute")
-		fcServiceConfig := map[string]interface{}{}
-		fcServiceConfig["region"] = object.ServiceConfig.FunctionComputeConfig.RegionId
-		fcServiceConfig["function_type"] = object.ServiceConfig.FunctionComputeConfig.FcType
-		fcServiceConfig["function_base_url"] = object.ServiceConfig.FunctionComputeConfig.FcBaseUrl
-		fcServiceConfig["path"] = object.ServiceConfig.FunctionComputeConfig.Path
-		fcServiceConfig["method"] = object.ServiceConfig.FunctionComputeConfig.Method
-		fcServiceConfig["only_business_path"] = object.ServiceConfig.FunctionComputeConfig.OnlyBusinessPath
-		fcServiceConfig["qualifier"] = object.ServiceConfig.FunctionComputeConfig.Qualifier
-		fcServiceConfig["function_name"] = object.ServiceConfig.FunctionComputeConfig.FunctionName
-		fcServiceConfig["service_name"] = object.ServiceConfig.FunctionComputeConfig.ServiceName
-		fcServiceConfig["arn_role"] = object.ServiceConfig.FunctionComputeConfig.RoleArn
-		fcServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
-		if err := d.Set("fc_service_config", []map[string]interface{}{fcServiceConfig}); err != nil {
+		v := convertApiGatewayApiServiceConfigFcServiceConfigResponse(serviceConfig)
+		if err := d.Set("fc_service_config", []map[string]interface{}{v}); err != nil {
 			return WrapError(err)
 		}
 	} else {
 		d.Set("service_type", "HTTP")
-		httpServiceConfig := map[string]interface{}{}
-		httpServiceConfig["address"] = object.ServiceConfig.ServiceAddress
-		httpServiceConfig["path"] = object.ServiceConfig.ServicePath
-		httpServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
-		httpServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
-		httpServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
-		httpServiceConfig["content_type_category"] = object.ServiceConfig.ContentTypeCatagory
-		httpServiceConfig["content_type_value"] = object.ServiceConfig.ContentTypeValue
-		if err := d.Set("http_service_config", []map[string]interface{}{httpServiceConfig}); err != nil {
+		v := convertApiGatewayApiServiceConfigHttpServiceConfigResponse(serviceConfig)
+		if err := d.Set("http_service_config", []map[string]interface{}{v}); err != nil {
 			return WrapError(err)
 		}
 	}
 
-	requestParams := []map[string]interface{}{}
-	for _, mapParam := range object.ServiceParametersMap.ServiceParameterMap {
-		param := map[string]interface{}{}
-		requestName := mapParam.RequestParameterName
-		serviceName := mapParam.ServiceParameterName
-		for _, serviceParam := range object.ServiceParameters.ServiceParameter {
-			if serviceParam.ServiceParameterName == serviceName {
-				param["name_service"] = serviceName
-				param["in_service"] = strings.ToUpper(serviceParam.Location)
-				break
-			}
-		}
-		for _, requestParam := range object.RequestParameters.RequestParameter {
-			if requestParam.ApiParameterName == requestName {
-				param["name"] = requestName
-				param["type"] = requestParam.ParameterType
-				param["required"] = requestParam.Required
-				param["in"] = requestParam.Location
+	d.Set("request_parameters", convertApiGatewayApiRequestParamsResponse(objectRaw))
 
-				if requestParam.Description != "" {
-					param["description"] = requestParam.Description
-				}
-				if requestParam.DefaultValue != "" {
-					param["default_value"] = requestParam.DefaultValue
-				}
-				break
-			}
-		}
-		requestParams = append(requestParams, param)
-	}
-	d.Set("request_parameters", requestParams)
+	d.Set("constant_parameters", convertApiGatewayApiConstantParamsResponse(objectRaw["ConstantParameters"]))
 
-	constantParams := []map[string]interface{}{}
-	for _, constantParam := range object.ConstantParameters.ConstantParameter {
-		param := map[string]interface{}{}
-		param["name"] = constantParam.ServiceParameterName
-		param["in"] = constantParam.Location
-		param["value"] = constantParam.ConstantValue
-		if constantParam.Description != "" {
-			param["description"] = constantParam.Description
-		}
-		constantParams = append(constantParams, param)
-
-	}
-	d.Set("constant_parameters", constantParams)
-
-	SystemParams := []map[string]interface{}{}
-	for _, systemParam := range object.SystemParameters.SystemParameter {
-		param := map[string]interface{}{}
-		param["name"] = systemParam.ParameterName
-		param["in"] = systemParam.Location
-		param["name_service"] = systemParam.ServiceParameterName
-		SystemParams = append(SystemParams, param)
-	}
-	d.Set("system_parameters", SystemParams)
+	d.Set("system_parameters", convertApiGatewayApiSystemParamsResponse(objectRaw["SystemParameters"]))
 
 	return nil
 }
@@ -831,6 +749,7 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	config := l[0].(map[string]interface{})
 	serviceConfig.Protocol = "FunctionCompute"
+	serviceConfig.FcConfig.FunctionVersion = config["function_version"].(string)
 	serviceConfig.FcConfig.FunctionType = config["function_type"].(string)
 	serviceConfig.FcConfig.FunctionBaseUrl = config["function_base_url"].(string)
 	serviceConfig.FcConfig.Path = config["path"].(string)
@@ -1101,4 +1020,234 @@ func updateApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interf
 		}
 	}
 	return nil
+}
+
+func convertApiGatewayApiRequestConfigResponse(source interface{}) map[string]interface{} {
+	requestConfig := map[string]interface{}{}
+	if source == nil {
+		return requestConfig
+	}
+	requestConfigMap, ok := source.(map[string]interface{})
+	if !ok {
+		return requestConfig
+	}
+
+	requestConfig["protocol"] = requestConfigMap["RequestProtocol"]
+	requestConfig["method"] = requestConfigMap["RequestHttpMethod"]
+	requestConfig["path"] = requestConfigMap["RequestPath"]
+	requestConfig["mode"] = requestConfigMap["RequestMode"]
+
+	if bodyFormat, ok := requestConfigMap["BodyFormat"]; ok && bodyFormat != "" {
+		requestConfig["body_format"] = bodyFormat
+	}
+
+	return requestConfig
+}
+
+func convertApiGatewayApiServiceConfigMockServiceConfigResponse(serviceConfig map[string]interface{}) map[string]interface{} {
+	mockServiceConfig := map[string]interface{}{}
+	if serviceConfig == nil {
+		return mockServiceConfig
+	}
+	mockServiceConfig["result"] = serviceConfig["MockResult"]
+	mockServiceConfig["aone_name"] = serviceConfig["AoneAppName"]
+
+	return mockServiceConfig
+}
+
+func convertApiGatewayApiServiceConfigVpcServiceConfigResponse(serviceConfig map[string]interface{}) map[string]interface{} {
+	vpcServiceConfig := map[string]interface{}{}
+	if serviceConfig == nil {
+		return vpcServiceConfig
+	}
+
+	vpcServiceConfig["path"] = serviceConfig["ServicePath"]
+	vpcServiceConfig["method"] = serviceConfig["ServiceHttpMethod"]
+	vpcServiceConfig["timeout"] = serviceConfig["ServiceTimeout"]
+	vpcServiceConfig["aone_name"] = serviceConfig["AoneAppName"]
+	vpcServiceConfig["content_type_category"] = serviceConfig["ContentTypeCatagory"]
+	vpcServiceConfig["content_type_value"] = serviceConfig["ContentTypeValue"]
+
+	if vpcConfig, ok := serviceConfig["VpcConfig"].(map[string]interface{}); ok {
+		vpcServiceConfig["name"] = vpcConfig["Name"]
+		vpcServiceConfig["vpc_scheme"] = vpcConfig["VpcScheme"]
+	}
+
+	return vpcServiceConfig
+}
+
+func convertApiGatewayApiServiceConfigFcServiceConfigResponse(serviceConfig map[string]interface{}) map[string]interface{} {
+	fcServiceConfig := map[string]interface{}{}
+	if serviceConfig == nil {
+		return fcServiceConfig
+	}
+
+	fcServiceConfig["timeout"] = serviceConfig["ServiceTimeout"]
+
+	if fcConfig, ok := serviceConfig["FunctionComputeConfig"].(map[string]interface{}); ok {
+		fcServiceConfig["region"] = fcConfig["RegionId"]
+		fcServiceConfig["function_version"] = fcConfig["FcVersion"]
+		fcServiceConfig["function_type"] = fcConfig["FcType"]
+		fcServiceConfig["function_base_url"] = fcConfig["FcBaseUrl"]
+		fcServiceConfig["path"] = fcConfig["Path"]
+		fcServiceConfig["method"] = fcConfig["Method"]
+		fcServiceConfig["only_business_path"] = fcConfig["OnlyBusinessPath"]
+		fcServiceConfig["qualifier"] = fcConfig["Qualifier"]
+		fcServiceConfig["function_name"] = fcConfig["FunctionName"]
+		fcServiceConfig["service_name"] = fcConfig["ServiceName"]
+		fcServiceConfig["arn_role"] = fcConfig["RoleArn"]
+	}
+
+	return fcServiceConfig
+}
+
+func convertApiGatewayApiServiceConfigHttpServiceConfigResponse(serviceConfig map[string]interface{}) map[string]interface{} {
+	httpServiceConfig := map[string]interface{}{}
+	if serviceConfig == nil {
+		return httpServiceConfig
+	}
+
+	httpServiceConfig["address"] = serviceConfig["ServiceAddress"]
+	httpServiceConfig["path"] = serviceConfig["ServicePath"]
+	httpServiceConfig["method"] = serviceConfig["ServiceHttpMethod"]
+	httpServiceConfig["timeout"] = serviceConfig["ServiceTimeout"]
+	httpServiceConfig["aone_name"] = serviceConfig["AoneAppName"]
+	httpServiceConfig["content_type_category"] = serviceConfig["ContentTypeCatagory"]
+	httpServiceConfig["content_type_value"] = serviceConfig["ContentTypeValue"]
+
+	return httpServiceConfig
+}
+
+func convertApiGatewayApiRequestParamsResponse(objectRaw map[string]interface{}) []map[string]interface{} {
+	var requestParams []map[string]interface{}
+	if objectRaw == nil {
+		return requestParams
+	}
+	serviceParametersMap, ok := objectRaw["ServiceParametersMap"].(map[string]interface{})
+	if !ok {
+		return requestParams
+	}
+	serviceParameterMap, ok := serviceParametersMap["ServiceParameterMap"].([]interface{})
+	if !ok {
+		return requestParams
+	}
+	for _, mapParam := range serviceParameterMap {
+		param := map[string]interface{}{}
+		paramMap, ok := mapParam.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		requestName := paramMap["RequestParameterName"]
+		serviceName := paramMap["ServiceParameterName"]
+		serviceParameters, ok := objectRaw["ServiceParameters"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		serviceParameter, ok := serviceParameters["ServiceParameter"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, serviceParam := range serviceParameter {
+			serviceParamMap, ok := serviceParam.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if serviceParamMap["ServiceParameterName"] == serviceName {
+				param["name_service"] = serviceName
+				param["in_service"] = strings.ToUpper(serviceParamMap["Location"].(string))
+				break
+			}
+		}
+
+		requestParameters, ok := objectRaw["RequestParameters"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		requestParameter, ok := requestParameters["RequestParameter"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, requestParam := range requestParameter {
+			requestParamMap, ok := requestParam.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if requestParamMap["ApiParameterName"] == requestName {
+				param["name"] = requestName
+				param["type"] = requestParamMap["ParameterType"]
+				param["required"] = requestParamMap["Required"]
+				param["in"] = requestParamMap["Location"]
+
+				if description, ok := requestParamMap["Description"]; ok && description != "" {
+					param["description"] = description
+				}
+				if defaultValue, ok := requestParamMap["DefaultValue"]; ok && defaultValue != "" {
+					param["default_value"] = defaultValue
+				}
+				break
+			}
+		}
+		requestParams = append(requestParams, param)
+	}
+
+	return requestParams
+}
+
+func convertApiGatewayApiConstantParamsResponse(source interface{}) []map[string]interface{} {
+	var constantParams []map[string]interface{}
+	if source == nil {
+		return constantParams
+	}
+	constantParametersMap, ok := source.(map[string]interface{})
+	if !ok {
+		return constantParams
+	}
+	constantParameter, ok := constantParametersMap["ConstantParameter"].([]interface{})
+	if !ok {
+		return constantParams
+	}
+	for _, constantParam := range constantParameter {
+		param := map[string]interface{}{}
+		constantParamMap, ok := constantParam.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		param["name"] = constantParamMap["ServiceParameterName"]
+		param["in"] = constantParamMap["Location"]
+		param["value"] = constantParamMap["ConstantValue"]
+		if description, ok := constantParamMap["Description"]; ok && description != "" {
+			param["description"] = description
+		}
+		constantParams = append(constantParams, param)
+	}
+
+	return constantParams
+}
+
+func convertApiGatewayApiSystemParamsResponse(source interface{}) []map[string]interface{} {
+	var systemParams []map[string]interface{}
+	if source == nil {
+		return systemParams
+	}
+	systemParametersMap, ok := source.(map[string]interface{})
+	if !ok {
+		return systemParams
+	}
+	systemParameter, ok := systemParametersMap["SystemParameter"].([]interface{})
+	if !ok {
+		return systemParams
+	}
+	for _, systemParam := range systemParameter {
+		param := map[string]interface{}{}
+		systemParamMap, ok := systemParam.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		param["name"] = systemParamMap["ParameterName"]
+		param["in"] = systemParamMap["Location"]
+		param["name_service"] = systemParamMap["ServiceParameterName"]
+		systemParams = append(systemParams, param)
+	}
+
+	return systemParams
 }

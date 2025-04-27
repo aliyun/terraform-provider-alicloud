@@ -360,3 +360,46 @@ func (s *ApiGatewayServiceV2) ApiGatewayAccessControlListStateRefreshFunc(id str
 }
 
 // DescribeApiGatewayAccessControlList >>> Encapsulated.
+
+// DescribeApiGatewayApi <<< Encapsulated get interface for ApiGateway Api.
+
+func (s *ApiGatewayServiceV2) DescribeApiGatewayApi(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeApi"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	parts, err := ParseResourceId(id, 2)
+	query["ApiId"] = parts[1]
+	query["GroupId"] = parts[0]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if _, ok := response["ApiId"].(string); !ok {
+		return nil, WrapErrorf(NotFoundErr("Api", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+// DescribeApiGatewayApi >>> Encapsulated.

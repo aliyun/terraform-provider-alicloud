@@ -86,7 +86,7 @@ The following arguments are supported:
 * `description` - (Required) The description of the api. Defaults to null.
 * `auth_type` - (Required) The authorization Type including APP and ANONYMOUS. Defaults to null.
 * `request_config` - (Required, List) Request_config defines how users can send requests to your API. See [`request_config`](#request_config) below.
-* `service_type` - (Required) The type of backend service. Type including HTTP,VPC and MOCK. Defaults to null.
+* `service_type` - (Required) The type of backend service. Type including HTTP, VPC, FunctionCompute and MOCK. Defaults to null.
 * `http_service_config` - (Optional, List) http_service_config defines the config when service_type selected 'HTTP'. See [`http_service_config`](#http_service_config) below.
 * `http_vpc_service_config` - (Optional, List) http_vpc_service_config defines the config when service_type selected 'HTTP-VPC'. See [`http_vpc_service_config`](#http_vpc_service_config) below.
 * `fc_service_config` - (Optional, List) fc_service_config defines the config when service_type selected 'FunctionCompute'. See [`fc_service_config`](#fc_service_config) below.
@@ -136,10 +136,11 @@ The http_vpc_service_config mapping supports the following:
 
 The fc_service_config mapping supports the following:
 
+* `function_version` - (Optional) The function compute version of function compute service. Supports values of `2.0`, `3.0`. Default value: `2.0`.
 * `function_type` - (Optional, Available in v1.219.0) The type of function compute service. Supports values of `FCEvent`,`HttpTrigger`. Default value: `FCEvent`.
 * `region` - (Required) The region that the function compute service belongs to.
 * `function_name` - (Optional) The function name of function compute service. Required if `function_type` is `FCEvent`.
-* `service_name` - (Optional) The service name of function compute service. Required if `function_type` is `FCEvent`.
+* `service_name` - (Optional) The service name of function compute service. Required if `function_type` is `FCEvent` and `function_version` is `2.0`.
 * `qualifier` - (Optional, Available in v1.219.0) The qualifier of function name of compute service.
 * `function_base_url` - (Optional, Available in v1.219.0) The base url of function compute service. Required if `function_type` is `HttpTrigger`.
 * `path` - (Optional, Available in v1.219.0) The path of function compute service. Required if `function_type` is `HttpTrigger`.
