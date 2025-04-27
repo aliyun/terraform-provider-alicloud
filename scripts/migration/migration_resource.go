@@ -19,6 +19,16 @@ var (
 	destProviderDir   = flag.String("t", "", "target provider dir path")
 )
 
+var specialResourceMap = map[string]map[string]string{
+	"vpc": {
+		"vpc":     "alicloud_vpc",
+		"vswitch": "alicloud_vswitch",
+	},
+	"ecs": {
+		"instance": "alicloud_instance",
+	},
+}
+
 func main() {
 
 	flag.Parse()
@@ -37,27 +47,34 @@ func main() {
 }
 
 func migrateResource(namespace, resource *string) error {
-	sourceFileName := fmt.Sprintf("resource_alicloud_%s_%s.go", *namespace, *resource)
-	if sourceFileName == "resource_alicloud_vpc_vswitch.go" {
-		sourceFileName = "resource_alicloud_vswitch.go"
-	}
-	sourceFile := fmt.Sprintf("%s/alicloud/%s", *sourceProviderDir, sourceFileName)
+	resourceName := getResourceName(*namespace, *resource)
+	sourceFileName := fmt.Sprintf("resource_%s.go", resourceName)
+	sourceFilePath := fmt.Sprintf("%s/alicloud/%s", *sourceProviderDir, sourceFileName)
 	destFileName := fmt.Sprintf("%s.go", *resource)
-	destFile := filepath.Join(*destProviderDir, "internal", "service", *namespace, destFileName)
+	destFilePath := filepath.Join(*destProviderDir, "internal", "service", *namespace, destFileName)
 
-	err := copyFile(sourceFile, destFile)
+	err := copyFile(sourceFilePath, destFilePath)
 	if err != nil {
 		log.Fatalf("Error copying file: %v", err)
 	}
 
-	if err = modifyResourceFile(destFile, *namespace, *resource); err != nil {
+	if err = modifyResourceFile(destFilePath, *namespace, *resource); err != nil {
 		log.Fatalf("Error modifying file: %v", err)
 	}
 
-	if err = formatFile(destFile); err != nil {
+	if err = formatFile(destFilePath); err != nil {
 		log.Fatalf("Error formatting file: %v", err)
 	}
 	return err
+}
+
+func getResourceName(namespace, resource string) string {
+	if productMap, ok := specialResourceMap[namespace]; ok {
+		if mappedName, ok := productMap[resource]; ok {
+			return mappedName
+		}
+	}
+	return fmt.Sprintf("alicloud_%s_%s", namespace, resource)
 }
 
 func migrateResourceTest(sourceFile, destFile string, namespace, resource *string) error {
