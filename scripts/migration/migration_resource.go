@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -77,13 +78,21 @@ func modifyFile(filePath, namespace, resource string) error {
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
 	imports = imports + "\n\"" + "context\""
 
+	clientRe := regexp.MustCompile(`client\.Rpc([A-Za-z]+)\(\s*"([^"]+)",\s*"([^"]+)",\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)`)
+	serviceRe := regexp.MustCompile(`([A-Z]\w*?)Service(V2)?\b`)
+
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		if strings.Contains(line, "SetPartial") {
+			continue
+		}
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
@@ -111,9 +120,10 @@ func modifyFile(filePath, namespace, resource string) error {
 				line = strings.ReplaceAll(line, "Delete:", "DeleteContext:")
 			}
 		}
+		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
 
 		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
-
+		line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
 		line = strings.ReplaceAll(line, "AliCloud", "ApsaraCloud")
 		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
 		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
@@ -124,16 +134,62 @@ func modifyFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "resource.", "retry.")
 		line = strings.ReplaceAll(line, "NeedRetry(err)", "tferr.NeedRetry(err)")
 		line = strings.ReplaceAll(line, "addDebug", "helper.AddDebug")
+		line = strings.ReplaceAll(line, "retry.Retry(", "retry.RetryContext(ctx, ")
+		line = strings.ReplaceAll(line, "StateRefreshFunc(", "StateRefreshFunc(ctx, ")
+		line = strings.ReplaceAll(line, "WaitForState()", "WaitForStateContext(ctx)")
 
 		line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
-		line = strings.ReplaceAll(line, "WrapErrorf", "tferr.WrapErrorf")
+		line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
+		line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
+
 		line = strings.ReplaceAll(line, "DefaultErrorMsg", "tferr.DefaultErrorMsg")
 		line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
+		line = strings.ReplaceAll(line, "IsExpectedErrors", "tferr.IsExpectedErrors")
+		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
 		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
+
+		if strings.Contains(line, "return tferr.") {
+			line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
+			line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
+			line = strings.ReplaceAll(line, "return tferr.", "return sdkdiag.AppendFromErr(diags,")
+			line += ")"
+		}
 
 		if strings.Contains(line, "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {") {
 			line = line + "\nvar diags diag.Diagnostics\n"
 		}
+
+		if strings.Contains(line, "client.Rpc") {
+			// 使用正则表达式动态提取方法类型和参数
+			matches := clientRe.FindStringSubmatch(line)
+
+			if len(matches) == 8 {
+				httpMethod := matches[1] // 提取POST/GET等动词
+				service := matches[2]
+				version := matches[3]
+				action := matches[4]
+				pathParams := matches[5]
+				request := matches[6]
+				async := matches[7]
+
+				// 重构参数结构
+				newLine := fmt.Sprintf(
+					`client.Do("%s", client.NewRpcParam("%s", "%s", %s), %s, %s, nil, nil, %s)`,
+					service,
+					httpMethod,
+					version,
+					action,
+					pathParams,
+					request,
+					async,
+				)
+
+				line = strings.Replace(line, matches[0], newLine, 1)
+			}
+		}
+		line = serviceRe.ReplaceAllString(line, "Service")
+
+		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
 
 		lines = append(lines, line)
 	}
