@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	namespace = flag.String("n", "", "namespace")
-	resource  = flag.String("r", "", "resource")
-	targetDir = flag.String("t", "", "target dir")
+	namespace       = flag.String("n", "", "namespace")
+	resource        = flag.String("r", "", "resource")
+	destProviderDir = flag.String("t", "", "target dir")
 )
 
 func main() {
 
 	flag.Parse()
 
-	if *namespace == "" || *resource == "" || *targetDir == "" {
+	if *namespace == "" || *resource == "" || *destProviderDir == "" {
 		log.Fatal("All parameters ( -n, -r, -t) are required.")
 	}
 
@@ -31,15 +31,15 @@ func main() {
 	}
 
 	sourceDir := fmt.Sprintf("%s/alicloud", filepath.Dir(filepath.Dir(currentDir)))
-	sourceFileName := fmt.Sprintf("alicloud_%s_%s.go", *namespace, *resource)
-	if sourceFileName == "alicloud_vpc_vswitch.go" {
-		sourceFileName = "alicloud_vswitch.go"
+	sourceFileName := fmt.Sprintf("resource_alicloud_%s_%s.go", *namespace, *resource)
+	if sourceFileName == "resource_alicloud_vpc_vswitch.go" {
+		sourceFileName = "resource_alicloud_vswitch.go"
 	}
 
 	sourceFile := fmt.Sprintf("%s/%s", sourceDir, sourceFileName)
 
 	destFileName := fmt.Sprintf("%s.go", *resource)
-	destFile := filepath.Join(*targetDir, destFileName)
+	destFile := filepath.Join(*destProviderDir, "internal", "service", *namespace, destFileName)
 
 	err = copyFile(sourceFile, destFile)
 	if err != nil {
@@ -74,14 +74,50 @@ func modifyFile(filePath, namespace, resource string) error {
 	scanner := bufio.NewScanner(file)
 	var lines []string
 
+	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
+	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
+
+	imports := "import ("
+	imports = imports + "\n\"" + "context\""
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		line = strings.ReplaceAll(line, "Create:", "CreateContext:")
-		line = strings.ReplaceAll(line, "Read:", "ReadContext:")
-		line = strings.ReplaceAll(line, "Update:", "UpdateContext:")
-		line = strings.ReplaceAll(line, "Delete:", "DeleteContext:")
+		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
+		line = strings.ReplaceAll(line, "import (", imports)
+		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/connectivity")
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", headers)
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema")
+
+		if strings.Contains(line, "Create:") {
+			if !strings.Contains(line, "Create: schema") {
+				line = strings.ReplaceAll(line, "Create:", "CreateContext:")
+			}
+		}
+		if strings.Contains(line, "Read:") {
+			if !strings.Contains(line, "Read: schema") {
+				line = strings.ReplaceAll(line, "Read:", "ReadContext:")
+			}
+		}
+		if strings.Contains(line, "Update:") {
+			if !strings.Contains(line, "Update: schema") {
+				line = strings.ReplaceAll(line, "Update:", "UpdateContext:")
+			}
+		}
+		if strings.Contains(line, "Delete:") {
+			if !strings.Contains(line, "Delete: schema") {
+				line = strings.ReplaceAll(line, "Delete:", "DeleteContext:")
+			}
+		}
+
+		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
+
 		line = strings.ReplaceAll(line, "AliCloud", "ApsaraCloud")
+		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
+		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
+
 		line = strings.ReplaceAll(line, "State: schema.ImportStatePassthrough,", "StateContext: schema.ImportStatePassthroughContext,")
 		line = strings.ReplaceAll(line, "buildClientToken", "helper.BuildClientToken")
 		line = strings.ReplaceAll(line, "incrementalWait", "helper.IncrementalWait")
@@ -89,8 +125,14 @@ func modifyFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "NeedRetry(err)", "tferr.NeedRetry(err)")
 		line = strings.ReplaceAll(line, "addDebug", "helper.AddDebug")
 
-		if strings.Contains(line, "client := meta.(*connectivity.AliyunClient)") {
-			lines = append(lines, "var diags diag.Diagnostics")
+		line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
+		line = strings.ReplaceAll(line, "WrapErrorf", "tferr.WrapErrorf")
+		line = strings.ReplaceAll(line, "DefaultErrorMsg", "tferr.DefaultErrorMsg")
+		line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
+		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
+
+		if strings.Contains(line, "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {") {
+			line = line + "\nvar diags diag.Diagnostics\n"
 		}
 
 		lines = append(lines, line)
