@@ -42,18 +42,25 @@ func main() {
 	destFileName := fmt.Sprintf("%s.go", *resource)
 	destFile := filepath.Join(*destProviderDir, "internal", "service", *namespace, destFileName)
 
-	err = copyFile(sourceFile, destFile)
+	if err = migrateResource(sourceFile, destFile, namespace, resource); err != nil {
+		log.Fatalf("Error modifying file: %v", err)
+	}
+}
+
+func migrateResource(sourceFile, destFile string, namespace, resource *string) error {
+	err := copyFile(sourceFile, destFile)
 	if err != nil {
 		log.Fatalf("Error copying file: %v", err)
 	}
 
-	if err = modifyFile(destFile, *namespace, *resource); err != nil {
+	if err = modifyResourceFile(destFile, *namespace, *resource); err != nil {
 		log.Fatalf("Error modifying file: %v", err)
 	}
 
 	if err = formatFile(destFile); err != nil {
 		log.Fatalf("Error formatting file: %v", err)
 	}
+	return err
 }
 
 func copyFile(src, dest string) error {
@@ -65,7 +72,7 @@ func copyFile(src, dest string) error {
 	return os.WriteFile(dest, content, 0644)
 }
 
-func modifyFile(filePath, namespace, resource string) error {
+func modifyResourceFile(filePath, namespace, resource string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file for modification: %w", err)
