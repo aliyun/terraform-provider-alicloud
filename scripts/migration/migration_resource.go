@@ -171,7 +171,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 			matches := clientRe.FindStringSubmatch(line)
 
 			if len(matches) == 8 {
-				httpMethod := matches[1] // 提取POST/GET等动词
+				httpMethod := strings.ToUpper(matches[1]) // 提取POST/GET等动词
 				service := matches[2]
 				version := matches[3]
 				action := matches[4]
