@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Config Delivery Channel resource.
 ---
 
-# alicloud\_config\_delivery\_channel
+# alicloud_config_delivery_channel
 
 -> **DEPRECATED:**  This resource is based on Config's old version OpenAPI, and it has been deprecated from version `1.171.0`.
 Please use new resource [alicloud_config_delivery](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/config_delivery) instead.
@@ -15,7 +15,7 @@ Please use new resource [alicloud_config_delivery](https://registry.terraform.io
 Provides an Alicloud Config Delivery Channel resource. You can receive configuration audit event changes by configuring OSS, MNS and SLS services provided by Alibaba Cloud.
 For information about Alicloud Config Delivery Channel and how to use it, see [What is Delivery Channel](https://www.alibabacloud.com/help/en/doc-detail/307022.html).
 
--> **NOTE:** Available in v1.99.0+.
+-> **NOTE:** Available since v1.99.0.
 
 -> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-southeast-1`.
 
@@ -76,9 +76,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.104.0+.
+-> **NOTE:** Available since v1.104.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Config Delivery Channel.
 * `update` - (Defaults to 3 mins) Used when update the Config Delivery Channel.

@@ -2186,7 +2186,7 @@ ENHANCEMENTS:
 BUG FIXES:
 
 - resource/alicloud_ess_scalinggroup: Fixes the BackendServer.configuring error when attaching vserver groups ([#6058](https://github.com/aliyun/terraform-provider-alicloud/issues/6058))
-- resource/alicloud_dts_synchronization_job: Fixes the DTS.Msg.OperationDenied.JobStatusModifying error when updating it [[#6481](https://github.com/aliyun/terraform-provider-alicloud/issues/6481)]  
+- resource/alicloud_dts_synchronization_job: Fixes the DTS.Msg.OperationDenied.JobStatusModifying error when updating it [[#6481](https://github.com/aliyun/terraform-provider-alicloud/issues/6481)] 
 - resource/alicloud_kvstore_instance: Fixes the diff error from attribute instance_class. ([#6440](https://github.com/aliyun/terraform-provider-alicloud/issues/6440))
 - datasource/alicloud_cs_kubernetes_addons: Fixes reading latest addon config error. ([#6262](https://github.com/aliyun/terraform-provider-alicloud/issues/6262))
 - data-source/alicloud_cdn_service: Fixes the CdnServiceNotFoundError error. ([#6467](https://github.com/aliyun/terraform-provider-alicloud/issues/6467))

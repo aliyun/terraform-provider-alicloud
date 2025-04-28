@@ -52,9 +52,9 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of the CEN.
 * `child_instance_id` - (Required, ForceNew) The ID of the child instance to attach.
 * `child_instance_region_id` - (Required, ForceNew) The region ID of the child instance to attach.
-* `child_instance_owner_id` - (Optional, Available in 1.42.0+) The uid of the child instance. Only used when attach a child instance of other account.
-* `child_instance_type` - (Required, ForceNew, Available in 1.97.0+) The type of the associated network. Valid values: `VPC`, `VBR` and `CCN`.
-* `cen_owner_id` - (Optional, Available in 1.97.0+) The account ID to which the CEN instance belongs.
+* `child_instance_owner_id` - (Optional, Available since v1.42.0) The uid of the child instance. Only used when attach a child instance of other account.
+* `child_instance_type` - (Required, ForceNew, Available since v1.97.0) The type of the associated network. Valid values: `VPC`, `VBR` and `CCN`.
+* `cen_owner_id` - (Optional, Available since v1.97.0) The account ID to which the CEN instance belongs.
 
 ->**NOTE:** Ensure that the child instance is not used in Express Connect.
 
@@ -67,9 +67,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.199.0+.
+-> **NOTE:** Available since v1.199.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the child instance attachment.
 * `delete` - (Defaults to 10 mins) Used when delete the child instance attachment.

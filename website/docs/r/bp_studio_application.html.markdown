@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Architect Design Tools (BPStudio) Application resource.
 ---
 
-# alicloud\_bp\_studio\_application
+# alicloud_bp_studio_application
 
 Provides a Cloud Architect Design Tools Application resource.
 
 For information about Cloud Architect Design Tools Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/428263.html).
 
--> **NOTE:** Available in v1.192.0+.
+-> **NOTE:** Available since v1.192.0.
 
 ## Example Usage
 
@@ -89,7 +89,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 120 mins) Used when create the Application.
 * `delete` - (Defaults to 120 mins) Used when delete the Application.

@@ -7,7 +7,9 @@ description: |-
   Provides a Load Banlancer CA Certificate resource.
 ---
 
-# alicloud\_slb\_ca\_certificate
+# alicloud_slb_ca_certificate
+
+-> **NOTE:** Available since v1.21.0.
 
 A Load Balancer CA Certificate is used by the listener of the protocol https.
 
@@ -52,10 +54,10 @@ resource "alicloud_slb_ca_certificate" "foo-file" {
 
 The following arguments are supported:
 
-* `ca_certificate_name` - (Optional, Available in 1.123.1+) Name of the CA Certificate.
+* `ca_certificate_name` - (Optional, Available since v1.123.1) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb_ca certificate belongs.
-* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.58.0) The Id of resource group which the slb_ca certificate belongs.
+* `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
 * `name` - (Deprecated) Field `name` has been deprecated from provider version 1.123.1. New field `ca_certificate_name` instead
 
 ## Attributes Reference
@@ -66,9 +68,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** -Available in 1.123.1+
+-> **NOTE:** Available since v1.123.1
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `delete` - (Defaults to 5 mins) Used when delete the SLB CA Certificate.
 

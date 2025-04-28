@@ -51,10 +51,10 @@ The following arguments are supported:
 * `charge_type` - (Optional, Deprecated from 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
 * `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `geographic_region_a_id` - (Optional, ForceNew, Available in 1.98.0+) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
-* `geographic_region_b_id` - (Optional, ForceNew, Available in 1.98.0+) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
-* `payment_type` - (Optional, ForceNew, Available in 1.98.0+) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PrePaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
-* `cen_bandwidth_package_name` - (Optional, Available in 1.98.0+) The name of the bandwidth package. Defaults to null.
+* `geographic_region_a_id` - (Optional, ForceNew, Available since v1.98.0) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
+* `geographic_region_b_id` - (Optional, ForceNew, Available since v1.98.0) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
+* `payment_type` - (Optional, ForceNew, Available since v1.98.0) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PrePaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
+* `cen_bandwidth_package_name` - (Optional, Available since v1.98.0) The name of the bandwidth package. Defaults to null.
 
 ->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
 
@@ -70,9 +70,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.98.0+.
+-> **NOTE:** Available since v1.98.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when creating the CEN bandwidth package. (until it reaches the initial `Idle` status).
 * `delete` - (Defaults to 11 mins) Used when delete the CEN bandwidth package.

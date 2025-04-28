@@ -7,13 +7,13 @@ description: |-
   Provides a Cassandra dataCenter resource.
 ---
 
-# alicloud\_cassandra\_data\_center
+# alicloud_cassandra_data_center
 
 Provides a Cassandra dataCenter resource supports replica set dataCenters only. The Cassandra provides stable, reliable, and automatic scalable database services. 
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/product/49055.htm).
 
--> **NOTE:**  Available in 1.88.0+.
+-> **NOTE:** Available since v1.88.0.
 
 -> **NOTE:**  Create a cassandra dataCenter need a clusterId,so need create a cassandra cluster first.
 
@@ -88,7 +88,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the Cassandra dataCenter (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 30 mins) Used when updating the Cassandra dataCenter (until it reaches the initial `Running` status). 
