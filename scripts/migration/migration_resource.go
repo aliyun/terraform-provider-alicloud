@@ -27,6 +27,9 @@ var specialResourceMap = map[string]map[string]string{
 	"ecs": {
 		"instance": "alicloud_instance",
 	},
+	"rds": {
+		"instance": "alicloud_db_instance",
+	},
 }
 
 func main() {
@@ -50,8 +53,14 @@ func migrateResource(namespace, resource *string) error {
 	resourceName := getResourceName(*namespace, *resource)
 	sourceFileName := fmt.Sprintf("resource_%s.go", resourceName)
 	sourceFilePath := fmt.Sprintf("%s/alicloud/%s", *sourceProviderDir, sourceFileName)
+
+	serviceDir := filepath.Join(*destProviderDir, "internal", "service", *namespace)
+	if err := os.MkdirAll(serviceDir, 0755); err != nil {
+		log.Fatalf("Create Service Dir Failed: %v", err)
+	}
+
 	destFileName := fmt.Sprintf("%s.go", *resource)
-	destFilePath := filepath.Join(*destProviderDir, "internal", "service", *namespace, destFileName)
+	destFilePath := filepath.Join(serviceDir, destFileName)
 
 	err := copyFile(sourceFilePath, destFilePath)
 	if err != nil {
@@ -114,6 +123,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
@@ -195,6 +205,10 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
 		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
 
+		line = strings.ReplaceAll(line, "PostPaidDiffSuppressFunc", "helper.PostPaidDiffSuppressFunc")
+		line = strings.ReplaceAll(line, "PostPaidAndRenewDiffSuppressFunc", "helper.PostPaidAndRenewDiffSuppressFunc")
+		line = strings.ReplaceAll(line, "securityIpsDiffSuppressFunc", "helper.SecurityIpsDiffSuppressFunc")
+
 		if strings.Contains(line, "return tferr.") {
 			line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
 			line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
@@ -241,6 +255,12 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = serviceRe.ReplaceAllString(line, "Service")
 
 		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
+
+		line = strings.ReplaceAll(line, "PrePaid,", "names.PrePaid,")
+		line = strings.ReplaceAll(line, "PostPaid,", "names.PostPaid,")
+		line = strings.ReplaceAll(line, "Prepaid,", "names.Prepaid,")
+		line = strings.ReplaceAll(line, "Postpaid,", "names.Postpaid,")
+		line = strings.ReplaceAll(line, "Serverless,", "names.Serverless,")
 
 		lines = append(lines, line)
 	}
