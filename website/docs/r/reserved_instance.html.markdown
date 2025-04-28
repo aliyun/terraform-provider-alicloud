@@ -11,7 +11,7 @@ description: |-
 
 Provides an Reserved Instance resource.
 
--> **NOTE:** Available in 1.65.0+
+-> **NOTE:** Available since v1.65.0.
 
 ## Example Usage
 
@@ -58,10 +58,10 @@ The following arguments are supported:
 * `description` - (Optional) Description of the RI. 2 to 256 English or Chinese characters. It cannot start with `http://` or `https://`.
 * `name` - (Optional, Computed, Deprecated from v1.194.0+) Field `name` has been deprecated from provider version 1.194.0. New field `reserved_instance_name` instead.
 * `platform` - (Optional, ForceNew) The operating system type of the image used by the instance. Optional values: `Windows`, `Linux`. Default is `Linux`.
-* `reserved_instance_name` - (Optional, Computed, Available in v1.194.0+)  Name of the RI. The name must be a string of 2 to 128 characters in length and can contain letters, numbers, colons (:), underscores (_), and hyphens. It must start with a letter. It cannot start with http:// or https://.
-* `renewal_status` - (Optional, Computed, Available in v1.194.0+) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`.
-* `auto_renew_period` - (Optional, Computed, Available in v1.194.0+) The auto-renewal term of the reserved instance. This parameter takes effect only when AutoRenew is set to true. Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1 Default value when `period_unit` is set to Year: 12
-* `tags` - (Optional, Available in v1.194.0+) A mapping of tags to assign to the resource.
+* `reserved_instance_name` - (Optional, Computed, Available since v1.194.0)  Name of the RI. The name must be a string of 2 to 128 characters in length and can contain letters, numbers, colons (:), underscores (_), and hyphens. It must start with a letter. It cannot start with http:// or https://.
+* `renewal_status` - (Optional, Computed, Available since v1.194.0) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`.
+* `auto_renew_period` - (Optional, Computed, Available since v1.194.0) The auto-renewal term of the reserved instance. This parameter takes effect only when AutoRenew is set to true. Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1 Default value when `period_unit` is set to Year: 12
+* `tags` - (Optional, Available since v1.194.0) A mapping of tags to assign to the resource.
 
 ### Removing alicloud_reserved_instance from your configuration
  
@@ -83,9 +83,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the resource.
 * `update` - (Defaults to 1 mins) Used when update the resource.

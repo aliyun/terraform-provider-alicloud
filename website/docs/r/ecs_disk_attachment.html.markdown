@@ -13,7 +13,7 @@ Provides an Alicloud ECS Disk Attachment as a resource, to attach and detach dis
 
 For information about ECS Disk Attachment and how to use it, see [What is Disk Attachment](https://www.alibabacloud.com/help/en/doc-detail/25515.htm).
 
--> **NOTE:** Available since v1.122.0+.
+-> **NOTE:** Available since v1.122.0.
 
 ## Example Usage
 
@@ -116,7 +116,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Disk.
 * `delete` - (Defaults to 2 mins) Used when delete the Disk.

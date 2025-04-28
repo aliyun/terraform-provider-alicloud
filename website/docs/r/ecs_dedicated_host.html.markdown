@@ -7,11 +7,11 @@ description: |-
   Provides a Alibaba Cloud ecs dedicated host resource.
 ---
 
-# alicloud\_ecs\_dedicated\_host
+# alicloud_ecs_dedicated_host
 
 This resouce used to create a dedicated host and store its initial version. For information about Aliecs Dedicated Host and how to use it, see [What is Resource Aliecs Dedicated Host](https://www.alibabacloud.com/help/doc-detail/134238.htm).
 
--> **NOTE:** Available in 1.91.0+.
+-> **NOTE:** Available since v1.91.0.
 
 ## Example Usage
 Basic Usage
@@ -89,9 +89,9 @@ The following arguments are supported:
 * `sale_cycle` - (Optional, Computed) The unit of the subscription period of the dedicated host.
 * `zone_id` - (Optional, ForceNew, Computed) The zone ID of the dedicated host. This parameter is empty by default. If you do not specify this parameter, the system automatically selects a zone.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `cpu_over_commit_ratio` - (Optional, Available in 1.123.1+) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
-* `dedicated_host_cluster_id` - (Optional, Available in 1.123.1+) The dedicated host cluster ID to which the dedicated host belongs.
-* `min_quantity` - (Optional, Available in 1.123.1+) Specify the minimum purchase quantity of a dedicated host.
+* `cpu_over_commit_ratio` - (Optional, Available since v1.123.1) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
+* `dedicated_host_cluster_id` - (Optional, Available since v1.123.1) The dedicated host cluster ID to which the dedicated host belongs.
+* `min_quantity` - (Optional, Available since v1.123.1) Specify the minimum purchase quantity of a dedicated host.
 
 ## Attributes Reference
 
@@ -100,7 +100,7 @@ The following arguments are supported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when create the dedicated host.
 * `delete` - (Defaults to 1 mins) Used when delete the dedicated host.

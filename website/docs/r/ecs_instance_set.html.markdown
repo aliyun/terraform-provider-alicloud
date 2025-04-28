@@ -139,8 +139,8 @@ The following arguments are supported:
 * `deployment_set_id` - (Optional, ForceNew) The ID of the deployment set to which to deploy the instance.
 * `network_interfaces` - (Optional, ForceNew) A list of NetworkInterface. See [`network_interfaces`](#network_interfaces) below..
 * `unique_suffix` - (Optional, ForceNew) Whether to automatically append incremental suffixes to the hostname specified by the HostName parameter and to the instance name specified by the InstanceName parameter when you batch create instances. The incremental suffixes can range from `001` to `999`.
-* `exclude_instance_filter` - (Optional, Available since v1.176.0+) The instances that need to be excluded from the Instance Set.  See [`exclude_instance_filter`](#exclude_instance_filter) below.
-* `boot_check_os_with_assistant`  - (Optional, Available since v1.177.0+) Indicate how to check instance ready to use.
+* `exclude_instance_filter` - (Optional, Available since v1.176.0) The instances that need to be excluded from the Instance Set.  See [`exclude_instance_filter`](#exclude_instance_filter) below.
+* `boot_check_os_with_assistant`  - (Optional, Available since v1.177.0) Indicate how to check instance ready to use.
   - `false`: Default value. Means that the instances are ready when their DescribeInstances status is Running, at which time guestOS(Ecs os) may not be ready yet.
   - `true`: Checking instance ready with Ecs assistant, which means guestOs boots successfully. Premise is that the specified image `image_id` has built-in Ecs assistant. Most of the public images have assistant installed already.
 
@@ -190,7 +190,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when create the ECS Instance Set.
 * `update` - (Defaults to 30 mins) Used when update the ECS Instance Set.

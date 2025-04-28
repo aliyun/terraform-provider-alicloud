@@ -7,13 +7,13 @@ description: |-
   Provides a EMR Cluster resource.
 ---
 
-# alicloud\_emr\_cluster
+# alicloud_emr_cluster
 
 Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster. 
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.204.0`. Please use new resource [emrv2_cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/emrv2_cluster).
 
--> **NOTE:** Available in 1.57.0+.
+-> **NOTE:** Available since v1.57.0.
 
 ## Example Usage
 
@@ -293,7 +293,7 @@ resource "alicloud_emr_cluster" "default" {
 
 In the case of scaling down a cluster, we need to specified the host group and the instance list. 
 
--> **NOTE:** Graceful decommission of hadoop cluster has been supported Available in 1.168.0+.
+-> **NOTE:** Graceful decommission of hadoop cluster has been supported Available since v1.168.0.
 
 The following is an example. We scale down the cluster by decreasing the node count by 2, and specifying the scale-down instance list.
 
@@ -562,15 +562,15 @@ The following arguments are supported:
 * `deposit_type` (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
 * `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
-* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
-* `period` - (Optional, Available in v1.101.0+) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
+* `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
+* `period` - (Optional, Available since v1.101.0) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
 * `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
 * `bootstrap_action` (Optional) Boot action parameters.
-* `resource_group_id` - (Optional, Available in 1.182.0+) The Id of resource group which the emr-cluster belongs.
-* `meta_store_type` - (Optional, Available in 1.182.0+) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
-* `meta_store_conf` - (Optional, Available in 1.182.0+) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified.
-* `configs` - (Optional, Available in 1.182.0+) The custom configurations of emr-cluster service.
-* `modify_cluster_service_config` - (Optional, Available in 1.182.0+) The configurations of emr-cluster service modification after cluster created.
+* `resource_group_id` - (Optional, Available since v1.182.0) The Id of resource group which the emr-cluster belongs.
+* `meta_store_type` - (Optional, Available since v1.182.0) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
+* `meta_store_conf` - (Optional, Available since v1.182.0) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified.
+* `configs` - (Optional, Available since v1.182.0) The custom configurations of emr-cluster service.
+* `modify_cluster_service_config` - (Optional, Available since v1.182.0) The configurations of emr-cluster service modification after cluster created.
 
 #### Block host_group
 
@@ -589,54 +589,54 @@ The host_group mapping supports the following:
 * `sys_disk_capacity` - (Required) System disk capacity.
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
 * `instance_list` - (Optional) Instance list for cluster scale down. This value follows the json format, e.g. ["instance_id1","instance_id2"]. escape character for " is \".
-* `enable_graceful_decommission` - (Optional, Available in 1.168.0+) Enable hadoop cluster of task node graceful decommission, ’true’ or ‘false’ . Default value: false.
-* `decommission_timeout` - (Optional, Available in 1.168.0+) Graceful decommission timeout, unit: seconds.
+* `enable_graceful_decommission` - (Optional, Available since v1.168.0) Enable hadoop cluster of task node graceful decommission, ’true’ or ‘false’ . Default value: false.
+* `decommission_timeout` - (Optional, Available since v1.168.0) Graceful decommission timeout, unit: seconds.
 
 #### Block bootstrap_action
 
 The bootstrap_action mapping supports the following:
 
-* `name` - (Optional, Available in 1.71.2+) bootstrap action name.
-* `path` - (Optional, Available in 1.71.2+) bootstrap action path, e.g. "oss://bucket/path".
-* `arg` - (Optional, Available in 1.71.2+) bootstrap action args, e.g. "--a=b".
-* `execution_target` - (Optional, Available in 1.173.0+) bootstrap action execution target, you can specify the host group name, e.g. "core_group". If this is not specified, the bootstrap action execution target is whole cluster.
-* `execution_moment` - (Optional, Available in 1.173.0+) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
-* `execution_fail_strategy` - (Optional, Available in 1.173.0+) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
+* `name` - (Optional, Available since v1.71.2) bootstrap action name.
+* `path` - (Optional, Available since v1.71.2) bootstrap action path, e.g. "oss://bucket/path".
+* `arg` - (Optional, Available since v1.71.2) bootstrap action args, e.g. "--a=b".
+* `execution_target` - (Optional, Available since v1.173.0) bootstrap action execution target, you can specify the host group name, e.g. "core_group". If this is not specified, the bootstrap action execution target is whole cluster.
+* `execution_moment` - (Optional, Available since v1.173.0) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
+* `execution_fail_strategy` - (Optional, Available since v1.173.0) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
 
 ### Block meta_store_conf
 
 The meta_store_conf mapping supports the following:
 
-* `db_url` - (Optional, Available in 1.182.0+) Custom rds database connection url.
-* `db_user_name` - (Optional, Available in 1.182.0+) Custom rds database user name.
-* `db_password` - (Optional, Available in 1.182.0+) Custom rds database password.
+* `db_url` - (Optional, Available since v1.182.0) Custom rds database connection url.
+* `db_user_name` - (Optional, Available since v1.182.0) Custom rds database user name.
+* `db_password` - (Optional, Available since v1.182.0) Custom rds database password.
 
 ### Block configs
 
 The configs mapping supports the following:
 
-* `service_name` - (Optional, Available in 1.182.0+) Custom configuration service name, e.g. ’HDFS’.
-* `file_name` - (Optional, Available in 1.182.0+) Custom configuration service file name, e.g. ’hdfs-site’.
-* `config_key` - (Optional, Available in 1.182.0+) Custom configuration service config key, e.g. ’dfs.replication’.
-* `config_value` - (Optional, Available in 1.182.0+) Custom configuration service config value, e.g. ’3’.
+* `service_name` - (Optional, Available since v1.182.0) Custom configuration service name, e.g. ’HDFS’.
+* `file_name` - (Optional, Available since v1.182.0) Custom configuration service file name, e.g. ’hdfs-site’.
+* `config_key` - (Optional, Available since v1.182.0) Custom configuration service config key, e.g. ’dfs.replication’.
+* `config_value` - (Optional, Available since v1.182.0) Custom configuration service config value, e.g. ’3’.
 
 ### Block modify_cluster_service_config
 
 The configs mapping supports the following:
 
-* `service_name` - (Optional, Available in 1.182.0+) Cluster service configuration modification name, e.g. ’HDFS’.
-* `config_params` - (Optional, Available in 1.182.0+) Cluster service configuration modification params, e.g. ’{"hdfs-site":{"dfs.replication":"3"}}’.
-* `custom_config_params` - (Optional, Available in 1.182.0+) Cluster service configuration modification custom params, e.g. ’{"tez-site":{"key":{"Value":"value"}}}’.
-* `group_id` - (Optional, Available in 1.182.0+) Cluster service configuration modification node group id, e.g. ’G-XXX’.
-* `host_instance_id` - (Optional, Available in 1.182.0+) Cluster service configuration modification host instance id, e.g. ’i-bp146tnrkq4tcxxxxx’.
-* `config_type` - (Optional, Available in 1.182.0+) Cluster service configuration modification type.
-* `comment` - (Optional, Available in 1.182.0+) Cluster service configuration modification comment, e.g. "Modify tez configuration".
-* `refresh_host_config` - (Optional, Available in 1.182.0+) Cluster service configuration modification refresh host config, ’true’ or ’false’.
-* `gateway_cluster_id_list` - (Optional, Available in 1.182.0+) Cluster service configuration modification related gateway cluster id list.
+* `service_name` - (Optional, Available since v1.182.0) Cluster service configuration modification name, e.g. ’HDFS’.
+* `config_params` - (Optional, Available since v1.182.0) Cluster service configuration modification params, e.g. ’{"hdfs-site":{"dfs.replication":"3"}}’.
+* `custom_config_params` - (Optional, Available since v1.182.0) Cluster service configuration modification custom params, e.g. ’{"tez-site":{"key":{"Value":"value"}}}’.
+* `group_id` - (Optional, Available since v1.182.0) Cluster service configuration modification node group id, e.g. ’G-XXX’.
+* `host_instance_id` - (Optional, Available since v1.182.0) Cluster service configuration modification host instance id, e.g. ’i-bp146tnrkq4tcxxxxx’.
+* `config_type` - (Optional, Available since v1.182.0) Cluster service configuration modification type.
+* `comment` - (Optional, Available since v1.182.0) Cluster service configuration modification comment, e.g. "Modify tez configuration".
+* `refresh_host_config` - (Optional, Available since v1.182.0) Cluster service configuration modification refresh host config, ’true’ or ’false’.
+* `gateway_cluster_id_list` - (Optional, Available since v1.182.0) Cluster service configuration modification related gateway cluster id list.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when creating the cluster (until it reaches the initial `IDLE` status). 
 * `delete` - (Defaults to 10 mins) Used when terminating the instance.

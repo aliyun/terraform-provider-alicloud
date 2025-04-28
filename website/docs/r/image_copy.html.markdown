@@ -7,7 +7,7 @@ description: |-
   Provides an ECS image copy resource.
 ---
 
-# alicloud\_image\_copy
+# alicloud_image_copy
 
 Copies a custom image from one region to another. You can use copied images to perform operations in the target region, such as creating instances (RunInstances) and replacing system disks (ReplaceSystemDisk).
 
@@ -17,7 +17,7 @@ Copies a custom image from one region to another. You can use copied images to p
 
 -> **NOTE:** If the copying is not completed, you cannot call DeleteImage to delete the image but you can call CancelCopyImage to cancel the copying.
 
--> **NOTE:** Available in 1.66.0+.
+-> **NOTE:** Available since v1.66.0.
 
 ## Example Usage
 
@@ -120,7 +120,7 @@ The following arguments are supported:
   
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when copying the image (until it reaches the initial `Available` status). 
 * `delete` - (Defaults to 10 mins) Used when terminating the image.

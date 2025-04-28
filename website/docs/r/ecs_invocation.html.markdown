@@ -13,7 +13,7 @@ Provides a ECS Invocation resource.
 
 For information about ECS Invocation and how to use it, see [What is Invocation](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/invokecommand#t9958.html).
 
--> **NOTE:** Available since v1.168.0+.
+-> **NOTE:** Available since v1.168.0.
 
 ## Example Usage
 
@@ -121,7 +121,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the ECS Invocation.
 * `delete` - (Defaults to 1 mins) Used when stop the ECS Invocation.

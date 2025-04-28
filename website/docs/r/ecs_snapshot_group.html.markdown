@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Snapshot Group resource.
 ---
 
-# alicloud\_ecs\_snapshot\_group
+# alicloud_ecs_snapshot_group
 
 Provides a ECS Snapshot Group resource.
 
 For information about ECS Snapshot Group and how to use it, see [What is Snapshot Group](https://www.alibabacloud.com/help/en/doc-detail/210939.html).
 
--> **NOTE:** Available in v1.160.0+.
+-> **NOTE:** Available since v1.160.0.
 
 ## Example Usage
 
@@ -117,7 +117,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Snapshot Group.
 * `update` - (Defaults to 1 mins) Used when update the Snapshot Group.

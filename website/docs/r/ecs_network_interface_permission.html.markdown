@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Network Interface Permission resource.
 ---
 
-# alicloud\_ecs\_network\_interface\_permission
+# alicloud_ecs_network_interface_permission
 
 Provides a ECS Network Interface Permission resource.
 
 For information about ECS Network Interface Permission and how to use it, see [What is Network Interface Permission](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/elastic-network-interfaces-overview).
 
--> **NOTE:** Available in v1.166.0+.
+-> **NOTE:** Available since v1.166.0.
 
 ## Example Usage
 
@@ -88,7 +88,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Network Interface Permission (until it reaches the initial `Granted` status).
 * `delete` - (Defaults to 1 mins) Used when deleting the Network Interface Permission.
