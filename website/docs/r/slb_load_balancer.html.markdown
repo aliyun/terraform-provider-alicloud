@@ -11,7 +11,7 @@ description: |-
 
 Provides an Application Load Balancer resource.
 
--> **NOTE:** Available in 1.123.1+
+-> **NOTE:** Available since v1.123.1.
 
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
 
@@ -115,7 +115,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status). 
 * `delete` - (Defaults to 9 mins) Used when terminating the SLB load balancer.

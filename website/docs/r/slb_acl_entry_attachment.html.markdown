@@ -7,9 +7,9 @@ description: |-
   Provides a Acl entry attachment resource.
 ---
 
-# alicloud\_slb\_acl\_entry\_attachment
+# alicloud_slb_acl_entry_attachment
 
--> **NOTE:** Available in v1.162.0+.
+-> **NOTE:** Available since v1.162.0.
 
 -> **NOTE:** The maximum number of entries per acl is 300.
 
@@ -54,7 +54,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the resource.
 * `delete` - (Defaults to 5 mins) Used when delete the resource.

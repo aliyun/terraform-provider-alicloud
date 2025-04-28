@@ -7,13 +7,13 @@ description: |-
   Provides a Cassandra cluster resource.
 ---
 
-# alicloud\_cassandra\_cluster
+# alicloud_cassandra_cluster
 
 Provides a Cassandra cluster resource supports replica set clusters only. The Cassandra provides stable, reliable, and automatic scalable database services. 
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/product/49055.htm).
 
--> **NOTE:**  Available in 1.88.0+.
+-> **NOTE:** Available since v1.88.0.
 
 -> **NOTE:**  The following regions support create Vpc network Cassandra cluster.
 The official website mark more regions. Or you can call [DescribeRegions](https://help.aliyun.com/document_detail/157540.html).
@@ -80,7 +80,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the Cassandra cluster (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 30 mins) Used when updating the Cassandra cluster (until it reaches the initial `Running` status). 

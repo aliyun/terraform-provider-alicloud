@@ -100,7 +100,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.163.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Click House Account.
 * `update` - (Defaults to 1 mins) Used when update the Click House Account.

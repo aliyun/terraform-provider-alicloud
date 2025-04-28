@@ -46,7 +46,7 @@ The following arguments are supported:
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router.
 * `transit_router_route_table_name` - (Optional) The name of the transit router route table.
 * `transit_router_route_table_description` - (Optional) The description of the transit router route table.
-* `tags` - (Optional, Available in v1.201.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.201.0) A mapping of tags to assign to the resource.
 * `dry_run` - (Optional) The dry run.
 
 ## Attributes Reference
@@ -60,7 +60,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when creating the cen transit router route table (until it reaches the initial `Active` status).
 * `update` - (Defaults to 3 mins) Used when update the cen transit router route table.
