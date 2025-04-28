@@ -222,7 +222,9 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
 
 		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
-		line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		if !strings.Contains(line, "func") {
+			line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		}
 		line = strings.ReplaceAll(line, "AliCloud", "ApsaraCloud")
 		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
 		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
@@ -378,7 +380,9 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
 
 		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
-		line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		if !strings.Contains(line, "func") {
+			line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		}
 		line = strings.ReplaceAll(line, "AliCloud", "ApsaraCloud")
 		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
 		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
@@ -546,7 +550,9 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
 
 		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
-		line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		if !strings.Contains(line, "func") {
+			line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+		}
 		line = strings.ReplaceAll(line, "AliCloud", "ApsaraCloud")
 		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
 		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
