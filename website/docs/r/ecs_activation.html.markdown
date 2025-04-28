@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Activation resource.
 ---
 
-# alicloud\_ecs\_activation
+# alicloud_ecs_activation
 
 Provides a ECS Activation resource.
 
 For information about ECS Activation and how to use it, see [What is Activation](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/createactivation#doc-api-Ecs-CreateActivation).
 
--> **NOTE:** Available in v1.177.0+.
+-> **NOTE:** Available since v1.177.0.
 
 ## Example Usage
 
@@ -55,7 +55,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Activation.
 * `delete` - (Defaults to 1 mins) Used when delete the Activation.

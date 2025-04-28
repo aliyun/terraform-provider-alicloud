@@ -13,7 +13,7 @@ Provides a DMS Enterprise Proxy Access resource.
 
 For information about DMS Enterprise Proxy Access and how to use it, see [What is Proxy Access](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxyAccess).
 
--> **NOTE:** Available since v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -64,7 +64,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Proxy Access.
 * `delete` - (Defaults to 5 mins) Used when delete the Proxy Access.
 

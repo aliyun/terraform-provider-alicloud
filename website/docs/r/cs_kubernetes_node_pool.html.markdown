@@ -36,11 +36,11 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
 
--> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
+-> **NOTE:** From version 1.177.0, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
 
--> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
+-> **NOTE:** From version 1.180.0, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
 
--> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
+-> **NOTE:** From version 1.185.0, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
 
 For information about Container Service for Kubernetes (ACK) Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
 
@@ -598,7 +598,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 90 mins) Used when create the Nodepool.
 * `delete` - (Defaults to 60 mins) Used when delete the Nodepool.
 * `update` - (Defaults to 60 mins) Used when update the Nodepool.

@@ -7,13 +7,15 @@ description: |-
   Provides an DRDS instance resource.
 ---
 
-# alicloud\_drds\_instance
+# alicloud_drds_instance
 
 Distributed Relational Database Service (DRDS) is a lightweight (stateless), flexible, stable, and efficient middleware product independently developed by Alibaba Group to resolve scalability issues with single-host relational databases.
 With its compatibility with MySQL protocols and syntaxes, DRDS enables database/table sharding, smooth scaling, configuration upgrade/downgrade,
 transparent read/write splitting, and distributed transactions, providing O&M capabilities for distributed databases throughout their entire lifecycle.
 
 For information about DRDS and how to use it, see [What is DRDS](https://www.alibabacloud.com/help/product/29657.htm).
+
+-> **NOTE:** Available since v1.24.0.
 
 -> **NOTE:** At present, DRDS instance only can be supported in the regions: cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao, ap-southeast-1.
 
@@ -77,14 +79,14 @@ The following arguments are supported:
         - value range : `drds.sn1.16c32g.32c64g`, `drds.sn1.16c32g.64c128g`
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
         - value range : `drds.sn1.32c64g.128c256g`
-* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
-* `mysql_version` - (Optional, ForceNew, Available in v1.201.0+) The MySQL version supported by the instance, with the following range of values. `5`: Fully compatible with MySQL 5.x (default) `8`: Fully compatible with MySQL 8.0. This parameter takes effect when the primary instance is created, and the read-only instance has the same MySQL version as the primary instance by default.
+* `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
+* `mysql_version` - (Optional, ForceNew, Available since v1.201.0) The MySQL version supported by the instance, with the following range of values. `5`: Fully compatible with MySQL 5.x (default) `8`: Fully compatible with MySQL 8.0. This parameter takes effect when the primary instance is created, and the read-only instance has the same MySQL version as the primary instance by default.
        
 ## Timeouts
 
--> **NOTE:** Available in 1.49.0+.
+-> **NOTE:** Available since v1.49.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the drds instance (until it reaches running status). 
 * `delete` - (Defaults to 10 mins) Used when terminating the drds instance. 
@@ -95,8 +97,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 The following attributes are exported:
 
 * `id` - The DRDS instance ID.
-* `connection_string` - (Available in 1.196.0+) The connection string of the DRDS instance.
-* `port` - (Available in 1.196.0+) The connection port of the DRDS instance.
+* `connection_string` - (Available since v1.196.0) The connection string of the DRDS instance.
+* `port` - (Available since v1.196.0) The connection port of the DRDS instance.
 
 
 ## Import
