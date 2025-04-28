@@ -114,6 +114,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
@@ -128,6 +129,10 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line := scanner.Text()
 
 		if strings.Contains(line, "SetPartial") {
+			continue
+		}
+
+		if strings.Contains(line, "ValidateFunc") {
 			continue
 		}
 
@@ -175,6 +180,11 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "StateRefreshFunc(", "StateRefreshFunc(ctx, ")
 		line = strings.ReplaceAll(line, "WaitForState()", "WaitForStateContext(ctx)")
 
+		line = strings.ReplaceAll(line, "convertListToCommaSeparate", "helper.ConvertListToCommaSeparate")
+		line = strings.ReplaceAll(line, "ConvertTags", "service.ConvertTags")
+		line = strings.ReplaceAll(line, "expandTagsToMap", "service.ExpandTagsToMap")
+		line = strings.ReplaceAll(line, "InArray", "helper.InArray")
+
 		line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
 		line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
 		line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
@@ -190,6 +200,10 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 			line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
 			line = strings.ReplaceAll(line, "return tferr.", "return sdkdiag.AppendFromErr(diags,")
 			line += ")"
+		}
+
+		if strings.TrimSpace(line) == "return err" {
+			line = "sdkdiag.AppendFromErr(diags, tferr.WrapError(err))"
 		}
 
 		if strings.Contains(line, "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {") {
