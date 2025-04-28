@@ -348,6 +348,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
@@ -403,6 +404,9 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "ConvertTags", "service.ConvertTags")
 		line = strings.ReplaceAll(line, "expandTagsToMap", "service.ExpandTagsToMap")
 		line = strings.ReplaceAll(line, "InArray", "helper.InArray")
+		line = strings.ReplaceAll(line, "parsingTags", "service.ParsingTags")
+		line = strings.ReplaceAll(line, "ignoredTags", "service.IgnoredTags")
+		line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
 
 		line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
 		line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
@@ -459,6 +463,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 			line = serviceRe.ReplaceAllString(line, "Service")
 		}
 
+		line = strings.ReplaceAll(line, "RetryContext(ctx,", "RetryContext(context.Background(),")
 		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
 
 		lines = append(lines, line)
