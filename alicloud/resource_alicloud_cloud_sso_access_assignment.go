@@ -81,10 +81,15 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 	request["PrincipalType"] = d.Get("principal_type")
 	request["TargetId"] = d.Get("target_id")
 	request["TargetType"] = d.Get("target_type")
+	accessAssignmentAlreadyExisted := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityAlreadyExists.AccessAssignment"}) {
+				accessAssignmentAlreadyExisted = true
+				return nil
+			}
 			if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
@@ -98,6 +103,10 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_sso_access_assignment", action, AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprint(request["DirectoryId"], ":", request["AccessConfigurationId"], ":", request["TargetType"], ":", request["TargetId"], ":", request["PrincipalType"], ":", request["PrincipalId"]))
+
+	if accessAssignmentAlreadyExisted {
+		return resourceAlicloudCloudSsoAccessAssignmentRead(d, meta)
+	}
 
 	v, err := jsonpath.Get("$.Task", response)
 	if err != nil {
