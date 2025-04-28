@@ -349,6 +349,8 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
@@ -410,26 +412,18 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
 		line = strings.ReplaceAll(line, "IsExpectedErrors", "tferr.IsExpectedErrors")
 		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
+		line = strings.ReplaceAll(line, "NotFoundErr(", "tferr.NotFoundErr(")
+		line = strings.ReplaceAll(line, "NotFoundMsg", "tferr.NotFoundMsg")
+		line = strings.ReplaceAll(line, "ProviderERROR", "tferr.ProviderERROR")
+		line = strings.ReplaceAll(line, "FailedGetAttributeMsg", "tferr.FailedGetAttributeMsg")
+		line = strings.ReplaceAll(line, "NotFoundWithResponse", "tferr.NotFoundWithResponse")
+		line = strings.ReplaceAll(line, "FailedToReachTargetStatus", "tferr.FailedToReachTargetStatus")
 		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
+		line = strings.ReplaceAll(line, "(Error(", "(tferr.Error(")
 
 		line = strings.ReplaceAll(line, "PostPaidDiffSuppressFunc", "helper.PostPaidDiffSuppressFunc")
 		line = strings.ReplaceAll(line, "PostPaidAndRenewDiffSuppressFunc", "helper.PostPaidAndRenewDiffSuppressFunc")
 		line = strings.ReplaceAll(line, "securityIpsDiffSuppressFunc", "helper.SecurityIpsDiffSuppressFunc")
-
-		if strings.Contains(line, "return tferr.") {
-			line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
-			line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
-			line = strings.ReplaceAll(line, "return tferr.", "return sdkdiag.AppendFromErr(diags,")
-			line += ")"
-		}
-
-		if strings.TrimSpace(line) == "return err" {
-			line = "sdkdiag.AppendFromErr(diags, tferr.WrapError(err))"
-		}
-
-		if strings.Contains(line, "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {") {
-			line = line + "\nvar diags diag.Diagnostics\n"
-		}
 
 		if strings.Contains(line, "client.Rpc") {
 			// 使用正则表达式动态提取方法类型和参数
