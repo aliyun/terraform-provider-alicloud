@@ -363,6 +363,8 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		serviceRe = regexp.MustCompile(`([A-Z]\w*?)ServiceV2\b`)
 	}
 
+	queryAssignRe := regexp.MustCompile(`query\["([^"]+)"\]\s*=\s*([^;\n]+)`)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -462,6 +464,11 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		} else {
 			line = serviceRe.ReplaceAllString(line, "Service")
 		}
+
+		line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
+		line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
+		line = strings.ReplaceAll(line, "query = make(map[string]interface{})", "query = make(map[string]*string)")
+		line = queryAssignRe.ReplaceAllString(line, `query["$1"] = rdk.StringPointer($2)`)
 
 		line = strings.ReplaceAll(line, "RetryContext(ctx,", "RetryContext(context.Background(),")
 		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
