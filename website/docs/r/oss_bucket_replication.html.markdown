@@ -7,7 +7,7 @@ description: |-
   Provides a OSS bucket replication configuration resource.
 ---
 
-# alicloud\_oss\_bucket\_replication
+# alicloud_oss_bucket_replication
 
 Provides an independent replication configuration resource for OSS bucket.
 
@@ -182,6 +182,12 @@ The following attributes are exported:
     * `historical_object` - The percentage of the replicated historical data. This element is valid only when historical_object_replication is set to enabled.
     * `new_object` - The time used to distinguish new data from historical data. Data that is written to the source bucket before the time is replicated to the destination bucket as new data. The value of this element is in GMT.
 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `delete` - (Defaults to 30 mins) Used when delete a data replication rule (until the data replication task is cleared).
+
 ## Import
 
 Oss Bucket Replication can be imported using the id, e.g.
@@ -189,10 +195,3 @@ Oss Bucket Replication can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_oss_bucket_replication.example
 ```
-
-## Timeouts
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `delete` - (Defaults to 30 mins) Used when delete a data replication rule (until the data replication task is cleared). 
-

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud VPC Nat Ip resource.
 ---
 
-# alicloud\_vpc\_nat\_ip
+# alicloud_vpc_nat_ip
 
 Provides a VPC Nat Ip resource.
 
 For information about VPC Nat Ip and how to use it, see [What is Nat Ip](https://www.alibabacloud.com/help/doc-detail/281976.htm).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 
@@ -91,7 +91,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Nat Ip.
 * `delete` - (Defaults to 1 mins) Used when delete the Nat Ip.

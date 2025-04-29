@@ -14,7 +14,7 @@ Provides a RAM Account Alias resource.
 
 For information about RAM Account Alias and how to use it, see [What is Account Alias](https://next.api.alibabacloud.com/document/Ram/2015-05-01/SetAccountAlias).
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
@@ -52,7 +52,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Account Alias.
 * `update` - (Defaults to 5 mins) Used when update the Account Alias.
 

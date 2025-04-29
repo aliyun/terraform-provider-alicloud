@@ -7,11 +7,12 @@ description: |-
   Provides a Alicloud Microservice Engine (MSE) Nacos Config resource.
 ---
 
-# alicloud\_mse\_nacos\_config
+# alicloud_mse_nacos_config
 
 Provides a Microservice Engine (MSE) Nacos Config resource.
 
 For information about Microservice Engine (MSE) Nacos Config and how to use it, see [What is Nacos configuration](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-createnacosconfig)
+
 -> **NOTE:** Available since v1.233.0.
 
 ## Example Usage
@@ -99,7 +100,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Nacos Config.
 * `update` - (Defaults to 1 mins) Used when updating the Nacos Config.

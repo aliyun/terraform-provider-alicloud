@@ -138,7 +138,7 @@ at the cost of preventing the use of the secret key in automation.
 
 -> **NOTE:** Available since v1.246.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Access Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Key.
 * `update` - (Defaults to 5 mins) Used when update the Access Key.

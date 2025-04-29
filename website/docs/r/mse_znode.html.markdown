@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Microservice Engine (MSE) Znode resource.
 ---
 
-# alicloud\_mse\_znode
+# alicloud_mse_znode
 
 Provides a Microservice Engine (MSE) Znode resource.
 
 For information about Microservice Engine (MSE) Znode and how to use it, see [What is Znode](https://help.aliyun.com/document_detail/393622.html).
 
--> **NOTE:** Available in v1.162.0+.
+-> **NOTE:** Available since v1.162.0.
 
 ## Example Usage
 
@@ -84,7 +84,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Znode.
 * `delete` - (Defaults to 1 mins) Used when delete the Znode.

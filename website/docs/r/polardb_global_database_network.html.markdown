@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud PolarDB Global Database Network resource.
 ---
 
-# alicloud\_polardb\_global\_database\_network
+# alicloud_polardb_global_database_network
 
 Provides a PolarDB Global Database Network resource.
 
 For information about PolarDB Global Database Network and how to use it, see [What is Global Database Network](https://www.alibabacloud.com/help/en/polardb/api-polardb-2017-08-01-createglobaldatabasenetwork).
 
--> **NOTE:** Available since v1.181.0+.
+-> **NOTE:** Available since v1.181.0.
 
 ## Example Usage
 
@@ -77,7 +77,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the PolarDB Global Database Network.
 * `update` - (Defaults to 3 mins) Used when update the PolarDB Global Database Network.

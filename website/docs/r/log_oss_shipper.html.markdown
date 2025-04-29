@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud log oss shipper resource.
 ---
 
-# alicloud\_log\_oss\_shipper
+# alicloud_log_oss_shipper
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
 [Refer to details](https://www.alibabacloud.com/help/en/doc-detail/43724.htm).
 
--> **NOTE:** Available in 1.121.0+
+-> **NOTE:** Available since v1.121.0.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.215.0`. Please use new resource [alicloud_log_oss_export](https://www.terraform.io/docs/providers/alicloud/r/log_oss_export).
 
@@ -98,7 +98,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when Creating LogOssShipper instance. 
 * `update` - (Defaults to 1 mins) Used when Updating LogOssShipper instance. 

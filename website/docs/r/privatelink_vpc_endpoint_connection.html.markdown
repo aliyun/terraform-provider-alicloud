@@ -104,7 +104,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Connection.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Connection.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Endpoint Connection.
