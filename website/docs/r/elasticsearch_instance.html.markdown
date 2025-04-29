@@ -124,15 +124,6 @@ The following arguments are supported:
 * `warm_node_disk_encrypted` - (Optional, ForceNew, Available since v.1.229.0) If encrypt the warm node disk. Valid values are `true`, `false`. Default to `false`.
 * `kibana_private_security_group_id` - (Optional, Available since v.1.229.0) the security group id associated with Kibana private network, this param is required when `enable_kibana_private_network` set true, and the security group id should in the same VPC as `vswitch_id`
 
-
-## Timeouts
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 120 mins) Used when creating the elasticsearch instance (until it reaches the initial `active` status). 
-* `update` - (Defaults to 120 mins) Used when activating the elasticsearch instance when necessary during update - e.g. when changing elasticsearch instance description, whitelist, data node settings, master node spec and password.
-* `delete` - (Defaults to 120 mins) Used when terminating the elasticsearch instance. `Note`: There are 5 minutes to sleep to eusure the instance is deleted. It is not in the timeouts configure.
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -146,6 +137,14 @@ The following attributes are exported:
 * `kibana_port` - Kibana console port.
 * `status` - The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.
 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 120 mins) Used when creating the elasticsearch instance (until it reaches the initial `active` status).
+* `update` - (Defaults to 120 mins) Used when activating the elasticsearch instance when necessary during update - e.g. when changing elasticsearch instance description, whitelist, data node settings, master node spec and password.
+* `delete` - (Defaults to 120 mins) Used when terminating the elasticsearch instance. `Note`: There are 5 minutes to sleep to eusure the instance is deleted. It is not in the timeouts configure.
+
 ## Import
 
 Elasticsearch can be imported using the id, e.g.
@@ -153,4 +152,3 @@ Elasticsearch can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_elasticsearch_instance.example es-cn-abcde123456
 ```
-

@@ -136,7 +136,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Traffic Qos Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Qos Rule.
 * `update` - (Defaults to 5 mins) Used when update the Traffic Qos Rule.
