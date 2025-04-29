@@ -13,7 +13,7 @@ Provides a Serverless Workflow Flow resource.
 
 For information about Serverless Workflow Flow and how to use it, see [What is Flow](https://www.alibabacloud.com/help/en/doc-detail/123079.htm).
 
--> **NOTE:** Available since v1.105.0+.
+-> **NOTE:** Available since v1.105.0.
 
 ## Example Usage
 
@@ -85,7 +85,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Flow.
 * `delete` - (Defaults to 1 mins) Used when delete the Flow.

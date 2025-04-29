@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Security to create the Security Center service-linked roles(SLR).
 ---
 
-# alicloud\_security\_center\_service\_linked\_role
+# alicloud_security_center_service_linked_role
 
 
 Using this resource can create SecurityCenter service-linked role : `AliyunServiceRolePolicyForSas`.  This Role is a Resource Access Management (RAM) role, which to obtain permissions to access another Alibaba Cloud service.
@@ -15,7 +15,7 @@ Using this resource can create SecurityCenter service-linked role : `AliyunServi
 
 For information about Security Center Service Role and how to use it, see [What is Security Center](https://www.alibabacloud.com/help/en/doc-detail/42302.htm).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -43,10 +43,10 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Slr.
-* `delete` - (Defaults to 1 mins, Available in 1.163.0+.) Used when delete the Slr.
+* `delete` - (Defaults to 1 mins, Available since v1.163.0) Used when delete the Slr.
 
 ## Import
 

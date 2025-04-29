@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ROS Stack Group resource.
 ---
 
-# alicloud\_ros\_stack\_group
+# alicloud_ros_stack_group
 
 Provides a ROS Stack Group resource.
 
 For information about ROS Stack Group and how to use it, see [What is Stack Group](https://www.alibabacloud.com/help/en/doc-detail/151333.htm).
 
--> **NOTE:** Available in v1.107.0+.
+-> **NOTE:** Available since v1.107.0.
 
 ## Example Usage
 
@@ -71,7 +71,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when create the Stack Group.
 * `update` - (Defaults to 6 mins) Used when update the Stack Group.

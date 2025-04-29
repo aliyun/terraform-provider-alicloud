@@ -13,7 +13,7 @@ Provides a Serverless Workflow Schedule resource.
 
 For information about Serverless Workflow Schedule and how to use it, see [What is Schedule](https://www.alibabacloud.com/help/en/doc-detail/168934.htm).
 
--> **NOTE:** Available since v1.105.0+.
+-> **NOTE:** Available since v1.105.0.
 
 ## Example Usage
 
@@ -74,7 +74,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Schedule.
 * `delete` - (Defaults to 1 mins) Used when delete the Schedule.
