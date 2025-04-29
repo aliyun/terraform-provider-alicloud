@@ -11,7 +11,7 @@ description: |-
 
 Provides vpcs bound to Alicloud Private Zone resource.
 
--> **NOTE:** Available since v1.13.0+.
+-> **NOTE:** Available since v1.13.0.
 
 -> **NOTE:** Terraform will auto bind vpc to a Private Zone while it uses `alicloud_pvtz_zone_attachment` to build a Private Zone and VPC binding resource.
 
@@ -133,9 +133,9 @@ The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
-* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) See [`vpcs`](#vpcs) below.Recommend to use `vpcs`.
-* `lang` - (Optional, ForceNew, Available in 1.62.1+) The language of code.
-* `user_client_ip` - (Optional, ForceNew, Available in 1.62.1+) The user custom IP address.
+* `vpcs` - (Optional, Conflict with `vpc_ids`, Available since v1.62.1) See [`vpcs`](#vpcs) below.Recommend to use `vpcs`.
+* `lang` - (Optional, ForceNew, Available since v1.62.1) The language of code.
+* `user_client_ip` - (Optional, ForceNew, Available since v1.62.1) The user custom IP address.
 
 ### `vpcs`
 The vpcs support the following:
@@ -144,9 +144,9 @@ The vpcs support the following:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.110.0+.
+-> **NOTE:** Available since v1.110.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the Private Zone Attachment.
 * `update` - (Defaults to 5 mins) Used when updating the Private Zone Attachment.

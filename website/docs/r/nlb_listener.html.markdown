@@ -201,7 +201,7 @@ You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/doc-deta
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 30 mins) Used when create the Listener.
 * `delete` - (Defaults to 30 mins) Used when delete the Listener.
 * `update` - (Defaults to 30 mins) Used when update the Listener.

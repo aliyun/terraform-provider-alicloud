@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud log etl resource.
 ---
 
-# alicloud\_log\_etl
+# alicloud_log_etl
 
 The data transformation of the log service is a hosted, highly available, and scalable data processing service, 
 which is widely applicable to scenarios such as data regularization, enrichment, distribution, aggregation, and index reconstruction.
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
--> **NOTE:** Available in 1.120.0
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
@@ -143,7 +143,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when Creating LogEtl instance. 
 * `delete` - (Defaults to 3 mins) Used when terminating the LogEtl instance. 

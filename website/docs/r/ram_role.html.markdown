@@ -13,7 +13,7 @@ Provides a RAM Role resource.
 
 -> **NOTE:** When you want to destroy this resource forcefully(means remove all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
@@ -58,7 +58,7 @@ The following arguments are supported:
 * `document` - (Optional, Conflicts with `services`, `ram_users` and `version`) Authorization strategy of the RAM role. It is required when the `services` and `ram_users` are not specified.
 * `description` - (Optional) Description of the RAM role. This name can have a string of 1 to 1024 characters. **NOTE:** The `description` supports modification since V1.144.0.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
-* `max_session_duration` - (Optional, Available since 1.105.0+) The maximum session duration of the RAM role. Valid values: 3600 to 43200. Unit: seconds. Default value: 3600. The default value is used if the parameter is not specified.
+* `max_session_duration` - (Optional, Available since v1.105.0) The maximum session duration of the RAM role. Valid values: 3600 to 43200. Unit: seconds. Default value: 3600. The default value is used if the parameter is not specified.
 
 ## Attributes Reference
 
@@ -70,9 +70,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available since v1.159.0+
+-> **NOTE:** Available since v1.159.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the ram role.
 * `update` - (Defaults to 10 mins) Used when updating the ram role.

@@ -7,11 +7,10 @@ description: |-
   Provides a Alicloud log oss export resource.
 ---
 
-# alicloud\_log\_oss\_export
-Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
-[Refer to details](https://www.alibabacloud.com/help/en/log-service/latest/ship-logs-to-oss-new-version).
+# alicloud_log_oss_export
+Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage. [Refer to details](https://www.alibabacloud.com/help/en/log-service/latest/ship-logs-to-oss-new-version).
 
--> **NOTE:** Available in 1.187.0+
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
@@ -83,7 +82,7 @@ The following arguments are supported:
 * `buffer_interval` - (Required) How often is it delivered every interval.
 * `buffer_size` - (Required) Automatically control the creation interval of delivery tasks and set the upper limit of an OSS object size (calculated in uncompressed), unit: `MB`.
 * `role_arn` - (Optional) Used to write to oss bucket, the OSS Bucket owner creates the role mark which has the oss bucket write policy, such as `acs:ram::13234:role/logrole`.
-* `log_read_role_arn` - (Optional, Available in 1.188.0+) Used for logstore reading, the role should have log read policy, such as `acs:ram::13234:role/logrole`, if `log_read_role_arn` is not set, `role_arn` is used to read logstore.
+* `log_read_role_arn` - (Optional, Available since v1.188.0) Used for logstore reading, the role should have log read policy, such as `acs:ram::13234:role/logrole`, if `log_read_role_arn` is not set, `role_arn` is used to read logstore.
 * `compress_type` - (Optional) OSS data storage compression method, support: `none`, `snappy`, `zstd`, `gzip`. Among them, none means that the original data is not compressed, and snappy means that the data is compressed using the snappy algorithm, which can reduce the storage space usage of the `OSS Bucket`.
 * `path_format` - (Required) The OSS Bucket directory is dynamically generated according to the creation time of the export task, it cannot start with a forward slash `/`, the default value is `%Y/%m/%d/%H/%M`.
 * `time_zone` - (Required) This time zone that is used to format the time, `+0800` e.g.
@@ -110,7 +109,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when Creating LogOssexport instance. 
 * `update` - (Defaults to 1 mins) Used when Updating LogOssexport instance. 

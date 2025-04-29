@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud PolarDB Parameter Group resource.
 ---
 
-# alicloud\_polardb\_parameter\_group
+# alicloud_polardb_parameter_group
 
 Provides a PolarDB Parameter Group resource.
 
 For information about PolarDB Parameter Group and how to use it, see [What is Parameter Group](https://www.alibabacloud.com/help/en/polardb/polardb-for-mysql/user-guide/apply-a-parameter-template).
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
@@ -63,7 +63,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the PolarDB Parameter Group.
 * `delete` - (Defaults to 1 mins) Used when delete the PolarDB Parameter Group.
