@@ -1,18 +1,18 @@
 ---
-subcategory: "Network Attached Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_mount_target"
 description: |-
-  Provides a Alicloud Network Attached Storage (NAS) Mount Target resource.
+  Provides a Alicloud File Storage (NAS) Mount Target resource.
 ---
 
 # alicloud_nas_mount_target
 
-Provides a Network Attached Storage (NAS) Mount Target resource.
+Provides a File Storage (NAS) Mount Target resource.
 
 File system mount point.
 
-For information about Network Attached Storage (NAS) Mount Target and how to use it, see [What is Mount Target](https://www.alibabacloud.com/help/en/doc-detail/27531.htm).
+For information about File Storage (NAS) Mount Target and how to use it, see [What is Mount Target](https://www.alibabacloud.com/help/en/doc-detail/27531.htm).
 
 -> **NOTE:** Available since v1.34.0.
 
@@ -99,14 +99,14 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Mount Target.
 * `delete` - (Defaults to 5 mins) Used when delete the Mount Target.
 * `update` - (Defaults to 5 mins) Used when update the Mount Target.
 
 ## Import
 
-Network Attached Storage (NAS) Mount Target can be imported using the id, e.g.
+File Storage (NAS) Mount Target can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_mount_target.example <file_system_id>:<mount_target_domain>

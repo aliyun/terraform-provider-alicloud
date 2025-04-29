@@ -98,7 +98,7 @@ The following attributes are exported:
 * `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mines) Used when create the Image.
 * `delete` - (Defaults to 5 mines) Used when delete the Image.

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Hybrid Backup Recovery (HBR) Hana Instance resource.
 ---
 
-# alicloud\_hbr\_hana\_instance
+# alicloud_hbr_hana_instance
 
 Provides a Hybrid Backup Recovery (HBR) Hana Instance resource.
 
 For information about Hybrid Backup Recovery (HBR) Hana Instance and how to use it, see [What is Hana Instance](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-hbr-2017-09-08-createhanainstance).
 
--> **NOTE:** Available in v1.178.0+.
+-> **NOTE:** Available since v1.178.0.
 
 -> **NOTE:** The `sid` attribute is required when destroying resources.
 
@@ -83,7 +83,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Hana Instance.
 * `delete` - (Defaults to 1 mins) Used when delete the Hana Instance.

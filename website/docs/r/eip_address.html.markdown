@@ -161,7 +161,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 9 mins) Used when create the Address.
 * `delete` - (Defaults to 9 mins) Used when delete the Address.
 * `update` - (Defaults to 9 mins) Used when update the Address.
