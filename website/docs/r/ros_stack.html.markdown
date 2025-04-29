@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ROS Stack resource.
 ---
 
-# alicloud\_ros\_stack
+# alicloud_ros_stack
 
 Provides a ROS Stack resource.
 
 For information about ROS Stack and how to use it, see [What is Stack](https://www.alibabacloud.com/help/en/doc-detail/132086.htm).
 
--> **NOTE:** Available in v1.106.0+.
+-> **NOTE:** Available since v1.106.0.
 
 ## Example Usage
 
@@ -89,7 +89,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when create the Stack.
 * `delete` - (Defaults to 6 mins) Used when delete the Stack.

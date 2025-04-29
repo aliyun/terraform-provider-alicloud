@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud SMS Short Url resource.
 ---
 
-# alicloud\_sms\_short\_url
+# alicloud_sms_short_url
 
 Provides a SMS Short Url resource.
 
 For information about SMS Short Url and how to use it, see [What is Short Url](https://next.api.alibabacloud.com/api/Dysmsapi/2017-05-25/AddShortUrl).
 
--> **NOTE:** Available in v1.178.0+.
+-> **NOTE:** Available since v1.178.0.
 
 ## Example Usage
 
@@ -50,7 +50,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Short Url.
 * `delete` - (Defaults to 1 mins) Used when delete the Short Url.

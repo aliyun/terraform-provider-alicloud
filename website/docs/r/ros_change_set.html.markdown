@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ROS Change Set resource.
 ---
 
-# alicloud\_ros\_change\_set
+# alicloud_ros_change_set
 
 Provides a ROS Change Set resource.
 
 For information about ROS Change Set and how to use it, see [What is Change Set](https://www.alibabacloud.com/help/doc-detail/131051.htm).
 
--> **NOTE:** Available in v1.105.0+.
+-> **NOTE:** Available since v1.105.0.
 
 ## Example Usage
 
@@ -79,7 +79,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when creating the ROS ChangeSet (until it reaches the initial `CREATE_COMPLETE` status). 
 

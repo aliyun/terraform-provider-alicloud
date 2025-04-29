@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ONS Group resource.
 ---
 
-# alicloud\_ons\_group
+# alicloud_ons_group
 
 Provides an ONS group resource.
 
 For more information about how to use it, see [RocketMQ Group Management API](https://www.alibabacloud.com/help/doc-detail/29616.html). 
 
--> **NOTE:** Available in 1.53.0+
+-> **NOTE:** Available since v1.53.0.
 
 ## Example Usage
 
@@ -60,7 +60,7 @@ The following arguments are supported:
 * `group_type` - (Optional) Specify the protocol applicable to the created Group ID. Valid values: `tcp`, `http`. Default to `tcp`.
 * `remark` - (Optional) This attribute is a concise description of group. The length cannot exceed 256.
 * `read_enable` - (Optional) This attribute is used to set the message reading enabled or disabled. It can only be set after the group is used by the client.
-* `tags` - (Optional, Available in v1.98.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.98.0) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
@@ -72,9 +72,9 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.98.0+.
+-> **NOTE:** Available since v1.98.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 4 mins) Used when Creating ONS instance. 
 * `delete` - (Defaults to 4 mins) Used when terminating the ONS instance. 

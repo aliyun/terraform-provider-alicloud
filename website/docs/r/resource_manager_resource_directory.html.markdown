@@ -54,11 +54,11 @@ The following arguments are supported:
 * `master_account_id` - The ID of the master account.
 * `master_account_name` - The name of the master account.
 
--> **NOTE:** Available since v1.120.0.
-
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+-> **NOTE:** Available since v1.120.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `update` - (Defaults to 6 mins) Used when update the control policy status.
 

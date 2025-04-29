@@ -13,7 +13,7 @@ Provides a Service Catalog Provisioned Product resource.
 
 For information about Service Catalog Provisioned Product and how to use it, see [What is Provisioned Product](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-launchproduct).
 
--> **NOTE:** Available in v1.196.0+.
+-> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
@@ -89,7 +89,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 3 mins) Used when create the Provisioned Product.
 * `delete` - (Defaults to 24 mins) Used when delete the Provisioned Product.
 * `update` - (Defaults to 24 mins) Used when update the Provisioned Product.

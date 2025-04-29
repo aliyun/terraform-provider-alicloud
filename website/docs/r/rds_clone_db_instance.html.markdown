@@ -12,7 +12,7 @@ Provides an RDS Clone DB Instance resource.
 
 For information about RDS Clone DB Instance and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/rds/product-overview/what-is-apsaradb-rds).
 
--> **NOTE:** Available since v1.149.0+.
+-> **NOTE:** Available since v1.149.0.
 
 ## Example Usage
 
@@ -119,7 +119,7 @@ The following arguments are supported:
 * `period` - (Optional) The period. Valid values: `Month`, `Year`.
 
 -> **NOTE:** If you set the payment_type parameter to Subscription, you must specify the period parameter.
-* `deletion_protection` - (Optional, Available in 1.167.0+) The switch of delete protection. Valid values:
+* `deletion_protection` - (Optional, Available since v1.167.0) The switch of delete protection. Valid values:
   - true: delete protect.
   - false: no delete protect.
 
@@ -136,10 +136,10 @@ The following arguments are supported:
   * **HighAvailability**: High availability
   * **AlwaysOn**: Cluster Edition
   * **Finance**: Three-node Enterprise Edition.
-  * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
-  * **serverless_standard**: MySQL Serverless High Availability Edition. (Available in 1.207.0+)
-  * **serverless_ha**: SQLServer Serverless High Availability Edition. (Available in 1.207.0+)
-  * **cluster**: MySQL Cluster Edition. (Available in 1.207.0+)
+  * **serverless_basic**: Serverless Basic Edition. (Available since v1.200.0)
+  * **serverless_standard**: MySQL Serverless High Availability Edition. (Available since v1.207.0)
+  * **serverless_ha**: SQLServer Serverless High Availability Edition. (Available since v1.207.0)
+  * **cluster**: MySQL Cluster Edition. (Available since v1.207.0)
 * `certificate` - (Optional) The file that contains the certificate used for TDE.
 * `client_ca_cert` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the public key of the client certification authority. If the value of client_ca_enabled is 1, this parameter must be configured.
 * `client_ca_enabled` - (Optional) The client ca enabled.
@@ -202,19 +202,19 @@ The following arguments are supported:
   * Enabled
   * Disabled
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query the most recent region list.
-* `zone_id_slave_a` - (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
-* `zone_id_slave_b`- (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+* `zone_id_slave_a` - (Optional, Computed, ForceNew, Available since v1.207.0) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+* `zone_id_slave_b`- (Optional, Computed, ForceNew, Available since v1.207.0) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
-* `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
+* `tcp_connection_type` - (Optional, Available since v1.171.0) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
-* `pg_hba_conf` - (Optional, Available in 1.155.0+) The details of the AD domain.See [`pg_hba_conf`](#pg_hba_conf) below.
+* `pg_hba_conf` - (Optional, Available since v1.155.0) The details of the AD domain.See [`pg_hba_conf`](#pg_hba_conf) below.
 
-* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.See [`serverless_config`](#serverless_config) below.
+* `serverless_config` - (Optional, Available since v1.200.0) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.See [`serverless_config`](#serverless_config) below.
 
 ### `parameters`
 
@@ -245,21 +245,21 @@ The pg_hba_conf support the following:
 
 The serverless_config support the following:
 
-* `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). The value of this parameter must be greater than or equal to `min_capacity` and only supports passing integers. Valid values:
+* `max_capacity` - (Required, Available since v1.200.0) The maximum number of RDS Capacity Units (RCUs). The value of this parameter must be greater than or equal to `min_capacity` and only supports passing integers. Valid values:
   - MySQL: 1~8
   - SQLServer: 2~8
   - PostgreSQL: 1~12
-* `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. The value of this parameter must be less than or equal to `max_capacity`. Valid values:
+* `min_capacity` - (Required, Available since v1.200.0) The minimum number of RCUs. The value of this parameter must be less than or equal to `max_capacity`. Valid values:
   - MySQL: 0.5~8
   - SQLServer: 2~8 \(Supports integers only\).
   - PostgreSQL: 0.5~12
 
-* `auto_pause` - (Optional, Available in 1.200.0+) Specifies whether to enable the smart startup and stop feature for the serverless instance. Valid values:
+* `auto_pause` - (Optional, Available since v1.200.0) Specifies whether to enable the smart startup and stop feature for the serverless instance. Valid values:
   - true: enables the feature.
   - false: disables the feature. This is the default value.
   > - Only MySQL Serverless instances need to set this parameter. If there is no connection within 10 minutes, it will enter a paused state and automatically wake up when the connection enters.
 
-* `switch_force` - (Optional, Available in 1.200.0+) Specifies whether to enable the forced scaling feature for the serverless instance. Valid values:
+* `switch_force` - (Optional, Available since v1.200.0) Specifies whether to enable the forced scaling feature for the serverless instance. Valid values:
   - true: enables the feature.
   - false: disables the feature. This is the default value.
   > - Only MySQL Serverless instances need to set this parameter. After enabling this parameter, there will be a flash break within 1 minute when the instance is forced to expand or shrink. Please use it with caution according to the actual situation.
@@ -276,7 +276,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 300 mins) Used when create the Clone DB Instance.
 * `update` - (Defaults to 30 mins) Used when update the Clone DB Instance.
