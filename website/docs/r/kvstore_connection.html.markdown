@@ -87,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status). 
 * `update` - (Defaults to 5 mins) Used when updating the Tair (Redis OSS-Compatible) And Memcache (KVStore) connection (until it reaches the initial `Normal` status). 

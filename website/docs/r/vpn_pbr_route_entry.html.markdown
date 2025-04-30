@@ -11,7 +11,7 @@ description: |-
 
 Provides a VPN Pbr Route Entry resource.
 
--> **NOTE:** Available since v1.162.0+.
+-> **NOTE:** Available since v1.162.0.
 
 For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pbr Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127248.html).
 
@@ -152,7 +152,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the vpn pbr route entry.
 * `update` - (Defaults to 5 mins) Used when update the vpn pbr route entry.

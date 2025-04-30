@@ -13,7 +13,7 @@ Provides a Vpc Ipv6 Gateway resource. Gateway Based on Internet Protocol Version
 
 For information about Vpc Ipv6 Gateway and how to use it, see [What is Ipv6 Gateway](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/createipv6gateway).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -59,9 +59,9 @@ resource "alicloud_vpc_ipv6_gateway" "default" {
 The following arguments are supported:
 * `description` - (Optional) The description of the IPv6 gateway. The description must be 2 to 256 characters in length. It cannot start with http:// or https://.
 * `ipv6_gateway_name` - (Optional) The name of the IPv6 gateway. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://.
-* `resource_group_id` - (Optional, Computed, Available in v1.205.0+) The ID of the resource group to which the instance belongs.
-* `spec` - (Optional, Computed, Deprecated from v1.205.0+) IPv6 gateways do not distinguish between specifications. This parameter is no longer used.
-* `tags` - (Optional, Map, Available in v1.205.0+) The tags for the resource.
+* `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the instance belongs.
+* `spec` - (Optional, Computed, Deprecated since v1.205.0) IPv6 gateways do not distinguish between specifications. This parameter is no longer used.
+* `tags` - (Optional, Map, Available since v1.205.0) The tags for the resource.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) for which you want to create the IPv6 gateway.
 
 
@@ -79,7 +79,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Ipv6 Gateway.

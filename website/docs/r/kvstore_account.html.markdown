@@ -102,7 +102,7 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.102.0+.
+-> **NOTE:** Available since v1.102.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 

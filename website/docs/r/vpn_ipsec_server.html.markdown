@@ -13,7 +13,7 @@ Provides a VPN Ipsec Server resource.
 
 For information about VPN Ipsec Server and how to use it, see [What is Ipsec Server](https://www.alibabacloud.com/help/en/vpn/sub-product-ssl-vpn/developer-reference/api-vpc-2016-04-28-createipsecserver-ssl-vpn).
 
--> **NOTE:** Available since v1.161.0+.
+-> **NOTE:** Available since v1.161.0.
 
 ## Example Usage
 
@@ -116,7 +116,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Ipsec Server.
 * `update` - (Defaults to 1 mins) Used when update the Ipsec Server.
