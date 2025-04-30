@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Threat Detection Backup Policy resource.
 ---
 
-# alicloud\_threat\_detection\_backup\_policy
+# alicloud_threat_detection_backup_policy
 
 Provides a Threat Detection Backup Policy resource.
 
 For information about Threat Detection Backup Policy and how to use it, see [What is Backup Policy](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createbackuppolicy).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Backup Policy.
 * `update` - (Defaults to 5 mins) Used when update the Backup Policy.

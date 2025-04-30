@@ -72,13 +72,13 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the HaVip instance id.
-* `status` - (Available in v1.120.0+) The status of the HaVip instance.
+* `status` - (Available since v1.120.0) The status of the HaVip instance.
 
 ## Timeouts
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the HaVip instance.
 * `update` - (Defaults to 5 mins) Used when updating the HaVip instance.

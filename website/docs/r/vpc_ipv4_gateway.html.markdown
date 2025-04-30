@@ -13,7 +13,7 @@ Provides a Vpc Ipv4 Gateway resource.
 
 For information about Vpc Ipv4 Gateway and how to use it, see [What is Ipv4 Gateway](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/createipv4gateway).
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0.
 
 ## Example Usage
 
@@ -58,11 +58,11 @@ resource "alicloud_vpc_ipv4_gateway" "default" {
 
 The following arguments are supported:
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:-**true**: The check request is sent without creating an IPv4 Gateway. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.-**false** (default): Sends a normal request, returns an HTTP 2xx status code and directly creates an IPv4 Gateway.
-* `enabled` - (Optional, Computed, Available in v1.193.1+) Whether the IPv4 gateway is active or not. Valid values are **true** and **false**.
+* `enabled` - (Optional, Computed, Available since v1.193.1) Whether the IPv4 gateway is active or not. Valid values are **true** and **false**.
 * `ipv4_gateway_description` - (Optional) The description of the IPv4 gateway. The description must be 2 to 256 characters in length. It must start with a letter but cannot start with http:// or https://.
 * `ipv4_gateway_name` - (Optional) The name of the IPv4 gateway. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
-* `resource_group_id` - (Optional, Computed, Available in v1.205.0+) The ID of the resource group to which the instance belongs.
-* `tags` - (Optional, Map, Available in v1.205.0+) The tags of the current resource.
+* `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the instance belongs.
+* `tags` - (Optional, Map, Available since v1.205.0) The tags of the current resource.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where you want to create the IPv4 gateway. You can create only one IPv4 gateway in a VPC.
 
 
@@ -78,7 +78,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ipv4 Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Ipv4 Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Ipv4 Gateway.

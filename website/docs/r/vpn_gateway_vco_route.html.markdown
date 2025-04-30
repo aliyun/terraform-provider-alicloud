@@ -13,7 +13,7 @@ Provides a VPN Gateway Vco Route resource.
 
 For information about VPN Gateway Vco Route and how to use it, see [What is Vco Route](https://www.alibabacloud.com/help/zh/virtual-private-cloud/latest/createvcorouteentry).
 
--> **NOTE:** Available since v1.183.0+.
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
@@ -138,7 +138,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the VPN Gateway Vco Route.
 * `delete` - (Defaults to 1 mins) Used when deleting the VPN Gateway Vco Route.
