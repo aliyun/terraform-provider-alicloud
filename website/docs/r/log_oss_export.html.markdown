@@ -13,6 +13,7 @@ Log service data delivery management, this service provides the function of deli
 
 -> **NOTE:** This resource is no longer maintained. It is recommended to use the new resource alicloud_sls_oss_export_sink
 [Refer to details](https://help.aliyun.com/zh/terraform/alicloud-sls-oss-export-sink?spm=a2c4g.11186623.help-menu-95817.d_4_99_0_0.12893395Zcpiq1).
+
 -> **NOTE:** Available in 1.187.0+
 
 ## Example Usage
