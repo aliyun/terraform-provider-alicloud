@@ -36,9 +36,10 @@ provider "alicloud" {
 }
 
 resource "alicloud_data_works_project" "defaulteNv8bu" {
-  project_name = var.name
-  display_name = var.name
-  description  = var.name
+  project_name     = var.name
+  display_name     = var.name
+  description      = var.name
+  pai_task_enabled = true
 }
 
 resource "alicloud_data_works_di_job" "defaultUW8inp" {
