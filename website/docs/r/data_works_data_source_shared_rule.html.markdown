@@ -43,14 +43,16 @@ resource "random_integer" "randint" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_data_works_project" "defaultQeRfvU" {
-  status                  = "Available"
-  description             = "tf_desc"
-  project_name            = "${var.name}${random_integer.randint.id}"
-  pai_task_enabled        = "false"
-  display_name            = "tf_new_api_display"
-  dev_role_disabled       = "true"
-  dev_environment_enabled = "false"
-  resource_group_id       = data.alicloud_resource_manager_resource_groups.default.ids.0
+  description      = "源项目"
+  project_name     = var.name
+  display_name     = "shared_source2"
+  pai_task_enabled = true
+}
+resource "alicloud_data_works_project" "defaultasjsH5" {
+  description      = "目标空间"
+  project_name     = format("%s1", var.name)
+  display_name     = "shared_target2"
+  pai_task_enabled = true
 }
 
 resource "alicloud_data_works_data_source" "defaultvzu0wG" {
