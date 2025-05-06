@@ -66,37 +66,37 @@ func main() {
 	}
 
 	if err := migrateResource(namespace, resource); err != nil {
-		log.Fatalf("Error migrateResource: %v", err)
+		log.Printf("Error migrateResource: %v", err)
 	}
 
 	if err := migrateDataSource(namespace, resource); err != nil {
-		log.Fatalf("Error migrateDataSource: %v", err)
+		log.Printf("Error migrateDataSource: %v", err)
 	}
 
 	serviceFileName := fmt.Sprintf("service_alicloud_%s.go", *namespace)
 	if err := migrateService(serviceFileName, "v1"); err != nil {
-		log.Fatalf("Error migrateService: %v", err)
+		log.Printf("Error migrateService: %v", err)
 	}
 
 	serviceFileName = fmt.Sprintf("service_alicloud_%s_v2.go", *namespace)
 	if err := migrateService(serviceFileName, "v2"); err != nil {
-		log.Fatalf("Error migrateService: %v", err)
+		log.Printf("Error migrateService: %v", err)
 	}
 
 	if err := migrateResourceTest(namespace, resource); err != nil {
-		log.Fatalf("Error migrateResourceTest: %v", err)
+		log.Printf("Error migrateResourceTest: %v", err)
 	}
 
 	if err := migrateDataSourceTest(namespace, resource); err != nil {
-		log.Fatalf("Error migrateDataSource: %v", err)
+		log.Printf("Error migrateDataSource: %v", err)
 	}
 
 	if err := migrateResourceDocument(namespace, resource); err != nil {
-		log.Fatalf("Error migrateResourceDocument: %v", err)
+		log.Printf("Error migrateResourceDocument: %v", err)
 	}
 
 	if err := migrateDataSourceDocument(namespace, resource); err != nil {
-		log.Fatalf("Error migrateResourceDocument: %v", err)
+		log.Printf("Error migrateResourceDocument: %v", err)
 	}
 }
 
@@ -347,6 +347,46 @@ func modifyDocument(filePath, namespace, resource string) error {
 	return nil
 }
 
+func replaceLine(line string) string {
+
+	line = strings.ReplaceAll(line, "string(PostgreSQL)", "\"PostgreSQL\"")
+	line = strings.ReplaceAll(line, "string(MySQL)", "\"MySQL\"")
+	line = strings.ReplaceAll(line, "string(MongoDB)", "\"MongoDB\"")
+	line = strings.ReplaceAll(line, "string(SQLServer)", "\"SQLServer\"")
+	line = strings.ReplaceAll(line, "NormalMode", "\"normal\"")
+
+	line = strings.ReplaceAll(line, "string(Postpaid)", "\"PostPaid\"")
+	line = strings.ReplaceAll(line, "string(Prepaid)", "\"PrePaid\"")
+	line = strings.ReplaceAll(line, "string(PostPaid)", "\"PostPaid\"")
+	line = strings.ReplaceAll(line, "string(PrePaid)", "\"PrePaid\"")
+	line = strings.ReplaceAll(line, "string(Serverless)", "\"Serverless\"")
+
+	line = strings.ReplaceAll(line, "PrePaid,", "names.PrePaid,")
+	line = strings.ReplaceAll(line, "PostPaid,", "names.PostPaid,")
+	line = strings.ReplaceAll(line, "Prepaid,", "names.Prepaid,")
+	line = strings.ReplaceAll(line, "Postpaid,", "names.Postpaid,")
+	line = strings.ReplaceAll(line, "Serverless,", "names.Serverless,")
+
+	line = strings.ReplaceAll(line, "PageSizeLarge", "names.PageSizeLarge")
+	line = strings.ReplaceAll(line, "PageSizeSmall", "names.PageSizeSmall")
+	line = strings.ReplaceAll(line, "PageSizeMedium", "names.PageSizeMedium")
+
+	line = strings.ReplaceAll(line, "convertListToJsonString", "helper.ConvertListToJsonString")
+	line = strings.ReplaceAll(line, "expandStringList", "helper.ExpandStringList")
+
+	throttleRe := regexp.MustCompile(`(?i)\b(Throttling)\b`)
+	autoRenewalRe := regexp.MustCompile(`(?i)\b(RenewAutoRenewal)\b`)
+	renewNormalRe := regexp.MustCompile(`(?i)\b(RenewNormal)\b`)
+	notRenewalRe := regexp.MustCompile(`(?i)\b(RenewNotRenewal)\b`)
+
+	line = throttleRe.ReplaceAllString(line, `"Throttling"`)
+	line = autoRenewalRe.ReplaceAllString(line, `"AutoRenewal"`)
+	line = renewNormalRe.ReplaceAllString(line, `"Normal"`)
+	line = notRenewalRe.ReplaceAllString(line, `"NotRenewal"`)
+
+	return line
+}
+
 func modifyResourceFile(filePath, namespace, resource string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -375,15 +415,42 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 	serviceRe := regexp.MustCompile(`([A-Z]\w*?)Service(V2)?\b`)
 
 	queryAssignRe := regexp.MustCompile(`query\["([^"]+)"\]\s*=\s*([^;\n]+)`)
+	diffSuppressRe := regexp.MustCompile(`(\w+)DiffSuppressFunc`)
+
+	var (
+		inValidateFunc bool
+		parenDepth     int
+	)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.Contains(line, "SetPartial") {
+		if inValidateFunc {
+			parenDepth += strings.Count(line, "(")
+			parenDepth -= strings.Count(line, ")")
+
+			trimmed := strings.TrimSpace(line)
+			if parenDepth <= 0 && strings.HasSuffix(trimmed, "),") {
+				inValidateFunc = false
+				parenDepth = 0
+			}
 			continue
 		}
 
 		if strings.Contains(line, "ValidateFunc") {
+			inValidateFunc = true
+			parenDepth += strings.Count(line, "(")
+			parenDepth -= strings.Count(line, ")")
+
+			trimmed := strings.TrimSpace(line)
+			if parenDepth <= 0 && (strings.HasSuffix(trimmed, ",") || strings.HasSuffix(trimmed, ")")) {
+				inValidateFunc = false
+				parenDepth = 0
+			}
+			continue
+		}
+
+		if strings.Contains(line, "SetPartial") {
 			continue
 		}
 
@@ -460,7 +527,9 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 		line = strings.ReplaceAll(line, "parsingTags", "service.ParsingTags")
 		line = strings.ReplaceAll(line, "ignoredTags", "service.IgnoredTags")
-		line = strings.ReplaceAll(line, "Trim(", "helper.Trim(")
+		if !strings.Contains(line, "strings.Trim") {
+			line = strings.ReplaceAll(line, "Trim(", "helper.Trim(")
+		}
 		line = strings.ReplaceAll(line, "isPagingRequest", "helper.IsPagingRequest")
 		line = strings.ReplaceAll(line, "formatInt", "helper.FormatInt")
 		line = strings.ReplaceAll(line, "formatBool", "helper.FormatBool")
@@ -477,9 +546,16 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
 		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
 
-		line = strings.ReplaceAll(line, "PostPaidDiffSuppressFunc", "helper.PostPaidDiffSuppressFunc")
-		line = strings.ReplaceAll(line, "PostPaidAndRenewDiffSuppressFunc", "helper.PostPaidAndRenewDiffSuppressFunc")
-		line = strings.ReplaceAll(line, "securityIpsDiffSuppressFunc", "helper.SecurityIpsDiffSuppressFunc")
+		line = diffSuppressRe.ReplaceAllStringFunc(line, func(m string) string {
+			parts := diffSuppressRe.FindStringSubmatch(m)
+			if len(parts) < 2 {
+				return m
+			}
+			prefix := strings.ToUpper(string(parts[1][0])) + parts[1][1:]
+			return "helper." + prefix + "DiffSuppressFunc"
+		})
+
+		line = strings.ReplaceAll(line, "hashcode.String", "helper.HashString")
 
 		line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
 		line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
@@ -531,15 +607,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
 
-		line = strings.ReplaceAll(line, "PrePaid,", "names.PrePaid,")
-		line = strings.ReplaceAll(line, "PostPaid,", "names.PostPaid,")
-		line = strings.ReplaceAll(line, "Prepaid,", "names.Prepaid,")
-		line = strings.ReplaceAll(line, "Postpaid,", "names.Postpaid,")
-		line = strings.ReplaceAll(line, "Serverless,", "names.Serverless,")
-
-		line = strings.ReplaceAll(line, "PageSizeLarge", "names.PageSizeLarge")
-		line = strings.ReplaceAll(line, "PageSizeSmall", "names.PageSizeSmall")
-		line = strings.ReplaceAll(line, "PageSizeMedium", "names.PageSizeMedium")
+		line = replaceLine(line)
 
 		line = strings.ReplaceAll(line, "dataResourceIdHash", "helper.DataResourceIdHash")
 		line = strings.ReplaceAll(line, "writeToFile", "helper.WriteToFile")
@@ -602,6 +670,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 
 	stateRefreshDeclRe := regexp.MustCompile(`(func\s*\(.*?\)\s*\w+StateRefreshFunc)\s*\(`)
 	stateRefreshCallRe := regexp.MustCompile(`(\w+)\.(\w+StateRefreshFunc)\s*\(`)
+	diffSuppressRe := regexp.MustCompile(`(\w+)DiffSuppressFunc`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -679,11 +748,16 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "(Error(", "(tferr.Error(")
 		line = strings.ReplaceAll(line, "tferr.NotFoundMsg, tferr.ProviderERROR,", "tferr.NotFoundMsg,")
 
-		line = strings.ReplaceAll(line, "PageSizeLarge", "names.PageSizeLarge")
+		line = diffSuppressRe.ReplaceAllStringFunc(line, func(m string) string {
+			parts := diffSuppressRe.FindStringSubmatch(m)
+			if len(parts) < 2 {
+				return m
+			}
+			prefix := strings.ToUpper(string(parts[1][0])) + parts[1][1:]
+			return "helper." + prefix + "DiffSuppressFunc"
+		})
 
-		line = strings.ReplaceAll(line, "PostPaidDiffSuppressFunc", "helper.PostPaidDiffSuppressFunc")
-		line = strings.ReplaceAll(line, "PostPaidAndRenewDiffSuppressFunc", "helper.PostPaidAndRenewDiffSuppressFunc")
-		line = strings.ReplaceAll(line, "securityIpsDiffSuppressFunc", "helper.SecurityIpsDiffSuppressFunc")
+		line = strings.ReplaceAll(line, "hashcode.String", "helper.HashString")
 
 		if strings.Contains(line, "client.Rpc") {
 			matches := clientRe.FindStringSubmatch(line)
@@ -734,6 +808,8 @@ func modifyServiceFile(filePath, namespace, version string) error {
 			lines = append(lines, "return &Service{client}")
 			lines = append(lines, "}")
 		}
+
+		line = replaceLine(line)
 
 		lines = append(lines, line)
 	}
@@ -798,11 +874,13 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "resourceTestAccConfigFunc", "tftest.ResourceTestAccConfig")
 		line = strings.ReplaceAll(line, "testAccPreCheck(t)", "tftest.PreCheck(nil, t)")
 		line = strings.ReplaceAll(line, "Providers:     testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
+		line = strings.ReplaceAll(line, "Providers:    testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
 		line = strings.ReplaceAll(line, "rac.checkResourceDestroy()", "rac.CheckResourceDestroy()")
 		line = strings.ReplaceAll(line, "resourceAttrMapUpdateSet", "ResourceAttrMapUpdateSet")
 		line = strings.ReplaceAll(line, "testAccPreCheckWithRegions", "tftest.TestAccPreCheckWithRegions")
 		line = strings.ReplaceAll(line, "CHECKSET", "tftest.CHECKSET")
 		line = strings.ReplaceAll(line, "REMOVEKEY", "tftest.REMOVEKEY")
+		line = strings.ReplaceAll(line, "NOSET", "tftest.NOSET")
 
 		line = strings.ReplaceAll(line, "dataSourceAttr", "tftest.DataSourceAttr")
 		line = strings.ReplaceAll(line, "dataSourceTestAccConfig", "tftest.DataSourceTestAccConfig")
@@ -855,7 +933,12 @@ func formatFile(filePath string) error {
 
 	formattedContent, err := imports.Process(filePath, content, nil)
 	if err != nil {
-		return fmt.Errorf("error while optimizing imports: %w", err)
+		log.Printf("error while optimizing %s imports: %v", filePath, err.Error())
+		formattedContent, err = format.Source(content)
+		if err != nil {
+			log.Printf("error while formatting to file: %v", err.Error())
+			formattedContent = content
+		}
 	}
 
 	return os.WriteFile(filePath, formattedContent, 0644)
