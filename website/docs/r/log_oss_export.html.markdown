@@ -11,6 +11,7 @@ description: |-
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
 [Refer to details](https://www.alibabacloud.com/help/en/log-service/latest/ship-logs-to-oss-new-version).
 
+-> **NOTE:** The old resource is no longer maintained. It is recommended to use the new resource alicloud_sls_oss_export_sink
 -> **NOTE:** Available in 1.187.0+
 
 ## Example Usage
