@@ -28,7 +28,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "terraform-example"
+  default = "terraform_example"
 }
 
 provider "alicloud" {
@@ -36,9 +36,10 @@ provider "alicloud" {
 }
 
 resource "alicloud_data_works_project" "defaultZImuCO" {
-  description  = "default_pj002"
-  project_name = var.name
-  display_name = "default_pj002"
+  description      = "default_pj002"
+  project_name     = var.name
+  display_name     = "default_pj002"
+  pai_task_enabled = true
 }
 
 resource "alicloud_vpc" "defaulte4zhaL" {
