@@ -41,8 +41,10 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-  image_id          = data.alicloud_images.default.images.0.id
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g6"
 }
 
 resource "alicloud_vpc" "default" {

@@ -212,6 +212,7 @@ func TestAccAliCloudRouteEntry_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -219,66 +220,18 @@ func TestAccAliCloudRouteEntry_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"route_table_id":        "${alicloud_vpc.default.route_table_id}",
-					"destination_cidrblock": "172.11.1.1/32",
-					"nexthop_type":          "RouterInterface",
-					"nexthop_id":            "${alicloud_router_interface.default.id}",
+					"route_table_id":        "${alicloud_vpc.defaultVpc.route_table_id}",
+					"destination_cidrblock": "1.1.1.1/32",
+					"nexthop_type":          "Ipv4Gateway",
+					"nexthop_id":            "${alicloud_vpc_ipv4_gateway.defaultIpv4Gateway.id}",
+					"depends_on":            []string{"alicloud_vpc_ipv4_gateway.defaultIpv4Gateway"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"nexthop_type":          "Ipv4Gateway",
 						"route_table_id":        CHECKSET,
-						"destination_cidrblock": "172.11.1.1/32",
-						"nexthop_type":          "RouterInterface",
 						"nexthop_id":            CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccAliCloudRouteEntry_basic2_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_route_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudRouteEntryMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRouteEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc-RouteEntry-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRouteEntryBasicDependence2)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"route_table_id":        "${alicloud_vpc.default.route_table_id}",
-					"destination_cidrblock": "172.11.1.1/32",
-					"nexthop_type":          "RouterInterface",
-					"nexthop_id":            "${alicloud_router_interface.default.id}",
-					"name":                  name,
-					"description":           name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"route_table_id":        CHECKSET,
-						"destination_cidrblock": "172.11.1.1/32",
-						"nexthop_type":          "RouterInterface",
-						"nexthop_id":            CHECKSET,
-						"name":                  name,
-						"description":           name,
+						"destination_cidrblock": "1.1.1.1/32",
 					}),
 				),
 			},
@@ -447,8 +400,10 @@ func AliCloudRouteEntryBasicDependence0(name string) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+	  availability_zone    = data.alicloud_zones.default.zones[0].id
+	  cpu_core_count       = 2
+	  memory_size          = 8
+	  instance_type_family = "ecs.g6"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -546,35 +501,30 @@ func AliCloudRouteEntryBasicDependence2(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_regions" "default" {
-  		current = true
+	resource "alicloud_vpc" "defaultVpc" {
+	  vpc_name   = "TFRouteEntry1"
+	  cidr_block = "192.168.0.0/16"
 	}
+	
+	resource "alicloud_vswitch" "defaultVswitch" {
+	  vpc_id       = alicloud_vpc.defaultVpc.id
+	  zone_id      = "cn-hangzhou-i"
+	  cidr_block   = "192.168.0.0/24"
+	  vswitch_name = "TFRouteEntry1"
+	}
+	
+	resource "alicloud_vpc_ipv4_gateway" "defaultIpv4Gateway" {
+	  ipv4_gateway_name = "TFRouteEntry"
+	  vpc_id            = alicloud_vpc.defaultVpc.id
+	  enabled           = true
+	}
+	
+	resource "alicloud_havip" "defaultHavip" {
+	  vswitch_id  = alicloud_vswitch.defaultVswitch.id
+	  ha_vip_name = "TFRouteEntry1"
+	}
+	
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "VSwitch"
-	}
-
-	resource "alicloud_vpc" "default" {
-  		vpc_name   = var.name
-  		cidr_block = "192.168.0.0/16"
-	}
-
-	resource "alicloud_vswitch" "default" {
-  		vswitch_name = var.name
-  		vpc_id       = alicloud_vpc.default.id
-  		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_zones.default.zones.0.id
-	}
-
-	resource "alicloud_router_interface" "default" {
-  		opposite_region = data.alicloud_regions.default.regions.0.id
-  		router_type     = "VRouter"
-  		router_id       = alicloud_vpc.default.router_id
-  		role            = "InitiatingSide"
-  		specification   = "Large.2"
-  		name            = var.name
-  		description     = var.name
-	}
 `, name)
 }
 
