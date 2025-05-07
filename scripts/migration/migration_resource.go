@@ -374,17 +374,39 @@ func replaceLine(line string) string {
 	line = strings.ReplaceAll(line, "convertListToJsonString", "helper.ConvertListToJsonString")
 	line = strings.ReplaceAll(line, "expandStringList", "helper.ExpandStringList")
 
-	throttleRe := regexp.MustCompile(`(?i)\b(Throttling)\b`)
-	autoRenewalRe := regexp.MustCompile(`(?i)\b(RenewAutoRenewal)\b`)
-	renewNormalRe := regexp.MustCompile(`(?i)\b(RenewNormal)\b`)
-	notRenewalRe := regexp.MustCompile(`(?i)\b(RenewNotRenewal)\b`)
+	if isVariable(line, "Throttling") {
+		line = strings.ReplaceAll(line, "Throttling", "\"Throttling\"")
+	}
 
-	line = throttleRe.ReplaceAllString(line, `"Throttling"`)
-	line = autoRenewalRe.ReplaceAllString(line, `"AutoRenewal"`)
-	line = renewNormalRe.ReplaceAllString(line, `"Normal"`)
-	line = notRenewalRe.ReplaceAllString(line, `"NotRenewal"`)
+	if isVariable(line, "RenewAutoRenewal") {
+		line = strings.ReplaceAll(line, "RenewAutoRenewal", "\"AutoRenewal\"")
+	}
+
+	if isVariable(line, "RenewNormal") {
+		line = strings.ReplaceAll(line, "RenewNormal", "\"Normal\"")
+	}
+
+	if isVariable(line, "RenewNotRenewal") {
+		line = strings.ReplaceAll(line, "RenewNotRenewal", "\"NotRenewal\"")
+	}
 
 	return line
+}
+
+func isVariable(line, code string) bool {
+	if strings.Contains(line, "\""+code) {
+		return false
+	}
+	if strings.Contains(line, code+"\"") {
+		return false
+	}
+	if strings.Contains(line, "."+code) {
+		return false
+	}
+	if strings.Contains(line, code+".") {
+		return false
+	}
+	return true
 }
 
 func modifyResourceFile(filePath, namespace, resource string) error {
