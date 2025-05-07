@@ -54,7 +54,13 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
   rs_type      = 0
   instance_ids = [alicloud_ddoscoo_instance.default.id]
   real_servers = ["177.167.32.11"]
-  https_ext    = "{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}"
+  https_ext    = <<EOF
+    {
+    "Http2": 1,
+    "Http2https": 0,
+    "Https2http": 0
+  }
+  EOF
   proxy_types {
     proxy_ports = [443]
     proxy_type  = "https"
@@ -71,7 +77,7 @@ The following arguments are supported:
 
 * `cert_identifier` - (Optional, Available since v1.231.0) The name of the certificate.
 
--> **NOTE:**   You can specify the name of the certificate that you want to associate.
+-> **NOTE:**   You can specify the name of the certificate that you want to associate. From version 1.249.0, `cert_identifier` is in the "CertificateID-RegionId" format. For example, if the ID of the certificateId is `123`, and the region ID is `cn-hangzhou`, the value of the `cert_identifier` is `123-cn-hangzhou`.
 
 * `cert_name` - (Optional, Computed, Available since v1.231.0) The public key of the certificate that you want to associate. This parameter must be used together with the CertName and Key parameters.
 

@@ -151,10 +151,10 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeDomainResource"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["Domain"] = id
+	request["Domain"] = id
+	action := "DescribeDomainResource"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -167,11 +167,10 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -191,15 +190,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *DdosCooServiceV2) DescribeDescribeWebRules(id string) (object map[string]interface{}, err error) {
+func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeWebRules"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["Domain"] = id
+	request["Domain"] = id
+	action := "DescribeWebRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -212,11 +211,10 @@ func (s *DdosCooServiceV2) DescribeDescribeWebRules(id string) (object map[strin
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -244,6 +242,13 @@ func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFunc(id string, fiel
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
