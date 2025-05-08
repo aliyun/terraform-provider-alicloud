@@ -20,14 +20,20 @@ func resourceAliCloudAlbHealthCheckTemplate() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(2 * time.Minute),
-			Update: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"health_check_template_name": {
-				Type:     schema.TypeString,
-				Required: true,
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"health_check_codes": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"health_check_connect_port": {
 				Type:         schema.TypeInt,
@@ -39,65 +45,45 @@ func resourceAliCloudAlbHealthCheckTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("health_check_protocol"); ok && v.(string) == "HTTP" {
-						return false
-					}
-					return true
-				},
 			},
 			"health_check_http_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"HTTP1.0", "HTTP1.1"}, false),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("health_check_protocol"); ok && v.(string) == "HTTP" {
-						return false
-					}
-					return true
-				},
 			},
 			"health_check_interval": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(1, 50),
+				ValidateFunc: IntBetween(0, 50),
 			},
 			"health_check_method": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"HEAD", "GET"}, false),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("health_check_protocol"); ok && v.(string) == "HTTP" {
-						return false
-					}
-					return true
-				},
 			},
 			"health_check_path": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("health_check_protocol"); ok && v.(string) == "HTTP" {
-						return false
-					}
-					return true
-				},
 			},
 			"health_check_protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"HTTP", "TCP"}, false),
+				ValidateFunc: StringInSlice([]string{"HTTP", "TCP", "gRPC", "HTTPS"}, false),
+			},
+			"health_check_template_name": {
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"health_check_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(1, 300),
+				ValidateFunc: IntBetween(0, 300),
 			},
 			"healthy_threshold": {
 				Type:         schema.TypeInt,
@@ -105,95 +91,88 @@ func resourceAliCloudAlbHealthCheckTemplate() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntBetween(2, 10),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"tags": tagsSchema(),
 			"unhealthy_threshold": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(2, 10),
 			},
-			"health_check_codes": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("health_check_protocol"); ok && v.(string) == "HTTP" {
-						return false
-					}
-					return true
-				},
-			},
-			"dry_run": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 		},
 	}
 }
 
 func resourceAliCloudAlbHealthCheckTemplateCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateHealthCheckTemplate"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken("CreateHealthCheckTemplate")
-	request["HealthCheckTemplateName"] = d.Get("health_check_template_name")
+	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOkExists("health_check_connect_port"); ok {
 		request["HealthCheckConnectPort"] = v
 	}
-
 	if v, ok := d.GetOk("health_check_host"); ok {
 		request["HealthCheckHost"] = v
 	}
-
-	if v, ok := d.GetOk("health_check_http_version"); ok {
-		request["HealthCheckHttpVersion"] = v
+	if v, ok := d.GetOkExists("health_check_timeout"); ok && v.(int) > 0 {
+		request["HealthCheckTimeout"] = v
 	}
-
-	if v, ok := d.GetOkExists("health_check_interval"); ok {
-		request["HealthCheckInterval"] = v
-	}
-
-	if v, ok := d.GetOk("health_check_method"); ok {
-		request["HealthCheckMethod"] = v
-	}
-
 	if v, ok := d.GetOk("health_check_path"); ok {
 		request["HealthCheckPath"] = v
 	}
-
+	if v, ok := d.GetOk("health_check_method"); ok {
+		request["HealthCheckMethod"] = v
+	}
+	if v, ok := d.GetOkExists("health_check_interval"); ok && v.(int) > 0 {
+		request["HealthCheckInterval"] = v
+	}
 	if v, ok := d.GetOk("health_check_protocol"); ok {
 		request["HealthCheckProtocol"] = v
 	}
-
-	if v, ok := d.GetOkExists("health_check_timeout"); ok {
-		request["HealthCheckTimeout"] = v
+	request["HealthCheckTemplateName"] = d.Get("health_check_template_name")
+	if v, ok := d.GetOk("health_check_codes"); ok {
+		healthCheckCodesMapsArray := v.([]interface{})
+		request["HealthCheckCodes"] = healthCheckCodesMapsArray
 	}
 
-	if v, ok := d.GetOkExists("healthy_threshold"); ok {
-		request["HealthyThreshold"] = v
-	}
-
-	if v, ok := d.GetOkExists("unhealthy_threshold"); ok {
+	if v, ok := d.GetOkExists("unhealthy_threshold"); ok && v.(int) > 0 {
 		request["UnhealthyThreshold"] = v
 	}
-
-	if v, ok := d.GetOk("health_check_codes"); ok {
-		request["HealthCheckCodes"] = v
+	if v, ok := d.GetOkExists("healthy_threshold"); ok && v.(int) > 0 {
+		request["HealthyThreshold"] = v
 	}
-
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-
+	if v, ok := d.GetOk("health_check_http_version"); ok {
+		request["HealthCheckHttpVersion"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "QuotaExceeded.HealthCheckTemplatesNum", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"QuotaExceeded.HealthCheckTemplatesNum", "SystemBusy", "IdempotenceProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -214,158 +193,125 @@ func resourceAliCloudAlbHealthCheckTemplateCreate(d *schema.ResourceData, meta i
 
 func resourceAliCloudAlbHealthCheckTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
+	albServiceV2 := AlbServiceV2{client}
 
-	object, err := albService.DescribeAlbHealthCheckTemplate(d.Id())
+	objectRaw, err := albServiceV2.DescribeAlbHealthCheckTemplate(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_alb_health_check_template albService.DescribeAlbHealthCheckTemplate Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_alb_health_check_template DescribeAlbHealthCheckTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("health_check_template_name", object["HealthCheckTemplateName"])
-	d.Set("health_check_host", object["HealthCheckHost"])
-	d.Set("health_check_http_version", object["HealthCheckHttpVersion"])
-	d.Set("health_check_method", object["HealthCheckMethod"])
-	d.Set("health_check_path", object["HealthCheckPath"])
-	d.Set("health_check_protocol", object["HealthCheckProtocol"])
-	d.Set("health_check_codes", object["HealthCheckCodes"])
+	d.Set("health_check_connect_port", objectRaw["HealthCheckConnectPort"])
+	d.Set("health_check_host", objectRaw["HealthCheckHost"])
+	d.Set("health_check_http_version", objectRaw["HealthCheckHttpVersion"])
+	d.Set("health_check_interval", objectRaw["HealthCheckInterval"])
+	d.Set("health_check_method", objectRaw["HealthCheckMethod"])
+	d.Set("health_check_path", objectRaw["HealthCheckPath"])
+	d.Set("health_check_protocol", objectRaw["HealthCheckProtocol"])
+	d.Set("health_check_template_name", objectRaw["HealthCheckTemplateName"])
+	d.Set("health_check_timeout", objectRaw["HealthCheckTimeout"])
+	d.Set("healthy_threshold", objectRaw["HealthyThreshold"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("unhealthy_threshold", objectRaw["UnhealthyThreshold"])
 
-	if healthCheckConnectPort, ok := object["HealthCheckConnectPort"]; ok {
-		d.Set("health_check_connect_port", formatInt(healthCheckConnectPort))
+	healthCheckCodesRaw := make([]interface{}, 0)
+	if objectRaw["HealthCheckCodes"] != nil {
+		healthCheckCodesRaw = objectRaw["HealthCheckCodes"].([]interface{})
 	}
 
-	if healthCheckInterval, ok := object["HealthCheckInterval"]; ok && fmt.Sprint(healthCheckInterval) != "0" {
-		d.Set("health_check_interval", formatInt(healthCheckInterval))
-	}
-
-	if healthCheckTimeout, ok := object["HealthCheckTimeout"]; ok && fmt.Sprint(healthCheckTimeout) != "0" {
-		d.Set("health_check_timeout", formatInt(healthCheckTimeout))
-	}
-
-	if healthyThreshold, ok := object["HealthyThreshold"]; ok && fmt.Sprint(healthyThreshold) != "0" {
-		d.Set("healthy_threshold", formatInt(healthyThreshold))
-	}
-
-	if unhealthyThreshold, ok := object["UnhealthyThreshold"]; ok && fmt.Sprint(unhealthyThreshold) != "0" {
-		d.Set("unhealthy_threshold", formatInt(unhealthyThreshold))
-	}
+	d.Set("health_check_codes", healthCheckCodesRaw)
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
 
 func resourceAliCloudAlbHealthCheckTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
+	var query map[string]interface{}
 	update := false
 
-	request := map[string]interface{}{
-		"ClientToken":           buildClientToken("UpdateHealthCheckTemplateAttribute"),
-		"HealthCheckTemplateId": d.Id(),
+	var err error
+	action := "UpdateHealthCheckTemplateAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["HealthCheckTemplateId"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("health_check_connect_port") {
+		update = true
+		request["HealthCheckConnectPort"] = d.Get("health_check_connect_port")
+	}
+
+	if d.HasChange("health_check_host") {
+		update = true
+		request["HealthCheckHost"] = d.Get("health_check_host")
+	}
+
+	if d.HasChange("health_check_timeout") {
+		update = true
+		request["HealthCheckTimeout"] = d.Get("health_check_timeout")
+	}
+
+	if d.HasChange("health_check_path") {
+		update = true
+		request["HealthCheckPath"] = d.Get("health_check_path")
+	}
+
+	if d.HasChange("health_check_method") {
+		update = true
+		request["HealthCheckMethod"] = d.Get("health_check_method")
+	}
+
+	if d.HasChange("health_check_interval") {
+		update = true
+		request["HealthCheckInterval"] = d.Get("health_check_interval")
+	}
+
+	if d.HasChange("health_check_protocol") {
+		update = true
+		request["HealthCheckProtocol"] = d.Get("health_check_protocol")
 	}
 
 	if d.HasChange("health_check_template_name") {
 		update = true
 	}
 	request["HealthCheckTemplateName"] = d.Get("health_check_template_name")
-
-	if d.HasChange("health_check_connect_port") {
+	if d.HasChange("health_check_codes") {
 		update = true
-
-		if v, ok := d.GetOkExists("health_check_connect_port"); ok {
-			request["HealthCheckConnectPort"] = v
-		}
-	}
-
-	if d.HasChange("health_check_host") {
-		update = true
-	}
-	if v, ok := d.GetOk("health_check_host"); ok {
-		request["HealthCheckHost"] = v
-	}
-
-	if d.HasChange("health_check_http_version") {
-		update = true
-	}
-	if v, ok := d.GetOk("health_check_http_version"); ok {
-		request["HealthCheckHttpVersion"] = v
-	}
-
-	if d.HasChange("health_check_interval") {
-		update = true
-
-		if v, ok := d.GetOkExists("health_check_interval"); ok {
-			request["HealthCheckInterval"] = v
-		}
-	}
-
-	if d.HasChange("health_check_method") {
-		update = true
-	}
-	if v, ok := d.GetOk("health_check_method"); ok {
-		request["HealthCheckMethod"] = v
-	}
-
-	if d.HasChange("health_check_path") {
-		update = true
-	}
-	if v, ok := d.GetOk("health_check_path"); ok {
-		request["HealthCheckPath"] = v
-	}
-
-	if d.HasChange("health_check_protocol") {
-		update = true
-	}
-	if v, ok := d.GetOk("health_check_protocol"); ok {
-		request["HealthCheckProtocol"] = v
-	}
-
-	if d.HasChange("health_check_timeout") {
-		update = true
-
-		if v, ok := d.GetOkExists("health_check_timeout"); ok {
-			request["HealthCheckTimeout"] = v
-		}
-	}
-
-	if d.HasChange("healthy_threshold") {
-		update = true
-
-		if v, ok := d.GetOkExists("healthy_threshold"); ok {
-			request["HealthyThreshold"] = v
+		if v, ok := d.GetOk("health_check_codes"); ok || d.HasChange("health_check_codes") {
+			healthCheckCodesMapsArray := v.([]interface{})
+			request["HealthCheckCodes"] = healthCheckCodesMapsArray
 		}
 	}
 
 	if d.HasChange("unhealthy_threshold") {
 		update = true
-
-		if v, ok := d.GetOkExists("unhealthy_threshold"); ok {
-			request["UnhealthyThreshold"] = v
-		}
+		request["UnhealthyThreshold"] = d.Get("unhealthy_threshold")
 	}
 
-	if d.HasChange("health_check_codes") {
+	if d.HasChange("healthy_threshold") {
 		update = true
-	}
-	if v, ok := d.GetOk("health_check_codes"); ok {
-		request["HealthCheckCodes"] = v
+		request["HealthyThreshold"] = d.Get("healthy_threshold")
 	}
 
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
+	if d.HasChange("health_check_http_version") {
+		update = true
+		request["HealthCheckHttpVersion"] = d.Get("health_check_http_version")
 	}
 
 	if update {
-		action := "UpdateHealthCheckTemplateAttribute"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.HealthCheckTemplate", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.HealthCheckTemplate", "IdempotenceProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -374,35 +320,39 @@ func resourceAliCloudAlbHealthCheckTemplateUpdate(d *schema.ResourceData, meta i
 			return nil
 		})
 		addDebug(action, response, request)
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
+	if d.HasChange("tags") {
+		albServiceV2 := AlbServiceV2{client}
+		if err := albServiceV2.SetResourceTags(d, "healthchecktemplate"); err != nil {
+			return WrapError(err)
+		}
+	}
 	return resourceAliCloudAlbHealthCheckTemplateRead(d, meta)
 }
 
 func resourceAliCloudAlbHealthCheckTemplateDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHealthCheckTemplates"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["HealthCheckTemplateIds.1"] = d.Id()
 
-	request := map[string]interface{}{
-		"ClientToken":              buildClientToken("DeleteHealthCheckTemplates"),
-		"HealthCheckTemplateIds.1": d.Id(),
-	}
-
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
+	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.HealthCheckTemplate", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"SystemBusy", "IncorrectStatus.HealthCheckTemplate", "IdempotenceProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
