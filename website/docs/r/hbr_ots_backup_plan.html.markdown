@@ -7,13 +7,17 @@ description: |-
   Provides a Alicloud HBR Ots Backup Plan resource.
 ---
 
-# alicloud\_hbr\_ots\_backup\_plan
+# alicloud_hbr_ots_backup_plan
 
 Provides a HBR Ots Backup Plan resource.
 
 For information about HBR Ots Backup Plan and how to use it, see [What is Ots Backup Plan](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/overview).
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
+
+-> **NOTE:** Deprecated since v1.249.0.
+
+-> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
 ## Example Usage
 
@@ -116,11 +120,11 @@ The following arguments are supported:
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `vault_id` - (Required) The ID of backup vault.
 * `instance_name` - (Optional) The name of the Table store instance. **Note:** Required while source_type equals `OTS_TABLE`.
-* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
-* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
-* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.189.0) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available since v1.189.0) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available since v1.189.0) The role name created in the original account RAM backup by the cross account managed by the current account.
 * `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`. **Note:** Required while source_type equals `OTS_TABLE`.
-* `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`. **Note:** Required while source_type equals `OTS_TABLE`.
+* `rules` - (Optional,Available since v1.164.0) The backup plan rule. See the following `Block rules`. **Note:** Required while source_type equals `OTS_TABLE`.
 
 ### Block ots_detail
 
