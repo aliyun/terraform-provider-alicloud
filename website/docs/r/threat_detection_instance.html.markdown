@@ -20,12 +20,6 @@ For information about Threat Detection Instance and how to use it, see [What is 
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_threat_detection_instance&exampleId=b7939698-097c-9f53-a286-e40654e839a08cfdfa68&activeTab=example&spm=docs.r.threat_detection_instance.0.b793969809&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -98,6 +92,7 @@ The following arguments are supported:
   - `AGENTLESS`: AGENTLESS detection module
   - `SERVERLESS`:Serverless asset module
   - `CTDR`: threat analysis and response module
+  - `POST_HOST`: Host and container security module
   - Value:0 means off, 1 means on
 
 -> **NOTE:**  The module value of the unpassed value will not change.
@@ -156,11 +151,11 @@ Default ManualRenewal.
 
 * `threat_analysis_flow` - (Optional, Available since v1.232.0) Threat analysis and response log access traffic. After ThreatAnalysisSwitch1 is selected, it must be selected. Interval type, value interval:[0,9999999999].
 
--> **NOTE:**  Step size is 1.
+-> **NOTE:**  Step size is 100.
 
-* `threat_analysis_sls_storage` - (Optional, Available since v1.232.0) Threat analysis and response log storage capacity. Interval type, value interval:[100,9999999999].
+* `threat_analysis_sls_storage` - (Optional, Available since v1.232.0) Threat analysis and response log storage capacity. Interval type, value interval:[0,9999999999].
 
--> **NOTE:**  The step size is 100, that is, only multiples of 100 can be filled in.
+-> **NOTE:**  The step size is 1000, that is, only multiples of 1000 can be filled in.
 
 * `threat_analysis_switch` - (Optional, Computed) Threat analysis. Value:
   - 0: No.
