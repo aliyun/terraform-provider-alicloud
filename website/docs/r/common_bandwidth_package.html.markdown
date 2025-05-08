@@ -8,23 +8,17 @@ description: |-
 
 # alicloud_common_bandwidth_package
 
-Provides a CBWP Common Bandwidth Package resource. -> **NOTE:** Terraform will auto build common bandwidth package instance while it uses `alicloud_common_bandwidth_package` to build a common bandwidth package resource.
+Provides a EIP Bandwidth Plan (CBWP) Common Bandwidth Package resource.
 
-For information about common bandwidth package billing methods, see [Common Bandwidth Package Billing Methods](https://www.alibabacloud.com/help/doc-detail/67459.html).
+-> **NOTE:** Terraform will auto build common bandwidth package instance while it uses `alicloud_common_bandwidth_package` to build a common bandwidth package resource.
 
-For information about CBWP Common Bandwidth Package and how to use it, see [What is Common Bandwidth Package](https://www.alibabacloud.com/help/en/eip-bandwidth-plan).
+For information about EIP Bandwidth Plan (CBWP) Common Bandwidth Package and how to use it, see [What is Common Bandwidth Package](https://www.alibabacloud.com/help/en/eip-bandwidth-plan).
 
 -> **NOTE:** Available since v1.23.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_common_bandwidth_package&exampleId=0717d382-6add-c02a-ca9f-711341f89416202c748f&activeTab=example&spm=docs.r.common_bandwidth_package.0.0717d3826a&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -58,7 +52,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 The following arguments are supported:
 * `bandwidth` - (Required) The maximum bandwidth of the Internet Shared Bandwidth instance. Unit: Mbit/s.
 Valid values: `1` to `1000`. Default value: `1`.
-* `bandwidth_package_name` - (Optional, Available since v1.120.0) The description of the EIP bandwidth plan. The description must be 2 to 256 characters in length. It must start with a letter but cannot start with `http://` or `https://`.
+* `bandwidth_package_name` - (Optional, Computed, Available since v1.120.0) The description of the EIP bandwidth plan. The description must be 2 to 256 characters in length. It must start with a letter but cannot start with `http://` or `https://`.
 * `deletion_protection` - (Optional, Available since v1.124.4) Specifies whether to enable deletion protection. Valid values:
 
   - `true`: yes
@@ -90,9 +84,11 @@ If you are allowed to use single-ISP bandwidth, you can also use one of the foll
   - `ChinaMobile_L2`
 
 If your services are deployed in China East 1 Finance, this parameter is required and you must set the value to `BGP_FinanceCloud`.
-* `ratio` - (Optional, ForceNew, Computed, Int, Available since v1.55.3) The percentage of the minimum bandwidth commitment. Set the parameter to `20`.
+* `ratio` - (Optional, ForceNew, Computed, Int, Available since v1.55.3) The percentage of the minimum bandwidth commitment. The value is only `20`.
 
--> **NOTE:**  This parameter is available only on the Alibaba Cloud China site.
+ This parameter is required when the value of `InternetChargeType` is `PayBy95`. 
+
+-> **NOTE:** This parameter is available only on the Alibaba Cloud China site.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.115.0) The ID of the resource group to which you want to move the resource.
 
