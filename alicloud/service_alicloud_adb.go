@@ -188,7 +188,7 @@ func (s *AdbService) WaitForAdbAccount(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if object.AccountStatus == string(status) {
+		if object != nil && object.AccountStatus == string(status) {
 			break
 		}
 		if time.Now().After(deadline) {
