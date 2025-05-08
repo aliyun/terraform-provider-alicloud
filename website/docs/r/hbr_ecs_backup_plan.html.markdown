@@ -7,13 +7,17 @@ description: |-
   Provides a Alicloud Hybrid Backup Recovery (HBR) Ecs Backup Plan resource.
 ---
 
-# alicloud\_hbr\_ecs\_backup\_plan
+# alicloud_hbr_ecs_backup_plan
 
 Provides a HBR Ecs Backup Plan resource.
 
 For information about HBR Ecs Backup Plan and how to use it, see [What is Ecs Backup Plan](https://www.alibabacloud.com/help/doc-detail/186574.htm).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
+
+-> **NOTE:** Deprecated since v1.249.0.
+
+-> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 
 ## Example Usage
 
@@ -105,22 +109,22 @@ The following arguments are support:
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
-    * `startTime` Backup start time, UNIX time seconds.
-    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart. 
+  * `startTime` Backup start time, UNIX time seconds.
+  * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart. 
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{\"UseVSS\":false}`.
 * `speed_limit` - (Optional) Flow control. The format is: `{start}|{end}|{bandwidth}`. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
-    * `start` starting hour 
-    * `end` end hour 
-    * `bandwidth` limit rate, in KiB
+  * `start` starting hour 
+  * `end` end hour 
+  * `bandwidth` limit rate, in KiB
 * `path` - (Optional) List of backup path. e.g. `["/home", "/var"]`. **Note** If `path` is empty, it means that all directories will be backed up.
 * `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
 * `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 * `update_paths` - (Optional, Deprecated from v1.139.0+) Attribute update_paths has been deprecated in v1.139.0+, and you do not need to set it anymore.
 * `detail` - (Optional) The detail of the backup plan.
-* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
-* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
-* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.189.0) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available since v1.189.0) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available since v1.189.0) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 ## Notice
 
