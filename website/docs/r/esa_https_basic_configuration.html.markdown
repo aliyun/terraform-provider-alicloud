@@ -41,8 +41,13 @@ resource "alicloud_esa_rate_plan_instance" "example" {
   plan_name    = "high"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_esa_site" "resource_HttpBasicConfiguration_set_example" {
-  site_name   = "gositecdn.cn"
+  site_name   = "gositecdn-${random_integer.default.result}.cn"
   instance_id = alicloud_esa_rate_plan_instance.example.id
   coverage    = "overseas"
   access_type = "NS"
