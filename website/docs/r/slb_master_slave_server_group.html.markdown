@@ -7,7 +7,7 @@ description: |-
   Provides a Load Banlancer Master Slave Server Group resource.
 ---
 
-# alicloud\_slb\_master\_slave\_server\_group
+# alicloud_slb_master_slave_server_group
 
 A master slave server group contains two ECS instances. The master slave server group can help you to define multiple listening dimension.
 
@@ -23,7 +23,7 @@ A master slave server group contains two ECS instances. The master slave server 
 
 -> **NOTE:** One VPC load balancer, its master slave server group can only add the same VPC ECS instances.
 
--> **NOTE:** Available in 1.54.0+
+-> **NOTE:** Available since v1.54.0+
 
 ## Example Usage
 
@@ -40,8 +40,10 @@ data "alicloud_zones" "ms_server_group" {
 }
 
 data "alicloud_instance_types" "ms_server_group" {
-  availability_zone = data.alicloud_zones.ms_server_group.zones[0].id
-  eni_amount        = 2
+  availability_zone    = data.alicloud_zones.ms_server_group.zones[0].id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g6"
 }
 
 data "alicloud_images" "image" {
@@ -67,8 +69,8 @@ resource "alicloud_vswitch" "main" {
 }
 
 resource "alicloud_security_group" "group" {
-  name   = var.slb_master_slave_server_group
-  vpc_id = alicloud_vpc.main.id
+  security_group_name = var.slb_master_slave_server_group
+  vpc_id              = alicloud_vpc.main.id
 }
 
 resource "alicloud_instance" "ms_server_group" {
@@ -146,14 +148,14 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new master slave server group.
 * `name` - (Required, ForceNew) Name of the master slave server group. 
-* `servers` - (Optional, ForceNew) A list of ECS instances to be added. Only two ECS instances can be supported in one resource. It contains six sub-fields as `Block server` follows.
+* `servers` - (Optional, ForceNew) A list of ECS instances to be added. Only two ECS instances can be supported in one resource. See [`servers`](#servers) below.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
-## Block servers
+### `servers`
 
 The servers mapping supports the following:
 
-* `server_ids` - (Required) A list backend server ID (ECS instance ID).
+* `server_id` - (Required) A list backend server ID (ECS instance ID).
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 * `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
