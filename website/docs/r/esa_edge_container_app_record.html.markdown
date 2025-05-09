@@ -35,8 +35,13 @@ data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_esa_site" "resource_Site_OriginPool_test" {
-  site_name   = var.name
+  site_name   = "gositecdn-${random_integer.default.result}.cn"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
