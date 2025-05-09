@@ -8,6 +8,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"golang.org/x/tools/imports"
 	"log"
@@ -22,12 +23,17 @@ var (
 	resource          = flag.String("r", "", "resource")
 	sourceProviderDir = flag.String("s", "", "source provider dir path")
 	destProviderDir   = flag.String("t", "", "target provider dir path")
+	functionName      = flag.String("f", "", "function name in service")
 )
 
 var specialResourceMap = map[string]map[string]string{
 	"vpc": {
-		"vpc":     "vpc",
-		"vswitch": "vswitch",
+		"vpc":                    "vpc",
+		"vswitch":                "vswitch",
+		"havip_attachment":       "havip_attachment",
+		"network_acl":            "network_acl",
+		"route_table":            "route_table",
+		"route_table_attachment": "route_table_attachment",
 	},
 	"ecs": {
 		"instance": "instance",
@@ -39,8 +45,12 @@ var specialResourceMap = map[string]map[string]string{
 
 var specialDataSourceMap = map[string]map[string]string{
 	"vpc": {
-		"vpc":     "vpcs",
-		"vswitch": "vswitches",
+		"vpc":                    "vpcs",
+		"vswitch":                "vswitches",
+		"havip_attachment":       "havip_attachments",
+		"network_acl":            "network_acls",
+		"route_table":            "route_tables",
+		"route_table_attachment": "route_table_attachments",
 	},
 	"ecs": {
 		"instance": "instances",
@@ -98,6 +108,123 @@ func main() {
 	if err := migrateDataSourceDocument(namespace, resource); err != nil {
 		log.Printf("Error migrateResourceDocument: %v", err)
 	}
+
+	if functionName != nil && *functionName != "" {
+		if err := migrateServiceFunction(namespace); err != nil {
+			log.Printf("Error migrate function: %v", err)
+		}
+	}
+
+	log.Printf("Migrate %v finished! ^-^ ", *resource)
+}
+
+func migrateServiceFunction(namespace *string) error {
+	serviceFiles := []struct {
+		pattern string
+		version string
+	}{
+		{fmt.Sprintf("service_alicloud_%s.go", *namespace), "v1"},
+		// {fmt.Sprintf("service_alicloud_%s_v2.go", *namespace), "v2"},
+	}
+
+	for _, sf := range serviceFiles {
+		sourcePath := filepath.Join(*sourceProviderDir, "alicloud", sf.pattern)
+		destDir := filepath.Join(*destProviderDir, "internal", "service", *namespace)
+
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return fmt.Errorf("create service dir failed: %w", err)
+		}
+
+		destFile := "service_common.go"
+		if sf.version == "v2" {
+			destFile = "service_common_v2.go"
+		}
+
+		if err := copyAndModifyFunction(sourcePath, filepath.Join(destDir, destFile), *namespace, sf.version); err != nil {
+			return fmt.Errorf("failed to migrate %s: %w", sf.pattern, err)
+		}
+	}
+	return nil
+}
+
+func functionExists(filePath string, funcName string) bool {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return false
+	}
+
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
+	if err != nil {
+		log.Printf("Error parsing file %s: %v", filePath, err)
+		return false
+	}
+
+	var exists bool
+	ast.Inspect(node, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			if fn.Name.Name == funcName {
+				exists = true
+				return false
+			}
+		}
+		return true
+	})
+
+	return exists
+}
+
+func copyAndModifyFunction(src, dest, namespace, version string) error {
+
+	if functionExists(dest, *functionName) {
+		log.Printf("Function %s already exists in %s, skip migration", *functionName, dest)
+		return nil
+	}
+
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, src, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("parse error: %w", err)
+	}
+
+	var funcDecl *ast.FuncDecl
+	ast.Inspect(node, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok && fn.Name.Name == *functionName {
+			funcDecl = fn
+			return false
+		}
+		return true
+	})
+
+	if funcDecl == nil {
+		return fmt.Errorf("function %s not found", *functionName)
+	}
+
+	var buf bytes.Buffer
+	printer.Fprint(&buf, fset, funcDecl)
+
+	code := applyFunctionModifications(buf.String(), version)
+
+	f, err := os.OpenFile(dest, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("open file failed: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString("\n" + code + "\n"); err != nil {
+		return fmt.Errorf("write failed: %w", err)
+	}
+	return nil
+}
+
+func applyFunctionModifications(code string, version string) string {
+	lines := strings.Split(code, "\n")
+	var modifiedLines []string
+	for _, line := range lines {
+		line = modifyServiceFunctionLine(line, version)
+		modifiedLines = append(modifiedLines, line)
+	}
+	finalCode := strings.Join(modifiedLines, "\n")
+	return finalCode
 }
 
 func migrateResource(namespace, resource *string) error {
@@ -161,7 +288,9 @@ func migrateDataSourceDocument(namespace, resource *string) error {
 
 	err := copyFile(sourceFilePath, destFilePath)
 	if err != nil {
-		log.Fatalf("Error copying file: %v", err)
+		log.Printf("Error copying file: %v", err)
+		log.Printf("Skipped copying file: %v", sourceFilePath)
+		return nil
 	}
 
 	if err = modifyDocument(destFilePath, *namespace, *resource); err != nil {
@@ -185,7 +314,9 @@ func migrateDataSource(namespace, resource *string) error {
 
 	err := copyFile(sourceFilePath, destFilePath)
 	if err != nil {
-		log.Fatalf("Error copying file: %v", err)
+		log.Printf("Error copying file: %v", err)
+		log.Printf("Skipped copying file: %v", sourceFilePath)
+		return nil
 	}
 
 	if err = modifyResourceFile(destFilePath, *namespace, *resource); err != nil {
@@ -282,7 +413,9 @@ func migrateDataSourceTest(namespace, resource *string) error {
 
 	err := copyFile(sourceFileTestPath, destFileTestPath)
 	if err != nil {
-		log.Fatalf("Error copying file: %v", err)
+		log.Printf("Error copying file: %v", err)
+		log.Printf("Skipped copying file: %v", sourceFileTestPath)
+		return nil
 	}
 
 	if err = modifyResourceTestFile(destFileTestPath, *namespace, *resource); err != nil {
@@ -347,7 +480,7 @@ func modifyDocument(filePath, namespace, resource string) error {
 	return nil
 }
 
-func replaceLine(line string) string {
+func commonReplaces(line string) string {
 
 	line = strings.ReplaceAll(line, "string(PostgreSQL)", "\"PostgreSQL\"")
 	line = strings.ReplaceAll(line, "string(MySQL)", "\"MySQL\"")
@@ -372,7 +505,9 @@ func replaceLine(line string) string {
 	line = strings.ReplaceAll(line, "PageSizeMedium", "names.PageSizeMedium")
 
 	line = strings.ReplaceAll(line, "convertListToJsonString", "helper.ConvertListToJsonString")
+	line = strings.ReplaceAll(line, "convertObjectToJsonString", "helper.ConvertObjectToJsonString")
 	line = strings.ReplaceAll(line, "expandStringList", "helper.ExpandStringList")
+	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
 
 	if isVariable(line, "Throttling") {
 		line = strings.ReplaceAll(line, "Throttling", "\"Throttling\"")
@@ -389,6 +524,9 @@ func replaceLine(line string) string {
 	if isVariable(line, "RenewNotRenewal") {
 		line = strings.ReplaceAll(line, "RenewNotRenewal", "\"NotRenewal\"")
 	}
+
+	rdkPointerRe := regexp.MustCompile(`rdk\.StringPointer\(\s*d\.Get\("([^"]+)"\)(?:\.\(string\))?\s*\)`)
+	line = rdkPointerRe.ReplaceAllString(line, `rdk.StringPointer(d.Get("$1").(string))`)
 
 	return line
 }
@@ -409,12 +547,33 @@ func isVariable(line, code string) bool {
 	return true
 }
 
+func skipUpdate(filePath string) bool {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return true
+	}
+	re := regexp.MustCompile(` Cannot update`)
+	return re.Match(content)
+}
+
+func skipDelete(filePath string) bool {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return true
+	}
+	re := regexp.MustCompile(` Cannot delete`)
+	return re.Match(content)
+}
+
 func modifyResourceFile(filePath, namespace, resource string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file for modification: %w", err)
 	}
 	defer file.Close()
+
+	skippedUpdate := skipUpdate(filePath)
+	skippedDelete := skipDelete(filePath)
 
 	scanner := bufio.NewScanner(file)
 	var lines []string
@@ -543,6 +702,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "WaitForState()", "WaitForStateContext(ctx)")
 
 		line = strings.ReplaceAll(line, "convertListToCommaSeparate", "helper.ConvertListToCommaSeparate")
+		line = strings.ReplaceAll(line, "compareJsonTemplateAreEquivalent", "helper.CompareJsonTemplateAreEquivalent")
 		line = strings.ReplaceAll(line, "ConvertTags", "service.ConvertTags")
 		line = strings.ReplaceAll(line, "expandTagsToMap", "service.ExpandTagsToMap")
 		line = strings.ReplaceAll(line, "InArray", "helper.InArray")
@@ -596,7 +756,9 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		}
 
 		if strings.Contains(line, "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {") {
-			line = line + "\nvar diags diag.Diagnostics\n"
+			if (!strings.Contains(line, "Update") || !skippedUpdate) && (!strings.Contains(line, "Delete") || !skippedDelete) {
+				line = line + "\nvar diags diag.Diagnostics\n"
+			}
 		}
 
 		if strings.Contains(line, "client.Rpc") {
@@ -629,7 +791,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
 
-		line = replaceLine(line)
+		line = commonReplaces(line)
 
 		line = strings.ReplaceAll(line, "dataResourceIdHash", "helper.DataResourceIdHash")
 		line = strings.ReplaceAll(line, "writeToFile", "helper.WriteToFile")
@@ -682,18 +844,6 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	imports := "import ("
 	imports = imports + "\n\"" + "context\""
 
-	clientRe := regexp.MustCompile(`client\.Rpc([A-Za-z]+)\(\s*"([^"]+)",\s*"([^"]+)",\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)`)
-	serviceRe := regexp.MustCompile(`([A-Z]\w*?)Service\b`)
-	if version == "v2" {
-		serviceRe = regexp.MustCompile(`([A-Z]\w*?)ServiceV2\b`)
-	}
-
-	queryAssignRe := regexp.MustCompile(`query\["([^"]+)"\]\s*=\s*([^;\n]+)`)
-
-	stateRefreshDeclRe := regexp.MustCompile(`(func\s*\(.*?\)\s*\w+StateRefreshFunc)\s*\(`)
-	stateRefreshCallRe := regexp.MustCompile(`(\w+)\.(\w+StateRefreshFunc)\s*\(`)
-	diffSuppressRe := regexp.MustCompile(`(\w+)DiffSuppressFunc`)
-
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -710,116 +860,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/connectivity")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", headers)
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema")
-
-		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
-
-		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
-		if !strings.Contains(line, "func") {
-			line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
-		}
-		line = strings.ReplaceAll(line, "AliCloud", "")
-		line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
-		line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
-
-		line = strings.ReplaceAll(line, "State: schema.ImportStatePassthrough,", "StateContext: schema.ImportStatePassthroughContext,")
-		line = strings.ReplaceAll(line, "buildClientToken", "helper.BuildClientToken")
-		line = strings.ReplaceAll(line, "incrementalWait", "helper.IncrementalWait")
-		line = strings.ReplaceAll(line, "resource.", "retry.")
-		line = strings.ReplaceAll(line, "NeedRetry(err)", "tferr.NeedRetry(err)")
-		line = strings.ReplaceAll(line, "addDebug", "helper.AddDebug")
-		line = strings.ReplaceAll(line, "retry.Retry(", "retry.RetryContext(ctx, ")
-		line = strings.ReplaceAll(line, "WaitForState()", "WaitForStateContext(ctx)")
-
-		if strings.Contains(line, "StateRefreshFunc") {
-			if matches := stateRefreshDeclRe.FindStringSubmatch(line); len(matches) > 0 {
-				line = strings.Replace(line, matches[0], matches[1]+"(ctx context.Context, ", 1)
-			}
-
-			if matches := stateRefreshCallRe.FindStringSubmatch(line); len(matches) > 0 {
-				line = strings.Replace(line, matches[0], matches[1]+"."+matches[2]+"(ctx, ", 1)
-			}
-		}
-
-		line = strings.ReplaceAll(line, "convertListToCommaSeparate", "helper.ConvertListToCommaSeparate")
-		line = strings.ReplaceAll(line, "ConvertTags", "service.ConvertTags")
-		line = strings.ReplaceAll(line, "expandTagsToMap", "service.ExpandTagsToMap")
-		line = strings.ReplaceAll(line, "InArray", "helper.InArray")
-		line = strings.ReplaceAll(line, "parsingTags", "service.ParsingTags")
-		line = strings.ReplaceAll(line, "ignoredTags", "service.IgnoredTags")
-		line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
-		line = strings.ReplaceAll(line, "Trim(", "helper.Trim(")
-		line = strings.ReplaceAll(line, "isPagingRequest", "helper.IsPagingRequest")
-		line = strings.ReplaceAll(line, "formatInt", "helper.FormatInt")
-		line = strings.ReplaceAll(line, "formatBool", "helper.FormatBool")
-
-		line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
-		line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
-		line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
-
-		line = strings.ReplaceAll(line, "DefaultErrorMsg", "tferr.DefaultErrorMsg")
-		line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
-		line = strings.ReplaceAll(line, "IsExpectedErrors", "tferr.IsExpectedErrors")
-		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
-		line = strings.ReplaceAll(line, "NotFoundErr(", "tferr.NotFoundErr(")
-		line = strings.ReplaceAll(line, "NotFoundMsg", "tferr.NotFoundMsg")
-		line = strings.ReplaceAll(line, "ProviderERROR", "tferr.ProviderERROR")
-		line = strings.ReplaceAll(line, "FailedGetAttributeMsg", "tferr.FailedGetAttributeMsg")
-		line = strings.ReplaceAll(line, "NotFoundWithResponse", "tferr.NotFoundWithResponse")
-		line = strings.ReplaceAll(line, "FailedToReachTargetStatus", "tferr.FailedToReachTargetStatus")
-		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
-		line = strings.ReplaceAll(line, "(Error(", "(tferr.Error(")
-		line = strings.ReplaceAll(line, "tferr.NotFoundMsg, tferr.ProviderERROR,", "tferr.NotFoundMsg,")
-
-		line = diffSuppressRe.ReplaceAllStringFunc(line, func(m string) string {
-			parts := diffSuppressRe.FindStringSubmatch(m)
-			if len(parts) < 2 {
-				return m
-			}
-			prefix := strings.ToUpper(string(parts[1][0])) + parts[1][1:]
-			return "helper." + prefix + "DiffSuppressFunc"
-		})
-
-		line = strings.ReplaceAll(line, "hashcode.String", "helper.HashString")
-
-		if strings.Contains(line, "client.Rpc") {
-			matches := clientRe.FindStringSubmatch(line)
-
-			if len(matches) == 8 {
-				httpMethod := strings.ToUpper(matches[1])
-				service := matches[2]
-				version := matches[3]
-				action := matches[4]
-				pathParams := matches[5]
-				request := matches[6]
-				async := matches[7]
-
-				newLine := fmt.Sprintf(
-					`client.Do("%s", client.NewRpcParam("%s", "%s", %s), %s, %s, nil, nil, %s)`,
-					service,
-					httpMethod,
-					version,
-					action,
-					pathParams,
-					request,
-					async,
-				)
-
-				line = strings.Replace(line, matches[0], newLine, 1)
-			}
-		}
-		if version == "v2" {
-			line = serviceRe.ReplaceAllString(line, "ServiceV2")
-		} else {
-			line = serviceRe.ReplaceAllString(line, "Service$2")
-		}
-
-		line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
-		line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
-		line = strings.ReplaceAll(line, "query = make(map[string]interface{})", "query = make(map[string]*string)")
-		line = queryAssignRe.ReplaceAllString(line, `query["$1"] = rdk.StringPointer($2)`)
-
-		line = strings.ReplaceAll(line, "RetryContext(ctx,", "RetryContext(context.Background(),")
-		line = strings.ReplaceAll(line, "alicloud_", "apsara_")
+		line = modifyServiceFunctionLine(line, version)
 
 		if strings.Contains(line, "type ServiceV2 struct {") {
 			lines = append(lines, "func NewServiceV2(client *connectivity.Client) *ServiceV2 {")
@@ -831,7 +872,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 			lines = append(lines, "}")
 		}
 
-		line = replaceLine(line)
+		line = commonReplaces(line)
 
 		lines = append(lines, line)
 	}
@@ -858,6 +899,132 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	return nil
 }
 
+func modifyServiceFunctionLine(line, version string) string {
+
+	clientRe := regexp.MustCompile(`client\.Rpc([A-Za-z]+)\(\s*"([^"]+)",\s*"([^"]+)",\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)`)
+	serviceRe := regexp.MustCompile(`([A-Z]\w*?)Service\b`)
+	if version == "v2" {
+		serviceRe = regexp.MustCompile(`([A-Z]\w*?)ServiceV2\b`)
+	}
+
+	queryAssignRe := regexp.MustCompile(`query\["([^"]+)"\]\s*=\s*([^;\n]+)`)
+
+	stateRefreshDeclRe := regexp.MustCompile(`(func\s*\(.*?\)\s*\w+StateRefreshFunc)\s*\(`)
+	stateRefreshCallRe := regexp.MustCompile(`(\w+)\.(\w+StateRefreshFunc)\s*\(`)
+	diffSuppressRe := regexp.MustCompile(`(\w+)DiffSuppressFunc`)
+
+	line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
+
+	line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
+	if !strings.Contains(line, "func") {
+		line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
+	}
+	line = strings.ReplaceAll(line, "AliCloud", "")
+	line = strings.ReplaceAll(line, "connectivity.AliyunClient", "connectivity.Client")
+	line = strings.ReplaceAll(line, "(d *schema.ResourceData, meta interface{}) error {", "(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {")
+
+	line = strings.ReplaceAll(line, "State: schema.ImportStatePassthrough,", "StateContext: schema.ImportStatePassthroughContext,")
+	line = strings.ReplaceAll(line, "buildClientToken", "helper.BuildClientToken")
+	line = strings.ReplaceAll(line, "incrementalWait", "helper.IncrementalWait")
+	line = strings.ReplaceAll(line, "resource.", "retry.")
+	line = strings.ReplaceAll(line, "NeedRetry(err)", "tferr.NeedRetry(err)")
+	line = strings.ReplaceAll(line, "addDebug", "helper.AddDebug")
+	line = strings.ReplaceAll(line, "retry.Retry(", "retry.RetryContext(ctx, ")
+	line = strings.ReplaceAll(line, "WaitForState()", "WaitForStateContext(ctx)")
+
+	if strings.Contains(line, "StateRefreshFunc") {
+		if matches := stateRefreshDeclRe.FindStringSubmatch(line); len(matches) > 0 {
+			line = strings.Replace(line, matches[0], matches[1]+"(ctx context.Context, ", 1)
+		}
+
+		if matches := stateRefreshCallRe.FindStringSubmatch(line); len(matches) > 0 {
+			line = strings.Replace(line, matches[0], matches[1]+"."+matches[2]+"(ctx, ", 1)
+		}
+	}
+
+	line = strings.ReplaceAll(line, "convertListToCommaSeparate", "helper.ConvertListToCommaSeparate")
+	line = strings.ReplaceAll(line, "ConvertTags", "service.ConvertTags")
+	line = strings.ReplaceAll(line, "expandTagsToMap", "service.ExpandTagsToMap")
+	line = strings.ReplaceAll(line, "InArray", "helper.InArray")
+	line = strings.ReplaceAll(line, "parsingTags", "service.ParsingTags")
+	line = strings.ReplaceAll(line, "ignoredTags", "service.IgnoredTags")
+	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
+	line = strings.ReplaceAll(line, "Trim(", "helper.Trim(")
+	line = strings.ReplaceAll(line, "isPagingRequest", "helper.IsPagingRequest")
+	line = strings.ReplaceAll(line, "formatInt", "helper.FormatInt")
+	line = strings.ReplaceAll(line, "formatBool", "helper.FormatBool")
+
+	line = strings.ReplaceAll(line, "IdMsg", "tferr.IdMsg")
+	line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
+	line = strings.ReplaceAll(line, "WrapErrorf(", "tferr.WrapErrorf(")
+
+	line = strings.ReplaceAll(line, "DefaultErrorMsg", "tferr.DefaultErrorMsg")
+	line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
+	line = strings.ReplaceAll(line, "IsExpectedErrors", "tferr.IsExpectedErrors")
+	line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
+	line = strings.ReplaceAll(line, "NotFoundErr(", "tferr.NotFoundErr(")
+	line = strings.ReplaceAll(line, "NotFoundMsg", "tferr.NotFoundMsg")
+	line = strings.ReplaceAll(line, "ProviderERROR", "tferr.ProviderERROR")
+	line = strings.ReplaceAll(line, "FailedGetAttributeMsg", "tferr.FailedGetAttributeMsg")
+	line = strings.ReplaceAll(line, "NotFoundWithResponse", "tferr.NotFoundWithResponse")
+	line = strings.ReplaceAll(line, "FailedToReachTargetStatus", "tferr.FailedToReachTargetStatus")
+	line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
+	line = strings.ReplaceAll(line, "(Error(", "(tferr.Error(")
+	line = strings.ReplaceAll(line, "tferr.NotFoundMsg, tferr.ProviderERROR,", "tferr.NotFoundMsg,")
+
+	line = diffSuppressRe.ReplaceAllStringFunc(line, func(m string) string {
+		parts := diffSuppressRe.FindStringSubmatch(m)
+		if len(parts) < 2 {
+			return m
+		}
+		prefix := strings.ToUpper(string(parts[1][0])) + parts[1][1:]
+		return "helper." + prefix + "DiffSuppressFunc"
+	})
+
+	line = strings.ReplaceAll(line, "hashcode.String", "helper.HashString")
+
+	if strings.Contains(line, "client.Rpc") {
+		matches := clientRe.FindStringSubmatch(line)
+
+		if len(matches) == 8 {
+			httpMethod := strings.ToUpper(matches[1])
+			service := matches[2]
+			version := matches[3]
+			action := matches[4]
+			pathParams := matches[5]
+			request := matches[6]
+			async := matches[7]
+
+			newLine := fmt.Sprintf(
+				`client.Do("%s", client.NewRpcParam("%s", "%s", %s), %s, %s, nil, nil, %s)`,
+				service,
+				httpMethod,
+				version,
+				action,
+				pathParams,
+				request,
+				async,
+			)
+
+			line = strings.Replace(line, matches[0], newLine, 1)
+		}
+	}
+	if version == "v2" {
+		line = serviceRe.ReplaceAllString(line, "ServiceV2")
+	} else {
+		line = serviceRe.ReplaceAllString(line, "Service$2")
+	}
+
+	line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
+	line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
+	line = strings.ReplaceAll(line, "query = make(map[string]interface{})", "query = make(map[string]*string)")
+	line = queryAssignRe.ReplaceAllString(line, `query["$1"] = rdk.StringPointer($2)`)
+
+	line = strings.ReplaceAll(line, "RetryContext(ctx,", "RetryContext(context.Background(),")
+	line = strings.ReplaceAll(line, "alicloud_", "apsara_")
+	return line
+}
+
 func modifyResourceTestFile(filePath, namespace, resource string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -878,6 +1045,10 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		if strings.Contains(line, "testAccPreCheckWithEnvVariable") {
+			continue
+		}
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace+"_test")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/acctest", headers)
@@ -900,6 +1071,7 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "rac.checkResourceDestroy()", "rac.CheckResourceDestroy()")
 		line = strings.ReplaceAll(line, "resourceAttrMapUpdateSet", "ResourceAttrMapUpdateSet")
 		line = strings.ReplaceAll(line, "testAccPreCheckWithRegions", "tftest.TestAccPreCheckWithRegions")
+		line = strings.ReplaceAll(line, "checkoutSupportedRegions", "tftest.TestAccPreCheckWithRegions")
 		line = strings.ReplaceAll(line, "CHECKSET", "tftest.CHECKSET")
 		line = strings.ReplaceAll(line, "REMOVEKEY", "tftest.REMOVEKEY")
 		line = strings.ReplaceAll(line, "NOSET", "tftest.NOSET")
