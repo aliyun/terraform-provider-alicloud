@@ -28,9 +28,9 @@ Basic Usage
 
 ```terraform
 variable "name" {
+  type    = string
   default = "terraform-example"
 }
-
 data "alicloud_resource_manager_resource_groups" "default" {
 }
 
@@ -42,12 +42,18 @@ resource "alicloud_vpc" "default" {
   cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  count        = 2
+resource "alicloud_vswitch" "default1" {
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = format("10.4.%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_alb_zones.default.zones[count.index].id
-  vswitch_name = format("${var.name}_%d", count.index + 1)
+  cidr_block   = "10.4.1.0/24"
+  zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  vswitch_name = "${var.name}_1"
+}
+
+resource "alicloud_vswitch" "default2" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.4.2.0/24"
+  zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  vswitch_name = "${var.name}_2"
 }
 
 resource "alicloud_alb_load_balancer" "default" {
@@ -64,11 +70,11 @@ resource "alicloud_alb_load_balancer" "default" {
     status = "NonProtection"
   }
   zone_mappings {
-    vswitch_id = alicloud_vswitch.default.0.id
+    vswitch_id = alicloud_vswitch.default1.id
     zone_id    = data.alicloud_alb_zones.default.zones.0.id
   }
   zone_mappings {
-    vswitch_id = alicloud_vswitch.default.1.id
+    vswitch_id = alicloud_vswitch.default2.id
     zone_id    = data.alicloud_alb_zones.default.zones.1.id
   }
   tags = {
