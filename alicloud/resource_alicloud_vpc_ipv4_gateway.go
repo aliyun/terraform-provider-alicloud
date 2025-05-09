@@ -14,10 +14,10 @@ import (
 
 func resourceAliCloudVpcIpv4Gateway() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcIpv4GatewayCreate,
-		Read:   resourceAlicloudVpcIpv4GatewayRead,
-		Update: resourceAlicloudVpcIpv4GatewayUpdate,
-		Delete: resourceAlicloudVpcIpv4GatewayDelete,
+		Create: resourceAliCloudVpcIpv4GatewayCreate,
+		Read:   resourceAliCloudVpcIpv4GatewayRead,
+		Update: resourceAliCloudVpcIpv4GatewayUpdate,
+		Delete: resourceAliCloudVpcIpv4GatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -39,6 +39,11 @@ func resourceAliCloudVpcIpv4Gateway() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"internet_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"public", "private"}, false),
 			},
 			"ipv4_gateway_description": {
 				Type:     schema.TypeString,
@@ -76,12 +81,14 @@ func resourceAliCloudVpcIpv4Gateway() *schema.Resource {
 	}
 }
 
-func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateIpv4Gateway"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
@@ -97,12 +104,15 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
 	request["DryRun"] = d.Get("dry_run")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
 				wait()
@@ -110,9 +120,9 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipv4_gateway", action, AlibabaCloudSdkGoERROR)
@@ -121,15 +131,15 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	d.SetId(fmt.Sprint(response["Ipv4GatewayId"]))
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcIpv4GatewayUpdate(d, meta)
+	return resourceAliCloudVpcIpv4GatewayUpdate(d, meta)
 }
 
-func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcServiceV2 := VpcServiceV2{client}
 
@@ -152,22 +162,69 @@ func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}
 	d.Set("status", objectRaw["Status"])
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("ipv4_gateway_id", objectRaw["Ipv4GatewayId"])
+
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "UpdateIpv4GatewayAttribute"
-	var err error
-	request = make(map[string]interface{})
 
+	if d.HasChange("enabled") {
+		var err error
+		vpcServiceV2 := VpcServiceV2{client}
+		object, err := vpcServiceV2.DescribeVpcIpv4Gateway(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("enabled").(bool)
+		if object["Enabled"].(bool) != target {
+			if target == true {
+				action := "EnableVpcIpv4Gateway"
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["Ipv4GatewayId"] = d.Id()
+				request["RegionId"] = client.RegionId
+				request["DryRun"] = d.Get("dry_run")
+				request["ClientToken"] = buildClientToken(action)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus", "LastTokenProcessing", "SystemBusy", "OperationFailed.LastTokenProcessing", "ServiceUnavailable"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				vpcServiceV2 := VpcServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+
+			}
+		}
+	}
+
+	var err error
+	action := "UpdateIpv4GatewayAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["Ipv4GatewayId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -185,9 +242,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -195,32 +250,28 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("ipv4_gateway_name")
-		d.SetPartial("ipv4_gateway_description")
 	}
 	update = false
 	action = "MoveResourceGroup"
 	request = make(map[string]interface{})
-
+	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
-
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "IPV4GATEWAY"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
-
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -228,93 +279,44 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
-	if d.HasChange("enabled") {
-		client := meta.(*connectivity.AliyunClient)
-		vpcServiceV2 := VpcServiceV2{client}
-		object, err := vpcServiceV2.DescribeVpcIpv4Gateway(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
-		target := d.Get("enabled").(bool)
-		if object["Enabled"].(bool) != target {
-			if target == true {
-				action = "EnableVpcIpv4Gateway"
-				request = make(map[string]interface{})
-
-				request["Ipv4GatewayId"] = d.Id()
-				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
-				request["DryRun"] = d.Get("dry_run")
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-					request["ClientToken"] = buildClientToken(action)
-
-					if err != nil {
-						if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus", "LastTokenProcessing", "SystemBusy", "OperationFailed.LastTokenProcessing", "ServiceUnavailable"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				vpcServiceV2 := VpcServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-
-			}
-		}
-	}
-
-	update = false
 	if d.HasChange("tags") {
-		update = true
 		vpcServiceV2 := VpcServiceV2{client}
 		if err := vpcServiceV2.SetResourceTags(d, "IPV4GATEWAY"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudVpcIpv4GatewayRead(d, meta)
+	return resourceAliCloudVpcIpv4GatewayRead(d, meta)
 }
 
-func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteIpv4Gateway"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-
 	request["Ipv4GatewayId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
-
 	request["DryRun"] = d.Get("dry_run")
+
+	if v, ok := d.GetOk("internet_mode"); ok {
+		request["InternetMode"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -324,18 +326,22 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcIpv4GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
