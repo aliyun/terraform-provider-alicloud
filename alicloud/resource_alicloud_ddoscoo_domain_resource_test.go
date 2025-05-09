@@ -24,7 +24,7 @@ import (
 func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudDdoscooDomainResourceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDdoscooDomainResource")
@@ -32,11 +32,12 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandString(10)
 	name := fmt.Sprintf("tf-testacc%s.alibaba.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdoscooDomainResourceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -158,7 +159,7 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudDdoscooDomainResourceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDdoscooDomainResource")
@@ -166,7 +167,7 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%d.alibaba.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdoscooDomainResourceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -214,7 +215,7 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 	})
 }
 
-var AlicloudDdoscooDomainResourceMap0 = map[string]string{
+var AliCloudDdoscooDomainResourceMap0 = map[string]string{
 	"https_ext":      CHECKSET,
 	"cname":          CHECKSET,
 	"instance_ids.#": "1",
@@ -223,14 +224,14 @@ var AlicloudDdoscooDomainResourceMap0 = map[string]string{
 	"rs_type":        "0",
 }
 
-func AlicloudDdoscooDomainResourceBasicDependence0(name string) string {
+func AliCloudDdoscooDomainResourceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_ddoscoo_instances" "default" {
 	}
 `)
 }
 
-func TestUnitAlicloudDdoscooDomainResource(t *testing.T) {
+func TestUnitAliCloudDdoscooDomainResource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_domain_resource"].Schema).Data(nil, nil)
@@ -517,7 +518,7 @@ func TestUnitAlicloudDdoscooDomainResource(t *testing.T) {
 func TestAccAliCloudDdosCooDomainResource_basic7932(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosCooDomainResourceMap7932)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooDomainResourceMap7932)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDdosCooDomainResource")
@@ -525,7 +526,7 @@ func TestAccAliCloudDdosCooDomainResource_basic7932(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sddoscoodomainresource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosCooDomainResourceBasicDependence7932)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooDomainResourceBasicDependence7932)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -592,19 +593,17 @@ func TestAccAliCloudDdosCooDomainResource_basic7932(t *testing.T) {
 					"instance_ids": []string{
 						"${alicloud_ddoscoo_instance.defaultTTvY0D.id}"},
 					"https_ext":       "{\\\"Https2http\\\":0,\\\"Http2\\\":0,\\\"Http2https\\\":0}",
-					"cert_identifier": "${alicloud_ssl_certificates_service_certificate.default3MYZEt.id}",
+					"cert_identifier": "${local.certificate_id}",
 					"cert_region":     "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rs_type":         "1",
-						"ocsp_enabled":    "true",
-						"proxy_types.#":   "1",
-						"real_servers.#":  "1",
-						"instance_ids.#":  "1",
-						"https_ext":       "{\"Https2http\":0,\"Http2\":0,\"Http2https\":0}",
-						"cert_identifier": CHECKSET,
-						"cert_region":     "cn-hangzhou",
+						"rs_type":        "1",
+						"ocsp_enabled":   "true",
+						"proxy_types.#":  "1",
+						"real_servers.#": "1",
+						"instance_ids.#": "1",
+						"https_ext":      "{\"Https2http\":0,\"Http2\":0,\"Http2https\":0}",
 					}),
 				),
 			},
@@ -618,11 +617,11 @@ func TestAccAliCloudDdosCooDomainResource_basic7932(t *testing.T) {
 	})
 }
 
-var AlicloudDdosCooDomainResourceMap7932 = map[string]string{
+var AliCloudDdosCooDomainResourceMap7932 = map[string]string{
 	"cname": CHECKSET,
 }
 
-func AlicloudDdosCooDomainResourceBasicDependence7932(name string) string {
+func AliCloudDdosCooDomainResourceBasicDependence7932(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -737,7 +736,9 @@ fKbiiiOAQE8s2v8Paa+b00GspeWLow4u0G5lBVau4JjEVnl6ivLXlzY=
 EOF
 }
 
-
+locals {
+  certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default3MYZEt.id, "-cn-hangzhou"])
+}
 `, name)
 }
 
@@ -745,7 +746,7 @@ EOF
 func TestAccAliCloudDdosCooDomainResource_basic7935(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_domain_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosCooDomainResourceMap7935)
+	ra := resourceAttrInit(resourceId, AliCloudDdosCooDomainResourceMap7935)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDdosCooDomainResource")
@@ -753,7 +754,7 @@ func TestAccAliCloudDdosCooDomainResource_basic7935(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sddoscoodomainresource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosCooDomainResourceBasicDependence7935)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooDomainResourceBasicDependence7935)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
@@ -832,11 +833,11 @@ func TestAccAliCloudDdosCooDomainResource_basic7935(t *testing.T) {
 	})
 }
 
-var AlicloudDdosCooDomainResourceMap7935 = map[string]string{
+var AliCloudDdosCooDomainResourceMap7935 = map[string]string{
 	"cname": CHECKSET,
 }
 
-func AlicloudDdosCooDomainResourceBasicDependence7935(name string) string {
+func AliCloudDdosCooDomainResourceBasicDependence7935(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
