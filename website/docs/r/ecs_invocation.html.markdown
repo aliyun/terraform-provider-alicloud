@@ -35,7 +35,10 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g6"
 }
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_18.*64"
@@ -53,8 +56,8 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
 }
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.default.id
 }
 resource "alicloud_security_group_rule" "default" {
   type              = "ingress"
