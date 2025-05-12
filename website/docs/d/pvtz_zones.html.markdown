@@ -4,22 +4,34 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_pvtz_zones"
 sidebar_current: "docs-alicloud-datasource-pvtz-zones"
 description: |-
-    Provides a list of Private Zones which owned by an Alibaba Cloud account.
+  Provides a list of Private Zones to the user.
 ---
 
-# alicloud\_pvtz\_zones
+# alicloud_pvtz_zones
 
-This data source lists a number of Private Zones resource information owned by an Alibaba Cloud account.
+This data source provides the Private Zones of the current Alibaba Cloud user.
+
+-> **NOTE:** Available since v1.13.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-data "alicloud_pvtz_zones" "pvtz_zones_ds" {
-  keyword = "${alicloud_pvtz_zone.basic.zone_name}"
+variable "name" {
+  default = "terraform-example.com"
 }
 
-output "first_zone_id" {
-  value = "${data.alicloud_pvtz_zones.pvtz_zones_ds.zones.0.id}"
+resource "alicloud_pvtz_zone" "default" {
+  zone_name = var.name
+}
+
+data "alicloud_pvtz_zones" "ids" {
+  ids = [alicloud_pvtz_zone.default.id]
+}
+
+output "pvtz_zones_id_0" {
+  value = data.alicloud_pvtz_zones.ids.zones.0.id
 }
 ```
 
@@ -27,38 +39,39 @@ output "first_zone_id" {
 
 The following arguments are supported:
 
-* `keyword` - (Optional) keyword for zone name.
-* `ids` - (Optional, Available 1.53.0+) A list of zone IDs. 
+* `ids` - (Optional, ForceNew, List, Available since v1.53.0) A list of Zones IDs.
+* `name_regex` - (Optional, ForceNew, Available since v1.107.0) A regex string to filter results by Zone name.
+* `keyword` - (Optional, ForceNew) The keyword of the zone name.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.107.0) The ID of the resource group to which the zone belongs.
+* `query_vpc_id` - (Optional, ForceNew, Available since v1.107.0) The ID of the VPC associated with the zone.
+* `query_region_id` - (Optional, ForceNew, Available since v1.107.0) The region ID of the virtual private cloud (VPC) associated with the zone.
+* `search_mode` - (Optional, ForceNew, Available since v1.107.0) The search mode. The value of Keyword is the search scope. Default value: `LIKE`. Valid values:
+  - `LIKE`: Fuzzy search.
+  - `EXACT`: Exact search.
+* `lang` - (Optional, ForceNew, Available since v1.107.0) The language of the response. Default value: `en`. Valid values: `en`, `zh`.
+* `enable_details` -(Optional, Bool, Available since v1.107.0) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `lang` - (Optional, Available 1.107.0+) User language.
-* `query_region_id` - (Optional, Available 1.107.0+) query_region_id for zone regionId.
-* `query_vpc_id` - (Optional, Available 1.107.0+) query_vpc_id for zone vpcId.
-* `resource_group_id` - (Optional, Available 1.107.0+) resource_group_id for zone resourceGroupId.
-* `search_mode` - (Optional, Available 1.107.0+) Search mode. Value: 
-    - LIKE: fuzzy search.
-    - EXACT: precise search. It is not filled in by default.
-* `enable_details` -(Optional, Available 1.107.0+) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of zone IDs. 
-* `names` - A list of zone names. 
-* `zones` - A list of zones. Each element contains the following attributes:
-  * `id` - ID of the Private Zone.
-  * `remark` - Remark of the Private Zone.
-  * `record_count` - Count of the Private Zone Record.
-  * `name` - Name of the Private Zone.
-  * `zone_name` - ZoneName of the Private Zone.
-  * `is_ptr` - Whether the Private Zone is ptr.
-  * `create_timestamp` - Time of create of the Private Zone.
-  * `update_timestamp` - Time of update of the Private Zone.
-  * `proxy_pattern` - The recursive DNS proxy.
-  * `resource_group_id` - The Id of resource group which the Private Zone belongs.
-  * `slave_dns` - Whether to turn on secondary DNS.
-  * `zone_id` - ZoneId of the Private Zone.
-  * `bind_vpcs` - List of the VPCs is bound to the Private Zone:
-    * `region_id` - Binding the regionId of VPC.
-    * `region_name` - Binding the regionName of VPC.
-    * `vpc_id` - Binding the vpcId of VPC.
+* `names` - A list of Zone names. 
+* `zones` - A list of Zone. Each element contains the following attributes:
+  * `id` - The ID of the Private Zone.
+  * `zone_id` - The ID of the Zone.
+  * `zone_name` - The Name of the Private Zone.
+  * `name` - The Name of the Zone.
+  * `proxy_pattern` - Indicates whether the recursive resolution proxy for subdomain names is enabled.
+  * `record_count` - The number of Domain Name System (DNS) records added in the zone.
+  * `resource_group_id` - The ID of the resource group to which the zone belongs.
+  * `remark` - The description of the zone.
+  * `is_ptr` - Indicates whether the zone is a reverse lookup zone.
+  * `create_timestamp` - The time when the zone was created.
+  * `update_timestamp` - The time when the DNS record was updated.
+  * `slave_dns` - Indicates whether the secondary Domain Name System (DNS) feature is enabled for the zone. **Note:** `slave_dns` takes effect only if `enable_details` is set to `true`.
+  * `bind_vpcs` - The VPCs associated with the zone. **Note:** `bind_vpcs` takes effect only if `enable_details` is set to `true`.
+    * `vpc_id` - The ID of the VPC.
+    * `vpc_name` - The Name of the VPC.
+    * `region_id` - The region ID of the VPC.
+    * `region_name` - The name of the region where the VPC resides.
