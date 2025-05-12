@@ -41,6 +41,10 @@ var specialResourceMap = map[string]map[string]string{
 	"rds": {
 		"instance": "db_instance",
 	},
+	"cbwp": {
+		"common_bandwidth_package":            "common_bandwidth_package",
+		"common_bandwidth_package_attachment": "common_bandwidth_package_attachment",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -58,6 +62,10 @@ var specialDataSourceMap = map[string]map[string]string{
 	"rds": {
 		"instance": "db_instances",
 	},
+	"cbwp": {
+		"common_bandwidth_package":            "common_bandwidth_packages",
+		"common_bandwidth_package_attachment": "common_bandwidth_package_attachments",
+	},
 }
 
 var irregularPlurals = map[string]string{
@@ -68,12 +76,78 @@ var irregularPlurals = map[string]string{
 }
 
 func main() {
-
 	flag.Parse()
 
-	if *namespace == "" || *resource == "" || *sourceProviderDir == "" || *destProviderDir == "" {
-		log.Fatal("All parameters ( -n, -r, -s, -t) are required.")
+	if *namespace == "" || *sourceProviderDir == "" || *destProviderDir == "" {
+		log.Fatal("Parameters -n, -s, -t are required")
 	}
+
+	if functionName != nil && *functionName != "" {
+		if err := migrateServiceFunction(namespace); err != nil {
+			log.Printf("Error migrate function: %v", err)
+		}
+		return
+	}
+
+	var resources []string
+	if *resource == "" {
+		rs, err := listResources(*namespace, *sourceProviderDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		resources = rs
+		log.Printf("Found %d resources to migrate: %v", len(resources), resources)
+	} else {
+		resources = []string{*resource}
+	}
+
+	for _, res := range resources {
+		log.Printf("====== Migrating %s ======", res)
+		migrateSingleResource(namespace, &res)
+	}
+	log.Println("All resources migrated!")
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func listResources(namespace, sourceDir string) ([]string, error) {
+	dir := filepath.Join(sourceDir, "alicloud")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("read dir failed: %w", err)
+	}
+
+	pattern := regexp.MustCompile(fmt.Sprintf(`^resource_alicloud_%s_(.+?)\.go$`, regexp.QuoteMeta(namespace)))
+	var resources []string
+
+	for _, entry := range entries {
+		if entry.IsDir() || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		if matches := pattern.FindStringSubmatch(entry.Name()); len(matches) == 2 {
+			resources = append(resources, matches[1])
+		}
+	}
+
+	if specialResources, ok := specialResourceMap[namespace]; ok {
+		for res := range specialResources {
+			if !contains(resources, res) {
+				resources = append(resources, res)
+			}
+		}
+	}
+
+	return resources, nil
+}
+
+func migrateSingleResource(namespace, resource *string) {
 
 	if err := migrateResource(namespace, resource); err != nil {
 		log.Printf("Error migrateResource: %v", err)
@@ -107,12 +181,6 @@ func main() {
 
 	if err := migrateDataSourceDocument(namespace, resource); err != nil {
 		log.Printf("Error migrateResourceDocument: %v", err)
-	}
-
-	if functionName != nil && *functionName != "" {
-		if err := migrateServiceFunction(namespace); err != nil {
-			log.Printf("Error migrate function: %v", err)
-		}
 	}
 
 	log.Printf("Migrate %v finished! ^-^ ", *resource)
@@ -252,7 +320,116 @@ func migrateResource(namespace, resource *string) error {
 	if err = formatFile(destFilePath); err != nil {
 		log.Fatalf("Error formatting file: %v", err)
 	}
+
+	resourceFunc, err := extractResourceFunction(destFilePath, *namespace, *resource, "Resource")
+	resourceKey := getResourceName(*namespace, *resource)
+	if err != nil {
+		return fmt.Errorf("extractResourceFunction failed: %w", err)
+	}
+
+	if err = registerToProvider(resourceKey, resourceFunc, false); err != nil {
+		log.Fatalf("Error registerToProvider: %v", err)
+	}
+
 	return err
+}
+
+func registerToProvider(resourceKey, resourceFunc string, datasource bool) error {
+	providerPath := filepath.Join(*destProviderDir, "internal", "provider", "provider.go")
+	return updateProviderMap(providerPath, *namespace, resourceKey, resourceFunc, datasource)
+}
+
+func extractResourceFunction(filePath, namespace, resource, prefix string) (string, error) {
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return "", fmt.Errorf("parse error: %w", err)
+	}
+
+	var resourceFunc string
+	ast.Inspect(node, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok && strings.HasPrefix(fn.Name.Name, prefix) {
+			resourceFunc = fmt.Sprintf("%s.%s()", namespace, fn.Name.Name)
+			return false
+		}
+		return true
+	})
+
+	if resourceFunc == "" {
+		return "", fmt.Errorf("no ResourceXXX function found in %s", filePath)
+	}
+
+	return resourceFunc, nil
+}
+
+func updateProviderMap(filePath, namespace, resourceKey, resourceFunc string, datasource bool) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read provider.go failed: %w", err)
+	}
+
+	re := regexp.MustCompile("\"" + resourceKey + "\"")
+	containsKey := re.Match(content)
+	if containsKey {
+		return nil
+	}
+
+	targetComment := fmt.Sprintf("// %s", strings.ToUpper(namespace))
+	insertLine := fmt.Sprintf("\t\t\"%s\":\t\t\t%s,", resourceKey, resourceFunc)
+
+	var newContent []string
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	start := false
+	foundSection := false
+	inserted := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.Contains(line, "import (") && !strings.Contains(string(content),
+			fmt.Sprintf("service/%s\"", namespace)) {
+			line += fmt.Sprintf("\n\t\"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service/%s\"",
+				namespace)
+		}
+
+		if datasource {
+			if strings.Contains(line, "func generateDataSourceMap()") {
+				start = true
+			}
+			if strings.Contains(line, "func generateResourceMap()") {
+				start = false
+			}
+		} else {
+			if strings.Contains(line, "func generateResourceMap()") {
+				start = true
+			}
+		}
+
+		if start && strings.Contains(line, targetComment) {
+			foundSection = true
+		}
+
+		if foundSection && !inserted {
+			if strings.Contains(line, "//") || strings.TrimSpace(line) == "" {
+				newContent = append(newContent, line)
+			} else {
+				newContent = append(newContent, insertLine)
+				newContent = append(newContent, line)
+				inserted = true
+				foundSection = false
+			}
+		} else {
+			newContent = append(newContent, line)
+		}
+	}
+
+	output := strings.Join(newContent, "\n")
+	formatted, err := format.Source([]byte(output))
+	if err != nil {
+		return fmt.Errorf("format failed: %w", err)
+	}
+
+	return os.WriteFile(filePath, formatted, 0644)
 }
 
 func migrateResourceDocument(namespace, resource *string) error {
@@ -326,6 +503,17 @@ func migrateDataSource(namespace, resource *string) error {
 	if err = formatFile(destFilePath); err != nil {
 		log.Fatalf("Error formatting file: %v", err)
 	}
+
+	resourceFunc, err := extractResourceFunction(destFilePath, *namespace, *resource, "DataSource")
+	resourceKey := getDataSourceName(*namespace, *resource)
+	if err != nil {
+		return fmt.Errorf("extractResourceFunction failed: %w", err)
+	}
+
+	if err = registerToProvider(resourceKey, resourceFunc, true); err != nil {
+		log.Fatalf("Error registerToProvider: %v", err)
+	}
+
 	return err
 }
 
@@ -335,7 +523,7 @@ func migrateService(serviceFileName, version string) error {
 
 	if _, err := os.Stat(sourceFilePath); err != nil {
 		if os.IsNotExist(err) {
-			log.Fatalf("Cannot find file: %s", sourceFilePath)
+			log.Printf("Cannot find file: %s", sourceFilePath)
 			return nil
 		}
 	}
@@ -357,7 +545,8 @@ func migrateService(serviceFileName, version string) error {
 
 	err := copyFile(sourceFilePath, destFilePath)
 	if err != nil {
-		log.Fatalf("Error copying file: %v", err)
+		log.Printf("Error copying file: %v", err)
+		return nil
 	}
 
 	if err = modifyServiceFile(destFilePath, *namespace, version); err != nil {
@@ -488,6 +677,9 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "string(SQLServer)", "\"SQLServer\"")
 	line = strings.ReplaceAll(line, "NormalMode", "\"normal\"")
 
+	line = strings.ReplaceAll(line, "string(Month)", "string(names.Month)")
+	line = strings.ReplaceAll(line, "string(Year)", "string(names.Year)")
+
 	line = strings.ReplaceAll(line, "string(Postpaid)", "\"PostPaid\"")
 	line = strings.ReplaceAll(line, "string(Prepaid)", "\"PrePaid\"")
 	line = strings.ReplaceAll(line, "string(PostPaid)", "\"PostPaid\"")
@@ -508,6 +700,8 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "convertObjectToJsonString", "helper.ConvertObjectToJsonString")
 	line = strings.ReplaceAll(line, "expandStringList", "helper.ExpandStringList")
 	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
+	line = strings.ReplaceAll(line, "convertListMapToJsonString", "helper.ConvertListMapToJsonString")
+	line = strings.ReplaceAll(line, "convertMaptoJsonString", "helper.ConvertMaptoJsonString")
 
 	if isVariable(line, "Throttling") {
 		line = strings.ReplaceAll(line, "Throttling", "\"Throttling\"")
@@ -525,8 +719,19 @@ func commonReplaces(line string) string {
 		line = strings.ReplaceAll(line, "RenewNotRenewal", "\"NotRenewal\"")
 	}
 
+	if isVariable(line, "PayByTraffic") {
+		line = strings.ReplaceAll(line, "PayByTraffic", "\"PayByTraffic\"")
+	}
+
 	rdkPointerRe := regexp.MustCompile(`rdk\.StringPointer\(\s*d\.Get\("([^"]+)"\)(?:\.\(string\))?\s*\)`)
 	line = rdkPointerRe.ReplaceAllString(line, `rdk.StringPointer(d.Get("$1").(string))`)
+
+	createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
+	line = createRequestRe.ReplaceAllString(line,
+		"action := \"$2\"\n\trequest := make(map[string]interface{})")
+
+	fieldAccessRe := regexp.MustCompile(`\b(request|req)\.(\w+)\b`)
+	line = fieldAccessRe.ReplaceAllString(line, `${1}["${2}"]`)
 
 	return line
 }
@@ -561,7 +766,7 @@ func skipDelete(filePath string) bool {
 	if err != nil {
 		return true
 	}
-	re := regexp.MustCompile(` Cannot delete`)
+	re := regexp.MustCompile(`(\[WARN\] Cannot destroy|Cannot delete)`)
 	return re.Match(content)
 }
 
@@ -636,6 +841,10 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		}
 
 		if strings.Contains(line, "helper/validation") {
+			continue
+		}
+
+		if strings.Contains(line, "helper/encryption") {
 			continue
 		}
 
@@ -1043,12 +1252,43 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 
 	serviceConstructRe := regexp.MustCompile(`&\b([A-Za-z]+)(Service)(V2)?\b`)
 
+	skipCheckDestroyFunc := false
+	testAccCheckDestroyRe := regexp.MustCompile(`testAccCheck(\w+)Destroy\b`)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		if strings.Contains(line, "testAccPreCheckWithEnvVariable") {
 			continue
 		}
+
+		if strings.Contains(line, "testAccPreCheckWithAccountSiteType") {
+			continue
+		}
+
+		if strings.Contains(line, "testAccPreCheckWithTime") {
+			continue
+		}
+
+		if strings.Contains(line, "func testAccCheck") && strings.Contains(line, "(s *terraform.State) error {") {
+			skipCheckDestroyFunc = true
+			continue
+		}
+
+		if skipCheckDestroyFunc {
+			if line == "}" {
+				skipCheckDestroyFunc = false
+			}
+			continue
+		}
+
+		line = testAccCheckDestroyRe.ReplaceAllStringFunc(line, func(m string) string {
+			parts := testAccCheckDestroyRe.FindStringSubmatch(m)
+			if len(parts) < 2 {
+				return m
+			}
+			return fmt.Sprintf("rac.CheckResourceDestroy()")
+		})
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace+"_test")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/acctest", headers)
