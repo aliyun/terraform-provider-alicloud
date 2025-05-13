@@ -43,7 +43,17 @@ var specialResourceMap = map[string]map[string]string{
 		"route_table_attachment": "route_table_attachment",
 	},
 	"ecs": {
-		"instance": "instance",
+		"instance":                "instance",
+		"security_group":          "security_group",
+		"security_group_rule":     "security_group_rule",
+		"auto_provisioning_group": "auto_provisioning_group",
+		"image":                   "image",
+		"image_copy":              "image_copy",
+		"image_export":            "image_export",
+		"image_import":            "image_import",
+		"image_share_permission":  "image_share_permission",
+		"ram_role_attachment":     "ram_role_attachment",
+		"reserved_instance":       "reserved_instance",
 	},
 	"rds": {
 		"instance": "db_instance",
@@ -94,7 +104,10 @@ var specialDataSourceMap = map[string]map[string]string{
 		"route_table_attachment": "route_table_attachments",
 	},
 	"ecs": {
-		"instance": "instances",
+		"instance":            "instances",
+		"image":               "images",
+		"security_group":      "security_groups",
+		"security_group_rule": "security_group_rules",
 	},
 	"rds": {
 		"instance": "db_instances",
@@ -839,9 +852,11 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "Postpaid,", "names.Postpaid,")
 	line = strings.ReplaceAll(line, "Serverless,", "names.Serverless,")
 
-	line = strings.ReplaceAll(line, "PageSizeLarge", "names.PageSizeLarge")
+	line = strings.ReplaceAll(line, "PageNumSmall", "names.PageNumSmall")
 	line = strings.ReplaceAll(line, "PageSizeSmall", "names.PageSizeSmall")
 	line = strings.ReplaceAll(line, "PageSizeMedium", "names.PageSizeMedium")
+	line = strings.ReplaceAll(line, "PageSizeLarge", "names.PageSizeLarge")
+	line = strings.ReplaceAll(line, "PageSizeXLarge", "names.PageSizeXLarge")
 
 	line = strings.ReplaceAll(line, "convertListToJsonString", "helper.ConvertListToJsonString")
 	line = strings.ReplaceAll(line, "convertObjectToJsonString", "helper.ConvertObjectToJsonString")
@@ -850,13 +865,28 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "convertListMapToJsonString", "helper.ConvertListMapToJsonString")
 	line = strings.ReplaceAll(line, "convertMaptoJsonString", "helper.ConvertMaptoJsonString")
 	line = strings.ReplaceAll(line, "convertListStringToListInterface", "helper.ConvertListStringToListInterface")
+	line = strings.ReplaceAll(line, "convertArrayObjectToJsonString", "helper.ConvertArrayObjectToJsonString")
+	line = strings.ReplaceAll(line, "convertMapToJsonStringIgnoreError", "helper.ConvertMapToJsonStringIgnoreError")
+	line = strings.ReplaceAll(line, "convertArrayToString", "helper.ConvertArrayToString")
+	line = strings.ReplaceAll(line, "convertJsonStringToStringList", "helper.ConvertJsonStringToStringList")
+	line = strings.ReplaceAll(line, "convertJsonStringToMap", "helper.ConvertJsonStringToMap")
+	line = strings.ReplaceAll(line, "convertStringToBool", "helper.ConvertStringToBool")
+	line = strings.ReplaceAll(line, "convertMapFloat64ToJsonString", "helper.ConvertMapFloat64ToJsonString")
+	line = strings.ReplaceAll(line, "convertJsonStringToList", "helper.ConvertJsonStringToList")
+	line = strings.ReplaceAll(line, "normalizeYamlString", "helper.NormalizeYamlString")
+	line = strings.ReplaceAll(line, "compareYamlTemplateAreEquivalent", "helper.CompareYamlTemplateAreEquivalent")
+	line = strings.ReplaceAll(line, "compareArrayJsonTemplateAreEquivalent", "helper.CompareArrayJsonTemplateAreEquivalent")
 	line = strings.ReplaceAll(line, "expandSingletonToList", "helper.ExpandSingletonToList")
+	line = strings.ReplaceAll(line, "filterEmptyStrings", "helper.FilterEmptyStrings")
 	line = strings.ReplaceAll(line, "GetFunc", "helper.GetFunc")
 	line = strings.ReplaceAll(line, "xmlParam", "client.NewXmlParam")
+	line = strings.ReplaceAll(line, "SplitSlice", "helper.SplitSlice")
+	line = strings.ReplaceAll(line, "decodeFromBase64String", "helper.DecodeFromBase64String")
 	line = strings.ReplaceAll(line, "WaitTimeoutMsg", "tferr.WaitTimeoutMsg")
 	line = strings.ReplaceAll(line, "COMMA_SEPARATED", "names.COMMA_SEPARATED")
 	line = strings.ReplaceAll(line, "COLON_SEPARATED", "names.COLON_SEPARATED")
 	line = strings.ReplaceAll(line, "LOCAL_HOST_IP", "names.LOCAL_HOST_IP")
+
 	line = strings.ReplaceAll(line, "IsNil", "helper.IsNil")
 	roaParamRe := regexp.MustCompile(`roaParam\(\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*([^)]+)\s*\)`)
 	line = roaParamRe.ReplaceAllString(line, `client.NewRpcParam($1, $2, $3)`)
@@ -926,19 +956,9 @@ func commonReplaces(line string) string {
 }
 
 func isVariable(line, code string) bool {
-	if strings.Contains(line, "\""+code) {
-		return false
-	}
-	if strings.Contains(line, code+"\"") {
-		return false
-	}
-	if strings.Contains(line, "."+code) {
-		return false
-	}
-	if strings.Contains(line, code+".") {
-		return false
-	}
-	return strings.Contains(line, " "+code+" ") || strings.Contains(line, " "+code+",")
+	codeRe := regexp.MustCompile(`^` + code + `$`)
+
+	return codeRe.MatchString(line)
 }
 
 func skipUpdate(filePath string) bool {
@@ -980,6 +1000,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
@@ -1086,6 +1107,9 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "(d, meta)", "(ctx, d, meta)")
 
 		line = strings.ReplaceAll(line, "tagsSchema()", "service.TagsSchema()")
+		line = strings.ReplaceAll(line, "tagsSchemaForceNew()", "service.TagsSchemaForceNew()")
+		line = strings.ReplaceAll(line, "tagsSchemaComputed()", "service.TagsSchemaComputed()")
+
 		if !strings.Contains(line, "func") {
 			line = strings.ReplaceAll(line, "tagsToMap", "service.TagsToMap")
 		}
@@ -1129,6 +1153,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "AlibabaCloudSdkGoERROR", "tferr.SdkGoERROR")
 		line = strings.ReplaceAll(line, "IsExpectedErrors", "tferr.IsExpectedErrors")
 		line = strings.ReplaceAll(line, "NotFoundError", "tferr.NotFoundError")
+		line = strings.ReplaceAll(line, "FailedToReachTargetStatus", "tferr.FailedToReachTargetStatus")
 		line = strings.ReplaceAll(line, "BuildStateConf", "helper.BuildStateConf")
 
 		line = diffSuppressRe.ReplaceAllStringFunc(line, func(m string) string {
@@ -1198,6 +1223,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 		line = strings.ReplaceAll(line, "dataResourceIdHash", "helper.DataResourceIdHash")
 		line = strings.ReplaceAll(line, "writeToFile", "helper.WriteToFile")
+		line = strings.ReplaceAll(line, "setPagingRequest", "helper.SetPagingRequest")
 
 		line = strings.ReplaceAll(line, "(Error(", "(tferr.Error(")
 
@@ -1242,6 +1268,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
@@ -1518,6 +1545,10 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "resourceAttrMapUpdateSet", "ResourceAttrMapUpdateSet")
 		line = strings.ReplaceAll(line, "testAccPreCheckWithRegions", "tftest.TestAccPreCheckWithRegions")
 		line = strings.ReplaceAll(line, "checkoutSupportedRegions", "tftest.TestAccPreCheckWithRegions")
+		line = strings.ReplaceAll(line, "testAccPreCheckEnterpriseAccountEnabled", "tftest.TestAccPreCheckEnterpriseAccountEnabled")
+		line = strings.ReplaceAll(line, "testAccPreCheckPrePaidResources", "tftest.TestAccPreCheckPrePaidResources")
+		line = strings.ReplaceAll(line, "testAccPreCheckWithResourceManagerAccountsSetting", "tftest.TestAccPreCheckWithResourceManagerAccountsSetting")
+		line = strings.ReplaceAll(line, "testAccPreCheckWithResourceManagerHandshakesSetting", "tftest.TestAccPreCheckWithResourceManagerHandshakesSetting")
 		line = strings.ReplaceAll(line, "CHECKSET", "tftest.CHECKSET")
 		line = strings.ReplaceAll(line, "REMOVEKEY", "tftest.REMOVEKEY")
 		line = strings.ReplaceAll(line, "NOSET", "tftest.NOSET")
