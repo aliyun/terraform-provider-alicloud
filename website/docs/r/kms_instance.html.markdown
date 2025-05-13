@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_kms_instance
 
-Provides a KMS Instance resource. 
+Provides a KMS Instance resource.
 
 For information about KMS Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/zh/key-management-service/latest/kms-instance-management).
 
@@ -96,7 +96,7 @@ resource "alicloud_kms_instance" "default" {
   renew_period    = "3"
   vpc_id          = alicloud_vswitch.vswitch.vpc_id
   zone_ids        = ["cn-hangzhou-k", "cn-hangzhou-j"]
-  vswitch_ids     = [alicloud_vswitch.vswitch-j.id, alicloud_vswitch.vswitch.id]
+  vswitch_ids     = [alicloud_vswitch.vswitch-j.id]
   bind_vpcs {
     vpc_id       = alicloud_vswitch.shareVswitch.vpc_id
     region_id    = var.region
@@ -222,30 +222,33 @@ resource "alicloud_kms_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bind_vpcs` - (Optional) Aucillary VPCs used to access this KMS instance. See [`bind_vpcs`](#bind_vpcs) below.
+* `bind_vpcs` - (Optional, Set) Aucillary VPCs used to access this KMS instance See [`bind_vpcs`](#bind_vpcs) below.
 * `force_delete_without_backup` - (Optional, Available since v1.223.2) Whether to force deletion even without backup.
-* `key_num` - (Optional) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `instance_name` - (Optional, Computed) The name of the resource
+* `key_num` - (Optional, Int) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `log` - (Optional, Computed) Instance Audit Log Switch. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `log_storage` - (Optional, Computed) Instance log capacity. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `payment_type` - (Optional, ForceNew) Payment type, valid values:  `Subscription`: Prepaid. `PayAsYouGo`: Postpaid, available since v1.223.2.
-* `period` - (Optional) Purchase cycle, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `product_version` - (Optional) KMS Instance commodity type (software/hardware).
-* `renew_period` - (Optional) Automatic renewal period, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `log_storage` - (Optional, Computed, Int) Instance log capacity. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `payment_type` - (Optional, ForceNew, Computed) Payment type,valid values:
+  - `Subscription`: Prepaid.
+  - `PayAsYouGo`: Postpaid.
+* `period` - (Optional, Int) Purchase cycle, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `product_version` - (Optional) KMS Instance commodity type (software/hardware)
+* `renew_period` - (Optional, Int) Automatic renewal period, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `renew_status` - (Optional) Renewal options. Valid values: `AutoRenewal`, `ManualRenewal`. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `secret_num` - (Optional) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `spec` - (Optional) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `vpc_id` - (Required, ForceNew) Instance VPC id.
-* `vpc_num` - (Optional) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `vswitch_ids` - (Required, ForceNew) Instance bind vswitches.
-* `zone_ids` - (Required, ForceNew) zone id.
+* `secret_num` - (Optional, Int) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `spec` - (Optional, Int) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `vpc_id` - (Required, ForceNew) Instance VPC id
+* `vpc_num` - (Optional, Int) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `vswitch_ids` - (Required, ForceNew, List) Instance bind vswitches
+* `zone_ids` - (Required, ForceNew, List) zone id
 
 ### `bind_vpcs`
 
 The bind_vpcs supports the following:
-* `region_id` - (Optional) region id.
-* `vswitch_id` - (Optional) vswitch id.
-* `vpc_id` - (Optional) VPC ID.
-* `vpc_owner_id` - (Optional) VPC owner root user ID.
+* `region_id` - (Optional) region id
+* `vswitch_id` - (Optional) vswitch id
+* `vpc_id` - (Optional) VPC ID
+* `vpc_owner_id` - (Optional, Int) VPC owner root user ID
 
 ## Attributes Reference
 

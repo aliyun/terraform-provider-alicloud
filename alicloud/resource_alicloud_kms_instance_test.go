@@ -42,7 +42,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
+						"${alicloud_vswitch.vswitch.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -53,7 +53,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 						"product_version": "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "2",
+						"vswitch_ids.#":   "1",
 					}),
 				),
 			},
@@ -198,7 +198,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
+						"${alicloud_vswitch.vswitch-j.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -211,7 +211,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 						"renew_period":    "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "2",
+						"vswitch_ids.#":   "1",
 					}),
 				),
 			},
@@ -388,6 +388,7 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_name":   name,
 					"vpc_num":         "7",
 					"key_num":         "2000",
 					"secret_num":      "1000",
@@ -420,6 +421,7 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"instance_name":   name,
 						"vpc_num":         "7",
 						"key_num":         "2000",
 						"secret_num":      "1000",
@@ -441,6 +443,16 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bind_vpcs.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name + "_update",
 					}),
 				),
 			},
@@ -483,7 +495,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch.id}", "${alicloud_vswitch.vswitch-j.id}"},
+						"${alicloud_vswitch.vswitch-j.id}"},
 					"bind_vpcs": []map[string]interface{}{
 						{
 							"vpc_id":       "${alicloud_vpc.shareVPC.id}",
@@ -559,7 +571,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup", "payment_type"},
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup"},
 			},
 		},
 	})
@@ -593,7 +605,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 					"zone_ids": []string{
 						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch-j.id}", "${alicloud_vswitch.vswitch.id}"},
+						"${alicloud_vswitch.vswitch.id}"},
 					"force_delete_without_backup": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -635,7 +647,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup", "payment_type"},
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup"},
 			},
 		},
 	})
