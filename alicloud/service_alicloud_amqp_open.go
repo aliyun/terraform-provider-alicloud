@@ -159,6 +159,9 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"107"}) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Data.Exchanges", response)

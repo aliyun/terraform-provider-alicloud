@@ -3,22 +3,27 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudAmqpExchange() *schema.Resource {
+func resourceAliCloudAmqpExchange() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAmqpExchangeCreate,
-		Read:   resourceAlicloudAmqpExchangeRead,
-		Update: resourceAlicloudAmqpExchangeUpdate,
-		Delete: resourceAlicloudAmqpExchangeDelete,
+		Create: resourceAliCloudAmqpExchangeCreate,
+		Read:   resourceAliCloudAmqpExchangeRead,
+		Update: resourceAliCloudAmqpExchangeUpdate,
+		Delete: resourceAliCloudAmqpExchangeDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"alternate_exchange": {
@@ -30,6 +35,10 @@ func resourceAlicloudAmqpExchange() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"exchange_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -39,7 +48,7 @@ func resourceAlicloudAmqpExchange() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"DIRECT", "FANOUT", "HEADERS", "TOPIC"}, false),
+				ValidateFunc: StringInSlice([]string{"FANOUT", "DIRECT", "TOPIC", "HEADERS", "X_DELAYED_MESSAGE", "X_CONSISTENT_HASH"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -55,28 +64,48 @@ func resourceAlicloudAmqpExchange() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"x_delayed_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"DIRECT", "TOPIC", "FANOUT", "HEADERS", "X_JMS_TOPIC"}, false),
+			},
 		},
 	}
 }
 
-func resourceAlicloudAmqpExchangeCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAmqpExchangeCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateExchange"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
+	}
+	if v, ok := d.GetOk("exchange_name"); ok {
+		request["ExchangeName"] = v
+	}
+	if v, ok := d.GetOk("virtual_host_name"); ok {
+		request["VirtualHost"] = v
+	}
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("x_delayed_type"); ok {
+		request["XDelayedType"] = v
+	}
 	if v, ok := d.GetOk("alternate_exchange"); ok {
 		request["AlternateExchange"] = v
 	}
-	request["AutoDeleteState"] = d.Get("auto_delete_state")
-	request["ExchangeName"] = d.Get("exchange_name")
 	request["ExchangeType"] = d.Get("exchange_type")
-	request["InstanceId"] = d.Get("instance_id")
+	request["AutoDeleteState"] = d.Get("auto_delete_state")
 	request["Internal"] = d.Get("internal")
-	request["VirtualHost"] = d.Get("virtual_host_name")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, false)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -87,58 +116,66 @@ func resourceAlicloudAmqpExchangeCreate(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_amqp_exchange", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["VirtualHost"], ":", request["ExchangeName"]))
+	d.SetId(fmt.Sprintf("%v:%v:%v", request["InstanceId"], request["VirtualHost"], request["ExchangeName"]))
 
-	return resourceAlicloudAmqpExchangeRead(d, meta)
+	return resourceAliCloudAmqpExchangeRead(d, meta)
 }
-func resourceAlicloudAmqpExchangeRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudAmqpExchangeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	amqpOpenService := AmqpOpenService{client}
-	object, err := amqpOpenService.DescribeAmqpExchange(d.Id())
+	amqpServiceV2 := AmqpServiceV2{client}
+
+	objectRaw, err := amqpServiceV2.DescribeAmqpExchange(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_amqp_exchange amqpOpenService.DescribeAmqpExchange Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_amqp_exchange DescribeAmqpExchange Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("exchange_name", parts[2])
+
+	d.Set("auto_delete_state", objectRaw["AutoDeleteState"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("exchange_type", objectRaw["ExchangeType"])
+	d.Set("exchange_name", objectRaw["Name"])
+	d.Set("virtual_host_name", objectRaw["VHostName"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[0])
-	d.Set("virtual_host_name", parts[1])
-	d.Set("auto_delete_state", object["AutoDeleteState"])
-	d.Set("exchange_type", object["ExchangeType"])
+
 	return nil
 }
-func resourceAlicloudAmqpExchangeUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudAmqpExchangeRead(d, meta)
-}
-func resourceAlicloudAmqpExchangeDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeleteExchange"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"ExchangeName": parts[2],
-		"InstanceId":   parts[0],
-		"VirtualHost":  parts[1],
-	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+func resourceAliCloudAmqpExchangeUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Exchange.")
+	return nil
+}
+
+func resourceAliCloudAmqpExchangeDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteExchange"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["ExchangeName"] = parts[2]
+	request["VirtualHost"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, false)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -149,8 +186,13 @@ func resourceAlicloudAmqpExchangeDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
