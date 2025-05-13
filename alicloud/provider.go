@@ -950,6 +950,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_tag_associated_rule":                                  resourceAliCloudTagAssociatedRule(),
 			"alicloud_esa_compression_rule":                                 resourceAliCloudEsaCompressionRule(),
 			"alicloud_esa_https_basic_configuration":                        resourceAliCloudEsaHttpsBasicConfiguration(),
+			"alicloud_cloud_firewall_ips_config":                            resourceAliCloudCloudFirewallIPSConfig(),
 			"alicloud_vpc_ipam_ipam_resource_discovery":                     resourceAliCloudVpcIpamIpamResourceDiscovery(),
 			"alicloud_cloud_phone_image":                                    resourceAliCloudCloudPhoneImage(),
 			"alicloud_cloud_phone_key_pair":                                 resourceAliCloudCloudPhoneKeyPair(),
