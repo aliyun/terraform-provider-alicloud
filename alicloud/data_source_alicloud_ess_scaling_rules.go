@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PaesslerAG/jsonpath"
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"regexp"
 )
 
 func dataSourceAliCloudEssScalingRules() *schema.Resource {
@@ -100,6 +99,90 @@ func dataSourceAliCloudEssScalingRules() *schema.Resource {
 						},
 						"metric_name": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"metric_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"hybrid_monitor_namespace": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"hybrid_metrics": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"metric_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"statistic": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"expression": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"dimensions": {
+										Type:     schema.TypeSet,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"dimension_key": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"dimension_value": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"step_adjustment": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"metric_interval_lower_bound": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"metric_interval_upper_bound": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"scaling_adjustment": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"estimated_instance_warmup": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"scale_in_evaluation_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"scale_out_evaluation_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"disable_scale_in": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"adjustment_type": {
@@ -240,6 +323,32 @@ func scalingRulesDescriptionAttribute(d *schema.ResourceData, scalingRules []int
 		if object["MetricName"] != nil {
 			mapping["metric_name"] = object["MetricName"]
 		}
+		if object["MetricType"] != nil {
+			mapping["metric_type"] = object["MetricType"]
+		}
+		if object["StepAdjustments"] != nil {
+			steps, _ := flattenStepAdjustment(object["StepAdjustments"])
+			mapping["step_adjustment"] = steps
+		}
+		if object["EstimatedInstanceWarmup"] != nil {
+			mapping["estimated_instance_warmup"] = object["EstimatedInstanceWarmup"]
+		}
+		if object["ScaleInEvaluationCount"] != nil {
+			mapping["scale_in_evaluation_count"] = object["ScaleInEvaluationCount"]
+		}
+		if object["ScaleOutEvaluationCount"] != nil {
+			mapping["scale_out_evaluation_count"] = object["ScaleOutEvaluationCount"]
+		}
+		if object["DisableScaleIn"] != nil {
+			mapping["disable_scale_in"] = object["DisableScaleIn"]
+		}
+		if object["HybridMonitorNamespace"] != nil {
+			mapping["hybrid_monitor_namespace"] = object["HybridMonitorNamespace"]
+		}
+		if object["HybridMetrics"] != nil {
+			hybridMetrics, _ := flattenHybridMetricsMappings(object["HybridMetrics"])
+			mapping["hybrid_metrics"] = hybridMetrics
+		}
 		if object["TargetValue"] != nil {
 			mapping["target_value"] = object["TargetValue"]
 		}
@@ -284,4 +393,23 @@ func scalingRulesDescriptionAttribute(d *schema.ResourceData, scalingRules []int
 		writeToFile(output.(string), s)
 	}
 	return nil
+}
+
+func flattenStepAdjustment(list interface{}) ([]map[string]interface{}, error) {
+	result := make([]map[string]interface{}, 0)
+	for _, i := range list.(map[string]interface{})["StepAdjustment"].([]interface{}) {
+		stepAdjustment := i.(map[string]interface{})
+		l := map[string]interface{}{}
+		if stepAdjustment["MetricIntervalLowerBound"] != nil {
+			numberLower := stepAdjustment["MetricIntervalLowerBound"].(json.Number)
+			l["metric_interval_lower_bound"] = numberLower.String()
+		}
+		if stepAdjustment["MetricIntervalUpperBound"] != nil {
+			numberUpper := stepAdjustment["MetricIntervalUpperBound"].(json.Number)
+			l["metric_interval_upper_bound"] = numberUpper.String()
+		}
+		l["scaling_adjustment"] = stepAdjustment["ScalingAdjustment"]
+		result = append(result, l)
+	}
+	return result, nil
 }
