@@ -26,6 +26,10 @@ var (
 	functionName      = flag.String("f", "", "function name in service")
 )
 
+var specialServiceMap = map[string]string{
+	"private_zone": "pvtz",
+}
+
 var specialResourceMap = map[string]map[string]string{
 	"vpc": {
 		"vpc":                    "vpc",
@@ -44,6 +48,15 @@ var specialResourceMap = map[string]map[string]string{
 	"cbwp": {
 		"common_bandwidth_package":            "common_bandwidth_package",
 		"common_bandwidth_package_attachment": "common_bandwidth_package_attachment",
+	},
+	"private_zone": {
+		"endpoint":               "pvtz_endpoint",
+		"rule":                   "pvtz_rule",
+		"rule_attachment":        "pvtz_rule_attachment",
+		"user_vpc_authorization": "pvtz_user_vpc_authorization",
+		"zone":                   "pvtz_zone",
+		"zone_attachment":        "pvtz_zone_attachment",
+		"zone_record":            "pvtz_zone_record",
 	},
 }
 
@@ -65,6 +78,15 @@ var specialDataSourceMap = map[string]map[string]string{
 	"cbwp": {
 		"common_bandwidth_package":            "common_bandwidth_packages",
 		"common_bandwidth_package_attachment": "common_bandwidth_package_attachments",
+	},
+	"private_zone": {
+		"endpoint":               "pvtz_endpoints",
+		"rule":                   "pvtz_rules",
+		"rule_attachment":        "pvtz_rule_attachments",
+		"user_vpc_authorization": "pvtz_user_vpc_authorizations",
+		"zone":                   "pvtz_zones",
+		"zone_attachment":        "pvtz_zone_attachments",
+		"zone_record":            "pvtz_zone_records",
 	},
 }
 
@@ -104,6 +126,20 @@ func main() {
 	for _, res := range resources {
 		log.Printf("====== Migrating %s ======", res)
 		migrateSingleResource(namespace, &res)
+	}
+
+	serviceName := *namespace
+	if v, ok := specialServiceMap[*namespace]; ok {
+		serviceName = v
+	}
+	serviceFileName := fmt.Sprintf("service_alicloud_%s.go", serviceName)
+	if err := migrateService(serviceFileName, "v1"); err != nil {
+		log.Printf("Error migrateService: %v", err)
+	}
+
+	serviceFileName = fmt.Sprintf("service_alicloud_%s_v2.go", *namespace)
+	if err := migrateService(serviceFileName, "v2"); err != nil {
+		log.Printf("Error migrateService: %v", err)
 	}
 	log.Println("All resources migrated!")
 }
@@ -155,16 +191,6 @@ func migrateSingleResource(namespace, resource *string) {
 
 	if err := migrateDataSource(namespace, resource); err != nil {
 		log.Printf("Error migrateDataSource: %v", err)
-	}
-
-	serviceFileName := fmt.Sprintf("service_alicloud_%s.go", *namespace)
-	if err := migrateService(serviceFileName, "v1"); err != nil {
-		log.Printf("Error migrateService: %v", err)
-	}
-
-	serviceFileName = fmt.Sprintf("service_alicloud_%s_v2.go", *namespace)
-	if err := migrateService(serviceFileName, "v2"); err != nil {
-		log.Printf("Error migrateService: %v", err)
 	}
 
 	if err := migrateResourceTest(namespace, resource); err != nil {
@@ -671,6 +697,44 @@ func modifyDocument(filePath, namespace, resource string) error {
 
 func commonReplaces(line string) string {
 
+	clientRe := regexp.MustCompile(`client\.Rpc([A-Za-z]+)\(\s*"([^"]+)",\s*"([^"]+)",\s*([^,]+),\s*([^,]+)(?:,\s*([^,]+))?(?:,\s*([^,]+))?(?:,\s*([^,]+))?(?:,\s*([^)]+))?\)`)
+	if strings.Contains(line, "client.Rpc") {
+		matches := clientRe.FindStringSubmatch(line)
+		if len(matches) >= 6 {
+			httpMethod := strings.ToUpper(matches[1])
+			service := matches[2]
+			version := matches[3]
+			action := matches[4]
+			pathParams := matches[5]
+			request := "nil"
+			options := "nil"
+			async := "true"
+
+			if len(matches) >= 7 && matches[6] != "" {
+				request = matches[6]
+			}
+			if len(matches) >= 8 && matches[7] != "" {
+				options = matches[7]
+			}
+			if len(matches) >= 9 && matches[8] != "" {
+				async = matches[8]
+			}
+
+			newLine := fmt.Sprintf(
+				`client.Do("%s", client.NewRpcParam("%s", "%s", %s), %s, %s, %s, nil, %s)`,
+				service,
+				httpMethod,
+				version,
+				action,
+				pathParams,
+				request,
+				options,
+				async,
+			)
+			line = strings.Replace(line, matches[0], newLine, 1)
+		}
+	}
+
 	line = strings.ReplaceAll(line, "string(PostgreSQL)", "\"PostgreSQL\"")
 	line = strings.ReplaceAll(line, "string(MySQL)", "\"MySQL\"")
 	line = strings.ReplaceAll(line, "string(MongoDB)", "\"MongoDB\"")
@@ -702,6 +766,14 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
 	line = strings.ReplaceAll(line, "convertListMapToJsonString", "helper.ConvertListMapToJsonString")
 	line = strings.ReplaceAll(line, "convertMaptoJsonString", "helper.ConvertMaptoJsonString")
+	line = strings.ReplaceAll(line, "GetFunc", "helper.GetFunc")
+	line = strings.ReplaceAll(line, "WaitTimeoutMsg", "tferr.WaitTimeoutMsg")
+	line = strings.ReplaceAll(line, "COMMA_SEPARATED", "names.COMMA_SEPARATED")
+	line = strings.ReplaceAll(line, "LOCAL_HOST_IP", "names.LOCAL_HOST_IP")
+
+	if !strings.Contains(line, "schema.DefaultTimeout") {
+		line = strings.ReplaceAll(line, "DefaultTimeout", "names.DefaultTimeout")
+	}
 
 	if isVariable(line, "Throttling") {
 		line = strings.ReplaceAll(line, "Throttling", "\"Throttling\"")
@@ -721,6 +793,26 @@ func commonReplaces(line string) string {
 
 	if isVariable(line, "PayByTraffic") {
 		line = strings.ReplaceAll(line, "PayByTraffic", "\"PayByTraffic\"")
+	}
+
+	if isVariable(line, "Deleted") {
+		line = strings.ReplaceAll(line, "Deleted", "names.Deleted")
+	}
+
+	if isVariable(line, "Running") {
+		line = strings.ReplaceAll(line, "Running", "names.Running")
+	}
+
+	if isVariable(line, "Month") {
+		line = strings.ReplaceAll(line, "Month", "names.Month")
+	}
+
+	if isVariable(line, "Year") {
+		line = strings.ReplaceAll(line, "Year", "names.Year")
+	}
+
+	if isVariable(line, "Status") {
+		line = strings.ReplaceAll(line, "Status", "names.Status")
 	}
 
 	rdkPointerRe := regexp.MustCompile(`rdk\.StringPointer\(\s*d\.Get\("([^"]+)"\)(?:\.\(string\))?\s*\)`)
@@ -749,7 +841,7 @@ func isVariable(line, code string) bool {
 	if strings.Contains(line, code+".") {
 		return false
 	}
-	return true
+	return strings.Contains(line, ""+code+" ") || strings.Contains(line, ""+code+",")
 }
 
 func skipUpdate(filePath string) bool {
@@ -1157,7 +1249,6 @@ func modifyServiceFunctionLine(line, version string) string {
 	line = strings.ReplaceAll(line, "InArray", "helper.InArray")
 	line = strings.ReplaceAll(line, "parsingTags", "service.ParsingTags")
 	line = strings.ReplaceAll(line, "ignoredTags", "service.IgnoredTags")
-	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
 	line = strings.ReplaceAll(line, "Trim(", "helper.Trim(")
 	line = strings.ReplaceAll(line, "isPagingRequest", "helper.IsPagingRequest")
 	line = strings.ReplaceAll(line, "formatInt", "helper.FormatInt")
@@ -1270,6 +1361,10 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 			continue
 		}
 
+		if strings.Contains(line, "testAccPreCheckEnterpriseAccountEnabled") {
+			continue
+		}
+
 		if strings.Contains(line, "func testAccCheck") && strings.Contains(line, "(s *terraform.State) error {") {
 			skipCheckDestroyFunc = true
 			continue
@@ -1305,6 +1400,7 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "resourceAttrMapUpdateSet", "ResourceAttrMapUpdateSet")
 		line = strings.ReplaceAll(line, "defaultRegionToTest", "provider.DefaultRegionToTest")
 		line = strings.ReplaceAll(line, "resourceTestAccConfigFunc", "tftest.ResourceTestAccConfig")
+		line = strings.ReplaceAll(line, "resourceCheckInit", "tftest.ResourceCheckInit")
 		line = strings.ReplaceAll(line, "testAccPreCheck(t)", "tftest.PreCheck(nil, t)")
 		line = strings.ReplaceAll(line, "Providers:     testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
 		line = strings.ReplaceAll(line, "Providers:    testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
