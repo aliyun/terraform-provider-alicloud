@@ -35,7 +35,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
+			//testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
 
@@ -47,6 +47,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
 					"folder_id":    "${data.alicloud_resource_manager_folders.example.ids.0}",
+					"force_delete": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -76,9 +77,10 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"abandon_able_check_id", "force_delete"},
 			},
 		},
 	})
@@ -246,7 +248,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerAccountCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerAccountCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -274,7 +276,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerAccountCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerAccountCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -301,7 +303,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerAccountUpdate(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerAccountUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// MoveAccount
@@ -337,7 +339,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -388,7 +390,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -427,7 +429,7 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerAccountRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerAccountRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -438,7 +440,119 @@ func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudResourceManagerAccountDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerAccountDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }
+
+// Test ResourceManager Account. >>> Resource test cases, automatically generated.
+// Case Account_Test_Case_20250409_1 10666
+func TestAccAliCloudResourceManagerAccount_basic10666(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerAccountMap10666)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerAccountBasicDependence10666)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name": name,
+					"force_delete": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_name_prefix", "payer_account_id", "resell_account_type", "force_delete"},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerAccountMap10666 = map[string]string{
+	"status":                CHECKSET,
+	"modify_time":           CHECKSET,
+	"resource_directory_id": CHECKSET,
+	"join_method":           CHECKSET,
+	"join_time":             CHECKSET,
+}
+
+func AlicloudResourceManagerAccountBasicDependence10666(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager Account. <<< Resource test cases, automatically generated.
