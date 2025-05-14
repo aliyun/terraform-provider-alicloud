@@ -68,6 +68,7 @@ var existWafv3DomainMapFunc = func(rand int) map[string]string {
 		"domains.0.domain": CHECKSET,
 		"domains.0.resource_manager_resource_group_id": CHECKSET,
 		"domains.0.status":                             CHECKSET,
+		"domains.0.cname":                              CHECKSET,
 		"domains.0.listen.#":                           "1",
 		"domains.0.listen.0.cert_id":                   CHECKSET,
 		"domains.0.listen.0.cipher_suite":              "99",
