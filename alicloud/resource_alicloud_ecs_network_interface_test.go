@@ -143,7 +143,7 @@ func TestAccAliCloudECSNetworkInterface_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
 					"vswitch_id":             "${alicloud_vswitch.default.id}",
-					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
+					"security_group_ids":     []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -250,11 +250,11 @@ func TestAccAliCloudECSNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_ids": []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.group.id}"},
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}", "${alicloud_security_group.default.2.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_ids.#": "2",
+						"security_group_ids.#": "3",
 					}),
 				),
 			},
@@ -619,7 +619,7 @@ func TestAccAliCloudECSNetworkInterface_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                               name,
 					"vswitch_id":                         "${alicloud_vswitch.default.id}",
-					"security_groups":                    []string{"${alicloud_security_group.default.id}"},
+					"security_groups":                    []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}", "${alicloud_security_group.default.2.id}"},
 					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":                        name,
 					"private_ip":                         fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand),
@@ -634,7 +634,7 @@ func TestAccAliCloudECSNetworkInterface_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":                               CHECKSET,
 						"vswitch_id":                         CHECKSET,
-						"security_groups.#":                  "1",
+						"security_groups.#":                  "3",
 						"resource_group_id":                  CHECKSET,
 						"description":                        name,
 						"private_ip":                         CHECKSET,
@@ -680,7 +680,7 @@ func TestAccAliCloudECSNetworkInterface_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
 					"vswitch_id":        "${alicloud_vswitch.default.id}",
-					"security_groups":   []string{"${alicloud_security_group.default.id}"},
+					"security_groups":   []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":       name,
 					"private_ip":        fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand),
@@ -741,7 +741,7 @@ func TestAccAliCloudECSNetworkInterface_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
 					"instance_type":        "Trunk",
@@ -799,7 +799,7 @@ func TestAccAliCloudECSNetworkInterface_basic4(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"security_groups":      []string{"${alicloud_security_group.default.id}"},
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
 					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand+1)},
@@ -856,7 +856,7 @@ func TestAccAliCloudECSNetworkInterface_name_deprecated(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":               name,
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -912,7 +912,7 @@ func TestAccAliCloudECSNetworkInterface_private_ips_deprecated(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":               name,
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -968,14 +968,14 @@ func TestAccAliCloudECSNetworkInterface_private_ips_count_deprecated(t *testing.
 				Config: testAccConfig(map[string]interface{}{
 					"name":               name,
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}", "${alicloud_security_group.default.2.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                 CHECKSET,
 						"vswitch_id":           CHECKSET,
-						"security_group_ids.#": "1",
+						"security_group_ids.#": "3",
 						"resource_group_id":    CHECKSET,
 					}),
 				),
@@ -1024,7 +1024,7 @@ func TestAccAliCloudECSNetworkInterface_security_groups_deprecated(t *testing.T)
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
 					"vswitch_id":        "${alicloud_vswitch.default.id}",
-					"security_groups":   []string{"${alicloud_security_group.default.id}"},
+					"security_groups":   []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1038,11 +1038,11 @@ func TestAccAliCloudECSNetworkInterface_security_groups_deprecated(t *testing.T)
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_groups": []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.group.id}"},
+					"security_groups": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}", "${alicloud_security_group.default.2.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_groups.#": "2",
+						"security_groups.#": "3",
 					}),
 				),
 			},
@@ -1057,38 +1057,34 @@ func TestAccAliCloudECSNetworkInterface_security_groups_deprecated(t *testing.T)
 
 func AliCloudEcsNetworkInterfaceBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-    available_resource_creation= "VSwitch"
-}
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
 
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_name              = "${var.name}"
-}
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
 
-resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = alicloud_vpc.default.id
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
+	}
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		vswitch_name = var.name
+	}
 
-resource "alicloud_security_group" "group" {
-    name = "${var.name}"
-    vpc_id = alicloud_vpc.default.id
-}
-
-data "alicloud_resource_manager_resource_groups" "default"{
-	status = "OK"
-}
+	resource "alicloud_security_group" "default" {
+  		count  = 3
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
 `, name)
 }
 
