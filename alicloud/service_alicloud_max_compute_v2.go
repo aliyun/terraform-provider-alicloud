@@ -180,15 +180,15 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			tagsMaps := make([]map[string]interface{}, 0)
 			for key, value := range added {
 				tagsMap := make(map[string]interface{})
-				tagsMap["Key"] = key
 				tagsMap["Value"] = value
+				tagsMap["Key"] = key
 				tagsMaps = append(tagsMaps, tagsMap)
 				count++
 			}
 			request["Tag"] = tagsMaps
 
-			request["ResourceType"] = resourceType
 			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			jsonString := convertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "ResourceId.0", d.Id())
 			_ = json.Unmarshal([]byte(jsonString), &request)
@@ -295,6 +295,7 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaPlanStateRefreshFunc(id string, fie
 }
 
 // DescribeMaxComputeQuotaPlan >>> Encapsulated.
+
 // DescribeMaxComputeRole <<< Encapsulated get interface for MaxCompute Role.
 
 func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[string]interface{}, err error) {

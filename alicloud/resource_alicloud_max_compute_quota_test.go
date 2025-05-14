@@ -25,7 +25,7 @@ func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaBasicDependence10404)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -100,7 +100,7 @@ func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 									"max_cu":              "10",
 									"enable_priority":     "true",
 									"force_reserved_min":  "true",
-									"single_job_cu_limit": "15",
+									"single_job_cu_limit": "16",
 									"scheduler_type":      "Fair",
 								},
 							},
@@ -193,19 +193,19 @@ variable "name" {
 }
 
 variable "part_nick_name" {
-  default = "TFTest17213"
+  default = "TFTest17216"
 }
 
 variable "sub_quota_nickname_3" {
-  default = "sub398813"
+  default = "sub398816"
 }
 
 variable "sub_quota_nickname_1" {
-  default = "sub139713"
+  default = "sub169716"
 }
 
 variable "sub_quota_nickname_2" {
-  default = "sub223113"
+  default = "sub223116"
 }
 
 

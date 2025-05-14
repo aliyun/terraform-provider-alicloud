@@ -2,13 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"time"
 )
 
 func resourceAliCloudMaxComputeQuota() *schema.Resource {
@@ -108,7 +107,7 @@ func resourceAliCloudMaxComputeQuotaCreate(d *schema.ResourceData, meta interfac
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := fmt.Sprintf("/api/v1/quotas/createQuota")
+	action := fmt.Sprintf("/api/v1/quotas")
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
@@ -116,20 +115,20 @@ func resourceAliCloudMaxComputeQuotaCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
-	if v, ok := d.GetOk("part_nick_name"); ok {
-		query["partNickName"] = StringPointer(v.(string))
-	}
-
-	if v, ok := d.GetOk("commodity_data"); ok {
-		query["commodityData"] = StringPointer(v.(string))
+	if v, ok := d.GetOk("payment_type"); ok {
+		query["chargeType"] = StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("commodity_code"); ok {
 		query["commodityCode"] = StringPointer(v.(string))
 	}
 
-	if v, ok := d.GetOk("payment_type"); ok {
-		query["chargeType"] = StringPointer(v.(string))
+	if v, ok := d.GetOk("commodity_data"); ok {
+		query["commodityData"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("part_nick_name"); ok {
+		query["partNickName"] = StringPointer(v.(string))
 	}
 
 	body = request
@@ -151,7 +150,7 @@ func resourceAliCloudMaxComputeQuotaCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_quota", action, AlibabaCloudSdkGoERROR)
 	}
 
-	id, _ := jsonpath.Get("$.nickName", response)
+	id, _ := jsonpath.Get("$.data.nickName", response)
 	if id == nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_quota", action, AlibabaCloudSdkGoERROR, response)
 	}
@@ -256,10 +255,6 @@ func resourceAliCloudMaxComputeQuotaUpdate(d *schema.ResourceData, meta interfac
 			dataLoopMap["nickName"] = dataLoopTmp["nick_name"]
 			if !IsNil(dataLoopTmp["parameter"]) {
 				localData1 := make(map[string]interface{})
-				maxCu, _ := jsonpath.Get("$[0].max_cu", dataLoopTmp["parameter"])
-				if maxCu != nil && maxCu != "" {
-					localData1["maxCU"] = maxCu
-				}
 				minCu, _ := jsonpath.Get("$[0].min_cu", dataLoopTmp["parameter"])
 				if minCu != nil && minCu != "" {
 					localData1["minCU"] = minCu
@@ -268,6 +263,14 @@ func resourceAliCloudMaxComputeQuotaUpdate(d *schema.ResourceData, meta interfac
 				if singleJobCuLimit != nil && singleJobCuLimit != "" && singleJobCuLimit.(int) > 0 {
 					localData1["singleJobCULimit"] = singleJobCuLimit
 				}
+				enablePriority1, _ := jsonpath.Get("$[0].enable_priority", dataLoopTmp["parameter"])
+				if enablePriority1 != nil && enablePriority1 != "" {
+					localData1["enablePriority"] = enablePriority1
+				}
+				maxCu, _ := jsonpath.Get("$[0].max_cu", dataLoopTmp["parameter"])
+				if maxCu != nil && maxCu != "" {
+					localData1["maxCU"] = maxCu
+				}
 				schedulerType1, _ := jsonpath.Get("$[0].scheduler_type", dataLoopTmp["parameter"])
 				if schedulerType1 != nil && schedulerType1 != "" {
 					localData1["schedulerType"] = schedulerType1
@@ -275,10 +278,6 @@ func resourceAliCloudMaxComputeQuotaUpdate(d *schema.ResourceData, meta interfac
 				forceReservedMin1, _ := jsonpath.Get("$[0].force_reserved_min", dataLoopTmp["parameter"])
 				if forceReservedMin1 != nil && forceReservedMin1 != "" {
 					localData1["forceReservedMin"] = forceReservedMin1
-				}
-				enablePriority1, _ := jsonpath.Get("$[0].enable_priority", dataLoopTmp["parameter"])
-				if enablePriority1 != nil && enablePriority1 != "" {
-					localData1["enablePriority"] = enablePriority1
 				}
 				dataLoopMap["parameter"] = localData1
 			}
