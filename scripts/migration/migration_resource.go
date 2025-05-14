@@ -28,6 +28,7 @@ var (
 
 var specialServiceMap = map[string]string{
 	"private_zone": "pvtz",
+	"sls":          "log",
 }
 
 var specialResourceMap = map[string]map[string]string{
@@ -58,6 +59,10 @@ var specialResourceMap = map[string]map[string]string{
 		"zone_attachment":        "pvtz_zone_attachment",
 		"zone_record":            "pvtz_zone_record",
 	},
+	"sls": {
+		"project": "log_project",
+		"store":   "log_store",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -87,6 +92,10 @@ var specialDataSourceMap = map[string]map[string]string{
 		"zone":                   "pvtz_zones",
 		"zone_attachment":        "pvtz_zone_attachments",
 		"zone_record":            "pvtz_zone_records",
+	},
+	"sls": {
+		"project": "log_projects",
+		"store":   "log_stores",
 	},
 }
 
@@ -766,10 +775,15 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "ParseResourceId", "helper.ParseResourceId")
 	line = strings.ReplaceAll(line, "convertListMapToJsonString", "helper.ConvertListMapToJsonString")
 	line = strings.ReplaceAll(line, "convertMaptoJsonString", "helper.ConvertMaptoJsonString")
+	line = strings.ReplaceAll(line, "convertListStringToListInterface", "helper.ConvertListStringToListInterface")
+	line = strings.ReplaceAll(line, "expandSingletonToList", "helper.ExpandSingletonToList")
 	line = strings.ReplaceAll(line, "GetFunc", "helper.GetFunc")
 	line = strings.ReplaceAll(line, "WaitTimeoutMsg", "tferr.WaitTimeoutMsg")
 	line = strings.ReplaceAll(line, "COMMA_SEPARATED", "names.COMMA_SEPARATED")
 	line = strings.ReplaceAll(line, "LOCAL_HOST_IP", "names.LOCAL_HOST_IP")
+	line = strings.ReplaceAll(line, "IsNil", "helper.IsNil")
+	roaParamRe := regexp.MustCompile(`roaParam\(\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*([^)]+)\s*\)`)
+	line = roaParamRe.ReplaceAllString(line, `client.NewRpcParam($1, $2, $3)`)
 
 	if !strings.Contains(line, "schema.DefaultTimeout") {
 		line = strings.ReplaceAll(line, "DefaultTimeout", "names.DefaultTimeout")
@@ -818,6 +832,13 @@ func commonReplaces(line string) string {
 	rdkPointerRe := regexp.MustCompile(`rdk\.StringPointer\(\s*d\.Get\("([^"]+)"\)(?:\.\(string\))?\s*\)`)
 	line = rdkPointerRe.ReplaceAllString(line, `rdk.StringPointer(d.Get("$1").(string))`)
 
+	if strings.Contains(line, " StringPointer") {
+		line = strings.ReplaceAll(line, " StringPointer", " rdk.StringPointer")
+	}
+
+	rdkNestedRe := regexp.MustCompile(`rdk\.StringPointer\(\s*StringPointer\(([^)]+)\)\s*\)`)
+	line = rdkNestedRe.ReplaceAllString(line, `rdk.StringPointer($1)`)
+
 	createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
 	line = createRequestRe.ReplaceAllString(line,
 		"action := \"$2\"\n\trequest := make(map[string]interface{})")
@@ -841,7 +862,7 @@ func isVariable(line, code string) bool {
 	if strings.Contains(line, code+".") {
 		return false
 	}
-	return strings.Contains(line, ""+code+" ") || strings.Contains(line, ""+code+",")
+	return strings.Contains(line, " "+code+" ") || strings.Contains(line, " "+code+",")
 }
 
 func skipUpdate(filePath string) bool {
@@ -878,6 +899,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
