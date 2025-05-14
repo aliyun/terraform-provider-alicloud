@@ -1,4 +1,46 @@
 ## 1.249.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_firewall_ips_config` [GH-8403]
+- **New Resource:** `alicloud_pai_workspace_member` [GH-8649]
+- **New Resource:** `alicloud_pai_workspace_model` [GH-8672]
+- **New Resource:** `alicloud_pai_workspace_model_version` [GH-8689]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cen_traffic_marking_policy: add new attribute force. [GH-8645]
+- resource/alicloud_slb_listener: Added the field acl_ids; Deprecated the field acl_id. [GH-8648]
+- resource/alicloud_kvstore_account: Added retry strategy for error code IncorrectDBInstanceState. [GH-8651]
+- resource/alicloud_das_switch_das_pro: Deprecated resource alicloud_das_switch_das_pro. [GH-8652]
+- resource/alicloud_ess_scaling_group: add attribute of capacity_options_price_comparison_mode. [GH-8653]
+- resource/alicloud_lindorm_instance: Add new field auto_renew and auto_renew_period. [GH-8654]
+- resource/alicloud_polardb_cluster: support hot_standby_cluster equal and standby_az. [GH-8657]
+- resource/alicloud_api_gateway_api: Supports fc 3.0 by add attribute function_version;resource/alicloud_api_gateway_backend: Supports fc 3.0 backend_type. [GH-8661]
+- resource/alicloud_route_entry: Add retry code while deleting. [GH-8676]
+- resource/alicloud_ddoscoo_domain_resource: Refactored the resource alicloud_ddoscoo_domain_resource; Changed the parameter of the field cert_identifier from CertId to CertIdentifier. [GH-8678]
+- resource/alicloud_vpc_ipv4_gateway: Add new attribute internet_mode. [GH-8680]
+- resource/alicloud_alb_health_check_template: Support new attribute resource_group_id. [GH-8681]
+- resource/alicloud_kms_instance: support modify instance name and fix bug while delete Subscription instance. [GH-8686]
+- resource/alicloud_adb_account: improve WaitForAdbAccount func. [GH-8690]
+- resource/alicloud_amqp_exchange: Add new attribtue x_delayed_type and supports more exchange_type. [GH-8697]
+- data-source/alicloud_threat_detection_assets: Adds more attributes for instance and cluster. [GH-8647]
+- data-source/alicloud_ess_scaling_groups: add attribute of capacity_options_on_demand_base_capacity,capacity_options_on_demand_percentage_above_base_capacity,capacity_options_compensate_with_on_demand,capacity_options_spot_auto_replace_on_demand,compensate_with_on_demand and launch_template_override. [GH-8659]
+- docs: Improved the document cr_ee_instance example. [GH-8650]
+- docs: Fixed APIG, Ack One, Actiontrail, AliKafka, Alidns, Aligreen, ADB, GPDB, DdosBgp, DdosCoo invalid links. [GH-8655]
+- docs: Fixed Eipanycast, Api Gateway, ALB, ARMS, DFS, CDDC, VOD, Auto Scaling, Bastion Host, CDN invalid links. [GH-8656]
+- docs: Fixed Cassandra, Chatbot, SLB, Click House, BPStudio, Config, Cloud Control, CEN, Cloud Firewall, Cloud Monitor Service, Cloud Phone, Cloud SSO invalid links. [GH-8664]
+- docs: Fixed Cloud Storage Gateway, Compute Nest, CR, ACK, DCDN, DMS Enterprise, DTS, Data Works, DBS, DBFS, Ddos Basic, DRDS, EMR, ECS, EDAS, CBWP, ENS, ESA, Eflo, EAIS invalid links. [GH-8665]
+- docs: Fixed EBS, ECP, ECI, ECD, Ehpc, EIP, Elasticsearch, Event Bridge, Express Connect, Express Connect Router, NAS, FC, FCV3, GWLB, GA, Governance, Graph Database, HBase, Hologram, HBR invalid links. [GH-8666]
+- docs: Fixed IMS, KMS, Lindorm, Live, SLS, Max Compute, Message Service, MSE, MongoDB, NAT Gateway, NLB, OSS, Ocean Base, OOS, PAI, PolarDB, Private Link, Private Zone, Quotas, RAM invalid links. [GH-8667]
+- docs: Fixed RDS, ROS, AMQP, Realtime Compute, Resource Manager, RocketMQ, Ons, SCDN, Schedulerx, Security Center, SelectDB, SAE, FnF, Service Catalog, Service Mesh, SMS, Simple Application Server, Smartag, TAG, OTS invalid links. [GH-8669]
+- docs: Fixed KVStore, Threat Detection, TSDB, VPC, VPN Gateway, Vpc Ipam, WAF invalid links. [GH-8670]
+- docs: improve examples for dataworks. [GH-8677]
+- docs: Imporves description for threat_detection_instance. [GH-8682]
+- docs: improve examples for ecs. [GH-8683]
+- docs: Imporves description for common_bandwidth_package. [GH-8684]
+- docs: Deprecated resource hbr_nas_backup_plan, hbr_oss_backup_plan, hbr_ots_backup_plan, hbr_ecs_backup_plan, hbr_server_backup_plan. [GH-8685]
+- docs: improve examples for esa. [GH-8688]
+- docs/alicloud_alb_load_balancer: Improves the resource examples. [GH-8692]
+
 ## 1.248.0 (April 18, 2025)
 
 - **New Resource:** `alicloud_mongodb_public_network_address` ([#8590](https://github.com/aliyun/terraform-provider-alicloud/issues/8590))
@@ -37,6 +79,7 @@ ENHANCEMENTS:
 - resource/alicloud_cs_kubernetes_node_pool: Fix bug while set labels, taints to empty list. ([#8630](https://github.com/aliyun/terraform-provider-alicloud/issues/8630))
 - resource/alicloud_ram_security_preference: Add new attribute allow_user_to_manage_personal_ding_talk, mfa_operation_for_login, operation_for_risk_login and verification_types. ([#8636](https://github.com/aliyun/terraform-provider-alicloud/issues/8636))
 - resource/alicloud_nas_file_system: Add new attribute keytab, keytab_md5 and nfs_acl. ([#8568](https://github.com/aliyun/terraform-provider-alicloud/issues/8568))
+- data-source/alicloud_cs_kubernetes_node_pools: Supports filter by node_pool_name. ([#8641](https://github.com/aliyun/terraform-provider-alicloud/issues/8641))
 - docs: Fixed apig, cloud_firewall, dts, schedulerx, sae, gwlb invalid links. ([#8604](https://github.com/aliyun/terraform-provider-alicloud/issues/8604))
 - docs: Improved the document instance_types. ([#8627](https://github.com/aliyun/terraform-provider-alicloud/issues/8627))
 - docs: enhance the doc for mongodb_instance tde_status. ([#8632](https://github.com/aliyun/terraform-provider-alicloud/issues/8632))
@@ -44,7 +87,6 @@ ENHANCEMENTS:
 - docs: Fix expired link for rdc. ([#8634](https://github.com/aliyun/terraform-provider-alicloud/issues/8634))
 - docs: Fix invalid description for rocketmq_instance. ([#8637](https://github.com/aliyun/terraform-provider-alicloud/issues/8637))
 - docs: Improves description for arms_grafana_workspace. ([#8640](https://github.com/aliyun/terraform-provider-alicloud/issues/8640))
-- data-source/alicloud_cs_kubernetes_node_pools: Supports filter by node_pool_name. ([#8641](https://github.com/aliyun/terraform-provider-alicloud/issues/8641))
 - docs: Improves example for gwlb. ([#8642](https://github.com/aliyun/terraform-provider-alicloud/issues/8642))
 - docs: Imporves description for alb_server_group. ([#8643](https://github.com/aliyun/terraform-provider-alicloud/issues/8643))
 - docs: Improves description for max_compute_quota. ([#8644](https://github.com/aliyun/terraform-provider-alicloud/issues/8644))
