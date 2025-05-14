@@ -75,6 +75,10 @@ func dataSourceAliCloudWafv3Domains() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"cname": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"listen": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -308,6 +312,7 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 			"domain":                             object["Domain"],
 			"resource_manager_resource_group_id": object["ResourceManagerResourceGroupId"],
 			"status":                             fmt.Sprint(object["Status"]),
+			"cname":                              fmt.Sprint(object["Cname"]),
 		}
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
