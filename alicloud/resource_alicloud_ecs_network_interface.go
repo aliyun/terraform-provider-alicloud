@@ -106,25 +106,21 @@ func resourceAliCloudEcsNetworkInterface() *schema.Resource {
 				ConflictsWith: []string{"secondary_private_ip_address_count", "private_ip_addresses", "private_ips", "ipv4_prefixes", "ipv4_prefix_count"},
 			},
 			"security_group_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
 				MinItems:      1,
+				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"security_groups"},
 			},
 			"security_groups": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
 				MinItems:      1,
-				Deprecated:    "Field 'security_groups' has been deprecated from provider version 1.123.1. New field 'security_group_ids' instead",
+				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"security_group_ids"},
+				Deprecated:    "Field 'security_groups' has been deprecated from provider version 1.123.1. New field 'security_group_ids' instead",
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -227,9 +223,9 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 	}
 
 	if v, ok := d.GetOk("security_group_ids"); ok {
-		request["SecurityGroupIds"] = v
+		request["SecurityGroupIds"] = v.(*schema.Set).List()
 	} else if v, ok := d.GetOk("security_groups"); ok {
-		request["SecurityGroupIds"] = v
+		request["SecurityGroupIds"] = v.(*schema.Set).List()
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -388,12 +384,12 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 	}
 	if d.HasChange("security_group_ids") {
 		update = true
-		request["SecurityGroupId"] = d.Get("security_group_ids")
+		request["SecurityGroupId"] = d.Get("security_group_ids").(*schema.Set).List()
 		updateSecurityGroup = true
 	}
 	if d.HasChange("security_groups") {
 		update = true
-		request["SecurityGroupId"] = d.Get("security_groups")
+		request["SecurityGroupId"] = d.Get("security_groups").(*schema.Set).List()
 		updateSecurityGroup = true
 	}
 	if update {
