@@ -1,34 +1,41 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudResourceManagerAccount() *schema.Resource {
+func resourceAliCloudResourceManagerAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudResourceManagerAccountCreate,
-		Read:   resourceAlicloudResourceManagerAccountRead,
-		Update: resourceAlicloudResourceManagerAccountUpdate,
-		Delete: resourceAlicloudResourceManagerAccountDelete,
+		Create: resourceAliCloudResourceManagerAccountCreate,
+		Read:   resourceAliCloudResourceManagerAccountRead,
+		Update: resourceAliCloudResourceManagerAccountUpdate,
+		Delete: resourceAliCloudResourceManagerAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"abandonable_check_id": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				ConflictsWith: []string{"abandon_able_check_id"},
+				Elem:          &schema.Schema{Type: schema.TypeString},
+			},
 			"account_name_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"display_name": {
 				Type:     schema.TypeString,
@@ -39,17 +46,6 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"payer_account_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"abandon_able_check_id": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"tags": tagsSchema(),
 			"join_method": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -62,6 +58,15 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"payer_account_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resell_account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"resell", "non_resell"}, false),
+			},
 			"resource_directory_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -70,36 +75,60 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"type": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+			},
+			"force_delete": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"abandon_able_check_id": {
+				Type:       schema.TypeList,
+				Optional:   true,
+				Deprecated: "Field 'abandon_able_check_id' has been deprecated since provider version 1.248.0. New field 'abandonable_check_id' instead.",
+				Elem:       &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
 }
 
-func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerAccountCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateResourceAccount"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("account_name_prefix"); ok {
-		request["AccountNamePrefix"] = v
+	request = make(map[string]interface{})
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
 	}
-	request["DisplayName"] = d.Get("display_name")
-	if v, ok := d.GetOk("folder_id"); ok {
-		request["ParentFolderId"] = v
-	}
+
 	if v, ok := d.GetOk("payer_account_id"); ok {
 		request["PayerAccountId"] = v
 	}
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+	request["DisplayName"] = d.Get("display_name")
+	if v, ok := d.GetOk("resell_account_type"); ok {
+		request["ResellAccountType"] = v
+	}
+	if v, ok := d.GetOk("account_name_prefix"); ok {
+		request["AccountNamePrefix"] = v
+	}
+	if v, ok := d.GetOk("folder_id"); ok {
+		request["ParentFolderId"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -108,37 +137,41 @@ func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_account", action, AlibabaCloudSdkGoERROR)
 	}
-	responseAccount := response["Account"].(map[string]interface{})
-	d.SetId(fmt.Sprint(responseAccount["AccountId"]))
 
-	return resourceAlicloudResourceManagerAccountUpdate(d, meta)
+	id, _ := jsonpath.Get("$.Account.AccountId", response)
+	d.SetId(fmt.Sprint(id))
+
+	return resourceAliCloudResourceManagerAccountUpdate(d, meta)
 }
 
-func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resourcemanagerService := ResourcemanagerService{client}
-	object, err := resourcemanagerService.DescribeResourceManagerAccount(d.Id())
+	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
+
+	objectRaw, err := resourceManagerServiceV2.DescribeResourceManagerAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_resource_manager_account resourcemanagerService.DescribeResourceManagerAccount Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_account DescribeResourceManagerAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("display_name", object["DisplayName"])
-	d.Set("folder_id", object["FolderId"])
-	d.Set("join_method", object["JoinMethod"])
-	d.Set("join_time", object["JoinTime"])
-	d.Set("modify_time", object["ModifyTime"])
-	d.Set("resource_directory_id", object["ResourceDirectoryId"])
-	d.Set("status", object["Status"])
-	d.Set("type", object["Type"])
+	d.Set("display_name", objectRaw["DisplayName"])
+	d.Set("folder_id", objectRaw["FolderId"])
+	d.Set("join_method", objectRaw["JoinMethod"])
+	d.Set("join_time", objectRaw["JoinTime"])
+	d.Set("modify_time", objectRaw["ModifyTime"])
+	d.Set("resource_directory_id", objectRaw["ResourceDirectoryId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("type", objectRaw["Type"])
 
+	resourcemanagerService := ResourcemanagerService{client}
 	getPayerForAccountObject, err := resourcemanagerService.GetPayerForAccount(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -150,31 +183,32 @@ func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
-func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resourcemanagerService := ResourcemanagerService{client}
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
 	d.Partial(true)
 
-	if d.HasChange("tags") {
-		if err := resourcemanagerService.SetResourceTags(d, "Account"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
+	var err error
+	action := "MoveAccount"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountId"] = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("folder_id") {
+		update = true
 	}
-	if d.HasChange("folder_id") && !d.IsNewResource() {
-		request := map[string]interface{}{
-			"AccountId": d.Id(),
-		}
-		request["DestinationFolderId"] = d.Get("folder_id")
-		action := "MoveAccount"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+	request["DestinationFolderId"] = d.Get("folder_id")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 					wait()
@@ -188,21 +222,26 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("folder_id")
 	}
-	update := false
-	request := map[string]interface{}{
-		"AccountId": d.Id(),
+	update = false
+	action = "UpdateAccount"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountId"] = d.Id()
+
+	if d.HasChange("type") {
+		update = true
+		request["NewAccountType"] = d.Get("type")
 	}
-	if d.HasChange("display_name") && !d.IsNewResource() {
+
+	if !d.IsNewResource() && d.HasChange("display_name") {
 		update = true
 	}
 	request["NewDisplayName"] = d.Get("display_name")
 	if update {
-		action := "UpdateAccount"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 					wait()
@@ -216,32 +255,80 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("display_name")
+	}
+	update = false
+	action = "UpdatePayerForAccount"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountId"] = d.Id()
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		resourceManagerServiceV2 := ResourceManagerServiceV2{client}
+		if err := resourceManagerServiceV2.SetResourceTags(d, "Account"); err != nil {
+			return WrapError(err)
+		}
 	}
 	d.Partial(false)
-	return resourceAlicloudResourceManagerAccountRead(d, meta)
+	return resourceAliCloudResourceManagerAccountRead(d, meta)
 }
 
-func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	resourcemanagerService := ResourcemanagerService{client}
-	action := "DeleteAccount"
-	var response map[string]interface{}
-	var err error
+func resourceAliCloudResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) error {
 
-	request := map[string]interface{}{
-		"AccountId": d.Id(),
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteAccount"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["AccountId"] = d.Id()
+
+	if v, ok := d.GetOk("abandonable_check_id"); ok {
+		abandonableCheckIdMapsArray := v.([]interface{})
+		abandonableCheckIdMapsJson, err := json.Marshal(abandonableCheckIdMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["AbandonableCheckId"] = string(abandonableCheckIdMapsJson)
 	}
 
 	if v, ok := d.GetOk("abandon_able_check_id"); ok {
 		request["AbandonableCheckId"] = convertListToJsonString(v.([]interface{}))
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+	if v, ok := d.GetOkExists("force_delete"); ok && v.(bool) {
+		abandonableCheckIds, err := preCheckResourceManagerAccountDelete(d, meta)
+		request["AbandonableCheckId"] = convertListToJsonString(convertListStringToListInterface(abandonableCheckIds))
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
+			return WrapError(err)
+		}
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -252,14 +339,60 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.ResourceDirectory"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	// Since some accounts have a silent deletion period, 'deleting' will be considered as a successful deletion.
-	stateConf := BuildStateConf([]string{"Checking"}, []string{"Success", "Deleting"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Success", "Deleting"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourceManagerServiceV2.DescribeAsyncResourceManagerAccountStateRefreshFunc(d, response, "$.RdAccountDeletionStatus.Status", []string{"CheckFailed", "DeleteFailed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil
+}
+
+func preCheckResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) ([]string, error) {
+	client := meta.(*connectivity.AliyunClient)
+	resourceManagerService := ResourcemanagerService{client}
+	var response map[string]interface{}
+	action := "CheckAccountDelete"
+	request := make(map[string]interface{})
+	var err error
+	request["AccountId"] = d.Id()
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_account", action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{"PreCheckComplete"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, resourceManagerService.ResourceManagerAccountDeletionCheckTaskStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return nil, WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	object, err := resourceManagerService.DescribeResourceManagerAccountDeletionCheckTask(d.Id())
+	abandonAbleCheckIds := make([]string, 0)
+	if abandonAbleChecksList, ok := object["AbandonableChecks"].([]interface{}); ok {
+		for _, abandonAbleChecks := range abandonAbleChecksList {
+			abandonAbleChecksArg := abandonAbleChecks.(map[string]interface{})
+			if abandonAbleChecksCheckId, ok := abandonAbleChecksArg["CheckId"]; ok {
+				abandonAbleCheckIds = append(abandonAbleCheckIds, fmt.Sprint(abandonAbleChecksCheckId))
+			}
+		}
+	}
+	return abandonAbleCheckIds, nil
 }
