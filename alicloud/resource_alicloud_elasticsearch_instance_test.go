@@ -893,6 +893,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 						"\"action.auto_create_index\"":         "+.*,-*",
 						"\"action.destructive_requires_name\"": "false",
 						"\"xpack.security.audit.enabled\"":     "true",
+						"\"xpack.watcher.enabled\"":            "false",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -900,6 +901,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 						"setting_config.action.auto_create_index":         "+.*,-*",
 						"setting_config.action.destructive_requires_name": "false",
 						"setting_config.xpack.security.audit.enabled":     "true",
+						"setting_config.xpack.watcher.enabled":            "false",
 					}),
 				),
 			},
