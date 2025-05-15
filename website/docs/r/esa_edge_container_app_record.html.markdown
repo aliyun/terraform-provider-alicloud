@@ -21,7 +21,7 @@ For information about ESA Edge Container App Record and how to use it, see [What
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_edge_container_app_record&exampleId=558722a7-c1d5-adae-7862-dfad05280eb8595c1763&activeTab=example&spm=docs.r.esa_edge_container_app_record.0.558722a7c1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_edge_container_app_record&exampleId=c1ac063c-d7df-2e84-c206-b01fb2bb824fc26479f5&activeTab=example&spm=docs.r.esa_edge_container_app_record.0.c1ac063cd7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

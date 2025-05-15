@@ -20,6 +20,12 @@ For information about PAI Workspace Model Version and how to use it, see [What i
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_pai_workspace_model_version&exampleId=18468a5f-4bba-2ce3-aa49-290adc9096bbdd8c9095&activeTab=example&spm=docs.r.pai_workspace_model_version.0.18468a5f4b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform_example"

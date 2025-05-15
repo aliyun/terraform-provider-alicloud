@@ -21,7 +21,7 @@ For information about Cloud Enterprise Network (CEN) Inter Region Traffic Qos Po
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_inter_region_traffic_qos_policy&exampleId=eaad5f98-e1f5-6208-1a44-6b0780caa008475b1cc1&activeTab=example&spm=docs.r.cen_inter_region_traffic_qos_policy.0.eaad5f98e1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_inter_region_traffic_qos_policy&exampleId=1b43bd4f-e1ae-0d63-1903-5c1a3364d9d15e273f47&activeTab=example&spm=docs.r.cen_inter_region_traffic_qos_policy.0.1b43bd4fe1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

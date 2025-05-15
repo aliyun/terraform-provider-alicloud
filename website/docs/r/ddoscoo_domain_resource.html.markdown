@@ -21,7 +21,7 @@ For information about Ddos Coo Domain Resource and how to use it, see [What is D
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddoscoo_domain_resource&exampleId=cbaf9f64-f225-12d7-8c6c-154da65567f031b7f251&activeTab=example&spm=docs.r.ddoscoo_domain_resource.0.cbaf9f64f2&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddoscoo_domain_resource&exampleId=747dbf60-9e94-3f21-e0a9-2fae035dcaece1b3ac9e&activeTab=example&spm=docs.r.ddoscoo_domain_resource.0.747dbf609e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

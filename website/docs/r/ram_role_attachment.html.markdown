@@ -16,7 +16,7 @@ Provides a RAM role attachment resource to bind role for several ECS instances.
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role_attachment&exampleId=6e027f60-510b-f8b9-d172-8eee088a5368b7a79508&activeTab=example&spm=docs.r.ram_role_attachment.0.6e027f6051&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role_attachment&exampleId=3b4e7f10-4c11-8ccc-3b1d-6980f21352754763519a&activeTab=example&spm=docs.r.ram_role_attachment.0.3b4e7f104c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -1,45 +1,51 @@
-## 1.249.0 (Unreleased)
+## 1.250.0 (Unreleased)
+## 1.249.0 (May 16, 2025)
 
-- **New Resource:** `alicloud_cloud_firewall_ips_config` [GH-8403]
-- **New Resource:** `alicloud_pai_workspace_member` [GH-8649]
-- **New Resource:** `alicloud_pai_workspace_model` [GH-8672]
-- **New Resource:** `alicloud_pai_workspace_model_version` [GH-8689]
+- **New Resource:** `alicloud_cloud_firewall_ips_config` ([#8403](https://github.com/aliyun/terraform-provider-alicloud/issues/8403))
+- **New Resource:** `alicloud_pai_workspace_member` ([#8649](https://github.com/aliyun/terraform-provider-alicloud/issues/8649))
+- **New Resource:** `alicloud_pai_workspace_model` ([#8672](https://github.com/aliyun/terraform-provider-alicloud/issues/8672))
+- **New Resource:** `alicloud_pai_workspace_model_version` ([#8689](https://github.com/aliyun/terraform-provider-alicloud/issues/8689))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cen_traffic_marking_policy: add new attribute force. [GH-8645]
-- resource/alicloud_slb_listener: Added the field acl_ids; Deprecated the field acl_id. [GH-8648]
-- resource/alicloud_kvstore_account: Added retry strategy for error code IncorrectDBInstanceState. [GH-8651]
-- resource/alicloud_das_switch_das_pro: Deprecated resource alicloud_das_switch_das_pro. [GH-8652]
-- resource/alicloud_ess_scaling_group: add attribute of capacity_options_price_comparison_mode. [GH-8653]
-- resource/alicloud_lindorm_instance: Add new field auto_renew and auto_renew_period. [GH-8654]
-- resource/alicloud_polardb_cluster: support hot_standby_cluster equal and standby_az. [GH-8657]
-- resource/alicloud_api_gateway_api: Supports fc 3.0 by add attribute function_version;resource/alicloud_api_gateway_backend: Supports fc 3.0 backend_type. [GH-8661]
-- resource/alicloud_route_entry: Add retry code while deleting. [GH-8676]
-- resource/alicloud_ddoscoo_domain_resource: Refactored the resource alicloud_ddoscoo_domain_resource; Changed the parameter of the field cert_identifier from CertId to CertIdentifier. [GH-8678]
-- resource/alicloud_vpc_ipv4_gateway: Add new attribute internet_mode. [GH-8680]
-- resource/alicloud_alb_health_check_template: Support new attribute resource_group_id. [GH-8681]
-- resource/alicloud_kms_instance: support modify instance name and fix bug while delete Subscription instance. [GH-8686]
-- resource/alicloud_adb_account: improve WaitForAdbAccount func. [GH-8690]
-- resource/alicloud_amqp_exchange: Add new attribtue x_delayed_type and supports more exchange_type. [GH-8697]
-- data-source/alicloud_threat_detection_assets: Adds more attributes for instance and cluster. [GH-8647]
-- data-source/alicloud_ess_scaling_groups: add attribute of capacity_options_on_demand_base_capacity,capacity_options_on_demand_percentage_above_base_capacity,capacity_options_compensate_with_on_demand,capacity_options_spot_auto_replace_on_demand,compensate_with_on_demand and launch_template_override. [GH-8659]
-- docs: Improved the document cr_ee_instance example. [GH-8650]
-- docs: Fixed APIG, Ack One, Actiontrail, AliKafka, Alidns, Aligreen, ADB, GPDB, DdosBgp, DdosCoo invalid links. [GH-8655]
-- docs: Fixed Eipanycast, Api Gateway, ALB, ARMS, DFS, CDDC, VOD, Auto Scaling, Bastion Host, CDN invalid links. [GH-8656]
-- docs: Fixed Cassandra, Chatbot, SLB, Click House, BPStudio, Config, Cloud Control, CEN, Cloud Firewall, Cloud Monitor Service, Cloud Phone, Cloud SSO invalid links. [GH-8664]
-- docs: Fixed Cloud Storage Gateway, Compute Nest, CR, ACK, DCDN, DMS Enterprise, DTS, Data Works, DBS, DBFS, Ddos Basic, DRDS, EMR, ECS, EDAS, CBWP, ENS, ESA, Eflo, EAIS invalid links. [GH-8665]
-- docs: Fixed EBS, ECP, ECI, ECD, Ehpc, EIP, Elasticsearch, Event Bridge, Express Connect, Express Connect Router, NAS, FC, FCV3, GWLB, GA, Governance, Graph Database, HBase, Hologram, HBR invalid links. [GH-8666]
-- docs: Fixed IMS, KMS, Lindorm, Live, SLS, Max Compute, Message Service, MSE, MongoDB, NAT Gateway, NLB, OSS, Ocean Base, OOS, PAI, PolarDB, Private Link, Private Zone, Quotas, RAM invalid links. [GH-8667]
-- docs: Fixed RDS, ROS, AMQP, Realtime Compute, Resource Manager, RocketMQ, Ons, SCDN, Schedulerx, Security Center, SelectDB, SAE, FnF, Service Catalog, Service Mesh, SMS, Simple Application Server, Smartag, TAG, OTS invalid links. [GH-8669]
-- docs: Fixed KVStore, Threat Detection, TSDB, VPC, VPN Gateway, Vpc Ipam, WAF invalid links. [GH-8670]
-- docs: improve examples for dataworks. [GH-8677]
-- docs: Imporves description for threat_detection_instance. [GH-8682]
-- docs: improve examples for ecs. [GH-8683]
-- docs: Imporves description for common_bandwidth_package. [GH-8684]
-- docs: Deprecated resource hbr_nas_backup_plan, hbr_oss_backup_plan, hbr_ots_backup_plan, hbr_ecs_backup_plan, hbr_server_backup_plan. [GH-8685]
-- docs: improve examples for esa. [GH-8688]
-- docs/alicloud_alb_load_balancer: Improves the resource examples. [GH-8692]
+- resource/alicloud_cen_traffic_marking_policy: add new attribute force. ([#8645](https://github.com/aliyun/terraform-provider-alicloud/issues/8645))
+- resource/alicloud_slb_listener: Added the field acl_ids; Deprecated the field acl_id. ([#8648](https://github.com/aliyun/terraform-provider-alicloud/issues/8648))
+- resource/alicloud_kvstore_account: Added retry strategy for error code IncorrectDBInstanceState. ([#8651](https://github.com/aliyun/terraform-provider-alicloud/issues/8651))
+- resource/alicloud_das_switch_das_pro: Deprecated resource alicloud_das_switch_das_pro. ([#8652](https://github.com/aliyun/terraform-provider-alicloud/issues/8652))
+- resource/alicloud_ess_scaling_group: add attribute of capacity_options_price_comparison_mode. ([#8653](https://github.com/aliyun/terraform-provider-alicloud/issues/8653))
+- resource/alicloud_lindorm_instance: Add new field auto_renew and auto_renew_period. ([#8654](https://github.com/aliyun/terraform-provider-alicloud/issues/8654))
+- resource/alicloud_polardb_cluster: support hot_standby_cluster equal and standby_az. ([#8657](https://github.com/aliyun/terraform-provider-alicloud/issues/8657))
+- resource/alicloud_api_gateway_api: Supports fc 3.0 by add attribute function_version;resource/alicloud_api_gateway_backend: Supports fc 3.0 backend_type. ([#8661](https://github.com/aliyun/terraform-provider-alicloud/issues/8661))
+- resource/alicloud_route_entry: Add retry code while deleting. ([#8676](https://github.com/aliyun/terraform-provider-alicloud/issues/8676))
+- resource/alicloud_ddoscoo_domain_resource: Refactored the resource alicloud_ddoscoo_domain_resource; Changed the parameter of the field cert_identifier from CertId to CertIdentifier. ([#8678](https://github.com/aliyun/terraform-provider-alicloud/issues/8678))
+- resource/alicloud_vpc_ipv4_gateway: Add new attribute internet_mode. ([#8680](https://github.com/aliyun/terraform-provider-alicloud/issues/8680))
+- resource/alicloud_alb_health_check_template: Support new attribute resource_group_id. ([#8681](https://github.com/aliyun/terraform-provider-alicloud/issues/8681))
+- resource/alicloud_kms_instance: support modify instance name and fix bug while delete Subscription instance. ([#8686](https://github.com/aliyun/terraform-provider-alicloud/issues/8686))
+- resource/alicloud_adb_account: improve WaitForAdbAccount func. ([#8690](https://github.com/aliyun/terraform-provider-alicloud/issues/8690))
+- resource/alicloud_amqp_exchange: Add new attribtue x_delayed_type and supports more exchange_type. ([#8697](https://github.com/aliyun/terraform-provider-alicloud/issues/8697))
+- resource/alicloud_ecs_network_interface: Fixed the diff error caused by field security_group_ids, security_groups. ([#8705](https://github.com/aliyun/terraform-provider-alicloud/issues/8705))
+- resource/alicloud_max_compute_quota: Refactored the resource max_compute_quota. ([#8706](https://github.com/aliyun/terraform-provider-alicloud/issues/8706))
+- resource/alicloud_cs_kubernetes_node_pool: Fix bug while set spot_price_limit to empty list. ([#8707](https://github.com/aliyun/terraform-provider-alicloud/issues/8707))
+- data-source/alicloud_wafv3_domains: add new attribute cname. ([#8704](https://github.com/aliyun/terraform-provider-alicloud/issues/8704))
+- data-source/alicloud_threat_detection_assets: Adds more attributes for instance and cluster. ([#8647](https://github.com/aliyun/terraform-provider-alicloud/issues/8647))
+- data-source/alicloud_ess_scaling_groups: add attribute of capacity_options_on_demand_base_capacity,capacity_options_on_demand_percentage_above_base_capacity,capacity_options_compensate_with_on_demand,capacity_options_spot_auto_replace_on_demand,compensate_with_on_demand and launch_template_override. ([#8659](https://github.com/aliyun/terraform-provider-alicloud/issues/8659))
+- docs: Improved the document cr_ee_instance example. ([#8650](https://github.com/aliyun/terraform-provider-alicloud/issues/8650))
+- docs: Fixed APIG, Ack One, Actiontrail, AliKafka, Alidns, Aligreen, ADB, GPDB, DdosBgp, DdosCoo invalid links. ([#8655](https://github.com/aliyun/terraform-provider-alicloud/issues/8655))
+- docs: Fixed Eipanycast, Api Gateway, ALB, ARMS, DFS, CDDC, VOD, Auto Scaling, Bastion Host, CDN invalid links. ([#8656](https://github.com/aliyun/terraform-provider-alicloud/issues/8656))
+- docs: Fixed Cassandra, Chatbot, SLB, Click House, BPStudio, Config, Cloud Control, CEN, Cloud Firewall, Cloud Monitor Service, Cloud Phone, Cloud SSO invalid links. ([#8664](https://github.com/aliyun/terraform-provider-alicloud/issues/8664))
+- docs: Fixed Cloud Storage Gateway, Compute Nest, CR, ACK, DCDN, DMS Enterprise, DTS, Data Works, DBS, DBFS, Ddos Basic, DRDS, EMR, ECS, EDAS, CBWP, ENS, ESA, Eflo, EAIS invalid links. ([#8665](https://github.com/aliyun/terraform-provider-alicloud/issues/8665))
+- docs: Fixed EBS, ECP, ECI, ECD, Ehpc, EIP, Elasticsearch, Event Bridge, Express Connect, Express Connect Router, NAS, FC, FCV3, GWLB, GA, Governance, Graph Database, HBase, Hologram, HBR invalid links. ([#8666](https://github.com/aliyun/terraform-provider-alicloud/issues/8666))
+- docs: Fixed IMS, KMS, Lindorm, Live, SLS, Max Compute, Message Service, MSE, MongoDB, NAT Gateway, NLB, OSS, Ocean Base, OOS, PAI, PolarDB, Private Link, Private Zone, Quotas, RAM invalid links. ([#8667](https://github.com/aliyun/terraform-provider-alicloud/issues/8667))
+- docs: Fixed RDS, ROS, AMQP, Realtime Compute, Resource Manager, RocketMQ, Ons, SCDN, Schedulerx, Security Center, SelectDB, SAE, FnF, Service Catalog, Service Mesh, SMS, Simple Application Server, Smartag, TAG, OTS invalid links. ([#8669](https://github.com/aliyun/terraform-provider-alicloud/issues/8669))
+- docs: Fixed KVStore, Threat Detection, TSDB, VPC, VPN Gateway, Vpc Ipam, WAF invalid links. ([#8670](https://github.com/aliyun/terraform-provider-alicloud/issues/8670))
+- docs: improve examples for dataworks. ([#8677](https://github.com/aliyun/terraform-provider-alicloud/issues/8677))
+- docs: Imporves description for threat_detection_instance. ([#8682](https://github.com/aliyun/terraform-provider-alicloud/issues/8682))
+- docs: improve examples for ecs. ([#8683](https://github.com/aliyun/terraform-provider-alicloud/issues/8683))
+- docs: Imporves description for common_bandwidth_package. ([#8684](https://github.com/aliyun/terraform-provider-alicloud/issues/8684))
+- docs: Deprecated resource hbr_nas_backup_plan, hbr_oss_backup_plan, hbr_ots_backup_plan, hbr_ecs_backup_plan, hbr_server_backup_plan. ([#8685](https://github.com/aliyun/terraform-provider-alicloud/issues/8685))
+- docs: improve examples for esa. ([#8688](https://github.com/aliyun/terraform-provider-alicloud/issues/8688))
+- docs/alicloud_alb_load_balancer: Improves the resource examples. ([#8692](https://github.com/aliyun/terraform-provider-alicloud/issues/8692))
+- docs: Imporves description for kvstore_instance. ([#8703](https://github.com/aliyun/terraform-provider-alicloud/issues/8703))
 
 ## 1.248.0 (April 18, 2025)
 

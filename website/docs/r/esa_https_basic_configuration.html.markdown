@@ -21,7 +21,7 @@ For information about ESA Https Basic Configuration and how to use it, see [What
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_https_basic_configuration&exampleId=43bfc1d9-2d7c-704e-3f81-4a5cead1c591c084b424&activeTab=example&spm=docs.r.esa_https_basic_configuration.0.43bfc1d92d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_https_basic_configuration&exampleId=4ffb51be-6fef-f2fb-c63f-7f29540abfdc06262700&activeTab=example&spm=docs.r.esa_https_basic_configuration.0.4ffb51be6f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

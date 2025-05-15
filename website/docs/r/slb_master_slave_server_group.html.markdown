@@ -28,7 +28,7 @@ A master slave server group contains two ECS instances. The master slave server 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_master_slave_server_group&exampleId=9443218a-ef1b-1010-b9c5-8f058968288d56a97ff0&activeTab=example&spm=docs.r.slb_master_slave_server_group.0.9443218aef&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_master_slave_server_group&exampleId=801c7454-2bd4-26f6-8a51-b5e8e13657270a27203e&activeTab=example&spm=docs.r.slb_master_slave_server_group.0.801c74542b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -21,7 +21,7 @@ For information about Data Works Project Member and how to use it, see [What is 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_data_works_project_member&exampleId=e942d645-34f9-0588-65be-02c1be808bf9f84959c1&activeTab=example&spm=docs.r.data_works_project_member.0.e942d64534&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_data_works_project_member&exampleId=0ef658b1-28ba-ab42-4814-e150dafec42f4cc55d55&activeTab=example&spm=docs.r.data_works_project_member.0.0ef658b128&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

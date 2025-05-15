@@ -20,7 +20,7 @@ For information about Route Entry and how to use it, see [What is Route Entry](h
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_route_entry&exampleId=73e9527c-cd05-9df6-c36f-78042145400c1b50fad0&activeTab=example&spm=docs.r.route_entry.0.73e9527ccd&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_route_entry&exampleId=f1eb7952-9224-8cdd-4ef9-6b8966bd2b1b86783dfc&activeTab=example&spm=docs.r.route_entry.0.f1eb795292&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
