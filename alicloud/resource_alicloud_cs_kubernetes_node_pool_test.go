@@ -2239,6 +2239,18 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"spot_strategy":    "SpotAsPriceGo",
+					"spot_price_limit": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_strategy":      "SpotAsPriceGo",
+						"spot_price_limit.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"internet_charge_type": "PayByTraffic",
 				}),
 				Check: resource.ComposeTestCheckFunc(
