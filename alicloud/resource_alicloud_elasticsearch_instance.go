@@ -35,7 +35,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[\w\-.]{0,128}$`), "be 0 to 128 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
 				Computed:     true,
 			},
 
@@ -739,34 +739,34 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("setting_config")
 	}
 
+	if d.HasChange("instance_charge_type") && !d.IsNewResource() {
+		if err := updateInstanceChargeType(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		//d.SetPartial("instance_charge_type")
+		//d.SetPartial("period")
+	} else if d.Get("instance_charge_type").(string) == string(PrePaid) && !d.IsNewResource() && d.HasChange("period") {
+		if err := renewInstance(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		//d.SetPartial("period")
+	}
+
 	if d.Get("instance_charge_type").(string) == string(PrePaid) && (d.HasChange("renew_status") || d.HasChange("auto_renew_duration") || d.HasChange("renewal_duration_unit")) {
 		if err := setRenewalInstance(d, meta); err != nil {
 			return WrapError(err)
 		}
 
-		d.SetPartial("renew_status")
-		d.SetPartial("auto_renew_duration")
-		d.SetPartial("renewal_duration_unit")
+		//d.SetPartial("renew_status")
+		//d.SetPartial("auto_renew_duration")
+		//d.SetPartial("renewal_duration_unit")
 	}
 
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudElasticsearchRead(d, meta)
-	}
-
-	if d.HasChange("instance_charge_type") {
-		if err := updateInstanceChargeType(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("period")
-	} else if d.Get("instance_charge_type").(string) == string(PrePaid) && d.HasChange("period") {
-		if err := renewInstance(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("period")
 	}
 
 	if d.HasChange("data_node_amount") {
