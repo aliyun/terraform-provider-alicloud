@@ -2215,24 +2215,22 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("spot_price_limit") {
 		update = true
 		if v := d.Get("spot_price_limit"); v != nil {
-			if v, ok := d.GetOk("spot_price_limit"); ok {
-				localData1, err := jsonpath.Get("$", v)
-				if err != nil {
-					localData1 = make([]interface{}, 0)
-				}
-				localMaps1 := make([]interface{}, 0)
-				for _, dataLoop1 := range localData1.([]interface{}) {
-					dataLoop1Tmp := make(map[string]interface{})
-					if dataLoop1 != nil {
-						dataLoop1Tmp = dataLoop1.(map[string]interface{})
-					}
-					dataLoop1Map := make(map[string]interface{})
-					dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
-					dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
-					localMaps1 = append(localMaps1, dataLoop1Map)
-				}
-				objectDataLocalMap1["spot_price_limit"] = localMaps1
+			localData1, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData1 = make([]interface{}, 0)
 			}
+			localMaps1 := make([]interface{}, 0)
+			for _, dataLoop1 := range localData1.([]interface{}) {
+				dataLoop1Tmp := make(map[string]interface{})
+				if dataLoop1 != nil {
+					dataLoop1Tmp = dataLoop1.(map[string]interface{})
+				}
+				dataLoop1Map := make(map[string]interface{})
+				dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
+				dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
+				localMaps1 = append(localMaps1, dataLoop1Map)
+			}
+			objectDataLocalMap1["spot_price_limit"] = localMaps1
 
 		}
 	}
