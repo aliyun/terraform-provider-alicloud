@@ -69,11 +69,9 @@ The following arguments are supported:
 * `description` - (Optional) The description of the policy. It can be 1 to 1024 characters in length.
 * `policy_document` - (Optional, Available since v1.114.0) The content of the policy. The maximum length is 6144 bytes.
 * `policy_name` - (Optional, ForceNew) The policy name. It can be 1 to 128 characters in length and can contain English letters, digits, and dashes (-).
-* `rotate_strategy` - (Optional, Available since v1.114.0) The automatic rotation mechanism of policy versions can delete historical policy versions. The default value is None.
-
-Currently contains:
-  - None: Turn off the rotation mechanism.
-  - DeleteOldestNonDefaultVersionWhenLimitExceeded: When the number of permission policy versions exceeds the limit, the oldest and inactive version is deleted.
+* `rotate_strategy` - (Optional, Available since v1.114.0) The automatic rotation mechanism of policy versions can delete historical policy versions. The default value is None. Valid values:
+  - `None`: Turn off the rotation mechanism.
+  - `DeleteOldestNonDefaultVersionWhenLimitExceeded`: When the number of permission policy versions exceeds the limit, the oldest and inactive version is deleted.
 * `tags` - (Optional, Map, Available since v1.246.0) The list of tags on the policy.
 * `force` - (Optional, Bool) Specifies whether to force delete the Policy. Default value: `false`. Valid values:
   - `true`: Enable.
