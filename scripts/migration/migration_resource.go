@@ -29,6 +29,7 @@ var (
 var specialServiceMap = map[string]string{
 	"private_zone": "pvtz",
 	"sls":          "log",
+	"max_compute":  "maxcompute",
 }
 
 var specialResourceMap = map[string]map[string]string{
@@ -63,6 +64,16 @@ var specialResourceMap = map[string]map[string]string{
 		"project": "log_project",
 		"store":   "log_store",
 	},
+	"nat_gateway": {
+		"nat_gateway":   "nat_gateway",
+		"forward_entry": "forward_entry",
+		"snat_entry":    "snat_entry",
+		"vpc_nat_ip":    "vpc_nat_ip",
+		"nat_ip_cidr":   "vpc_nat_ip_cidr",
+	},
+	"max_compute": {
+		"project": "maxcompute_project",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -96,6 +107,16 @@ var specialDataSourceMap = map[string]map[string]string{
 	"sls": {
 		"project": "log_projects",
 		"store":   "log_stores",
+	},
+	"nat_gateway": {
+		"nat_gateway":   "nat_gateways",
+		"forward_entry": "forward_entries",
+		"snat_entry":    "snat_entries",
+		"vpc_nat_ip":    "vpc_nat_ips",
+		"nat_ip_cidr":   "vpc_nat_ip_cidrs",
+	},
+	"max_compute": {
+		"project": "maxcompute_projects",
 	},
 }
 
@@ -744,6 +765,44 @@ func commonReplaces(line string) string {
 		}
 	}
 
+	roaRe := regexp.MustCompile(`client\.Roa([A-Za-z]+)\(\s*"([^"]+)",\s*"([^"]+)",\s*([^,]+),\s*([^,]+)(?:,\s*([^,]+))?(?:,\s*([^,]+))?(?:,\s*([^)]+))?\)`)
+	if strings.Contains(line, "client.Roa") {
+		matches := roaRe.FindStringSubmatch(line)
+		if len(matches) >= 7 {
+			httpMethod := strings.ToUpper(matches[1])
+			service := matches[2]
+			version := matches[3]
+			action := matches[4]
+			query := matches[5]
+			request := "nil"
+			body := "nil"
+			async := "true"
+
+			if len(matches) >= 7 && matches[6] != "" {
+				request = matches[6]
+			}
+			if len(matches) >= 8 && matches[7] != "" {
+				body = matches[7]
+			}
+			if len(matches) >= 9 && matches[8] != "" {
+				async = matches[8]
+			}
+
+			newLine := fmt.Sprintf(
+				`client.Do("%s", client.NewRoaParam("%s", "%s", %s), %s, %s, %s, nil, %s)`,
+				service,
+				httpMethod,
+				version,
+				action,
+				query,
+				body,
+				request,
+				async,
+			)
+			line = strings.Replace(line, matches[0], newLine, 1)
+		}
+	}
+
 	line = strings.ReplaceAll(line, "string(PostgreSQL)", "\"PostgreSQL\"")
 	line = strings.ReplaceAll(line, "string(MySQL)", "\"MySQL\"")
 	line = strings.ReplaceAll(line, "string(MongoDB)", "\"MongoDB\"")
@@ -780,6 +839,7 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "GetFunc", "helper.GetFunc")
 	line = strings.ReplaceAll(line, "WaitTimeoutMsg", "tferr.WaitTimeoutMsg")
 	line = strings.ReplaceAll(line, "COMMA_SEPARATED", "names.COMMA_SEPARATED")
+	line = strings.ReplaceAll(line, "COLON_SEPARATED", "names.COLON_SEPARATED")
 	line = strings.ReplaceAll(line, "LOCAL_HOST_IP", "names.LOCAL_HOST_IP")
 	line = strings.ReplaceAll(line, "IsNil", "helper.IsNil")
 	roaParamRe := regexp.MustCompile(`roaParam\(\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*("[^"]+"|\w+)\s*,\s*([^)]+)\s*\)`)
@@ -947,6 +1007,10 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 				inValidateFunc = false
 				parenDepth = 0
 			}
+			continue
+		}
+
+		if strings.Contains(line, "// Package alicloud.") {
 			continue
 		}
 
@@ -1170,6 +1234,10 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 
+		if strings.Contains(line, "// Package alicloud.") {
+			continue
+		}
+
 		if strings.Contains(line, "SetPartial") {
 			continue
 		}
@@ -1370,6 +1438,10 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		if strings.Contains(line, "// Package alicloud.") {
+			continue
+		}
 
 		if strings.Contains(line, "testAccPreCheckWithEnvVariable") {
 			continue
