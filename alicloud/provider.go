@@ -265,7 +265,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_backups":                                      dataSourceAlicloudRdsBackups(),
 			"alicloud_rds_modify_parameter_logs":                        dataSourceAlicloudRdsModifyParameterLogs(),
 			"alicloud_pvtz_zones":                                       dataSourceAliCloudPvtzZones(),
-			"alicloud_pvtz_zone_records":                                dataSourceAlicloudPvtzZoneRecords(),
+			"alicloud_pvtz_zone_records":                                dataSourceAliCloudPvtzZoneRecords(),
 			"alicloud_router_interfaces":                                dataSourceAlicloudRouterInterfaces(),
 			"alicloud_vpn_gateways":                                     dataSourceAlicloudVpnGateways(),
 			"alicloud_vpn_customer_gateways":                            dataSourceAlicloudVpnCustomerGateways(),

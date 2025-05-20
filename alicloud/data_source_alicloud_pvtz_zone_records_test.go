@@ -1,107 +1,129 @@
 package alicloud
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
-	"fmt"
-
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudPvtzZoneRecordsDataSource(t *testing.T) {
+func TestAccAliCloudPvtzZoneRecordsDataSource_basic0(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-	resourceId := "data.alicloud_pvtz_zone_records.default"
-
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testacc%d.test.com", rand),
-		dataSourcePvtzZoneRecordsConfigDependence)
-
-	zoneIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-		}),
-	}
-	keyWordConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}-fake",
-		}),
-	}
+	checkoutSupportedRegions(t, true, connectivity.TestPvtzRegions)
 
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
+		existConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_pvtz_zone_record.default.record_id}"]`,
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}-fake"},
+		fakeConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_pvtz_zone_record.default.record_id}_fake"]`,
+		}),
+	}
+
+	keywordConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"keyword": `"${alicloud_pvtz_zone_record.default.rr}"`,
+		}),
+		fakeConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"keyword": `"${alicloud_pvtz_zone_record.default.rr}_fake"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"status": `"ENABLE"`,
+		}),
+		fakeConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"status": `"DISABLE"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}",
+		existConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_pvtz_zone_record.default.record_id}"]`,
+			"keyword":        `"${alicloud_pvtz_zone_record.default.rr}"`,
+			"user_client_ip": `"127.0.0.1"`,
+			"status":         `"ENABLE"`,
+			"search_mode":    `"EXACT"`,
+			"lang":           `"en"`,
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}-fake"},
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}-fake",
+		fakeConfig: testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_pvtz_zone_record.default.record_id}_fake"]`,
+			"keyword":     `"${alicloud_pvtz_zone_record.default.rr}_fake"`,
+			"tag":         `"ecs"`,
+			"status":      `"DISABLE"`,
+			"search_mode": `"LIKE"`,
+			"lang":        `"zh"`,
 		}),
 	}
 
-	var existPvtzZoneRecordsMapFunc = func(rand int) map[string]string {
+	var existAliCloudPvtzZoneRecordsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                     "1",
-			"ids.0":                     CHECKSET,
 			"records.#":                 "1",
 			"records.0.id":              CHECKSET,
 			"records.0.record_id":       CHECKSET,
-			"records.0.rr":              "www",
-			"records.0.resource_record": "www",
-			"records.0.type":            "A",
-			"records.0.ttl":             "60",
-			"records.0.priority":        "0",
-			"records.0.value":           "2.2.2.2",
-			"records.0.status":          "ENABLE",
-			"records.0.remark":          "",
+			"records.0.priority":        CHECKSET,
+			"records.0.remark":          CHECKSET,
+			"records.0.rr":              CHECKSET,
+			"records.0.resource_record": CHECKSET,
+			"records.0.ttl":             CHECKSET,
+			"records.0.type":            CHECKSET,
+			"records.0.value":           CHECKSET,
+			"records.0.status":          CHECKSET,
 		}
 	}
 
-	var fakePvtzZoneRecordsMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudPvtzZoneRecordsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":     "0",
 			"records.#": "0",
 		}
 	}
 
-	var pvtzZoneRecordsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existPvtzZoneRecordsMapFunc,
-		fakeMapFunc:  fakePvtzZoneRecordsMapFunc,
+	var aliCloudPvtzZoneRecordsCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_pvtz_zone_records.default",
+		existMapFunc: existAliCloudPvtzZoneRecordsDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudPvtzZoneRecordsDataSourceNameMapFunc,
 	}
 
-	pvtzZoneRecordsCheckInfo.dataSourceTestCheck(t, rand, zoneIdConf, keyWordConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudPvtzZoneRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, keywordConf, statusConf, allConf)
 }
 
-func dataSourcePvtzZoneRecordsConfigDependence(name string) string {
-	return fmt.Sprintf(`
-	resource "alicloud_pvtz_zone" "basic" {
-		name = "%s"
+func testAccCheckAliCloudPvtzZoneRecordsDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
 	}
 
-	resource "alicloud_pvtz_zone_record" "foo" {
-		zone_id = "${alicloud_pvtz_zone.basic.id}"
-		rr = "www"
-		type = "A"
-		value = "2.2.2.2"
-		ttl = "60"
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "tf-testacc%d.test.com"
 	}
-	`, name)
+
+	resource "alicloud_pvtz_zone" "default" {
+  		zone_name = var.name
+	}
+
+	resource "alicloud_pvtz_zone_record" "default" {
+  		zone_id  = alicloud_pvtz_zone.default.id
+  		rr       = "www"
+  		type     = "MX"
+  		value    = var.name
+  		ttl      = "60"
+  		priority = 2
+  		remark   = var.name
+	}
+
+	data "alicloud_pvtz_zone_records" "default" {
+  		zone_id = alicloud_pvtz_zone_record.default.zone_id
+		%s
+	}
+	`, rand, strings.Join(pairs, " \n "))
 }
