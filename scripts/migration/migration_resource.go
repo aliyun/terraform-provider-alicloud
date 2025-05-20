@@ -30,6 +30,7 @@ var specialServiceMap = map[string]string{
 	"private_zone": "pvtz",
 	"sls":          "log",
 	"max_compute":  "maxcompute",
+	"ack":          "cs",
 }
 
 var specialResourceMap = map[string]map[string]string{
@@ -74,6 +75,13 @@ var specialResourceMap = map[string]map[string]string{
 	"max_compute": {
 		"project": "maxcompute_project",
 	},
+	"ack": {
+		"kubernetes":             "cs_kubernetes",
+		"managed_kubernetes":     "cs_managed_kubernetes",
+		"kubernetes_addon":       "cs_kubernetes_addon",
+		"kubernetes_node_pool":   "cs_kubernetes_node_pool",
+		"kubernetes_permissions": "cs_kubernetes_permissions",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -117,6 +125,13 @@ var specialDataSourceMap = map[string]map[string]string{
 	},
 	"max_compute": {
 		"project": "maxcompute_projects",
+	},
+	"ack": {
+		"kubernetes":             "cs_kubernetes",
+		"managed_kubernetes":     "cs_managed_kubernetes",
+		"kubernetes_addon":       "cs_kubernetes_addons",
+		"kubernetes_node_pool":   "cs_kubernetes_node_pools",
+		"kubernetes_permissions": "cs_kubernetes_permissions",
 	},
 }
 
@@ -837,6 +852,7 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "convertListStringToListInterface", "helper.ConvertListStringToListInterface")
 	line = strings.ReplaceAll(line, "expandSingletonToList", "helper.ExpandSingletonToList")
 	line = strings.ReplaceAll(line, "GetFunc", "helper.GetFunc")
+	line = strings.ReplaceAll(line, "xmlParam", "client.NewXmlParam")
 	line = strings.ReplaceAll(line, "WaitTimeoutMsg", "tferr.WaitTimeoutMsg")
 	line = strings.ReplaceAll(line, "COMMA_SEPARATED", "names.COMMA_SEPARATED")
 	line = strings.ReplaceAll(line, "COLON_SEPARATED", "names.COLON_SEPARATED")
