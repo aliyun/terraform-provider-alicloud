@@ -4,23 +4,45 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_pvtz_zone_records"
 sidebar_current: "docs-alicloud-datasource-pvtz-zone-records"
 description: |-
-    Provides a list of Private Zone Records which owned by an Alibaba Cloud account.
+  Provides a list of Private Zone Records to the user.
 ---
 
-# alicloud\_pvtz\_zone\_records
+# alicloud_pvtz_zone_records
 
-This data source provides Private Zone Records resource information owned by an Alibaba Cloud account.
+This data source provides the Private Zone Records of the current Alibaba Cloud user.
+
+-> **NOTE:** Available since v1.13.0.
 
 ## Example Usage
 
-```
-data "alicloud_pvtz_zone_records" "records_ds" {
-  zone_id = "${alicloud_pvtz_zone.basic.id}"
-  keyword = "${alicloud_pvtz_zone_record.foo.value}"
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example.com"
 }
 
-output "first_record_id" {
-  value = "${data.alicloud_pvtz_zone_records.records_ds.records.0.id}"
+resource "alicloud_pvtz_zone" "default" {
+  zone_name = var.name
+}
+
+resource "alicloud_pvtz_zone_record" "default" {
+  zone_id  = alicloud_pvtz_zone.default.id
+  rr       = "www"
+  type     = "MX"
+  value    = var.name
+  ttl      = "60"
+  priority = 2
+  remark   = var.name
+}
+
+data "alicloud_pvtz_zone_records" "ids" {
+  zone_id = alicloud_pvtz_zone_record.default.zone_id
+  ids     = [alicloud_pvtz_zone_record.default.record_id]
+}
+
+output "pvtz_zone_records_id_0" {
+  value = data.alicloud_pvtz_zone_records.ids.records.0.id
 }
 ```
 
@@ -28,34 +50,32 @@ output "first_record_id" {
 
 The following arguments are supported:
 
-* `keyword` - (Optional) Keyword for record rr and value.
-* `lang` - (Optional, Available 1.109.0+) User language.
-* `search_mode` - (Optional, Available 1.109.0+) Search mode. Value: 
-    - LIKE: fuzzy search.
-    - EXACT: precise search. It is not filled in by default.
-* `status` - (Optional, Available 1.109.0+) Resolve record status. Value:
-    - ENABLE: enable resolution.
-    - DISABLE: pause parsing.
-* `tag` - (Optional, Available 1.109.0+) It is not filled in by default, and queries the current zone resolution records. Fill in "ecs" to query the host name record list under the VPC associated with the current zone.
-* `user_client_ip` - (Optional, Available 1.109.0+) User ip.
-* `zone_id` - (Required) ID of the Private Zone.
-* `ids` - (Optional, Available in 1.53.0+) A list of Private Zone Record IDs.
+* `ids` - (Optional, ForceNew, List, Available since v1.53.0) A list of Private Zone Record IDs.
+* `zone_id` - (Required, ForceNew) The ID of the private zone.
+* `keyword` - (Optional, ForceNew) The keyword for record rr and value.
+* `tag` - (Optional, ForceNew, Available since v1.109.0) The tag used to search for DNS records.
+* `user_client_ip` - (Optional, ForceNew, Available since v1.109.0) The IP address of the client.
+* `status` - (Optional, ForceNew, Available since v1.109.0) The status of the Resolve record. Valid values:
+  - `ENABLE`: Enable resolution.
+  - `DISABLE`: Pause parsing.
+* `search_mode` - (Optional, ForceNew, Available since v1.109.0) The search mode. Default value: `EXACT`. Valid values:
+  - `LIKE`: Fuzzy search.
+  - `EXACT`: Exact search.
+* `lang` - (Optional, ForceNew, Available since v1.109.0) The language of the response. Default value: `en`. Valid values: `en`, `zh`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of Private Zone Record IDs.
-* `records` - A list of zone records. Each element contains the following attributes:
-  * `id` - ID of the Private Zone Record.
-  * `resource_record` - Resource record of the Private Zone Record.
-  * `rr` - Rr of the Private Zone Record.
-  * `type` - Type of the Private Zone Record.
-  * `value` - Value of the Private Zone Record.
-  * `ttl` - Ttl of the Private Zone Record.
-  * `priority` - Priority of the Private Zone Record.
-  * `record_id` - RecordId of the Private Zone Record.
-  * `remark` - Remark of the Private Zone Record.
-  * `status` - Status of the Private Zone Record.
- 
+* `records` - A list of Zone Record. Each element contains the following attributes:
+  * `id` - The ID of the Private Zone Record.
+  * `record_id` - The ID of the Record.
+  * `priority` - The priority of the MX record.
+  * `remark` - The description of the Private Zone Record.
+  * `rr` - The hostname of the Private Zone Record.
+  * `resource_record` - The hostname of the Private Zone Record.
+  * `ttl` - The time to live (TTL) of the Private Zone Record.
+  * `type` - The type of the Private Zone Record.
+  * `value` - The value of the Private Zone Record.
+  * `status` - The state of the Private Zone Record.
