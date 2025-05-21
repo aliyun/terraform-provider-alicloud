@@ -684,7 +684,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_zones":                                       dataSourceAlicloudCddcZones(),
 			"alicloud_cddc_host_ecs_level_infos":                        dataSourceAlicloudCddcHostEcsLevelInfos(),
 			"alicloud_cddc_dedicated_hosts":                             dataSourceAlicloudCddcDedicatedHosts(),
-			"alicloud_oos_parameters":                                   dataSourceAlicloudOosParameters(),
+			"alicloud_oos_parameters":                                   dataSourceAliCloudOosParameters(),
 			"alicloud_oos_state_configurations":                         dataSourceAlicloudOosStateConfigurations(),
 			"alicloud_oos_secret_parameters":                            dataSourceAliCloudOosSecretParameters(),
 			"alicloud_click_house_backup_policies":                      dataSourceAlicloudClickHouseBackupPolicies(),
