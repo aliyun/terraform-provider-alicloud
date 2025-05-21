@@ -334,6 +334,7 @@ var irregularProductEndpoint = map[string]string{
 	"sas":              "tds.aliyuncs.com",
 	"ros":              "ros.aliyuncs.com",
 	"eds_aic":          "eds-aic.cn-shanghai.aliyuncs.com",
+	"alidns":           "alidns.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
