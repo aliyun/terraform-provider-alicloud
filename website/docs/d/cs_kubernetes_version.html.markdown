@@ -8,11 +8,11 @@ description: |-
 
 ---
 
-# alicloud\_cs\_kubernetes\_version
+# alicloud_cs_kubernetes_version
 
 This data source provides the details of the Kubernetes version supported by ACK.
 
--> **NOTE:** Available in 1.170.0+.
+-> **NOTE:** Available since v1.170.0.
 
 ## Example Usage
 
@@ -70,7 +70,7 @@ The following arguments are supported.
 
 * `cluster_type` - (Required) The type of cluster. Its valid value are `Kubernetes` and `ManagedKubernetes`.
 * `kubernetes_version` - (Optional) The ACK released kubernetes version. 
-* `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless` and `Edge`.
+* `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless`, `Edge` and `Acs`.
 
 ## Attributes Reference
 
