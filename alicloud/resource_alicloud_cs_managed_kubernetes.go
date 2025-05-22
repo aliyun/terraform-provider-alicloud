@@ -53,6 +53,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:  StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
+			"profile": {
+				Type:     schema.TypeString,
+				Computed: true,
+				ForceNew: true,
+				Optional: true,
+			},
 			"worker_vswitch_ids": {
 				Type: schema.TypeList,
 				Elem: &schema.Schema{
@@ -879,6 +885,10 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		Vpcid:       tea.String(vpcId),
 		VswitchIds:  tea.StringSlice(vSwitchIds),
 	}
+	if v, ok := d.GetOk("profile"); ok {
+		request.SetProfile(v.(string))
+	}
+
 	if v, ok := d.GetOk("version"); ok {
 		request.SetKubernetesVersion(v.(string))
 	}
@@ -1065,6 +1075,10 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 
 	if object.Name != nil {
 		d.Set("name", object.Name)
+	}
+
+	if object.Profile != nil {
+		d.Set("profile", object.Profile)
 	}
 
 	if object.VpcId != nil {
