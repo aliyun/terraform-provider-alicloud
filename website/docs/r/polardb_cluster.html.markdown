@@ -142,7 +142,8 @@ The following arguments are supported:
 * `db_cluster_ip_array` - (Optional, Type: list, Available since 1.130.0) db_cluster_ip_array defines how users can send requests to your API. See [`db_cluster_ip_array`](#db_cluster_ip_array) below.
 * `security_ips` - (Optional, Deprecated) This attribute has been deprecated from v1.130.0 and using `db_cluster_ip_array` sub-element `security_ips` instead.
   Its value is same as `db_cluster_ip_array` sub-element `security_ips` value and its db_cluster_ip_array_name is "default".
-* `resource_group_id` (Optional, ForceNew, Computed, Available since 1.96.0) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
+* `resource_group_id` (Optional, Computed, Available since 1.96.0) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
+-> **NOTE:** From version 1.250.0, `resource_group_id` can be modified.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 -> **NOTE:** If vswitch_id is not specified, system will get a vswitch belongs to the user automatically.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
@@ -200,6 +201,10 @@ The following arguments are supported:
 * `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds. This parameter is valid only for serverless clusters.
 * `scale_ap_ro_num_min` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
 * `scale_ap_ro_num_max` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
+* `serverless_rule_mode` - (Optional, Computed, Available since v1.250.0) Elasticity sensitivity. Valid values: `normal` for standard and `flexible` for sensitive. This parameter is valid only for serverless clusters.
+* `serverless_rule_cpu_shrink_threshold` - (Optional, Computed, Available since v1.250.0) CPU downscale threshold. Valid values: 10 to 100. This parameter is valid only for serverless clusters.
+* `serverless_rule_cpu_enlarge_threshold` - (Optional, Computed, Available since v1.250.0) CPU upscale threshold. Valid values: 40 to 100. This parameter is valid only for serverless clusters.
+-> **NOTE:** `serverless_rule_cpu_enlarge_threshold` should be at least 30 greater than `serverless_rule_cpu_shrink_threshold`.
 * `upgrade_type` - (Optional, Available since v1.208.1) Version upgrade type. Valid values are PROXY, DB, ALL. PROXY means upgrading the proxy version, DB means upgrading the db version, ALL means upgrading both db and proxy versions simultaneously.
 * `from_time_service` - (Optional, Available since v1.208.1) Immediate or scheduled kernel version upgrade. Valid values are `true`, `false`. True means immediate execution, False means scheduled execution.
 * `planned_start_time` - (Optional, Available since v1.208.1) The earliest time to start executing a scheduled (i.e. within the target time period) kernel version upgrade task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
