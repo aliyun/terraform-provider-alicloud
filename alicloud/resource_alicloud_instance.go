@@ -203,7 +203,15 @@ func resourceAliCloudInstance() *schema.Resource {
 			},
 			"system_disk_encrypt_algorithm": {
 				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
+			},
+			"system_disk_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"system_disk_bursting_enabled": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"system_disk_id": {
@@ -292,6 +300,16 @@ func resourceAliCloudInstance() *schema.Resource {
 						},
 						"device": {
 							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"provisioned_iops": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"bursting_enabled": {
+							Type:     schema.TypeBool,
 							Optional: true,
 							ForceNew: true,
 						},
@@ -763,6 +781,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.EncryptAlgorithm"] = v
 	}
 
+	if v, ok := d.GetOkExists("system_disk_provisioned_iops"); ok {
+		request["SystemDisk.ProvisionedIops"] = v
+	}
+
+	if v, ok := d.GetOkExists("system_disk_bursting_enabled"); ok {
+		request["SystemDisk.BurstingEnabled"] = v
+	}
+
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceName"] = v
 	}
@@ -933,6 +959,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 			if device, ok := item["device"].(string); ok && device != "" {
 				disksMap["Device"] = device
+			}
+
+			if device, ok := item["provisioned_iops"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
+				disksMap["ProvisionedIops"] = device
+			}
+
+			if device, ok := item["bursting_enabled"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
+				disksMap["BurstingEnabled"] = device
 			}
 
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" && disksMap["Category"] == string(DiskCloudESSD) {
@@ -1180,6 +1214,8 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("system_disk_storage_cluster_id", disk["StorageClusterId"])
 		d.Set("system_disk_encrypted", disk["Encrypted"])
 		d.Set("system_disk_kms_key_id", disk["KMSKeyId"])
+		d.Set("system_disk_provisioned_iops", disk["ProvisionedIops"])
+		d.Set("system_disk_bursting_enabled", disk["BurstingEnabled"])
 		d.Set("system_disk_id", disk["DiskId"])
 		d.Set("system_disk_performance_level", disk["PerformanceLevel"])
 		if v, ok := disk["Tags"].(map[string]interface{}); ok {
@@ -1526,13 +1562,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	if !d.IsNewResource() && (d.HasChange("system_disk_size") || d.HasChange("system_disk_auto_snapshot_policy_id") || d.HasChange("system_disk_name") || d.HasChange("system_disk_description") || d.HasChange("system_disk_performance_level")) {
+	if !d.IsNewResource() && (d.HasChange("system_disk_size") || d.HasChange("system_disk_auto_snapshot_policy_id") || d.HasChange("system_disk_name") ||
+		d.HasChange("system_disk_description") || d.HasChange("system_disk_performance_level") || d.HasChange("system_disk_provisioned_iops") || d.HasChange("system_disk_bursting_enabled")) {
 		disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
 
-		if d.HasChange("system_disk_performance_level") {
+		if d.HasChange("system_disk_performance_level") || d.HasChange("system_disk_provisioned_iops") {
 			action := "ModifyDiskSpec"
 			var response map[string]interface{}
 			request := map[string]interface{}{
@@ -1541,6 +1578,12 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request["DiskId"] = disk["DiskId"].(string)
 			if d.HasChange("system_disk_performance_level") {
 				request["PerformanceLevel"] = d.Get("system_disk_performance_level")
+			}
+
+			if d.HasChange("system_disk_provisioned_iops") {
+				if v, ok := d.GetOkExists("system_disk_provisioned_iops"); ok {
+					request["ProvisionedIops"] = v
+				}
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -1616,13 +1659,18 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			d.SetPartial("system_disk_auto_snapshot_policy_id")
 		}
 
-		if d.HasChange("system_disk_name") || d.HasChange("system_disk_description") {
+		if d.HasChange("system_disk_name") || d.HasChange("system_disk_description") || d.HasChange("system_disk_bursting_enabled") {
 			var response map[string]interface{}
 			modifyDiskAttributeReq := map[string]interface{}{
 				"DiskId": disk["DiskId"],
 			}
 			modifyDiskAttributeReq["DiskName"] = d.Get("system_disk_name")
 			modifyDiskAttributeReq["Description"] = d.Get("system_disk_description")
+			if d.HasChange("system_disk_bursting_enabled") {
+				if v, ok := d.GetOkExists("system_disk_bursting_enabled"); ok {
+					modifyDiskAttributeReq["BurstingEnabled"] = v
+				}
+			}
 			action := "ModifyDiskAttribute"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -1642,6 +1690,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			d.SetPartial("system_disk_name")
 			d.SetPartial("system_disk_description")
+			d.SetPartial("system_disk_bursting_enabled")
 		}
 	}
 
