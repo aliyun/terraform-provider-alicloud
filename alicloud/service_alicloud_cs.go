@@ -1273,11 +1273,11 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	}
 
 	if skipSetCertificateAuthority {
-		if _, ok := d.GetOk("certificate_authority"); ok {
-			if err := d.Set("certificate_authority", map[string]string{}); err != nil {
-				return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
-			}
-		}
+		d.Set("certificate_authority", map[string]string{
+			"cluster_cert": "",
+			"client_cert":  "",
+			"client_key":   "",
+		})
 	} else {
 		if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 			return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))

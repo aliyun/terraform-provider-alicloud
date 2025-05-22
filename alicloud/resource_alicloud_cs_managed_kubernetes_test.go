@@ -573,6 +573,103 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependenceAuto)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                           name,
+					"version":                        "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.1.version}",
+					"zone_ids":                       []string{"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
+					"profile":                        "Acs",
+					"cluster_spec":                   "ack.pro.small",
+					"new_nat_gateway":                "false",
+					"slb_internet_enabled":           "false",
+					"deletion_protection":            "false",
+					"service_cidr":                   "172.23.0.0/16",
+					"ip_stack":                       "ipv4",
+					"timezone":                       "Asia/Shanghai",
+					"skip_set_certificate_authority": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                           name,
+						"version":                        CHECKSET,
+						"vswitch_ids.#":                  "1",
+						"cluster_spec":                   "ack.pro.small",
+						"profile":                        "Acs",
+						"vpc_id":                         CHECKSET,
+						"deletion_protection":            "false",
+						"new_nat_gateway":                "false",
+						"slb_internet_enabled":           "false",
+						"ip_stack":                       "ipv4",
+						"timezone":                       "Asia/Shanghai",
+						"resource_group_id":              CHECKSET,
+						"skip_set_certificate_authority": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "certificate_authority", "addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]interface{}{
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "ALB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "PrivateZone",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_Data",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_ControlPlane",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{})),
+			},
+		},
+	})
+}
 func resourceCSManagedKubernetesConfig(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -717,6 +814,11 @@ func resourceCSManagedKubernetesConfigDependenceAuto(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
+}
+
+data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
+  cluster_type = "ManagedKubernetes"
+  profile      = "Acs"
 }
 
 data "alicloud_enhanced_nat_available_zones" "enhanced" {
