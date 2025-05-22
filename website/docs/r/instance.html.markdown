@@ -118,10 +118,14 @@ The following arguments are supported:
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk.
 * `system_disk_storage_cluster_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters.
 * `system_disk_encrypted` - (Optional, ForceNew, Available since v1.177.0) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`.
-  - `true`: encrypts the system disk.
-  - `false`: does not encrypt the system disk.
+  - `true`: Encrypts the system disk.
+  - `false`: Does not encrypt the system disk.
 * `system_disk_kms_key_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the Key Management Service (KMS) key to be used for the system disk.
 * `system_disk_encrypt_algorithm` - (Optional, ForceNew, Available since v1.177.0) The algorithm to be used to encrypt the system disk. Valid values are `aes-256`, `sm4-128`. Default value is `aes-256`.
+* `system_disk_provisioned_iops` - (Optional, Int, Available since v1.250.0) The provisioned read/write IOPS of the ESSD AutoPL disk to use as the system disk.
+* `system_disk_bursting_enabled` - (Optional, Bool, Available since v1.250.0) Specifies whether to enable the performance burst feature for the system disk. Valid values:
+  - `true`: Enables the performance burst feature for the system disk.
+  - `false`: Disables the performance burst feature for the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic". **NOTE:** From version 1.243.0, the default value `PayByTraffic` will be removed.
 * `internet_max_bandwidth_in` - (Optional, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
@@ -285,6 +289,10 @@ The data_disks supports the following:
 * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.
 * `description` - (Optional, ForceNew) The description of the data disk.
 * `device` - (Optional, ForceNew, Available since v1.183.0) The mount point of the data disk.
+* `provisioned_iops` - (Optional, ForceNew, Int, Available since v1.250.0) The provisioned read/write IOPS of the ESSD AutoPL disk to use as the data disk.
+* `bursting_enabled` - (Optional, ForceNew, Bool, Available since v1.250.0) Specifies whether to enable the performance burst feature for the system disk. Valid values:
+  - `true`: Enables the performance burst feature for the data disk.
+  - `false`: Disables the performance burst feature for the data disk.
 
 ### `network_interfaces`
 
