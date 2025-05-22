@@ -143,6 +143,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.GDNPolarDBSupportRegions)
 		},
 
 		// module name
@@ -467,14 +468,14 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"storage_type":      "PSL4",
-					"compress_storage":  "ON",
+					"compress_storage":  "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
 						"storage_type":      "PSL4",
-						"compress_storage":  "ON",
+						"compress_storage":  "OFF",
 					}),
 				),
 			},
@@ -519,6 +520,16 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"pay_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compress_storage": "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_storage": "ON",
 					}),
 				),
 			},
@@ -1439,32 +1450,38 @@ func TestAccAliCloudPolarDBCluster_Serverless(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":           "MySQL",
-					"db_version":        "8.0",
-					"pay_type":          "PostPaid",
-					"db_node_class":     "polar.mysql.sl.small",
-					"vswitch_id":        "${local.vswitch_id}",
-					"description":       "${var.name}",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"creation_category": "Normal",
-					"serverless_type":   "AgileServerless",
-					"scale_min":         "1",
-					"scale_max":         "2",
-					"scale_ro_num_min":  "1",
-					"scale_ro_num_max":  "2",
-					"allow_shut_down":   "false",
+					"db_type":                               "MySQL",
+					"db_version":                            "8.0",
+					"pay_type":                              "PostPaid",
+					"db_node_class":                         "polar.mysql.sl.small",
+					"vswitch_id":                            "${local.vswitch_id}",
+					"description":                           "${var.name}",
+					"resource_group_id":                     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"creation_category":                     "Normal",
+					"serverless_type":                       "AgileServerless",
+					"scale_min":                             "1",
+					"scale_max":                             "2",
+					"scale_ro_num_min":                      "1",
+					"scale_ro_num_max":                      "2",
+					"allow_shut_down":                       "false",
+					"serverless_rule_mode":                  "normal",
+					"serverless_rule_cpu_shrink_threshold":  "40",
+					"serverless_rule_cpu_enlarge_threshold": "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-						"zone_id":           CHECKSET,
-						"serverless_type":   "AgileServerless",
-						"scale_min":         "1",
-						"scale_max":         "2",
-						"scale_ro_num_min":  "1",
-						"scale_ro_num_max":  "2",
-						"allow_shut_down":   "false",
-						"db_node_class":     "polar.mysql.sl.small",
+						"resource_group_id":                     CHECKSET,
+						"zone_id":                               CHECKSET,
+						"serverless_type":                       "AgileServerless",
+						"scale_min":                             "1",
+						"scale_max":                             "2",
+						"scale_ro_num_min":                      "1",
+						"scale_ro_num_max":                      "2",
+						"allow_shut_down":                       "false",
+						"db_node_class":                         "polar.mysql.sl.small",
+						"serverless_rule_mode":                  "normal",
+						"serverless_rule_cpu_shrink_threshold":  "40",
+						"serverless_rule_cpu_enlarge_threshold": "70",
 					}),
 				),
 			},
@@ -1710,6 +1727,36 @@ func TestAccAliCloudPolarDBCluster_SteadyServerless(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"serverless_rule_mode": "flexible",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_rule_mode": "flexible",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_rule_cpu_shrink_threshold": "40",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_rule_cpu_shrink_threshold": "40",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_rule_cpu_enlarge_threshold": "70",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_rule_cpu_enlarge_threshold": "70",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"serverless_steady_switch": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1799,26 +1846,6 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"compress_storage": "ON",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compress_storage": "ON",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"compress_storage": "OFF",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compress_storage": "OFF",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"storage_type": "PSL5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1840,6 +1867,16 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"default_time_zone": "+2:00",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},

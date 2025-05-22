@@ -166,7 +166,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"collector_status": {
@@ -371,6 +370,27 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     IntBetween(0, 7),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+				Computed:         true,
+			},
+			"serverless_rule_mode": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"normal", "flexible"}, false),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+				Computed:         true,
+			},
+			"serverless_rule_cpu_shrink_threshold": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntBetween(10, 100),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+				Computed:         true,
+			},
+			"serverless_rule_cpu_enlarge_threshold": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntBetween(40, 100),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 				Computed:         true,
 			},
@@ -1051,7 +1071,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskExists"}) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskExists", "OperationDenied.DBClusterStatus"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -1147,6 +1167,99 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("compress_storage")
 	}
 
+	if d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause", "scale_ap_ro_num_min", "scale_ap_ro_num_max", "serverless_rule_mode", "serverless_rule_cpu_shrink_threshold", "serverless_rule_cpu_enlarge_threshold") {
+		action := "ModifyDBClusterServerlessConf"
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+		}
+		scaleMin := d.Get("scale_min")
+		if scaleMin != nil {
+			request["ScaleMin"] = scaleMin
+		}
+		scaleMax := d.Get("scale_max")
+		if scaleMax != nil {
+			request["ScaleMax"] = scaleMax
+		}
+		scaleRoNumMin := d.Get("scale_ro_num_min")
+		if scaleRoNumMin != nil {
+			request["ScaleRoNumMin"] = scaleRoNumMin
+		}
+		scaleRoNumMax := d.Get("scale_ro_num_max")
+		if scaleRoNumMax != nil {
+			request["ScaleRoNumMax"] = scaleRoNumMax
+		}
+		if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
+			request["AllowShutDown"] = v.(string)
+		}
+		if v, ok := d.GetOk("seconds_until_auto_pause"); ok {
+			secondsUntilAutoPause := v.(int)
+			request["SecondsUntilAutoPause"] = strconv.Itoa(secondsUntilAutoPause)
+		}
+		clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		imciParamterSwitch := false
+		for _, nodes := range clusterAttribute.DBNodes {
+			if nodes.ImciSwitch == "ON" {
+				imciParamterSwitch = true
+			}
+		}
+		if imciParamterSwitch {
+			if v, ok := d.GetOk("scale_ap_ro_num_min"); ok {
+				scaleApRoNumMin := v.(int)
+				request["ScaleApRoNumMin"] = strconv.Itoa(scaleApRoNumMin)
+			}
+			if v, ok := d.GetOk("scale_ap_ro_num_max"); ok {
+				scaleApRoNumMax := v.(int)
+				request["ScaleApRoNumMax"] = strconv.Itoa(scaleApRoNumMax)
+			}
+		}
+		if v, ok := d.GetOk("serverless_rule_mode"); ok && v.(string) != "" {
+			request["ServerlessRuleMode"] = v.(string)
+		}
+
+		if v, ok := d.GetOk("serverless_rule_cpu_shrink_threshold"); ok {
+			serverlessRuleCpuShrinkThreshold := v.(int)
+			request["ServerlessRuleCpuShrinkThreshold"] = strconv.Itoa(serverlessRuleCpuShrinkThreshold)
+		}
+		if v, ok := d.GetOk("serverless_rule_cpu_enlarge_threshold"); ok {
+			serverlessRuleCpuEnlargeThreshold := v.(int)
+			request["ServerlessRuleCpuEnlargeThreshold"] = strconv.Itoa(serverlessRuleCpuEnlargeThreshold)
+		}
+		//retry
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// wait cluster status change from ConfigSwitching to running
+		stateConf := BuildStateConf([]string{"ConfigSwitching", "Stopped", "STARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("scale_min")
+		d.SetPartial("scale_max")
+		d.SetPartial("scale_ro_num_min")
+		d.SetPartial("scale_ro_num_max")
+		d.SetPartial("allow_shut_down")
+		d.SetPartial("seconds_until_auto_pause")
+		d.SetPartial("serverless_rule_mode")
+		d.SetPartial("serverless_rule_cpu_shrink_threshold")
+		d.SetPartial("serverless_rule_cpu_enlarge_threshold")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -1209,85 +1322,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("description")
 	}
 
-	if !d.IsNewResource() && d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause", "scale_ap_ro_num_min", "scale_ap_ro_num_max") {
-		action := "ModifyDBClusterServerlessConf"
-		request := map[string]interface{}{
-			"DBClusterId": d.Id(),
-		}
-		scaleMin := d.Get("scale_min")
-		if scaleMin != nil {
-			request["ScaleMin"] = scaleMin
-		}
-		scaleMax := d.Get("scale_max")
-		if scaleMax != nil {
-			request["ScaleMax"] = scaleMax
-		}
-		scaleRoNumMin := d.Get("scale_ro_num_min")
-		if scaleRoNumMin != nil {
-			request["ScaleRoNumMin"] = scaleRoNumMin
-		}
-		scaleRoNumMax := d.Get("scale_ro_num_max")
-		if scaleRoNumMax != nil {
-			request["ScaleRoNumMax"] = scaleRoNumMax
-		}
-		if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
-			request["AllowShutDown"] = v.(string)
-		}
-		if v, ok := d.GetOk("seconds_until_auto_pause"); ok {
-			secondsUntilAutoPause := v.(int)
-			request["SecondsUntilAutoPause"] = strconv.Itoa(secondsUntilAutoPause)
-		}
-		clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		imciParamterSwitch := false
-		for _, nodes := range clusterAttribute.DBNodes {
-			if nodes.ImciSwitch == "ON" {
-				imciParamterSwitch = true
-			}
-		}
-		if imciParamterSwitch {
-			if v, ok := d.GetOk("scale_ap_ro_num_min"); ok {
-				scaleApRoNumMin := v.(int)
-				request["ScaleApRoNumMin"] = strconv.Itoa(scaleApRoNumMin)
-			}
-			if v, ok := d.GetOk("scale_ap_ro_num_max"); ok {
-				scaleApRoNumMax := v.(int)
-				request["ScaleApRoNumMax"] = strconv.Itoa(scaleApRoNumMax)
-			}
-		}
-		//retry
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		// wait cluster status change from ConfigSwitching to running
-		stateConf := BuildStateConf([]string{"ConfigSwitching", "Stopped", "STARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("scale_min")
-		d.SetPartial("scale_max")
-		d.SetPartial("scale_ro_num_min")
-		d.SetPartial("scale_ro_num_max")
-		d.SetPartial("allow_shut_down")
-		d.SetPartial("seconds_until_auto_pause")
-	}
-
-	if !d.IsNewResource() && d.HasChange("storage_type") {
+	if d.HasChange("storage_type") {
 		action := "ModifyDBClusterStoragePerformance"
 		storageType := d.Get("storage_type").(string)
 		modifyType := d.Get("modify_type").(string)
@@ -1319,7 +1354,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("storage_type")
 	}
 
-	if !d.IsNewResource() && d.HasChange("provisioned_iops") {
+	if d.HasChange("provisioned_iops") {
 		action := "ModifyDBClusterStoragePerformance"
 		storageType := d.Get("storage_type").(string)
 		request := map[string]interface{}{
@@ -1443,12 +1478,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("standby_az") {
+	if d.HasChange("standby_az") {
 		action := "ModifyDBClusterPrimaryZone"
-		standby_az := d.Get("standby_az").(string)
+		standbyAz := d.Get("standby_az").(string)
 		request := map[string]interface{}{
 			"DBClusterId": d.Id(),
-			"ZoneId":      standby_az,
+			"ZoneId":      standbyAz,
 			"ZoneType":    "Standby",
 		}
 
@@ -1473,6 +1508,32 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("standby_az")
+	}
+
+	if d.HasChange("resource_group_id") {
+		action := "ModifyDBClusterResourceGroup"
+		newResourceGroup := d.Get("resource_group_id").(string)
+		request := map[string]interface{}{
+			"DBClusterId":        d.Id(),
+			"NewResourceGroupId": newResourceGroup,
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
 	}
 
 	d.Partial(false)
@@ -1702,6 +1763,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		d.Set("seconds_until_auto_pause", formatInt(serverlessInfo["SecondsUntilAutoPause"]))
 		d.Set("scale_ap_ro_num_min", formatInt(serverlessInfo["ScaleApRoNumMin"]))
 		d.Set("scale_ap_ro_num_max", formatInt(serverlessInfo["ScaleApRoNumMax"]))
+		d.Set("serverless_rule_mode", serverlessInfo["ServerlessRuleMode"])
+		d.Set("serverless_rule_cpu_shrink_threshold", formatInt(serverlessInfo["ServerlessRuleCpuShrinkThreshold"]))
+		d.Set("serverless_rule_cpu_enlarge_threshold", formatInt(serverlessInfo["ServerlessRuleCpuEnlargeThreshold"]))
 		serverlessSwitch := ""
 		if v, ok := serverlessInfo["Switch"]; ok {
 			serverlessSwitch = fmt.Sprint(v)
@@ -1745,21 +1809,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("hot_standby_cluster", convertPolarDBHotStandbyClusterStatusReadResponse(clusterAttribute.HotStandbyCluster))
 	d.Set("strict_consistency", clusterAttribute.StrictConsistency)
 
-	standbyAz, err := polarDBService.DescribeDBClusterStandbyAz(d.Id(), DefaultTimeoutMedium)
+	standbyAz, err := polarDBService.DescribeDBClusterStandbyAz(d, DefaultTimeoutMedium)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("standby_az", standbyAz)
-
-	primaryZone := d.Get("zone_id")
-	if clusterAttribute.HotStandbyCluster != "OFF" {
-		for _, zoneId := range strings.Split(clusterAttribute.ZoneIds, ",") {
-			if zoneId != primaryZone && zoneId != "" {
-				d.Set("standby_az", zoneId)
-				break
-			}
-		}
-	}
 
 	versionInfo, err := polarDBService.DescribeDBClusterVersion(d.Id())
 	if err != nil {
