@@ -47,7 +47,8 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 					"gpu_utilization_threshold": "0.5",
 					"scan_interval":             "30s",
 					"scale_down_enabled":        "true",
-					"expander":                  "least-waste",
+					"expander":                  "random",
+					"scaler_type":               "cluster-autoscaler",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,6 +60,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 						"scan_interval":             CHECKSET,
 						"scale_down_enabled":        CHECKSET,
 						"expander":                  CHECKSET,
+						"scaler_type":               CHECKSET,
 					}),
 				),
 			},
@@ -92,7 +94,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 					"gpu_utilization_threshold": "0.6",
 					"scan_interval":             "40s",
 					"scale_down_enabled":        "false",
-					"expander":                  "random",
+					"expander":                  "least-waste",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -109,7 +111,7 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaler_type": "cluster-autoscaler",
+					"scaler_type": "goatscaler",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

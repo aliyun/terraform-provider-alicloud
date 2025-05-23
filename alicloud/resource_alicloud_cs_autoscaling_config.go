@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -113,6 +115,79 @@ func resourceAlicloudCSAutoscalingConfigCreate(d *schema.ResourceData, meta inte
 }
 
 func resourceAlicloudCSAutoscalingConfigRead(d *schema.ResourceData, meta interface{}) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+	csClient := CsClient{client}
+
+	// cluster id
+	var clusterId string
+	scalerType := "cluster-autoscaler"
+	if v, ok := d.GetOk("cluster_id"); ok {
+		clusterId = v.(string)
+	}
+	if v, ok := d.GetOk("scaler_type"); ok {
+		scalerType = v.(string)
+	}
+
+	object, err := csClient.GetCsKubernetesAddonInstance(clusterId, scalerType)
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	addon_configRaw := make(map[string]interface{})
+	err = json.Unmarshal([]byte(object.Config), &addon_configRaw)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if v, ok := addon_configRaw["ScaleDownUnneededTime"]; ok {
+		d.Set("cool_down_duration", v.(string))
+	}
+	if v, ok := addon_configRaw["ScaleDownDelayAfterAdd"]; ok {
+		d.Set("unneeded_duration", v.(string))
+	}
+	if v, ok := addon_configRaw["ScaleDownUtilizationThreshold"]; ok {
+		d.Set("utilization_threshold", v.(string))
+	}
+	if v, ok := addon_configRaw["ScaleDownGpuUtilizationThreshold"]; ok {
+		d.Set("gpu_utilization_threshold", v.(string))
+	}
+	if v, ok := addon_configRaw["ScanInterval"]; ok {
+		d.Set("scan_interval", v.(string))
+	}
+	if v, ok := addon_configRaw["ScaleDownEnabled"]; ok {
+		d.Set("scale_down_enabled", v.(bool))
+	}
+	if v, ok := addon_configRaw["Expander"]; ok {
+		d.Set("expander", v.(string))
+	}
+	if v, ok := addon_configRaw["SkipNodesWithSystemPods"]; ok {
+		d.Set("skip_nodes_with_system_pods", v.(bool))
+	}
+	if v, ok := addon_configRaw["SkipNodesWithLocalStorage"]; ok {
+		d.Set("skip_nodes_with_local_storage", v.(bool))
+	}
+	if v, ok := addon_configRaw["DaemonsetEvictionForEmptyNodes"]; ok {
+		d.Set("daemonset_eviction_for_nodes", v.(bool))
+	}
+	if v, ok := addon_configRaw["MaxGracefulTerminationSec"]; ok {
+		d.Set("max_graceful_termination_sec", int(v.(float64)))
+	}
+	if v, ok := addon_configRaw["MinReplicaCount"]; ok {
+		fmt.Printf("min_replica_count: %v", int(v.(float64)))
+		d.Set("min_replica_count", int(v.(float64)))
+	}
+	if v, ok := addon_configRaw["RecycleNodeDeletionEnabled"]; ok {
+		d.Set("recycle_node_deletion_enabled", v.(bool))
+	}
+	if v, ok := addon_configRaw["ScaleUpFromZero"]; ok {
+		d.Set("scale_up_from_zero", v.(bool))
+	}
+
 	return nil
 }
 
