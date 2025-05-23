@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -1969,8 +1970,8 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	// TODO: supports all of profile modes after credentials supporting setting timeout
 	if (accessKey == "" || secretKey == "") && profileName != "" && fmt.Sprint(providerConfig["mode"]) == "ChainableRamRoleArn" {
 		var profileFile string
-		if v, ok := d.GetOk("profile_file"); ok && v.(string) != "" {
-			profileFile = v.(string)
+		if v, ok := d.GetOk("shared_credentials_file"); ok && v.(string) != "" {
+			profileFile = absPath(v.(string))
 		}
 		provider, err := providers.NewCLIProfileCredentialsProviderBuilder().WithProfileName(profileName).WithProfileFile(profileFile).Build()
 		if err != nil {
@@ -4142,4 +4143,20 @@ func getModuleAddr() string {
 		}
 	}
 	return result
+}
+
+func absPath(filePath string) string {
+	if v, err := homedir.Expand(filePath); err != nil {
+		log.Printf("[WARN] failed to expand profile file path: %v", err)
+	} else {
+		filePath = v
+	}
+
+	if v, err := filepath.Abs(filePath); err != nil {
+		log.Printf("[WARN] failed to get absolute path of profile file: %v", err)
+	} else {
+		filePath = v
+	}
+
+	return filePath
 }
