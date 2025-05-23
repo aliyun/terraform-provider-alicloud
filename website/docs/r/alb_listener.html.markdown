@@ -20,12 +20,6 @@ For information about Application Load Balancer (ALB) Listener and how to use it
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alb_listener&exampleId=8706f674-b4b3-77a0-e21d-b58bd44d6bbcc06351e4&activeTab=example&spm=docs.r.alb_listener.0.8706f674b4&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf_example"
@@ -155,13 +149,9 @@ resource "alicloud_alb_listener" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_log_record_customized_headers_enabled` - (Optional) Access Log Whether to Enable Carry Custom Header Field.
+* `access_log_record_customized_headers_enabled` - (Optional) Access Log Whether to Enable Carry Custom Header Field. Valid values: `true`, `false`. Default Value: `false`.
 
-  Value: True **** Or False * *.
-
-  Default Value: False * *.
-
--> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the **True * *.
+-> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `true`.
 
 * `access_log_tracing_config` - (Optional, List) Xtrace Configuration Information. See [`access_log_tracing_config`](#access_log_tracing_config) below.
 * `ca_certificates` - (Optional, List, Available since v1.242.0) The list of certificates. See [`ca_certificates`](#ca_certificates) below.
@@ -175,13 +165,13 @@ The following arguments are supported:
   - `false` (default): Sends a normal request, returns the 'HTTP 2xx' status code after passing the check, and performs the operation directly.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid Values: True Or False. Default Value: TRUE.
 * `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: True Or False. Default Value: TRUE.
-* `idle_timeout` - (Optional, Computed, Int) Specify the Connection Idle Timeout Value: 1 to 60 miao.
+* `idle_timeout` - (Optional, Computed, Int) Specify the Connection Idle Timeout Value: 1 to 60 seconds.
 * `listener_description` - (Optional) Set the IP Address of the Listened Description. Length Is from 2 to 256 Characters.
 * `listener_port` - (Required, ForceNew, Int) The SLB Instance Front-End, and Those of the Ports Used. Value: 1~65535.
 * `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: HTTP, HTTPS Or QuIC.
 * `load_balancer_id` - (Required, ForceNew) The SLB Instance Id.
 * `quic_config` - (Optional, Computed, List) Configuration Associated with the QuIC Listening See [`quic_config`](#quic_config) below.
-* `request_timeout` - (Optional, Computed, Int) The Specified Request Timeout Time. Value: 1~180 Seconds. Default Value: 60 miao. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
+* `request_timeout` - (Optional, Computed, Int) The Specified Request Timeout Time. Value: 1~180 Seconds. Default Value: 60 seconds. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
 * `security_policy_id` - (Optional, Computed) Security Policy
 * `status` - (Optional, Computed) The Current IP Address of the Listened State
 * `tags` - (Optional, Map, Available since v1.215.0) The tag of the resource
@@ -192,35 +182,31 @@ The following arguments are supported:
 ### `access_log_tracing_config`
 
 The access_log_tracing_config supports the following:
-* `tracing_enabled` - (Required) Xtrace Function.
+* `tracing_enabled` - (Required) Xtrace Function. Valid values: `true`, `false`. Default Value: `false`.
 
-  Value: True **** Or False * *.
+-> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the value `true`.
 
-  Default Value: False * *.
+* `tracing_sample` - (Optional, Int) Xtrace Sampling Rate. Value: 1~10000. `tracingenabled` valued True When Effective.
+* `tracing_type` - (Optional) Xtrace Type Value Is `Zipkin`.
 
--> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the **True * *.
-
-* `tracing_sample` - (Optional, Int) Xtrace Sampling Rate. Value: 1~10000 **.> `tracingenabled` **True When Effective.
-* `tracing_type` - (Optional) Xtrace Type Value Is **Zipkin * *.
-
--> **NOTE:**  `tracingenabled` **True When Effective.
+-> **NOTE:**  `tracingenabled` valued True When Effective.
 
 
 ### `ca_certificates`
 
 The ca_certificates supports the following:
-* `certificate_id` - (Optional, Available since v1.242.0) The ID of the certificate. Currently, only server certificates are supported.
+* `certificate_id` - (Optional) The ID of the certificate. Currently, only server certificates are supported.
 
 ### `certificates`
 
 The certificates supports the following:
-* `certificate_id` - (Optional) The ID of the certificate. Currently, only server certificates are supported.
+* `certificate_id` - (Optional, Available since v1.242.0) The ID of the certificate. Currently, only server certificates are supported.
 
 ### `default_actions`
 
 The default_actions supports the following:
 * `forward_group_config` - (Optional, List) Forwarding Action Configurations See [`forward_group_config`](#default_actions-forward_group_config) below.
-* `type` - (Required, ForceNew) Action Type
+* `type` - (Required, ForceNew) The action type. Value: ForwardGroup, indicating forwarding to the server group.
 
 ### `default_actions-forward_group_config`
 
@@ -250,29 +236,24 @@ The x_forwarded_for_config supports the following:
 * `x_forwarded_for_client_cert_subject_dn_alias` - (Optional) The Custom Header Field Name,
 * `x_forwarded_for_client_cert_subject_dn_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Clientcert-subjectdn Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Owner Information.
 * `x_forwarded_for_client_source_ips_enabled` - (Optional) Whether to use the X-Forwarded-Client-Ip header to obtain the source IP address of the server load balancer instance. Value:
+  - `true`: Yes.
+  - `false` (default): No.
 
-  true: Yes.
+-> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
 
-  false (default): No.
-
-  Note HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
-* `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP.
-
-  Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
+* `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP. Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
 * `x_forwarded_for_client_src_port_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
 * `x_forwarded_for_enabled` - (Optional, Computed) Whether to Enable by X-Forwarded-For Header Field Is Used to Obtain the Client IP Addresses.
 * `x_forwarded_for_host_enabled` - (Optional, Available since v1.242.0) Whether to enable the X-Forwarded-Host header field to obtain the domain name of the client accessing the Application Load Balancer. Value:
+  - `true`: Yes.
+  - `false` (default): No.
 
-  true: Yes.
+-> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter.
 
-  false (default): No.
-
-  HTTP, HTTPS, and QUIC listeners support this parameter.
 * `x_forwarded_for_processing_mode` - (Optional, Computed, Available since v1.242.0) Schema for processing X-Forwarded-For header fields. This value takes effect only when XForwardedForEnabled is true. Value:
 
-  append (default): append.
-
-  remove: Delete.
+  - `append` (default): append.
+  - `remove`: Delete.
 
   Configure append to add the last hop IP address to the X-Forwarded-For header field before sending the request to the backend service.
 
