@@ -766,6 +766,16 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
 					"instance_name":              name,
@@ -1631,99 +1641,6 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSInstanceTypeUpdate(t *testing.T) {
-	var v ecs.Instance
-
-	resourceId := "alicloud_instance.default"
-	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
-	serviceFunc := func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000, 9999)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEcsInstanceConfigInstanceType%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceTypeConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_id":             "${data.alicloud_images.default.images.0.id}",
-					"system_disk_category": "cloud_efficiency",
-					"system_disk_size":     "40",
-					"instance_type":        "${data.alicloud_instance_types.new1.instance_types.0.id}",
-					"instance_name":        "${var.name}",
-					"security_groups":      []string{"${alicloud_security_group.default.id}"},
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"image_options": []map[string]string{
-						{
-							"login_as_non_root": "true",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type":   CHECKSET,
-						"user_data":       REMOVEKEY,
-						"image_options.#": "1",
-						// "security_enhancement_strategy": REMOVEKEY,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_instance_types.new2.instance_types.0.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type": CHECKSET,
-					}),
-				),
-			},
-			// Skip PrePaid instance resources.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"instance_type":        "${data.alicloud_instance_types.new3.instance_types.0.id}",
-			//		"instance_charge_type": "PrePaid",
-			//		"period_unit":          "Week",
-			//		"force_delete":         "true",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"instance_type":        REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
-			//			"instance_charge_type": "PrePaid",
-			//			"period":               "1",
-			//			"include_data_disks":   "true",
-			//			"dry_run":              "false",
-			//			"renewal_status":       "Normal",
-			//			"period_unit":          "Week",
-			//			"force_delete":         "true",
-			//			"auto_renew_period":    "0",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"instance_type": "${data.alicloud_instance_types.new4.instance_types.0.id}",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"instance_type": CHECKSET,
-			//		}),
-			//	),
-			//},
-		},
-	})
-}
-
 func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 	var v ecs.Instance
 
@@ -1742,7 +1659,7 @@ func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.EcsSpotNoSupportedRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
@@ -1753,8 +1670,8 @@ func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vswitch_id":                 "${alicloud_vswitch.default.id}",
 					"image_id":                   "${data.alicloud_images.default.images.0.id}",
-					"availability_zone":          "${data.alicloud_instance_types.special.instance_types.0.availability_zones.0}",
-					"instance_type":              "${data.alicloud_instance_types.special.instance_types.0.id}",
+					"availability_zone":          "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"system_disk_category":       "cloud_efficiency",
 					"internet_charge_type":       "PayByTraffic",
 					"internet_max_bandwidth_out": "5",
@@ -3084,88 +3001,51 @@ resource "alicloud_key_pair" "default" {
 `, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), name)
 }
 
-func resourceInstanceTypeConfigDependence(name string) string {
-	return fmt.Sprintf(`
-    data "alicloud_zones" "default" {
-	  available_disk_category     = "cloud_efficiency"
-	  available_resource_creation = "VSwitch"
-	}
-	data "alicloud_images" "default" {
-      name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-	  most_recent = true
-	  owners      = "system"
-	}
-	resource "alicloud_vpc" "default" {
-		vpc_name = var.name
-	}
-	
-	resource "alicloud_vswitch" "default" {
-	  vpc_id  = alicloud_vpc.default.id
-	  zone_id = reverse(data.alicloud_zones.default.zones).1.id
-	  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
-	  vswitch_name   = var.name
-	}
-
-	resource "alicloud_security_group" "default" {
-	  name   = var.name
-	  vpc_id =alicloud_vpc.default.id
-	}
-	resource "alicloud_security_group_rule" "default" {
-	  	type = "ingress"
-	  	ip_protocol = "tcp"
-	  	nic_type = "intranet"
-	  	policy = "accept"
-	  	port_range = "22/22"
-	  	priority = 1
-	  	security_group_id = "${alicloud_security_group.default.id}"
-	  	cidr_ip = "172.16.0.0/24"
-	}
-
-	variable "name" {
-		default = "%s"
-	}
-
-	data "alicloud_instance_types" "new1" {
-		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
-		cpu_core_count = 1
-		memory_size = 1
-	}
-
-	data "alicloud_instance_types" "new2" {
-		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
-		cpu_core_count = 1
-		memory_size = 2
-	}
-
-	data "alicloud_instance_types" "new3" {
-		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
-		cpu_core_count = 2
-		memory_size = 4
-	}
-
-	data "alicloud_instance_types" "new4" {
-		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
-		cpu_core_count = 4
-		memory_size = 8
-	}
-
-`, name)
-}
-
 func testAccCheckSpotInstanceDependence(name string) string {
 	return fmt.Sprintf(`
-	%s
 	variable "name" {
-		default = "%s"
+  		default = "%s"
 	}
+
 	data "alicloud_instance_types" "special" {
 	  	spot_strategy = "SpotWithPriceLimit"
 		cpu_core_count       = 2
   		memory_size          = 8
   		instance_type_family = "ecs.g6"
+  		image_id             = data.alicloud_images.default.images.0.id
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+	  	spot_strategy = "SpotWithPriceLimit"
+		cpu_core_count       = 2
+  		memory_size          = 8
+  		instance_type_family = "ecs.g6"
+  		image_id             = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
 	}
 	
-	`, EcsInstanceCommonNoZonesTestCase, name)
+	`, name)
 }
 
 var testAccInstanceCheckMap = map[string]string{
@@ -3187,10 +3067,8 @@ var testAccInstanceCheckMap = map[string]string{
 	"password":         "",
 	"is_outdated":      NOSET,
 	"system_disk_size": "40",
-
-	"data_disks.#":  NOSET,
-	"volume_tags.%": "0",
-	"tags.%":        NOSET,
+	"volume_tags.%":    "0",
+	"tags.%":           NOSET,
 
 	"private_ip":                 CHECKSET,
 	"public_ip":                  "",
@@ -3383,7 +3261,7 @@ func TestAccAliCloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
 					"security_groups":                     []string{"${alicloud_security_group.default.id}"},
 					"instance_type":                       "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":                   "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"system_disk_category":                "cloud_essd",
+					"system_disk_category":                "cloud_auto",
 					"instance_name":                       "${var.name}",
 					"spot_strategy":                       "NoSpot",
 					"spot_price_limit":                    "0",
@@ -3391,23 +3269,55 @@ func TestAccAliCloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
 					"user_data":                           "I_am_user_data",
 					"vswitch_id":                          "${alicloud_vswitch.default.id}",
 					"system_disk_auto_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
+					"system_disk_provisioned_iops":        "100",
+					"system_disk_bursting_enabled":        "true",
+					"data_disks": []map[string]string{
+						{
+							"name":             "${var.name}-1",
+							"size":             "500",
+							"category":         "cloud_auto",
+							"provisioned_iops": "100",
+							"bursting_enabled": "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":                       name,
-						"system_disk_category":                "cloud_essd",
+						"system_disk_category":                "cloud_auto",
 						"system_disk_auto_snapshot_policy_id": CHECKSET,
+						"system_disk_provisioned_iops":        "100",
+						"system_disk_bursting_enabled":        "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_auto_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.update.id}",
-				},
-				),
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"system_disk_auto_snapshot_policy_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_provisioned_iops": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_provisioned_iops": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_bursting_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_bursting_enabled": "false",
 					}),
 				),
 			},
@@ -3425,7 +3335,7 @@ func TestAccAliCloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run"},
 			},
 		},
 	})
@@ -3437,11 +3347,6 @@ func resourceInstanceAutoSnapshotPolicyIdDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-		available_disk_category     = "cloud_essd"
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
@@ -3449,9 +3354,8 @@ func resourceInstanceAutoSnapshotPolicyIdDependence(name string) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
   		image_id             = data.alicloud_images.default.images.0.id
-		system_disk_category = "cloud_essd"
+		system_disk_category = "cloud_auto"
 	}
 
 	resource "alicloud_vpc" "default" {
