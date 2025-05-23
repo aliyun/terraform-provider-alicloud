@@ -1899,14 +1899,39 @@ func (s *RdsService) DescribeDBProxy(id string) (object map[string]interface{}, 
 	if dBProxyServiceStatus, ok := response["DBProxyServiceStatus"]; ok {
 		object["DBProxyServiceStatus"] = dBProxyServiceStatus
 	}
+	if dBProxyServiceStatus, ok := response["DBProxyInstanceName"]; ok {
+		object["DBProxyInstanceName"] = dBProxyServiceStatus
+	}
 	if dBProxyConnectStringItems, ok := v.(map[string]interface{})["DBProxyConnectStringItems"].([]interface{}); ok {
-		if len(dBProxyConnectStringItems) < 1 {
+		var innerItem, outerItem map[string]interface{}
+		for _, item := range dBProxyConnectStringItems {
+			if itemMap, ok := item.(map[string]interface{}); ok {
+				netTypeStr, okStr := itemMap["DBProxyConnectStringNetType"].(string)
+				netTypeInt, okInt := itemMap["DBProxyConnectStringNetWorkType"].(float64)
+
+				if (okStr && netTypeStr == "InnerString") || (okInt && int(netTypeInt) == 2) {
+					innerItem = itemMap
+				} else if (okStr && netTypeStr == "OuterString") || (okInt && int(netTypeInt) == 0) {
+					outerItem = itemMap
+				}
+			}
+		}
+
+		if innerItem == nil {
 			return nil, WrapErrorf(NotFoundErr("DBProxyConnectStringItems", id), NotFoundMsg, ProviderERROR)
 		}
-		dBProxyConnectStringItem := dBProxyConnectStringItems[0].(map[string]interface{})
-		object["DBProxyVpcId"] = dBProxyConnectStringItem["DBProxyVpcId"]
-		object["DBProxyVswitchId"] = dBProxyConnectStringItem["DBProxyVswitchId"]
+
+		object["DBProxyVpcId"] = innerItem["DBProxyVpcId"]
+		object["DBProxyVswitchId"] = innerItem["DBProxyVswitchId"]
+
+		if outerItem != nil {
+			object["DBProxyConnectString"] = outerItem["DBProxyConnectString"]
+			object["DBProxyConnectStringPort"] = outerItem["DBProxyConnectStringPort"]
+		} else {
+			log.Printf("[WARN] No OuterString item found for resource %s", id)
+		}
 	}
+
 	return object, nil
 }
 
