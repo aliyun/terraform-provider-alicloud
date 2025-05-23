@@ -1976,28 +1976,25 @@ func (s *PolarDBService) PolarDBClusterProxyStateRefreshFunc(id string, failStat
 		return object, object.ProxyStatus, nil
 	}
 }
-func (s *PolarDBService) DescribeDBClusterStandbyAz(id string, timeout int) (zoneId string, err error) {
+func (s *PolarDBService) DescribeDBClusterStandbyAz(d *schema.ResourceData, timeout int) (zoneId string, err error) {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	standbyAz := ""
 	for {
-		clusterAttribute, err := s.DescribePolarDBClusterAttribute(id)
+		clusterAttribute, err := s.DescribePolarDBClusterAttribute(d.Id())
 		if err != nil {
 			return "", WrapError(err)
 		}
 
-		primaryZone := ""
-		if len(clusterAttribute.DBNodes) > 0 {
-			primaryZone = clusterAttribute.DBNodes[0].ZoneId
-		}
-
 		exist := true
-		if clusterAttribute.HotStandbyCluster != "OFF" {
+		if clusterAttribute.HotStandbyCluster != "StandbyClusterOFF" {
 			exist = false
-			for _, zoneId := range strings.Split(clusterAttribute.ZoneIds, ",") {
-				if zoneId != primaryZone && zoneId != "" {
-					standbyAz = zoneId
+			zoneIds := strings.Split(clusterAttribute.ZoneIds, ",")
+			if len(zoneIds) >= 2 {
+				zoneId = zoneIds[0]
+				standbyAz = zoneIds[1]
+				// standbyAz info for new cluster may be incorrectly set to be equal to zoneId at first, need retry for real value
+				if standbyAz != "" && (standbyAz != zoneId || !d.IsNewResource()) {
 					exist = true
-					break
 				}
 			}
 		}
@@ -2006,6 +2003,10 @@ func (s *PolarDBService) DescribeDBClusterStandbyAz(id string, timeout int) (zon
 			return standbyAz, nil
 		}
 		if time.Now().After(deadline) {
+			// adapt for new cluster with exactly the same zoneId and standbyAz
+			if standbyAz != "" {
+				return standbyAz, nil
+			}
 			return standbyAz, WrapErrorf(err, RequiredWhenMsg, "standby_az", "hot_standby_cluster", clusterAttribute.HotStandbyCluster)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
