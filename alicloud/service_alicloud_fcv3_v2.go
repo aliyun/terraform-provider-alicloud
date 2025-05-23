@@ -410,9 +410,10 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 	}
 	functionName := parts[0]
 	triggerName := parts[1]
-	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
