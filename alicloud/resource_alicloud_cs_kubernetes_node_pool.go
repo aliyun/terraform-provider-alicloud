@@ -675,9 +675,8 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Optional: true,
 			},
 			"spot_price_limit": {
-				Type:             schema.TypeList,
-				Optional:         true,
-				DiffSuppressFunc: csNodepoolSpotInstanceSettingDiffSuppressFunc,
+				Type:     schema.TypeList,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"price_limit": {
