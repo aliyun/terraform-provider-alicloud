@@ -29,7 +29,7 @@ func dataSourceAlicloudCSKubernetesVersion() *schema.Resource {
 			},
 			"profile": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Default", "Serverless", "Edge"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Default", "Serverless", "Edge", "Acs"}, false),
 				Optional:     true,
 			},
 			"metadata": {

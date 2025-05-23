@@ -70,7 +70,7 @@ The following arguments are supported.
 
 * `cluster_type` - (Required) The type of cluster. Its valid value are `Kubernetes` and `ManagedKubernetes`.
 * `kubernetes_version` - (Optional) The ACK released kubernetes version. 
-* `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless` and `Edge`.
+* `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless`, `Edge` and `Acs`.
 
 ## Attributes Reference
 
