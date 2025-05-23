@@ -106,3 +106,21 @@ The following attributes are exported in addition to the arguments listed above:
   * `predictive_task_buffer_time` - (Available since v1.242.0) The amount of buffer time before the prediction task is executed. By default, all prediction tasks that are automatically created by a predictive scaling rule are executed on the hour. You can set a buffer time to execute prediction tasks and prepare resources in advance.
   * `target_value` - (Available since v1.242.0) The target value of the metric.
   * `metric_name` - (Available since v1.242.0) The predefined metric of the scaling rule. 
+  * `metric_type` - (Available since v1.250.0) The type of the event-triggered task that is associated with the scaling rule.
+  * `estimated_instance_warmup` - (Available since v1.250.0) The warm-up period during which a series of preparation measures are taken on new instances. Auto Scaling does not monitor the metric data of instances that are being warmed up.
+  * `scale_in_evaluation_count` - (Available since v1.250.0) After you create a target tracking scaling rule, an event-triggered task is automatically created and associated with the scaling rule. This parameter defines the number of consecutive times the alert condition must be satisfied before the event-triggered task initiates a scale-in operation.
+  * `scale_out_evaluation_count` - (Available since v1.250.0) After you create a target tracking scaling rule, an event-triggered task is automatically created and associated with the scaling rule. This parameter defines the number of consecutive times the alert condition must be satisfied before the event-triggered task initiates a scale-out operation.
+  * `disable_scale_in` - (Available since v1.250.0) Indicates whether scale-in is disabled. This parameter is available only if you set ScalingRuleType to TargetTrackingScalingRule. Valid values: true, false.
+  * `step_adjustment` - (Available since v1.250.0) The step adjustments of the step scaling rule.
+    * `metric_interval_lower_bound` - (Available since v1.250.0) The lower limit of each step adjustment. Valid values: -9.999999E18 to 9.999999E18.
+    * `metric_interval_upper_bound` - (Available since v1.250.0) The upper limit of each step adjustment. Valid values: -9.999999E18 to 9.999999E18.
+    * `scaling_adjustment` - (Available since v1.250.0) The number of instances that are scaled in each step adjustment.
+  * `hybrid_monitor_namespace` - (Available since v1.250.0) The ID of the Hybrid Cloud Monitoring namespace.
+  * `hybrid_metrics` - (Available since v1.250.0) The Hybrid Cloud Monitoring metrics.
+    * `id` - (Available since v1.250.0) The reference ID of the metric in the metric expression.
+    * `metric_name` - (Available since v1.250.0) The name of the Hybrid Cloud Monitoring metric.
+    * `statistic` - (Available since v1.250.0) The statistical method of the metric data.
+    * `expression` - (Available since v1.250.0) The metric expression that consists of multiple Hybrid Cloud Monitoring metrics. It calculates a result used to trigger scaling events. The expression is written in Reverse Polish Notation (RPN) format and includes only the following operators: +, -, *, /.
+    * `dimensions` - (Available since v1.250.0) The metric dimensions. You can use this parameter to specify the monitored resources.
+      * `dimension_key` - (Available since v1.250.0) The dimension key of the metric.
+      * `dimension_value` - (Available since v1.250.0) The dimension value of the metric.
