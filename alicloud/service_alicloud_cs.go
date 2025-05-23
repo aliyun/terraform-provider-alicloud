@@ -439,6 +439,48 @@ func (s *CsClient) DescribeCsKubernetesAddonInstance(clusterId string, addonName
 	return component, nil
 }
 
+func (s *CsClient) GetCsKubernetesAddonInstance(clusterId string, addonName string) (*Component, error) {
+	component := &Component{}
+	var err error
+	var resp *client.GetClusterAddonInstanceResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err = s.client.GetClusterAddonInstance(&clusterId, tea.String(addonName))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AddonNotFound"}) {
+			err = WrapErrorf(NotFoundErr("alicloud_cs_kubernetes_addon", addonName), ResourceNotfound)
+			return component, err
+		}
+		return nil, err
+	}
+
+	if resp.Body.Name != nil {
+		component.ComponentName = *resp.Body.Name
+	}
+	if resp.Body.Version != nil {
+		component.Version = *resp.Body.Version
+	}
+	if resp.Body.State != nil {
+		component.Status = *resp.Body.State
+	}
+
+	if resp.Body.Config != nil {
+		component.Config = *resp.Body.Config
+	}
+
+	return component, nil
+}
+
 // This function returns the status of all available addons of the cluster
 func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
 	availableAddons, err := s.DescribeClusterAddonsMetadata(clusterId)
