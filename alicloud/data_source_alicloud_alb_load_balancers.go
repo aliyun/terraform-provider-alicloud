@@ -12,28 +12,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudAlbLoadBalancers() *schema.Resource {
+func dataSourceAliCloudAlbLoadBalancers() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlbLoadBalancersRead,
+		Read: dataSourceAliCloudAlbLoadBalancersRead,
 		Schema: map[string]*schema.Schema{
 			"address_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Intranet", "Internet"}, false),
+				ValidateFunc: StringInSlice([]string{"Intranet", "Internet"}, false),
 			},
 			"load_balancer_bussiness_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Abnormal", "Normal"}, false),
+				ValidateFunc: StringInSlice([]string{"Abnormal", "Normal"}, false),
 				Deprecated:   "Field 'load_balancer_bussiness_status' has been deprecated from provider version 1.142.0 and it will be removed in the future version. Please use the new attribute 'load_balancer_business_status' instead.",
 			},
 			"load_balancer_business_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Abnormal", "Normal"}, false),
+				ValidateFunc: StringInSlice([]string{"Abnormal", "Normal"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -68,14 +68,14 @@ func dataSourceAlicloudAlbLoadBalancers() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Configuring", "CreateFailed", "Inactive", "Provisioning"}, false),
+				ValidateFunc: StringInSlice([]string{"Active", "Configuring", "CreateFailed", "Inactive", "Provisioning"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaForceNew(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -243,18 +243,6 @@ func dataSourceAlicloudAlbLoadBalancers() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"load_balancer_addresses": {
-										Type:     schema.TypeList,
-										Computed: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"address": {
-													Type:     schema.TypeString,
-													Computed: true,
-												},
-											},
-										},
-									},
 									"vswitch_id": {
 										Type:     schema.TypeString,
 										Computed: true,
@@ -262,6 +250,56 @@ func dataSourceAlicloudAlbLoadBalancers() *schema.Resource {
 									"zone_id": {
 										Type:     schema.TypeString,
 										Computed: true,
+									},
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"load_balancer_addresses": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"allocation_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"eip_type": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"address": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"intranet_address": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"intranet_address_hc_status": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipv6_address": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipv6_address_hc_status": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipv4_local_addresses": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem:     &schema.Schema{Type: schema.TypeString},
+												},
+												"ipv6_local_addresses": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem:     &schema.Schema{Type: schema.TypeString},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -278,7 +316,7 @@ func dataSourceAlicloudAlbLoadBalancers() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlbLoadBalancersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudAlbLoadBalancersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListLoadBalancers"
@@ -492,13 +530,22 @@ func dataSourceAlicloudAlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 					temp1 := map[string]interface{}{
 						"vswitch_id": m1["VSwitchId"],
 						"zone_id":    m1["ZoneId"],
+						"status":     m1["Status"],
 					}
 					if m1["LoadBalancerAddresses"] != nil {
 						loadBalancerAddressesMaps := make([]map[string]interface{}, 0)
 						for _, loadBalancerAddressesValue := range m1["LoadBalancerAddresses"].([]interface{}) {
 							loadBalancerAddresses := loadBalancerAddressesValue.(map[string]interface{})
 							loadBalancerAddressesMap := map[string]interface{}{
-								"address": loadBalancerAddresses["Address"],
+								"allocation_id":              loadBalancerAddresses["AllocationId"],
+								"eip_type":                   loadBalancerAddresses["EipType"],
+								"address":                    loadBalancerAddresses["Address"],
+								"intranet_address":           loadBalancerAddresses["IntranetAddress"],
+								"intranet_address_hc_status": loadBalancerAddresses["IntranetAddressHcStatus"],
+								"ipv6_address":               loadBalancerAddresses["Ipv6Address"],
+								"ipv6_address_hc_status":     loadBalancerAddresses["Ipv6AddressHcStatus"],
+								"ipv4_local_addresses":       loadBalancerAddresses["Ipv4LocalAddresses"],
+								"ipv6_local_addresses":       loadBalancerAddresses["Ipv6LocalAddresses"],
 							}
 							loadBalancerAddressesMaps = append(loadBalancerAddressesMaps, loadBalancerAddressesMap)
 						}

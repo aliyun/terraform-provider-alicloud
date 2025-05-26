@@ -555,7 +555,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ecs_backup_clients":                           dataSourceAlicloudHbrEcsBackupClients(),
 			"alicloud_msc_sub_contacts":                                 dataSourceAlicloudMscSubContacts(),
 			"alicloud_express_connect_physical_connections":             dataSourceAlicloudExpressConnectPhysicalConnections(),
-			"alicloud_alb_load_balancers":                               dataSourceAlicloudAlbLoadBalancers(),
+			"alicloud_alb_load_balancers":                               dataSourceAliCloudAlbLoadBalancers(),
 			"alicloud_alb_zones":                                        dataSourceAlicloudAlbZones(),
 			"alicloud_sddp_rules":                                       dataSourceAlicloudSddpRules(),
 			"alicloud_bastionhost_user_groups":                          dataSourceAlicloudBastionhostUserGroups(),
