@@ -759,6 +759,26 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"audit_log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+							Optional: true,
+						},
+						"sls_project_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"retain_resources": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1013,6 +1033,17 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 			}
 		}
 	}
+	if v, ok := d.GetOk("audit_log_config"); ok {
+		m := v.([]interface{})[0].(map[string]interface{})
+		if vv, ok := m["enabled"]; ok {
+			request.AuditLogConfig = &roacs.CreateClusterRequestAuditLogConfig{
+				Enabled: tea.Bool(vv.(bool)),
+			}
+		}
+		if vv, ok := m["sls_project_name"]; ok {
+			request.AuditLogConfig.SlsProjectName = tea.String(vv.(string))
+		}
+	}
 
 	var err error
 	var resp *roacs.CreateClusterResponse
@@ -1255,6 +1286,10 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
+	if err = getClusterAuditProject(d, meta); err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 
 }
@@ -1282,6 +1317,12 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 	if d.HasChanges([]string{"control_plane_log_ttl", "control_plane_log_project", "control_plane_log_components"}...) {
 		if err := updateControlPlaneLog(d, meta); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateControlPlaneLog", AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("audit_log_config") {
+		if err := updateClusterAuditConfig(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateClusterAuditConfig", AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1589,6 +1630,98 @@ func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error 
 			components[i] = *c
 		}
 		d.Set("control_plane_log_components", components)
+	}
+
+	return nil
+}
+
+func updateClusterAuditConfig(d *schema.ResourceData, meta interface{}) error {
+	request := &roacs.UpdateClusterAuditLogConfigRequest{}
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+
+	if d.HasChange("audit_log_config") {
+		v, ok := d.GetOk("audit_log_config")
+		if ok && len(v.([]interface{})) > 0 {
+			m := v.([]interface{})[0].(map[string]interface{})
+			if vv, ok := m["enabled"].(bool); ok {
+				request.Disable = tea.Bool(!vv)
+			}
+			if vv, ok := m["sls_project_name"].(string); ok {
+				request.SlsProjectName = tea.String(vv)
+			}
+		}
+	}
+	csService := CsService{client}
+	var response *roacs.UpdateClusterAuditLogConfigResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = csClient.UpdateClusterAuditLogConfig(tea.String(d.Id()), request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	taskId := tea.StringValue(response.Body.TaskId)
+	c := CsClient{client: csClient}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, c.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), "UpdateClusterAuditLogConfig", jobDetail)
+	}
+
+	stateConf = BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getClusterAuditProject(d *schema.ResourceData, meta interface{}) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	var response *roacs.GetClusterAuditProjectResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.GetClusterAuditProject(tea.String(d.Id()))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	if response.Body != nil {
+		m := make(map[string]interface{})
+		if response.Body.AuditEnabled != nil {
+			m["enabled"] = tea.BoolValue(response.Body.AuditEnabled)
+		}
+		if response.Body.SlsProjectName != nil {
+			m["sls_project_name"] = tea.StringValue(response.Body.SlsProjectName)
+		}
+		d.Set("audit_log_config", []map[string]interface{}{m})
 	}
 
 	return nil

@@ -371,41 +371,47 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":                    "tf-testaccmanagedkubernetes",
-					"cluster_spec":                   "ack.pro.small",
-					"is_enterprise_security_group":   "true",
-					"deletion_protection":            "false",
-					"new_nat_gateway":                "true",
-					"node_cidr_mask":                 "26",
-					"service_cidr":                   "172.23.0.0/16",
-					"proxy_mode":                     "ipvs",
-					"ip_stack":                       "ipv4",
-					"vswitch_ids":                    []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
-					"pod_vswitch_ids":                []string{"${local.vswitch_id}"},
-					"control_plane_log_ttl":          "30",
-					"control_plane_log_components":   []string{"apiserver", "kcm", "scheduler"},
-					"control_plane_log_project":      "",
+					"name_prefix":                  "tf-testaccmanagedkubernetes",
+					"cluster_spec":                 "ack.pro.small",
+					"is_enterprise_security_group": "true",
+					"deletion_protection":          "false",
+					"new_nat_gateway":              "true",
+					"node_cidr_mask":               "26",
+					"service_cidr":                 "172.23.0.0/16",
+					"proxy_mode":                   "ipvs",
+					"ip_stack":                     "ipv4",
+					"vswitch_ids":                  []string{"${local.vswitch_id}", "${local.vswitch_id_1}"},
+					"pod_vswitch_ids":              []string{"${local.vswitch_id}"},
+					"control_plane_log_ttl":        "30",
+					"control_plane_log_components": []string{"apiserver", "kcm", "scheduler"},
+					"control_plane_log_project":    "",
+					"audit_log_config": []map[string]string{{
+						"enabled":          "true",
+						"sls_project_name": "${alicloud_log_project.log.0.name}",
+					}},
 					"user_ca":                        tmpCAFile.Name(),
 					"addons":                         []map[string]string{{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"}},
 					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                           CHECKSET,
-						"cluster_spec":                   "ack.pro.small",
-						"deletion_protection":            "false",
-						"new_nat_gateway":                "true",
-						"nat_gateway_id":                 CHECKSET,
-						"service_cidr":                   "172.23.0.0/16",
-						"proxy_mode":                     "ipvs",
-						"ip_stack":                       "ipv4",
-						"vswitch_ids.#":                  "2",
-						"control_plane_log_ttl":          "30",
-						"control_plane_log_components.0": "apiserver",
-						"control_plane_log_components.1": "kcm",
-						"control_plane_log_components.2": "scheduler",
-						"control_plane_log_project":      CHECKSET,
-						"skip_set_certificate_authority": "false",
+						"name":                                CHECKSET,
+						"cluster_spec":                        "ack.pro.small",
+						"deletion_protection":                 "false",
+						"new_nat_gateway":                     "true",
+						"nat_gateway_id":                      CHECKSET,
+						"service_cidr":                        "172.23.0.0/16",
+						"proxy_mode":                          "ipvs",
+						"ip_stack":                            "ipv4",
+						"vswitch_ids.#":                       "2",
+						"control_plane_log_ttl":               "30",
+						"control_plane_log_components.0":      "apiserver",
+						"control_plane_log_components.1":      "kcm",
+						"control_plane_log_components.2":      "scheduler",
+						"control_plane_log_project":           CHECKSET,
+						"audit_log_config.0.enabled":          "true",
+						"audit_log_config.0.sls_project_name": CHECKSET,
+						"skip_set_certificate_authority":      "false",
 					}),
 				),
 			},
@@ -434,11 +440,34 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"control_plane_log_project": "${alicloud_log_project.log.name}",
+					"control_plane_log_project": "${alicloud_log_project.log.0.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"control_plane_log_project": name,
+						"control_plane_log_project": fmt.Sprintf("%s-0", name),
+					})),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"audit_log_config": []map[string]string{{
+						"enabled":          "true",
+						"sls_project_name": "${alicloud_log_project.log.1.name}",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"audit_log_config.0.sls_project_name": fmt.Sprintf("%s-1", name),
+					})),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"audit_log_config": []map[string]string{{
+						"enabled": "false",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"audit_log_config.0.enabled": "false",
 					})),
 			},
 			{
@@ -695,7 +724,8 @@ resource "alicloud_vswitch" "vswitches" {
 }
 
 resource "alicloud_log_project" "log" {
-  name        = var.name
+  count       = 2
+  name        = format("%%s-%%d", var.name, count.index)
   description = "created by terraform for managedkubernetes cluster"
   lifecycle {
     ignore_changes = [

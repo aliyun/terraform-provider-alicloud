@@ -234,6 +234,7 @@ The following arguments are supported:
 * `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
 * `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
+* `audit_log_config` - (Optional, Available since v1.250.0) Audit log configuration. See [`audit_log_config`](#audit_log_config) below.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.223.2) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
@@ -338,6 +339,13 @@ for example:
     }
   }
 ```
+
+### `audit_log_config`
+Audit log config. If `enabled` is set to `true`, a Logstore is created in the specified Simple Log Service project(SLS) to store cluster audit logs.  
+
+* `enabled` - (Optional) Whether to enable audit logging. Valid values: `true`, `false`.
+* `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
+
 
 ### `addons`
 
