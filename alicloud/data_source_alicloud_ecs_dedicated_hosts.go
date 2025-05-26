@@ -12,9 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudEcsDedicatedHosts() *schema.Resource {
+func dataSourceAliCloudEcsDedicatedHosts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEcsDedicatedHostsRead,
+		Read: dataSourceAliCloudEcsDedicatedHostsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -74,7 +74,7 @@ func dataSourceAlicloudEcsDedicatedHosts() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Available", "Creating", "PermanentFailure", "Released", "UnderAssessment"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaForceNew(),
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -260,6 +260,30 @@ func dataSourceAlicloudEcsDedicatedHosts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"instances": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"instance_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"socket_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"instance_owner_id": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -267,7 +291,7 @@ func dataSourceAlicloudEcsDedicatedHosts() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEcsDedicatedHostsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudEcsDedicatedHostsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDedicatedHosts"
@@ -431,6 +455,37 @@ func dataSourceAlicloudEcsDedicatedHostsRead(d *schema.ResourceData, meta interf
 			}
 		}
 		mapping["tags"] = tags
+
+		if instances, ok := object["Instances"]; ok {
+			if instancesList, ok := instances.(map[string]interface{})["Instance"]; ok {
+				instancesMaps := make([]map[string]interface{}, 0)
+				for _, v := range instancesList.([]interface{}) {
+					instancesArg := v.(map[string]interface{})
+					instancesMap := map[string]interface{}{}
+
+					if instanceId, ok := instancesArg["InstanceId"]; ok {
+						instancesMap["instance_id"] = instanceId
+					}
+
+					if instanceType, ok := instancesArg["InstanceType"]; ok {
+						instancesMap["instance_type"] = instanceType
+					}
+
+					if socketId, ok := instancesArg["SocketId"]; ok {
+						instancesMap["socket_id"] = socketId
+					}
+
+					if instanceOwnerId, ok := instancesArg["InstanceOwnerId"]; ok {
+						instancesMap["instance_owner_id"] = instanceOwnerId
+					}
+
+					instancesMaps = append(instancesMaps, instancesMap)
+				}
+
+				mapping["instances"] = instancesMaps
+			}
+		}
+
 		ids = append(ids, fmt.Sprint(object["DedicatedHostId"]))
 		names = append(names, object["DedicatedHostName"])
 		s = append(s, mapping)
