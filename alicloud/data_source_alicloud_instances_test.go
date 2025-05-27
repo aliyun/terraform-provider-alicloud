@@ -9,105 +9,105 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
+func TestAccAliCloudECSInstancesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_instance.default.instance_name}_fake"`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_instance.default.id}_fake" ]`,
 		}),
 	}
 
 	imageIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"image_id":   `"${data.alicloud_images.default.images.0.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"image_id":   `"${data.alicloud_images.default.images.0.id}_fake"`,
 		}),
 	}
 
 	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"status":     `"Running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"status":     `"Stopped"`,
 		}),
 	}
 
 	vpcIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"vpc_id": `"${alicloud_vpc.default.id}"`,
 			"ids":    `[ "${alicloud_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"vpc_id": `"${alicloud_vpc.default.id}_fake"`,
 			"ids":    `[ "${alicloud_instance.default.id}" ]`,
 		}),
 	}
 
 	vSwitchConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
 			"ids":        `[ "${alicloud_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
 			"ids":        `[ "${alicloud_instance.default.id}" ]`,
 		}),
 	}
 
 	availabilityZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}_fake"`,
 		}),
 	}
 
 	ramRoleNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ram_role_name": `"${alicloud_instance.default.role_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ram_role_name": `"${alicloud_instance.default.role_name}_fake"`,
 		}),
 	}
 
 	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"resource_group_id": `"${alicloud_instance.default.resource_group_id}_fake"`,
 		}),
 	}
 
 	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 		},
 			`tags = {
 				from = "datasource"
@@ -119,8 +119,8 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 				usage6 = "test"
 			}`,
 		),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
-			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 		},
 			`tags = {
 				from = "datasource_fake"
@@ -135,20 +135,20 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 	}
 
 	pagingConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ids":         `[ "${alicloud_instance.default.id}" ]`,
 			"page_number": `1`,
 		}),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfig(rand, map[string]string{
 			"ids":         `[ "${alicloud_instance.default.id}" ]`,
 			"page_number": `2`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+		existConfig: testAccCheckAliCloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"ids":               `[ "${alicloud_instance.default.id}" ]`,
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
 			"status":            `"Running"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
@@ -167,9 +167,9 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 				usage6 = "test"
 			}`,
 		),
-		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"ids":               `[ "${alicloud_instance.default.id}_fake" ]`,
-			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAliCloudInstancesDataSource%d"`, rand),
 			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
 			"status":            `"Running"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
@@ -194,7 +194,7 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 		vpcIdConf, vSwitchConf, availabilityZoneConf, ramRoleNameConf, resourceGroupIdConf, tagsConf, pagingConf, allConf)
 }
 
-func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
+func testAccCheckAliCloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -208,7 +208,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 	}
 
 	variable "name" {
-		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
+		default = "tf-testAccCheckAliCloudInstancesDataSource%d"
 	}
 
 	resource "alicloud_instance" "default" {
@@ -274,7 +274,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 	return config
 }
 
-func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[string]string, tags string) string {
+func testAccCheckAliCloudInstancesDataSourceConfigWithTag(rand int, attrMap map[string]string, tags string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -284,7 +284,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	%s
 
 	variable "name" {
-		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
+		default = "tf-testAccCheckAliCloudInstancesDataSource%d"
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
@@ -343,7 +343,7 @@ var existInstancesMapFunc = func(rand int) map[string]string {
 		"instances.0.availability_zone":          CHECKSET,
 		"instances.0.private_ip":                 CHECKSET,
 		"instances.0.status":                     string(Running),
-		"instances.0.name":                       fmt.Sprintf("tf-testAccCheckAlicloudInstancesDataSource%d", rand),
+		"instances.0.name":                       fmt.Sprintf("tf-testAccCheckAliCloudInstancesDataSource%d", rand),
 		"instances.0.instance_type":              CHECKSET,
 		"instances.0.vpc_id":                     CHECKSET,
 		"instances.0.vswitch_id":                 CHECKSET,

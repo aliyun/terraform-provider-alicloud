@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -78,7 +80,7 @@ func dataSourceAlicloudInstances() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaForceNew(),
 
 			"output_file": {
 				Type:     schema.TypeString,
@@ -227,7 +229,10 @@ func dataSourceAlicloudInstances() *schema.Resource {
 								},
 							},
 						},
-						"tags": tagsSchema(),
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -294,13 +299,28 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	}
 	var response *ecs.DescribeInstancesResponse
 	for {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(request)
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstances(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ = raw.(*ecs.DescribeInstancesResponse)
 		if isPagingRequest(d) {
 			allInstances = response.Instances.Instance
@@ -372,13 +392,28 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 		request.PageSize = requests.NewInteger(PageSizeLarge)
 		request.PageNumber = requests.NewInteger(1)
 		for {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceRamRole(request)
+			var raw interface{}
+			var err error
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.DescribeInstanceRamRole(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
 			})
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 			response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
 			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) < 1 {
 				break
@@ -490,13 +525,28 @@ func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (
 	instanceDisks := make(map[string][]map[string]interface{})
 	var allDisks []ecs.Disk
 	for {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDisks(request)
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeDisks(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		if err != nil {
 			return instanceDisks, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ecs.DescribeDisksResponse)
 
 		if response == nil || len(response.Disks.Disk) < 1 {
