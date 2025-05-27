@@ -797,3 +797,109 @@ func (s *EfloServiceV2) EfloExperimentPlanStateRefreshFunc(id string, field stri
 }
 
 // DescribeEfloExperimentPlan >>> Encapsulated.
+
+// DescribeEfloVsc <<< Encapsulated get interface for Eflo Vsc.
+
+func (s *EfloServiceV2) DescribeEfloVsc(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["VscId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeVsc"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Resource.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Vsc", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["VscId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("Vsc", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *EfloServiceV2) DescribeVscListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "Vsc"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *EfloServiceV2) EfloVscStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEfloVsc(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEfloVsc >>> Encapsulated.
