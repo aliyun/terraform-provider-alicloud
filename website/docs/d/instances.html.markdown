@@ -4,12 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_instances"
 sidebar_current: "docs-alicloud-datasource-instances"
 description: |-
-    Provides a list of ECS instances to the user.
+  Provides a list of ECS instances to the user.
 ---
 
-# alicloud\_instances
+# alicloud_instances
 
 The Instances data source list ECS instance resources according to their ID, name regex, image id, status and other fields.
+
+-> **NOTE:** Available since v1.7.0.
 
 ## Example Usage
 
@@ -32,17 +34,17 @@ output "instance_ids" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of ECS instance IDs.
-* `name_regex` - (Optional) A regex string to filter results by instance name.
-* `image_id` - (Optional) The image ID of some ECS instance used.
-* `status` - (Optional) Instance status. Valid values: "Creating", "Starting", "Running", "Stopping" and "Stopped". If undefined, all statuses are considered.
-* `vpc_id` - (Optional) ID of the VPC linked to the instances.
-* `vswitch_id` - (Optional) ID of the vSwitch linked to the instances.
-* `availability_zone` - (Optional) Availability zone where instances are located.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The ID of resource group which the instance belongs.
-* `ram_role_name` - (Optional, ForceNew, Available in 1.69.0+) The RAM role name which the instance attaches.
-* `instance_name` - (Optional, ForceNew, Available in 1.203.0+) The name of the instance. Fuzzy search with the asterisk (*) wildcard characters is supported.
-* `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
+* `ids` - (Optional, ForceNew) A list of ECS instance IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by instance name.
+* `image_id` - (Optional, ForceNew) The image ID of some ECS instance used.
+* `status` - (Optional, ForceNew) Instance status. Valid values: "Creating", "Starting", "Running", "Stopping" and "Stopped". If undefined, all statuses are considered.
+* `vpc_id` - (Optional, ForceNew) ID of the VPC linked to the instances.
+* `vswitch_id` - (Optional, ForceNew) ID of the vSwitch linked to the instances.
+* `availability_zone` - (Optional, ForceNew) Availability zone where instances are located.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.57.0) The ID of resource group which the instance belongs.
+* `ram_role_name` - (Optional, ForceNew, Available since v1.69.0) The RAM role name which the instance attaches.
+* `instance_name` - (Optional, ForceNew, Available since v1.203.0) The name of the instance. Fuzzy search with the asterisk (*) wildcard characters is supported.
+* `tags` - (Optional, ForceNew) A map of tags assigned to the ECS instances. It must be in the format:
   ```
   data "alicloud_instances" "taggedInstances" {
     tags = {
@@ -51,14 +53,13 @@ The following arguments are supported:
     }
   }
   ```
-* `enable_details` - (Optional, Available in 1.204.0+) Default to `true`. If false, the attributes `ram_role_name` and `disk_device_mappings` will not be fetched and output.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional, Available since v1.204.0) Default to `true`. If false, the attributes `ram_role_name` and `disk_device_mappings` will not be fetched and output.
+* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of ECS instance IDs.
 * `names` - A list of instances names. 
 * `instances` - A list of instances. Each element contains the following attributes:
   * `id` - ID of the instance.
