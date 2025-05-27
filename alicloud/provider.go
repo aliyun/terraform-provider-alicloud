@@ -1193,6 +1193,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_instance":                                          resourceAliCloudDBInstance(),
 			"alicloud_rds_backup":                                           resourceAlicloudRdsBackup(),
 			"alicloud_rds_db_proxy":                                         resourceAlicloudRdsDBProxy(),
+			"alicloud_rds_db_proxy_public":                                  resourceAliCloudRdsDBProxyPublic(),
 			"alicloud_rds_clone_db_instance":                                resourceAlicloudRdsCloneDbInstance(),
 			"alicloud_rds_upgrade_db_instance":                              resourceAlicloudRdsUpgradeDbInstance(),
 			"alicloud_rds_instance_cross_backup_policy":                     resourceAlicloudRdsInstanceCrossBackupPolicy(),
