@@ -326,15 +326,17 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	alertName := parts[1]
-	action := fmt.Sprintf("/alerts/%s", alertName)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
+	action := fmt.Sprintf("/alerts/%s", alertName)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetAlert", action), query, nil, nil, hostMap, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -342,14 +344,13 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"JobNotExist"}) {
 			return object, WrapErrorf(NotFoundErr("Alert", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -368,6 +369,13 @@ func (s *SlsServiceV2) SlsAlertStateRefreshFunc(id string, field string, failSta
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
