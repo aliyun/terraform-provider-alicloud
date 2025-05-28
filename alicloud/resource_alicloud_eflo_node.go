@@ -22,7 +22,7 @@ func resourceAliCloudEfloNode() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -198,7 +198,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -222,7 +222,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	d.SetId(fmt.Sprint(id))
 
 	efloServiceV2 := EfloServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "#$.NodeId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Unused"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "OperatingState", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
