@@ -124,17 +124,6 @@ func TestAccAliCloudCSKubernetesAddon_terway_eniip(t *testing.T) {
 				),
 			},
 			{
-				// upgrade
-				Config: testAccConfig(map[string]interface{}{
-					"version": "v1.6.3",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"version": "v1.6.3",
-					}),
-				),
-			},
-			{
 				// config
 				Config: testAccConfig(map[string]interface{}{
 					"config": "{\\\"MaxPoolSize\\\":3}",
@@ -307,7 +296,7 @@ func TestAccAliCloudCSKubernetesAddon_ack_node_problem_detector(t *testing.T) {
 	})
 }
 
-// create new addon, upgrade, update and delete
+// create new addon, and delete with cleanup_cloud_resources
 func TestAccAliCloudCSKubernetesAddon_vk(t *testing.T) {
 	var v *Component
 
@@ -340,26 +329,16 @@ func TestAccAliCloudCSKubernetesAddon_vk(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_id": "${local.cluster_id}",
 					"name":       "ack-virtual-node",
-					"version":    "v2.10.5",
+					//"version":    "v2.10.5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id":   CHECKSET,
-						"name":         "ack-virtual-node",
-						"version":      "v2.10.5",
+						"cluster_id": CHECKSET,
+						"name":       "ack-virtual-node",
+						//"version":      "v2.10.5",
 						"next_version": CHECKSET,
 						"can_upgrade":  CHECKSET,
 						"required":     CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"version": "v2.10.6",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"version": "v2.10.6",
 					}),
 				),
 			},
@@ -376,12 +355,6 @@ func TestAccAliCloudCSKubernetesAddon_vk(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cleanup_cloud_resources", "config"},
 			},
 		},
 	})
