@@ -10,7 +10,7 @@ description: |-
 
 Provides a Express Connect Router Express Connect Router Vpc Association resource. Bind relationship object between leased line gateway and VPC.
 
-For information about Express Connect Router Express Connect Router Vpc Association and how to use it, see [What is Express Connect Router Vpc Association](https://next.api.alibabacloud.com/api/ExpressConnectRouter/2023-09-01/CreateExpressConnectRouterAssociation).
+For information about Express Connect Router Express Connect Router Vpc Association and how to use it, see [What is Express Connect Router Vpc Association](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-expressconnectrouter-2023-09-01-createexpressconnectrouterassociation).
 
 -> **NOTE:** Available since v1.224.0.
 
@@ -61,19 +61,20 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `allowed_prefixes` - (Optional) List of allowed route prefixes.
-* `association_region_id` - (Required, ForceNew) The region to which the VPC or TR belongs.
-* `ecr_id` - (Required, ForceNew) The ID of the leased line gateway instance.
-* `vpc_id` - (Required, ForceNew) The ID of the VPC instance.
-* `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account to which the VPC belongs.
+* `allowed_prefixes` - (Optional) The list of allowed route prefixes.
+* `association_region_id` - (Required, ForceNew) The region ID of the resource to be associated.
+* `ecr_id` - (Required, ForceNew) The ECR ID.
+* `vpc_id` - (Required, ForceNew) The VPC ID.
+* `vpc_owner_id` - (Optional, ForceNew) The ID of the Alibaba Cloud account that owns the VPC.
+-> **NOTE:** If you want to connect to a network instance that belongs to a different account, `vpc_owner_id` is required.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<ecr_id>:<association_id>:<vpc_id>`.
-* `association_id` - The first ID of the resource.
-* `create_time` - The creation time of the resource.
-* `status` - The status of the resource.
+* `association_id` - The ID of the association between the ECR and the VPC.
+* `create_time` - The time when the association was created.
+* `status` - The deployment state of the associated resource.
 
 ## Timeouts
 
