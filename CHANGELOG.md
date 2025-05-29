@@ -1,4 +1,39 @@
 ## 1.250.0 (Unreleased)
+
+- **New Resource:** `alicloud_pai_workspace_user_config` [GH-8711]
+- **New Resource:** `alicloud_ecs_ram_role_attachment` [GH-8720]
+- **New Resource:** `alicloud_rds_db_proxy_public` [GH-8723]
+- **New Resource:** `alicloud_eflo_vsc` [GH-8733]
+- **New Resource:** `alicloud_lindorm_public_network` [GH-8737]
+- **New Data Source:** `alicloud_fcv3_triggers` [GH-8724]
+- **New Data Source:** `alicloud_sls_alerts` [GH-8740]
+
+ENHANCEMENTS:
+
+- client: Improved the old client of alidns. [GH-8717]
+- resource/alicloud_elasticsearch_instance: bugfix the API setRenewalInstance. [GH-8687]
+- resource/alicloud_instance: Added the field system_disk_provisioned_iops, system_disk_bursting_enabled, data_disks.provisioned_iops, data_disks.bursting_enabled. [GH-8719]
+- resource/alicloud_alb_listener: improves idle_timeout validation func. [GH-8721]
+- resource/alicloud_cs_managed_kubernetes: support profile; fix certificate_authority set; data-source/alicloud_cs_kubernetes_version: support Acs profile. [GH-8722]
+- resource/alicloud_cs_autoscaling_config: add read from addon api. [GH-8727]
+- resource/alicloud_cs_managed_kubernetes: support audit_log_config. [GH-8732]
+- resource/alicloud_cs_managed_kubernetes: support audit_log_config. [GH-8741]
+- data-source/alicloud_pvtz_zones: Added retry strategy; Improved alicloud_pvtz_zones testcase and document. [GH-8695]
+- data-source/alicloud_ess_scaling_rules: add attribute of metric_type, estimated_instance_warmup, scale_in_evaluation_count, scale_out_evaluation_count, disable_scale_in, hybrid_monitor_namespace, hybrid_metrics and step_adjustment. [GH-8699]
+- data-source/alicloud_pvtz_zone_records: Improved retry strategy; Improved alicloud_pvtz_zone_records testcase and document. [GH-8715]
+- data-source/alicloud_oos_parameters: Improved alicloud_oos_parameters testcase and document. [GH-8716]
+- data-source/alicloud_ecs_dedicated_hosts: Added the field instances. [GH-8730]
+- data-source/alicloud_alb_load_balancers: Added the field zone_mappings.status, zone_mappings.load_balancer_addresses. [GH-8731]
+- data-source/alicloud_instances: Added retry strategy [GH-8734]
+- docs: Imporves description for ram_policy. [GH-8708]
+- docs: Imporves example for max_compute_quota. [GH-8736]
+- docs: Improved the document express_connect_router_vpc_association. [GH-8738]
+
+BUG FIXES:
+
+- client: fixes the fetching shared_credentials_file failed bug. [GH-8725]
+- resource/alicloud_polardb_cluster: fix bugs for standby_az when hot_standby_cluster is off; support modify resource_group_id; support attribute serverless_rule_cpu_shrink_threshold and serverless_rule_cpu_enlarge_threshold. [GH-8718]
+
 ## 1.249.0 (May 16, 2025)
 
 - **New Resource:** `alicloud_cloud_firewall_ips_config` ([#8403](https://github.com/aliyun/terraform-provider-alicloud/issues/8403))
@@ -9,6 +44,7 @@
 ENHANCEMENTS:
 
 - resource/alicloud_cen_traffic_marking_policy: add new attribute force. ([#8645](https://github.com/aliyun/terraform-provider-alicloud/issues/8645))
+- resource/alicloud_resource_manager_account: Add new attribute resell_account_type. ([#8646](https://github.com/aliyun/terraform-provider-alicloud/issues/8646))
 - resource/alicloud_slb_listener: Added the field acl_ids; Deprecated the field acl_id. ([#8648](https://github.com/aliyun/terraform-provider-alicloud/issues/8648))
 - resource/alicloud_kvstore_account: Added retry strategy for error code IncorrectDBInstanceState. ([#8651](https://github.com/aliyun/terraform-provider-alicloud/issues/8651))
 - resource/alicloud_das_switch_das_pro: Deprecated resource alicloud_das_switch_das_pro. ([#8652](https://github.com/aliyun/terraform-provider-alicloud/issues/8652))
