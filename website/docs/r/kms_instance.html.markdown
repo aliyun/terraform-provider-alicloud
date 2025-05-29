@@ -196,7 +196,7 @@ resource "alicloud_kms_instance" "default" {
   product_version             = 3
   vpc_id                      = alicloud_vswitch.vswitch.vpc_id
   zone_ids                    = [alicloud_vswitch.vswitch.zone_id, alicloud_vswitch.vswitch-j.zone_id]
-  vswitch_ids                 = [alicloud_vswitch.vswitch.id, alicloud_vswitch.vswitch-j.id]
+  vswitch_ids                 = [alicloud_vswitch.vswitch.id]
   force_delete_without_backup = true
   bind_vpcs {
     vpc_id       = alicloud_vswitch.shareVswitch.vpc_id
