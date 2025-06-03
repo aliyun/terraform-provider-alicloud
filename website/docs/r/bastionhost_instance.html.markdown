@@ -149,7 +149,7 @@ The following arguments are supported:
 * `plan_code` - (Required, ForceNew, Available since 1.193.0) The plan code of Cloud Bastionhost instance. Valid values:
   - `cloudbastion`: Basic Edition.
   - `cloudbastion_ha`: HA Edition.
-* `storage` - (Required, ForceNew, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: TB.
+* `storage` - (Required, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: `0` to `500`. Unit: TB. **NOTE:** From version 1.251.0, `storage` can be modified.
 * `bandwidth` - (Required, ForceNew, Available since 1.193.0) The bandwidth of Cloud Bastionhost instance.
   If [China-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-china-site-account), its valid values: 0 to 150. Unit: Mbit/s. The value must be a multiple of 5.
   If [International-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-international-site-account), its valid values: 0 to 200. Unit: Mbit/s. The value must be a multiple of 10.
