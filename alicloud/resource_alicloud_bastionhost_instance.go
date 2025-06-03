@@ -15,12 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudBastionhostInstance() *schema.Resource {
+func resourceAliCloudBastionhostInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudBastionhostInstanceCreate,
-		Read:   resourceAlicloudBastionhostInstanceRead,
-		Update: resourceAlicloudBastionhostInstanceUpdate,
-		Delete: resourceAlicloudBastionhostInstanceDelete,
+		Create: resourceAliCloudBastionhostInstanceCreate,
+		Read:   resourceAliCloudBastionhostInstanceRead,
+		Update: resourceAliCloudBastionhostInstanceUpdate,
+		Delete: resourceAliCloudBastionhostInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -48,7 +48,6 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 			"storage": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"bandwidth": {
 				Type:     schema.TypeString,
@@ -251,7 +250,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudBastionhostInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -352,10 +351,10 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudBastionhostInstanceUpdate(d, meta)
+	return resourceAliCloudBastionhostInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	BastionhostService := YundunBastionhostService{client}
 	instance, err := BastionhostService.DescribeBastionhostInstance(d.Id())
@@ -454,7 +453,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	bastionhostService := YundunBastionhostService{client}
 	var err error
@@ -494,6 +493,20 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("license_code")
+	}
+
+	if !d.IsNewResource() && d.HasChange("storage") {
+		params := map[string]string{
+			"Storage": "storage",
+		}
+		if err := bastionhostService.UpdateInstanceSpec(params, d, meta); err != nil {
+			return WrapError(err)
+		}
+		stateConf := BuildStateConf([]string{"UPGRADING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"CREATING", "UPGRADE_FAILED", "CREATE_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("storage")
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
@@ -739,10 +752,10 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 	d.Partial(false)
 	// wait for order complete
-	return resourceAlicloudBastionhostInstanceRead(d, meta)
+	return resourceAliCloudBastionhostInstanceRead(d, meta)
 }
 
-func resourceAlicloudBastionhostInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudBastionhostInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceBastionhostInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

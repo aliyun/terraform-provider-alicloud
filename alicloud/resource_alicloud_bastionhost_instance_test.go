@@ -94,6 +94,16 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"storage": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
