@@ -21,9 +21,9 @@ type instanceTypeWithOriginalPrice struct {
 	OriginalPrice float64
 }
 
-func dataSourceAlicloudInstanceTypes() *schema.Resource {
+func dataSourceAliCloudInstanceTypes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudInstanceTypesRead,
+		Read: dataSourceAliCloudInstanceTypesRead,
 
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
@@ -267,7 +267,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
@@ -339,9 +339,10 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instance_types", action, AlibabaCloudSdkGoERROR)
 		}
@@ -379,9 +380,10 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instance_types", action, AlibabaCloudSdkGoERROR)
 		}

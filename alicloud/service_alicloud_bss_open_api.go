@@ -377,19 +377,28 @@ func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, payme
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapError(err)
 		}
+
 		v, err := jsonpath.Get("$.Data.ModuleDetails.ModuleDetail", response)
 		if err != nil {
 			return object, WrapError(err)
 		}
-		for _, o := range v.([]interface{}) {
-			priceList = append(priceList, o.(map[string]interface{})["OriginalCost"].(float64))
+
+		for _, originalCosts := range v.([]interface{}) {
+			originalCostArg := originalCosts.(map[string]interface{})
+
+			if originalCost, ok := originalCostArg["OriginalCost"]; ok {
+				priceList = append(priceList, formatFloat64(originalCost))
+			}
 		}
+
 		if moduleLength < ModulesSizeLimit {
 			break
 		}
 	}
+
 	return priceList, nil
 }

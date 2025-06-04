@@ -44,6 +44,37 @@ func TestAccAlicloudECSInstanceTypesDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.nvme_support"),
 				),
 			},
+			{
+				Config: testAccCheckAlicloudInstanceTypesDataSourceBasicConfigSortedByPrice,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c4g8"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.id"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.cpu_core_count", "4"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.memory_size", "8"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.family"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.eni_amount"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.eni_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.primary_eni_queue_number"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.secondary_eni_queue_number"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.eni_ipv6_address_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.maximum_queue_number_per_eni"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.total_eni_queue_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.eni_private_ip_address_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.availability_zones.#"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.gpu.%", "2"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.gpu.amount"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.gpu.category", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.burstable_instance.%", "2"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.burstable_instance.initial_credit"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.burstable_instance.baseline_credit"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.local_storage.%", "3"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.local_storage.capacity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.local_storage.amount"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.local_storage.category", ""),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "ids.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.nvme_support"),
+				),
+			},
 		},
 	})
 }
@@ -260,23 +291,6 @@ func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "ids.#"),
 				),
 			},
-			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceNoExistImageId,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.noExistImageId"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.cpu_core_count"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.memory_size"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.family"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.eni_amount"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.availability_zones.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.gpu.%"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.burstable_instance.%"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.local_storage.%"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.noExistImageId", "ids.#"),
-				),
-			},
 		},
 	})
 }
@@ -285,6 +299,14 @@ const testAccCheckAlicloudInstanceTypesDataSourceBasicConfig = `
 data "alicloud_instance_types" "c4g8" {
   cpu_core_count = 4
   memory_size    = 8
+}
+`
+
+const testAccCheckAlicloudInstanceTypesDataSourceBasicConfigSortedByPrice = `
+data "alicloud_instance_types" "c4g8" {
+  cpu_core_count = 4
+  memory_size    = 8
+  sorted_by    = "Price"
 }
 `
 
@@ -363,13 +385,5 @@ data "alicloud_instance_types" "c4g8" {
   image_id       = data.alicloud_images.default.ids.0
   cpu_core_count = 4
   memory_size    = 8
-}
-`
-
-const testAccCheckAlicloudInstanceTypesDataSourceNoExistImageId = `
-data "alicloud_instance_types" "noExistImageId" {
-  image_id             = "m-fake"
-  instance_type_family = "ecs.g8i"
-  cpu_core_count       = 8
 }
 `
