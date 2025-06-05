@@ -23,7 +23,7 @@ func resourceAliCloudEsaRatePlanInstance() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_pay": {
@@ -242,19 +242,19 @@ func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta inte
 	request["ImmediatelyRelease"] = "0"
 	request["ProductType"] = "dcdn_dcdnserviceplan_public_cn"
 	if client.IsInternationalAccount() {
-		request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
+		request["ProductType"] = "dcdn_dpsplan_public_intl"
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"ProductCheckError"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductType"] = "dcdn_dcdnserviceplan_public_intl"
+				request["ProductType"] = "dcdn_dpsplan_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
