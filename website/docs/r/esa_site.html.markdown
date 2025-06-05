@@ -20,12 +20,6 @@ For information about ESA Site and how to use it, see [What is Site](https://www
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_site&exampleId=526a6ad2-d747-8099-80fe-4adba67e465727294d3a&activeTab=example&spm=docs.r.esa_site.0.526a6ad2d7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -79,18 +73,45 @@ The following arguments are supported:
   - `edge_smart`: Edge cache layer + intelligent cache layer.
   - `edge_regional`: Edge cache layer + regional cache layer.
   - `edge_regional_smart`: Edge cache layer + regional cache layer + intelligent cache layer.
+* `cache_reserve_enable` - (Optional, Available since v1.251.0) Site cache hold switch. Value:
+  - `on`
+  - `off`
+* `cache_reserve_instance_id` - (Optional, Available since v1.251.0) The ID of the cache instance.
+* `case_insensitive` - (Optional, Available since v1.251.0) Whether the custom CacheTag name ignores case. Value range:
+  - `on`:  Enabled, ignores case.
+  - `off`: Disabled, does not ignore case.
 * `coverage` - (Optional) The service location. Valid values:
   - `domestic`: the Chinese mainland
   - `global`: global
   - `overseas`: outside the Chinese mainland
+* `cross_border_optimization` - (Optional, Available since v1.251.0) Whether to enable mainland China network access optimization, the default is off. Value range:
+  - `on`
+  - `off`
+* `development_mode` - (Optional, Available since v1.251.0) Development mode configuration function switch. Value range:
+  - `on`
+  - `off`
+* `flatten_mode` - (Optional, Available since v1.251.0) CNAME flattening mode. Possible values:
+  - `flatten_all`: Flatten all.
+  - `flatten_at_root`: Flatten only the root domain. The default is to flatten the root domain.
 * `instance_id` - (Required, ForceNew) The ID of the associated package instance.
 * `ipv6_enable` - (Optional, Computed, Available since v1.244.0) Specifies whether to enable IPv6. Valid values:
   - `on`
   - `off`
+* `ipv6_region` - (Optional, Available since v1.251.0) The region in which Ipv6 is enabled. The default value is x.x:
+  - 'x.x': Global.
+  - 'Cn.cn ': Mainland China.
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group
+* `seo_bypass` - (Optional, Available since v1.251.0) Release the search engine crawler configuration. Value:
+  - `on`
+  - `off`
 * `site_name` - (Required, ForceNew) The website name.
+* `site_name_exclusive` - (Optional, Available since v1.251.0) Specifies whether to enable site hold.After you enable site hold, other accounts cannot add your website domain or its subdomains to ESA. Valid values:
+  - `on`
+  - `off`
 * `site_version` - (Optional, Int, Available since v1.244.0) The version number of the site. For sites with version management enabled, you can use this parameter to specify the site version for which the configuration will take effect, defaulting to version 0.
+* `tag_name` - (Optional, Available since v1.251.0) Custom CacheTag name.
 * `tags` - (Optional, Map) Resource tags
+* `version_management` - (Optional, Available since v1.251.0) Version management enabled. When true, version management is turned on for the table site.
 
 ## Attributes Reference
 
