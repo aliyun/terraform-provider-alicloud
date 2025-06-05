@@ -758,7 +758,7 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 					wait()
 					return resource.RetryableError(err)
 				}
-				resource.NonRetryableError(err)
+				return resource.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
