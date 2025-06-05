@@ -4820,7 +4820,7 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 						"instance_types.#":                         "2",
 						"spot_instance_remedy":                     "false",
 						"on_demand_base_capacity":                  "2",
-						"spot_price_limit.#":                       "0",
+						"spot_price_limit.#":                       "2",
 						"spot_strategy":                            "SpotAsPriceGo",
 						"compensate_with_on_demand":                "false",
 						"on_demand_percentage_above_base_capacity": "30",
