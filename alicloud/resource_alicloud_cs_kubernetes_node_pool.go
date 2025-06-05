@@ -619,7 +619,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 						"max_size": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 1000),
+							ValidateFunc: IntBetween(0, 2000),
 						},
 						"eip_internet_charge_type": {
 							Type:          schema.TypeString,
