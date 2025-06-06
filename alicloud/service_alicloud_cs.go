@@ -713,6 +713,7 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData, updateVersion, updateCon
 	}
 	if updateVersion {
 		b.NextVersion = tea.String(d.Get("version").(string))
+		b.Policy = tea.String("overwrite")
 	}
 
 	if updateConfig {
