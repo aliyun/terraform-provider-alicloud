@@ -1006,6 +1006,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket_website":                                   resourceAliCloudOssBucketWebsite(),
 			"alicloud_sls_oss_export_sink":                                  resourceAliCloudSlsOssExportSink(),
 			"alicloud_pai_workspace_code_source":                            resourceAliCloudPaiWorkspaceCodeSource(),
+			"alicloud_pai_workspace_default_workspace":                      resourceAliCloudPaiWorkspaceDefaultWorkspace(),
 			"alicloud_pai_workspace_run":                                    resourceAliCloudPaiWorkspaceRun(),
 			"alicloud_pai_workspace_datasetversion":                         resourceAliCloudPaiWorkspaceDatasetversion(),
 			"alicloud_pai_workspace_experiment":                             resourceAliCloudPaiWorkspaceExperiment(),
