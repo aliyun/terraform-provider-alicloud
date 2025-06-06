@@ -21,7 +21,7 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsvscmountpoint%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testaccdfsvscmountpoint%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -44,21 +44,21 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"alias_prefix": "VscMpRMCTestAlias656",
+					"alias_prefix": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alias_prefix": "VscMpRMCTestAlias656",
+						"alias_prefix": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "VscMpRMCTestAlias656",
+					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "VscMpRMCTestAlias656",
+						"description": name,
 					}),
 				),
 			},
@@ -104,7 +104,7 @@ func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsvscmountpoint%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testaccdfsvscmountpoint%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -118,14 +118,14 @@ func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"file_system_id": "${alicloud_dfs_file_system.DefaultFsForRMCVscMp.id}",
-					"alias_prefix":   "VscMpRMCTestAlias656",
-					"description":    "VscMpRMCTestAlias656",
+					"alias_prefix":   name,
+					"description":    name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"file_system_id": CHECKSET,
-						"alias_prefix":   "VscMpRMCTestAlias656",
-						"description":    "VscMpRMCTestAlias656",
+						"alias_prefix":   name,
+						"description":    name,
 					}),
 				),
 			},

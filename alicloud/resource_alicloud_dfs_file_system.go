@@ -3,12 +3,11 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"time"
 )
 
 func resourceAliCloudDfsFileSystem() *schema.Resource {
@@ -126,13 +125,13 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("throughput_mode"); ok {
 		request["ThroughputMode"] = v
 	}
-	if v, ok := d.GetOk("provisioned_throughput_in_mi_bps"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("provisioned_throughput_in_mi_bps"); ok && v.(int) > 0 {
 		request["ProvisionedThroughputInMiBps"] = v
 	}
 	if v, ok := d.GetOk("storage_set_name"); ok {
 		request["StorageSetName"] = v
 	}
-	if v, ok := d.GetOk("partition_number"); ok {
+	if v, ok := d.GetOkExists("partition_number"); ok {
 		request["PartitionNumber"] = v
 	}
 	if v, ok := d.GetOk("data_redundancy_type"); ok {
@@ -143,7 +142,7 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -178,36 +177,16 @@ func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["FileSystemName"] != nil {
-		d.Set("file_system_name", objectRaw["FileSystemName"])
-	}
-	if objectRaw["ProtocolType"] != nil {
-		d.Set("protocol_type", objectRaw["ProtocolType"])
-	}
-	if objectRaw["ProvisionedThroughputInMiBps"] != nil {
-		d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", objectRaw["RegionId"])
-	}
-	if objectRaw["SpaceCapacity"] != nil {
-		d.Set("space_capacity", objectRaw["SpaceCapacity"])
-	}
-	if objectRaw["StorageType"] != nil {
-		d.Set("storage_type", objectRaw["StorageType"])
-	}
-	if objectRaw["ThroughputMode"] != nil {
-		d.Set("throughput_mode", objectRaw["ThroughputMode"])
-	}
-	if objectRaw["ZoneId"] != nil {
-		d.Set("zone_id", objectRaw["ZoneId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("file_system_name", objectRaw["FileSystemName"])
+	d.Set("protocol_type", objectRaw["ProtocolType"])
+	d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("space_capacity", objectRaw["SpaceCapacity"])
+	d.Set("storage_type", objectRaw["StorageType"])
+	d.Set("throughput_mode", objectRaw["ThroughputMode"])
+	d.Set("zone_id", objectRaw["ZoneId"])
 
 	return nil
 }
@@ -219,8 +198,8 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]interface{}
 	update := false
 
-	action := "ModifyFileSystem"
 	var err error
+	action := "ModifyFileSystem"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = d.Id()
@@ -255,7 +234,7 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"FileSystem.ModifyThroughputModeTooFrequent"}) {
 					wait()
@@ -288,7 +267,7 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
