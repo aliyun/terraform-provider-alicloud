@@ -797,9 +797,9 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudPolarDBCluster_Create(t *testing.T) {
+func TestAccAliCloudPolarDBCluster_CreateCloneFromPolarDB(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
-	name := "tf-testAccPolarDBClusterCreate"
+	name := "tf-testAccPolarDBClusterCreateCloneFromPolarDB"
 	resourceId := "alicloud_polardb_cluster.default"
 	var basicMap = map[string]string{
 		"description":       CHECKSET,
@@ -823,6 +823,7 @@ func TestAccAliCloudPolarDBCluster_Create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 
 		// module name
@@ -901,6 +902,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 
 		// module name
@@ -976,6 +978,7 @@ func TestAccAliCloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 
 		// module name
@@ -1129,6 +1132,7 @@ func TestAccAliCloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -2430,12 +2434,6 @@ func resourceCloneOrMigrationFromRDSClusterConfigDependence(name string) string 
 		name_regex = "^default-NODELETING$"
 	}
 
-    data "alicloud_db_zones" "default"{
-        engine = "MySQL"
-		engine_version = "8.0"
-		instance_charge_type = "PostPaid"
-    }
-
 	data "alicloud_polardb_node_classes" "this" {
 	  db_type    = "MySQL"
 	  db_version = "8.0"
@@ -2459,13 +2457,18 @@ func resourceCloneOrMigrationFromRDSClusterConfigDependence(name string) string 
 
 	resource "alicloud_vswitch" "default" {
 		vpc_id = alicloud_vpc.default.id
-	  	zone_id = data.alicloud_db_zones.default.zones.0.id
+	  	zone_id = "cn-beijing-k"
 		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}
 
 	locals {
 		vpc_id = alicloud_vpc.default.id
 		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+	}
+
+	resource "alicloud_db_database" "default" {
+		instance_id = alicloud_db_instance.default.id
+  		name        = "testdb01"
 	}
 
 	resource "alicloud_db_instance" "default" {
@@ -2477,7 +2480,7 @@ func resourceCloneOrMigrationFromRDSClusterConfigDependence(name string) string 
 		instance_storage = "20"
 		vswitch_id = "${local.vswitch_id}"
 		instance_name = "tf-testAccDBInstance"
-        zone_id = data.alicloud_db_zones.default.ids.0
+        zone_id = "cn-beijing-k"
     }
 `, name)
 }
@@ -2495,20 +2498,13 @@ func resourcePolarDBClusterNormalMultimasterConfigDependence(name string) string
  	   vpc_name = var.name
 	}
 	resource "alicloud_vswitch" "default" {
-		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		zone_id = "cn-beijing-k"
 		vpc_id = alicloud_vpc.default.id
 		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}
 	locals {
 		vpc_id = alicloud_vpc.default.id
 		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
-	}
-
-	data "alicloud_polardb_node_classes" "this" {
-	  db_type    = "MySQL"
-	  db_version = "8.0"
-      pay_type   = "PostPaid"
-	  category   = "NormalMultimaster"
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {

@@ -394,8 +394,8 @@ func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 		if d.Get("serverless_type").(string) == "AgileServerless" || (d.Get("serverless_type").(string) == "SteadyServerless" && d.Get("serverless_steady_switch").(string) == "ON") {
 			return false
 		}
-	} else if d.Get("db_type").(string) == "PostgreSQL" && d.Get("db_version").(string) == "14" {
-		if d.Get("serverless_type").(string) == "AgileServerless" {
+	} else if (d.Get("db_type").(string) == "PostgreSQL" || d.Get("db_type").(string) == "Oracle") && d.Get("db_version").(string) == "14" {
+		if d.Get("serverless_type").(string) == "AgileServerless" || (d.Get("serverless_type").(string) == "SteadyServerless" && d.Get("serverless_steady_switch").(string) == "ON") {
 			return false
 		}
 	}
