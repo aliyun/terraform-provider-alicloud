@@ -380,7 +380,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChanges("ssl_enabled", "net_type", "ssl_auto_rotate") {
+	if d.HasChanges("ssl_enabled", "ssl_auto_rotate") {
 		if d.Get("ssl_enabled") == "" && d.Get("net_type") != "" {
 			return WrapErrorf(Error("Need to specify ssl_enabled as Enable or Disable, if you want to modify the net_type."), DefaultErrorMsg, d.Id(), "ModifyDBClusterSSL", ProviderERROR)
 		}

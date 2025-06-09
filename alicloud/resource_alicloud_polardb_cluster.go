@@ -256,7 +256,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby", "RecoverFromRecyclebin"}, false),
+				ValidateFunc: StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby", "RecoverFromRecyclebin", "UpgradeFromPolarDB"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -726,7 +726,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("maintain_time")
 	}
 
-	if !d.IsNewResource() && d.HasChanges("upgrade_type", "from_time_service", "planned_start_time", "planned_end_time", "target_db_revision_version_code") {
+	if !d.IsNewResource() && d.HasChanges("target_db_revision_version_code") {
 		versionInfo, err := polarDBService.DescribeDBClusterVersion(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -1440,6 +1440,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 					return WrapError(err)
 				}
 				index := formatInt(v)
+				if len(clusterAttribute.DBNodes) <= index {
+					return WrapError(Error("The specified db_node_id exceeded DBNodes range."))
+				}
 				dbNodeIdIndex = clusterAttribute.DBNodes[index].DBNodeId
 			}
 		}
@@ -1920,6 +1923,15 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 
 	if exist && v.(string) == "MigrationFromRDS" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
+				request["CreationOption"] = d.Get("creation_option").(string)
+				request["SourceResourceId"] = d.Get("source_resource_id").(string)
+			}
+		}
+	}
+
+	if exist && v.(string) == "UpgradeFromPolarDB" {
 		if ok && db.(string) == "MySQL" {
 			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
 				request["CreationOption"] = d.Get("creation_option").(string)
