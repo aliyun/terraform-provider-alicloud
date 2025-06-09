@@ -25,12 +25,12 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeAccountAllPrivileges"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccountName"] = parts[1]
-	query["DBClusterId"] = parts[0]
+	request["AccountName"] = parts[1]
+	request["DBClusterId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	action := "DescribeAccountAllPrivileges"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -43,10 +43,9 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ACS.Account.NotExist", "InvalidDBClusterId.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("LakeAccount", id), NotFoundMsg, response)
@@ -56,7 +55,7 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 
 	return response, nil
 }
-func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]interface{}, err error) {
+func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -65,11 +64,12 @@ func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]in
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeAccounts"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccountName"] = parts[1]
-	query["DBClusterId"] = parts[0]
+	request["AccountName"] = parts[1]
+	request["DBClusterId"] = parts[0]
+
+	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -82,10 +82,9 @@ func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -104,7 +103,7 @@ func (s *AdbServiceV2) DescribeDescribeAccounts(id string) (object map[string]in
 
 func (s *AdbServiceV2) AdbLakeAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAdbLakeAccount(id)
+		object, err := s.DescribeLakeAccountDescribeAccounts(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -114,6 +113,13 @@ func (s *AdbServiceV2) AdbLakeAccountStateRefreshFunc(id string, field string, f
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
