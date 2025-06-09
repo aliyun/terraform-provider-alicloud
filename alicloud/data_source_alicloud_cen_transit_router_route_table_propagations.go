@@ -8,30 +8,34 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCenTransitRouterRouteTablePropagations() *schema.Resource {
+func dataSourceAliCloudCenTransitRouterRouteTablePropagations() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead,
+		Read: dataSourceAliCloudCenTransitRouterRouteTablePropagationsRead,
 		Schema: map[string]*schema.Schema{
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting"}, false),
-			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"transit_router_route_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Active", "Enabling", "Disabling"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -42,6 +46,18 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagations() *schema.Resource
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_attachment_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_route_table_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"resource_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -54,14 +70,6 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagations() *schema.Resource
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"transit_router_attachment_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -69,15 +77,23 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagations() *schema.Resource
 	}
 }
 
-func dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCenTransitRouterRouteTablePropagationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListTransitRouterRouteTablePropagations"
 	request := make(map[string]interface{})
-	request["TransitRouterRouteTableId"] = d.Get("transit_router_route_table_id")
 	request["MaxResults"] = PageSizeLarge
-	var objects []map[string]interface{}
+	request["TransitRouterRouteTableId"] = d.Get("transit_router_route_table_id")
 
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
+
+	if v, ok := d.GetOk("status"); ok {
+		request["Status"] = v
+	}
+
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -87,9 +103,10 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead(d *schema.Reso
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
+
 	var response map[string]interface{}
 	var err error
+
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -104,13 +121,16 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead(d *schema.Reso
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_route_table_propagations", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.TransitRouterPropagations", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterPropagations", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -119,32 +139,35 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead(d *schema.Reso
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
-				continue
-			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"resource_id":                  object["ResourceId"],
-			"resource_type":                object["ResourceType"],
-			"status":                       object["Status"],
-			"id":                           fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_id": fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"id":                            fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"transit_router_attachment_id":  fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"transit_router_route_table_id": object["TransitRouterRouteTableId"],
+			"resource_id":                   object["ResourceId"],
+			"resource_type":                 object["ResourceType"],
+			"status":                        object["Status"],
 		}
-		ids = append(ids, fmt.Sprint(object["TransitRouterAttachmentId"]))
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -152,6 +175,7 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagationsRead(d *schema.Reso
 	if err := d.Set("propagations", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
