@@ -903,6 +903,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_esa_routine_route":                                    resourceAliCloudEsaRoutineRoute(),
 			"alicloud_esa_routine":                                          resourceAliCloudEsaRoutine(),
+			"alicloud_esa_video_processing":                                 resourceAliCloudEsaVideoProcessing(),
 			"alicloud_esa_kv":                                               resourceAliCloudEsaKv(),
 			"alicloud_lindorm_public_network":                               resourceAliCloudLindormPublicNetwork(),
 			"alicloud_eflo_vsc":                                             resourceAliCloudEfloVsc(),
