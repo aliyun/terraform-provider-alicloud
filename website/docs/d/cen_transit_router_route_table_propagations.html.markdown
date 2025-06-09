@@ -4,24 +4,84 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_route_table_propagations"
 sidebar_current: "docs-alicloud-datasource-cen-transit-router-route-table-propagations"
 description: |-
-  Provides a list of CEN Transit Router Route Table Propagation owned by an Alibaba Cloud account.
+  Provides a list of CEN Transit Router Route Table Propagations to the user.
 ---
 
-# alicloud\_cen\_transit\_router\_route\_table\_propagations
+# alicloud_cen_transit_router_route_table_propagations
 
-This data source provides CEN Transit Router Route Table Propagations available to the user.[What is Cen Transit Router Route Table Propagations](https://help.aliyun.com/document_detail/261245.html)
+This data source provides the CEN Transit Router Route Table Propagations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
-```
-data "alicloud_cen_transit_router_route_table_propagations" "default" {
-  transit_router_route_table_id    = "rtb-id1"
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
 }
 
-output "first_transit_router_peer_attachments_transit_router_attachment_resource_type" {
-  value = data.alicloud_cen_transit_router_route_table_propagations.default.propagations.0.resource_type
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_express_connect_physical_connections" "default" {
+  name_regex = "^preserved-NODELETING"
+}
+
+resource "random_integer" "default" {
+  min = 1
+  max = 2999
+}
+
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+  protection_level  = "REDUCED"
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
+}
+
+resource "alicloud_express_connect_virtual_border_router" "default" {
+  local_gateway_ip           = "10.0.0.1"
+  peer_gateway_ip            = "10.0.0.2"
+  peering_subnet_mask        = "255.255.255.252"
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
+  virtual_border_router_name = var.name
+  vlan_id                    = random_integer.default.id
+  min_rx_interval            = 1000
+  min_tx_interval            = 1000
+  detect_multiplier          = 10
+}
+
+resource "alicloud_cen_transit_router_vbr_attachment" "default" {
+  cen_id                                = alicloud_cen_instance.default.id
+  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
+  vbr_id                                = alicloud_express_connect_virtual_border_router.default.id
+  auto_publish_route_enabled            = true
+  transit_router_attachment_name        = var.name
+  transit_router_attachment_description = var.name
+}
+
+resource "alicloud_cen_transit_router_route_table" "default" {
+  transit_router_id               = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_route_table_name = var.name
+}
+
+resource "alicloud_cen_transit_router_route_table_propagation" "default" {
+  transit_router_attachment_id  = alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id
+  transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
+}
+
+data "alicloud_cen_transit_router_route_table_propagations" "ids" {
+  transit_router_route_table_id = alicloud_cen_transit_router_route_table_propagation.default.transit_router_route_table_id
+  ids                           = [alicloud_cen_transit_router_route_table_propagation.default.transit_router_attachment_id]
+}
+
+output "cen_transit_router_route_table_propagation_id_0" {
+  value = data.alicloud_cen_transit_router_route_table_propagations.ids.propagations.0.id
 }
 ```
 
@@ -29,21 +89,20 @@ output "first_transit_router_peer_attachments_transit_router_attachment_resource
 
 The following arguments are supported:
 
-* `transit_router_route_table_id` - (Optional) ID of the route table of the VPC or VBR.
-* `transit_router_attachment_id` - (Optional) ID of the cen transit router attachment.  
-* `status` - (Optional) The status of the route table, including `Active`, `Enabling`, `Disabling`, `Deleted`.
+* `ids` - (Optional, ForceNew, List) A list of Transit Router Route Table Propagation IDs.
+* `transit_router_route_table_id` - (Required, ForceNew) The ID of the route table of the Enterprise Edition transit router.
+* `transit_router_attachment_id` - (Optional, ForceNew) The ID of the network instance connection.
+* `status` - (Optional, ForceNew) The status of the route learning correlation. Valid values: `Active`, `Enabling`, `Disabling`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of CEN Transit Router Route Table Association IDs.
-* `names` - A list of CEN Transit Router Route Table Association Names.
-* `propagations` - A list of CEN Transit Router Route Table Propagations. Each element contains the following attributes:
-    * `resource_id` - ID of the transit router route table association.
-    * `resource_type` - Type of the resource.
-    * `status` - The status of the route table.
-    * `transit_router_attachment_id` - ID of the transit router attachment.
-    * `transit_router_route_table_id` - ID of the transit router route table.
-
+* `propagations` - A list of Transit Router Route Table Propagations. Each element contains the following attributes:
+  * `id` - The ID of the network instance connection.
+  * `transit_router_attachment_id` - The ID of the network instance connection.
+  * `transit_router_route_table_id` - The ID of the route table of the Enterprise Edition transit router.
+  * `resource_id` - The ID of the network instance.
+  * `resource_type` - The type of the network instance.
+  * `status` - The status of the route learning correlation.
