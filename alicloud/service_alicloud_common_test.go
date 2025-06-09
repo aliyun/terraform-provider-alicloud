@@ -921,7 +921,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
  vswitch_name = "tf_testAccPolarDB"
  vpc_id  = alicloud_vpc.default.id
- zone_id = data.alicloud_polardb_zones.default.ids.0
+ zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 }
 locals {

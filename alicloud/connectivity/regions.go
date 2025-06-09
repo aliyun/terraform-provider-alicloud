@@ -263,6 +263,7 @@ var SENormalPolarDBSupportRegions = []Region{EUWest1, APNorthEast2, APSouthEast2
 var SENormalPolarDBEqualTestRegions = []Region{Hangzhou}
 var Cluster3AZPolarDBSupportRegions = []Region{EUCentral1, Huhehaote, Qingdao, ChengDu, APNorthEast2, APSouthEast6, APSouthEast7}
 var GDNPolarDBSupportRegions = []Region{ChengDu}
+var PolarDBCloneFromRdsSupportRegions = []Region{Beijing}
 var VpcVSwitchCidrReservationSupportRegions = []Region{APSouthEast2}
 var ComputeNestSupportRegions = []Region{Hangzhou}
 var RedisTariInstanceSupportRegions = []Region{GuangZhou}
