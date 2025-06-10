@@ -1,19 +1,23 @@
-## 1.251.0 (Unreleased)
+## 1.252.0 (Unreleased)
+## 1.251.0 (June 10, 2025)
 
-- **New Resource:** `alicloud_esa_kv` [GH-8743]
-- **New Resource:** `alicloud_esa_routine` [GH-8751]
-- **New Resource:** `alicloud_esa_routine_route` [GH-8755]
+- **New Resource:** `alicloud_esa_kv` ([#8743](https://github.com/aliyun/terraform-provider-alicloud/issues/8743))
+- **New Resource:** `alicloud_esa_routine` ([#8751](https://github.com/aliyun/terraform-provider-alicloud/issues/8751))
+- **New Resource:** `alicloud_esa_video_processing.` ([#8750](https://github.com/aliyun/terraform-provider-alicloud/issues/8750))
+- **New Resource:** `alicloud_esa_routine_route` ([#8755](https://github.com/aliyun/terraform-provider-alicloud/issues/8755))
 
 ENHANCEMENTS:
 
-- service: Ensure DescribeRouteTableList propagates errors on API failure. [GH-8747]
-- resource/alicloud_cs_kubernetes_node_pool: remove price limit suppresss func. [GH-8713]
-- resource/alicloud_bastionhost_instance: Removed the ForceNew for field storage. [GH-8744]
-- resource/alicloud_esa_site: Supports attributes cache_reserve_enable, cache_reserve_instance_id, case_insensitive, cross_border_optimization, development_mode etc; resource/alicloud_esa_rate_plan_instance: Fixed bug while release instance for intl account. [GH-8746]
+- service: Ensure DescribeRouteTableList propagates errors on API failure. ([#8747](https://github.com/aliyun/terraform-provider-alicloud/issues/8747))
+- resource/alicloud_adb_lake_account: Add asynchronous state waiting during creation. ([#8758](https://github.com/aliyun/terraform-provider-alicloud/issues/8758))
+- resource/alicloud_cs_kubernetes_node_pool: remove price limit suppresss func. ([#8713](https://github.com/aliyun/terraform-provider-alicloud/issues/8713))
+- resource/alicloud_bastionhost_instance: Removed the ForceNew for field storage. ([#8744](https://github.com/aliyun/terraform-provider-alicloud/issues/8744))
+- resource/alicloud_esa_site: Supports attributes cache_reserve_enable, cache_reserve_instance_id, case_insensitive, cross_border_optimization, development_mode etc; resource/alicloud_esa_rate_plan_instance: Fixed bug while release instance for intl account. ([#8746](https://github.com/aliyun/terraform-provider-alicloud/issues/8746))
+- resource/alicloud_dfs_file_system: Fix bug while create file_system with partition_number 0; testcase: Fix cases for dfs_vsc_mount_point. ([#8756](https://github.com/aliyun/terraform-provider-alicloud/issues/8756))
 
 BUG FIXES:
 
-- data-source/alicloud_instance_types: Fixed the panic error caused by setting sorted_by to Price. [GH-8745]
+- data-source/alicloud_instance_types: Fixed the panic error caused by setting sorted_by to Price. ([#8745](https://github.com/aliyun/terraform-provider-alicloud/issues/8745))
 
 ## 1.250.0 (May 29, 2025)
 

@@ -124,7 +124,7 @@ resource "alicloud_kms_instance" "default" {
 Create a pay-as-you-go kms instance
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_instance&exampleId=22d2b4f0-e898-dc9b-9425-e57ebbfeb26d5c046dcf&activeTab=example&spm=docs.r.kms_instance.1.22d2b4f0e8&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_instance&exampleId=20570abd-25c8-8f37-382f-db85438021960c9477b3&activeTab=example&spm=docs.r.kms_instance.1.20570abd25&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

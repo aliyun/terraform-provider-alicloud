@@ -20,6 +20,12 @@ For information about ESA Routine Route and how to use it, see [What is Routine 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine_route&exampleId=136cb4e4-c08a-9871-5583-467a096f629fd76b7084&activeTab=example&spm=docs.r.esa_routine_route.0.136cb4e4c0&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
