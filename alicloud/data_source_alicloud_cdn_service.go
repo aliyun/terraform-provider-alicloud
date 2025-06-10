@@ -10,26 +10,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"fmt"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCdnService() *schema.Resource {
+func dataSourceAliCloudCdnService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCdnServiceRead,
+		Read: dataSourceAliCloudCdnServiceRead,
 
 		Schema: map[string]*schema.Schema{
 			"enable": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"On", "Off"}, false),
 				Optional:     true,
 				Default:      "Off",
+				ValidateFunc: StringInSlice([]string{"On", "Off"}, false),
 			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
 				Optional:     true,
 				Default:      "PayByTraffic",
+				ValidateFunc: StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -50,7 +48,7 @@ func dataSourceAlicloudCdnService() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) error {
 	opened := false
 	enable := ""
 	if v, ok := d.GetOk("enable"); ok {
@@ -74,6 +72,7 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 	if response["OpeningTime"] != nil && response["OpeningTime"].(string) != "" {
 		opened = true
 	}
+
 	if enable == "On" {
 		chargeType := ""
 		if v, ok := d.GetOk("internet_charge_type"); ok {
@@ -83,7 +82,20 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 			return WrapError(fmt.Errorf("Field 'internet_charge_type' is required when 'enable' is 'On'."))
 		}
 		requestBody := map[string]interface{}{"InternetChargeType": chargeType}
-		if opened && chargeType != response["ChangingChargeType"].(string) {
+
+		isUpdateChargeType := false
+		checkAndUpdate := func(key string) bool {
+			if v, ok := response[key]; ok && fmt.Sprint(v) != "" {
+				return chargeType != fmt.Sprint(v)
+			}
+			return false
+		}
+
+		if checkAndUpdate("ChangingChargeType") || checkAndUpdate("InternetChargeType") {
+			isUpdateChargeType = true
+		}
+
+		if opened && isUpdateChargeType {
 			resp, err := conn.DoRequest(StringPointer("ModifyCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
 
 			addDebug("ModifyCdnService", resp, nil)
@@ -91,6 +103,7 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "ModifyCdnService", AlibabaCloudSdkGoERROR)
 			}
 		}
+
 		if !opened {
 			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
 			addDebug("OpenCdnService", resp, nil)
