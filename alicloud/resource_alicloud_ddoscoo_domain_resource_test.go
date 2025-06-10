@@ -608,6 +608,16 @@ func TestAccAliCloudDdosCooDomainResource_basic7932(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"cert_identifier": "${local.certificate_id_update}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cert_identifier": CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -736,8 +746,67 @@ fKbiiiOAQE8s2v8Paa+b00GspeWLow4u0G5lBVau4JjEVnl6ivLXlzY=
 EOF
 }
 
+resource "alicloud_ssl_certificates_service_certificate" "update" {
+  		certificate_name = "${var.name}-update"
+  		cert             = <<EOF
+-----BEGIN CERTIFICATE-----
+MIID4TCCAsmgAwIBAgIRAMbXKLFvo0VTrtjuXK5lZiswDQYJKoZIhvcNAQELBQAw
+XjELMAkGA1UEBhMCQ04xDjAMBgNVBAoTBU15U1NMMSswKQYDVQQLEyJNeVNTTCBU
+ZXN0IFJTQSAtIEZvciB0ZXN0IHVzZSBvbmx5MRIwEAYDVQQDEwlNeVNTTC5jb20w
+HhcNMjUwNjEwMDMxNDA3WhcNMzAwNjA5MDMxNDA3WjAlMQswCQYDVQQGEwJDTjEW
+MBQGA1UEAxMNdGVzdGxkLnFxLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+AQoCggEBAL9S2moja020VAmsHYO+r4wRpFrnIb8/xXE94N26g5K24d9xvBq1C5LR
+2gPPzeQ9lfswNvBv8LHrG/pT36XYiBjEY1Mv3R7lgc0+Qo9qjdQ4sAE4XcL3Qj3i
+x7KOrxMqm0ZfR2aPc4tu2lU5QWR49PTrBNWqtMYnORDSdmWfuiamTrBrPCvdKGk8
+gblCr+4Q2whWmO8oqm21qKn0CW32eOM+BI71e9hjhcpr2qDdkhWyTaSk2ySSucQ6
+y30zTNviktIIneC4pVEMHlFZdRw3u3fPKJdI1cnFlxGMtRnr3pA0mB9IdX8Jgvtx
+Q7zeUuodyiO9huqQUdtdFDYvXwykH08CAwEAAaOB0jCBzzAOBgNVHQ8BAf8EBAMC
+BaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB8GA1UdIwQYMBaAFCiB
+JgXRNBo/wXMPu5PPFRw/A79/MGMGCCsGAQUFBwEBBFcwVTAhBggrBgEFBQcwAYYV
+aHR0cDovL29jc3AubXlzc2wuY29tMDAGCCsGAQUFBzAChiRodHRwOi8vY2EubXlz
+c2wuY29tL215c3NsdGVzdHJzYS5jcnQwGAYDVR0RBBEwD4INdGVzdGxkLnFxLmNv
+bTANBgkqhkiG9w0BAQsFAAOCAQEAFxlDkagroyex5yK/8UvC5K31pBWA/qNEg5pG
+ot1U/Zm9IT2p02/gkKsWKRPtWiA6bSmTHvYkjcf1ADeIBg1/bhUmPK93wF2uMNyi
+B3Zh91ci4wfJL6417uJ5yEBHwm6J7aWVvym99yI2h0gTRNIMt3/jGB/VnGSciXRm
+OJiGVrzKjP+owW33oyH+oia3n/nLFn3pfULBOzFAROOxk8stg932jyIgQIxasxlk
+Z+DsKEpjL3tPBotoDn7vnybheGny9vnh1iZfyKsWgCpcsnJZX0fFcJcN91c+/bBI
+nFTP1faSchh66D9xG5Q/nYkaOb5OcPrHNNqHo6ziUhn+jSKUrg==
+-----END CERTIFICATE-----
+EOF
+  key              = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+MIIEogIBAAKCAQEAv1LaaiNrTbRUCawdg76vjBGkWuchvz/FcT3g3bqDkrbh33G8
+GrULktHaA8/N5D2V+zA28G/wsesb+lPfpdiIGMRjUy/dHuWBzT5Cj2qN1DiwAThd
+wvdCPeLHso6vEyqbRl9HZo9zi27aVTlBZHj09OsE1aq0xic5ENJ2ZZ+6JqZOsGs8
+K90oaTyBuUKv7hDbCFaY7yiqbbWoqfQJbfZ44z4EjvV72GOFymvaoN2SFbJNpKTb
+JJK5xDrLfTNM2+KS0gid4LilUQweUVl1HDe7d88ol0jVycWXEYy1GevekDSYH0h1
+fwmC+3FDvN5S6h3KI72G6pBR210UNi9fDKQfTwIDAQABAoIBAGCZstIYZBtty2i+
+0IAujXBJkBSd0vo/dq+AsMMDY192m4E4aeOKOfe9oTh/edOeDNYxN+waeQs8THoO
+U0Pnmn/22Let2RW6h9lbcDv9bvMSVDupfB3uvjGFCZNsW5Vv08qqXOC52XszU2Xo
+bM4QDI6FA4HmmTPbpgKKYWFaTqEoQwR0r9ijY3vsDfKjLVCQK5lz9C1jII9S0TSx
+XWJlHpjBSn3MsIB73Lp6sv8h8qc3jeOXnCS/ALD2vFbzad37EIX4UoaQ+9oeBSHX
+WhKkZIbZuMqmvj3WEwj7fPIxjKEvofV1q+pMSiiwbmfXQG1OfyMLcmQ9GtrPmFHx
+sUgek3ECgYEAyqhTmthmg99r8GLe502FQeG5/E+ng/miqu+VA8358gyHjXYwqF9n
+eSzfAdl/k8okU2y8r0+g1DA3QA5KzG18yXwyShGnGTf/EUJOTmsN/L6aKTQNZUjE
+FVONGrx1JKCRyGU7KMFp+GDWuoIKe55WUVTboCqu4VnvqnzubS2KaqsCgYEA8a7Q
+zuI1FTe7+Wc3NNzJFiTtvUat/cGNVOgK/N5+RnTssDLwoK5o7E4lvTUQJov3hny/
+/XDvMYEUUp51YGgrlrsR+MZMlrwXKSC1vbk8gTGB3ripdfIoOpbg95OdgrkPk9KQ
+YECZpIdtmBjh61g6Twji0ZHKZExOJhxD2CA+He0CgYAEy80Guh5a+pukWcKquLPx
+pjTvmrb9MZg+8WKWb3Z92vwORgDKy084l+5DLfGN/tezPbyNbZYBz45PLsdoZSLx
+5cWO6TIKL8ASmX4e7vuqwpwFY5z5i6pQUuThABrJnh81Hegzg7hNT4VlbpRu7oVe
+cWKtPLVc0fMRFtnRraU79wKBgDS+4WV1av5hdo3c3+iSkvRZROV9KnXqKw0vw04i
+xM5dsFZYF7oJtm50M7pSfV7cRz47ta77WcilEilh2d4bff/cffScWpS/IhLgx6lL
+ZxAPHPfdt2Y9XlhDG4AM4GBqQSMS3l2TW7TTtbBvJcc2LyuWleIE/nXbTWb13jyp
+9MSVAoGAZZbgWllKrBv5WlxDPMiS7tvLwx7oa4UvklRh4BB3N2X5JjEh1kPOzGdP
+FJHhtFuVVzdZcAZOWbYejEXTcEcondlSRpm3ClcAA+dwDb8UMwpYW0OUvYDlDps1
+g1NZTI0ZErdRESMLSmS2f4TO+lWfDkSAss9lLQdF6ugMM2RSPjE=
+-----END RSA PRIVATE KEY-----
+EOF
+	}
+
 locals {
-  certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default3MYZEt.id, "-cn-hangzhou"])
+  certificate_id        = join("", [alicloud_ssl_certificates_service_certificate.default3MYZEt.id, "-cn-hangzhou"])
+  certificate_id_update = join("", [alicloud_ssl_certificates_service_certificate.update.id, "-cn-hangzhou"])
 }
 `, name)
 }

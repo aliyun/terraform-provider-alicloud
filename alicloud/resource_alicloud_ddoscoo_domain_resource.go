@@ -362,9 +362,11 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		request["CertRegion"] = d.Get("cert_region")
 	}
 
-	if v, ok := d.GetOk("cert_identifier"); ok {
-		request["CertIdentifier"] = v
+	if d.HasChange("cert_identifier") {
+		update = true
+		request["CertIdentifier"] = d.Get("cert_identifier")
 	}
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
