@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -39,18 +40,14 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
+				ValidateFunc: StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				ForceNew: true,
-			},
+			"tags": tagsSchemaForceNew(),
 			"transit_router_attachment_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -180,12 +177,21 @@ func dataSourceAliCloudCenTransitRouterVpnAttachmentRead(d *schema.ResourceData,
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
-		request["TransitRouterAttachmentId"] = v
-	}
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
 	}
+
+	var transitRouterAttachmentNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		transitRouterAttachmentNameRegex = r
+	}
+
+	status, statusOk := d.GetOk("status")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["MaxResults"] = PageSizeLarge
@@ -201,9 +207,10 @@ func dataSourceAliCloudCenTransitRouterVpnAttachmentRead(d *schema.ResourceData,
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -218,6 +225,17 @@ func dataSourceAliCloudCenTransitRouterVpnAttachmentRead(d *schema.ResourceData,
 					continue
 				}
 			}
+
+			if transitRouterAttachmentNameRegex != nil {
+				if !transitRouterAttachmentNameRegex.MatchString(fmt.Sprint(item["TransitRouterAttachmentName"])) {
+					continue
+				}
+			}
+
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+
 			objects = append(objects, item)
 		}
 
@@ -265,12 +283,17 @@ func dataSourceAliCloudCenTransitRouterVpnAttachmentRead(d *schema.ResourceData,
 		mapping["zone"] = zoneMaps
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, objectRaw[""])
+		names = append(names, objectRaw["TransitRouterAttachmentName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
