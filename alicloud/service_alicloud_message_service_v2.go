@@ -441,3 +441,42 @@ func (s *MessageServiceServiceV2) MessageServiceSubscriptionStateRefreshFunc(id 
 }
 
 // DescribeMessageServiceSubscription >>> Encapsulated.
+
+// DescribeMessageServiceService <<< Encapsulated get interface for MessageService Service.
+
+func (s *MessageServiceServiceV2) DescribeMessageServiceService(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	request["SubscriptionType"] = "PayAsYouGo"
+	var endpoint string
+	request["ProductCode"] = "mns"
+
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeMessageServiceService >>> Encapsulated.
