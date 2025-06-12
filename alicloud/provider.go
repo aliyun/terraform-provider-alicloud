@@ -436,7 +436,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_alert_resource":                               dataSourceAlicloudLogAlertResource(),
 			"alicloud_log_service":                                      dataSourceAlicloudLogService(),
 			"alicloud_cen_instance_attachments":                         dataSourceAlicloudCenInstanceAttachments(),
-			"alicloud_cdn_service":                                      dataSourceAlicloudCdnService(),
+			"alicloud_cdn_service":                                      dataSourceAliCloudCdnService(),
 			"alicloud_cen_vbr_health_checks":                            dataSourceAlicloudCenVbrHealthChecks(),
 			"alicloud_config_rules":                                     dataSourceAlicloudConfigRules(),
 			"alicloud_config_configuration_recorders":                   dataSourceAlicloudConfigConfigurationRecorders(),
