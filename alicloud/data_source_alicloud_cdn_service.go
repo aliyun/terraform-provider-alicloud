@@ -29,7 +29,7 @@ func dataSourceAlicloudCdnService() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
 				Optional:     true,
-				Default:      "PayByTraffic",
+				Computed:     true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -74,11 +74,10 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 	if response["OpeningTime"] != nil && response["OpeningTime"].(string) != "" {
 		opened = true
 	}
-	if enable == "On" {
-		chargeType := ""
-		if v, ok := d.GetOk("internet_charge_type"); ok {
-			chargeType = v.(string)
-		}
+
+	v, ok := d.GetOk("internet_charge_type")
+	if enable == "On" && ok {
+		chargeType := v.(string)
 		if chargeType == "" {
 			return WrapError(fmt.Errorf("Field 'internet_charge_type' is required when 'enable' is 'On'."))
 		}
