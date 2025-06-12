@@ -38,3 +38,4 @@ website/vendor
 !command/test-fixtures/**/.terraform/
 diff_*.zip
 scan.py
+terraform-provider-alicloud
