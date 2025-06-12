@@ -576,6 +576,26 @@ func TestAccAliCloudECSNetworkInterface_ipv4_prefix_count(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_dest_check": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_dest_check": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_dest_check": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_dest_check": "false",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -625,6 +645,7 @@ func TestAccAliCloudECSNetworkInterface_basic1(t *testing.T) {
 					"private_ip":                         fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand),
 					"queue_number":                       "1",
 					"secondary_private_ip_address_count": "1",
+					"source_dest_check":                  "true",
 					"tags": map[string]string{
 						"Created": "TF-update",
 						"For":     "Test-update",
@@ -640,6 +661,7 @@ func TestAccAliCloudECSNetworkInterface_basic1(t *testing.T) {
 						"private_ip":                         CHECKSET,
 						"queue_number":                       "1",
 						"secondary_private_ip_address_count": "1",
+						"source_dest_check":                  "true",
 						"tags.%":                             "2",
 						"tags.Created":                       "TF-update",
 						"tags.For":                           "Test-update",

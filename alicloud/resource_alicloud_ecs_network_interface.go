@@ -174,6 +174,10 @@ func resourceAliCloudEcsNetworkInterface() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"source_dest_check": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -259,6 +263,10 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 		request["NetworkInterfaceTrafficMode"] = v
 	}
 
+	if v, ok := d.GetOkExists("source_dest_check"); ok {
+		request["SourceDestCheck"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -269,9 +277,10 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_network_interface", action, AlibabaCloudSdkGoERROR)
 	}
@@ -343,6 +352,7 @@ func resourceAliCloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("instance_type", object["Type"])
 	d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
+	d.Set("source_dest_check", object["SourceDestCheck"])
 
 	return nil
 }
@@ -392,6 +402,15 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		request["SecurityGroupId"] = d.Get("security_groups").(*schema.Set).List()
 		updateSecurityGroup = true
 	}
+
+	if d.HasChange("source_dest_check") {
+		update = true
+
+		if v, ok := d.GetOkExists("source_dest_check"); ok {
+			request["SourceDestCheck"] = v
+		}
+	}
+
 	if update {
 		action := "ModifyNetworkInterfaceAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -404,9 +423,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -416,6 +436,8 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("queue_number")
 		d.SetPartial("security_groups")
 		d.SetPartial("security_group_ids")
+		d.SetPartial("source_dest_check")
+
 		if updateSecurityGroup {
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -445,9 +467,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, unassignprivateipaddressesrequest)
 				return nil
 			})
+			addDebug(action, response, unassignprivateipaddressesrequest)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -470,9 +493,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, assignprivateipaddressesrequest)
 				return nil
 			})
+			addDebug(action, response, assignprivateipaddressesrequest)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -506,9 +530,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, unassignprivateipaddressesrequest)
 				return nil
 			})
+			addDebug(action, response, unassignprivateipaddressesrequest)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -531,9 +556,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, assignprivateipaddressesrequest)
 				return nil
 			})
+			addDebug(action, response, assignprivateipaddressesrequest)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -565,9 +591,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, assignPrivateIpsCountrequest)
 					return nil
 				})
+				addDebug(action, response, assignPrivateIpsCountrequest)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -593,9 +620,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, unAssignPrivateIpsCountRequest)
 					return nil
 				})
+				addDebug(action, response, unAssignPrivateIpsCountRequest)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -629,9 +657,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, assignSecondaryPrivateIpAddressCountrequest)
 					return nil
 				})
+				addDebug(action, response, assignSecondaryPrivateIpAddressCountrequest)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -656,9 +685,10 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, unassignSecondaryPrivateIpAddressCountrequest)
 					return nil
 				})
+				addDebug(action, response, unassignSecondaryPrivateIpAddressCountrequest)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -962,9 +992,10 @@ func resourceAliCloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidEcsId.NotFound", "InvalidEniId.NotFound", "InvalidSecurityGroupId.NotFound", "InvalidVSwitchId.NotFound"}) {
 			return nil
