@@ -1073,10 +1073,13 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 	if err := invoker.Run(func() error {
 		resp, err = csClient.ModifyCluster(tea.String(d.Id()), request)
 		return err
-	}); err != nil && !IsExpectedErrors(err, []string{"ClusterNameAlreadyExist", "ErrorModifyDeletionProtectionFailed"}) {
+	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 	}
 
+	if resp == nil || resp.Body == nil {
+		return nil
+	}
 	taskId := tea.StringValue(resp.Body.TaskId)
 	c := CsClient{client: csClient}
 	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, c.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
@@ -2040,7 +2043,7 @@ func flattenTags(config []*roacs.Tag) map[string]string {
 	for _, tag := range config {
 		key := tea.StringValue(tag.Key)
 		value := tea.StringValue(tag.Value)
-		if key != DefaultClusterTag && key != CsPlayerAccountIdTag {
+		if key != DefaultClusterTag && key != CsPlayerAccountIdTag && !tagIgnored(key, value) {
 			m[key] = value
 		}
 	}
