@@ -127,7 +127,7 @@ func resourceAliCloudVpcVswitchCreate(d *schema.ResourceData, meta interface{}) 
 			request["ZoneId"] = v
 		}
 
-		if v, ok := d.GetOk("ipv6_cidr_block_mask"); ok {
+		if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok {
 			request["Ipv6CidrBlock"] = v
 		}
 
@@ -179,7 +179,7 @@ func resourceAliCloudVpcVswitchCreate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("zone_id"); ok {
 			request["ZoneId"] = v
 		}
-		if v, ok := d.GetOk("ipv6_cidr_block_mask"); ok {
+		if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok {
 			request["Ipv6CidrBlock"] = v
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -285,7 +285,7 @@ func resourceAliCloudVpcVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		if v, ok := d.GetOk("ipv6_cidr_block_mask"); ok {
+		if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok {
 			update = true
 			request["EnableIPv6"] = true
 			request["Ipv6CidrBlock"] = v
@@ -403,7 +403,7 @@ func CancelIpv6(d *schema.ResourceData, meta interface{}) error {
 	vpcServiceV2 := VpcServiceV2{client}
 	object, _ := vpcServiceV2.DescribeVpcVswitch(d.Id())
 
-	if _, ok := d.GetOk("ipv6_cidr_block_mask"); !ok {
+	if _, ok := d.GetOkExists("ipv6_cidr_block_mask"); !ok {
 		return nil
 	}
 
