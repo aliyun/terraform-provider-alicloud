@@ -323,16 +323,16 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeVscMountPoints"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["FileSystemId"] = parts[0]
-	request["MountPointId"] = parts[1]
 	request["InputRegionId"] = client.RegionId
+	action := "DescribeVscMountPoints"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -359,7 +359,15 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 		return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["MountPointId"]) != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
 }
 
 func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -374,6 +382,18 @@ func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+		if field == "$.MountPointAlias" {
+			e := jsonata.MustCompile("$.ResourceProperties.MountPointAlias.split('--')[0]")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

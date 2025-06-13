@@ -66,7 +66,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<mount_point_id>`.
-* `instances` - The collection of ECS instances on which the HDFS file system is mounted.
+* `instances` - The collection of ECS instances on which the HDFS file system is mounted. **The current property is not available**.
   * `status` - The status of the ECS instance on which the HDFS file system is mounted.
   * `vscs` - The VSC list of mounted HDFS file systems.
     * `vsc_id` - VSC Channel primary key representation, used to retrieve the specified VSC Channel.

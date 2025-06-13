@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -94,7 +93,9 @@ func resourceAliCloudDfsVscMountPointCreate(d *schema.ResourceData, meta interfa
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["FileSystemId"] = d.Get("file_system_id")
+	if v, ok := d.GetOk("file_system_id"); ok {
+		request["FileSystemId"] = v
+	}
 	request["InputRegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("description"); ok {
@@ -103,7 +104,7 @@ func resourceAliCloudDfsVscMountPointCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -138,31 +139,27 @@ func resourceAliCloudDfsVscMountPointRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["MountPointId"] != nil {
-		d.Set("mount_point_id", objectRaw["MountPointId"])
-	}
+	d.Set("description", objectRaw["Description"])
+	d.Set("mount_point_id", objectRaw["MountPointId"])
 
-	instances1Raw := objectRaw["Instances"]
+	instancesRaw := objectRaw["Instances"]
 	instancesMaps := make([]map[string]interface{}, 0)
-	if instances1Raw != nil {
-		for _, instancesChild1Raw := range instances1Raw.([]interface{}) {
+	if instancesRaw != nil {
+		for _, instancesChildRaw := range instancesRaw.([]interface{}) {
 			instancesMap := make(map[string]interface{})
-			instancesChild1Raw := instancesChild1Raw.(map[string]interface{})
-			instancesMap["instance_id"] = instancesChild1Raw["InstanceId"]
-			instancesMap["status"] = instancesChild1Raw["Status"]
+			instancesChildRaw := instancesChildRaw.(map[string]interface{})
+			instancesMap["instance_id"] = instancesChildRaw["InstanceId"]
+			instancesMap["status"] = instancesChildRaw["Status"]
 
-			vscs1Raw := instancesChild1Raw["Vscs"]
+			vscsRaw := instancesChildRaw["Vscs"]
 			vscsMaps := make([]map[string]interface{}, 0)
-			if vscs1Raw != nil {
-				for _, vscsChild1Raw := range vscs1Raw.([]interface{}) {
+			if vscsRaw != nil {
+				for _, vscsChildRaw := range vscsRaw.([]interface{}) {
 					vscsMap := make(map[string]interface{})
-					vscsChild1Raw := vscsChild1Raw.(map[string]interface{})
-					vscsMap["vsc_id"] = vscsChild1Raw["VscId"]
-					vscsMap["vsc_status"] = vscsChild1Raw["VscStatus"]
-					vscsMap["vsc_type"] = vscsChild1Raw["VscType"]
+					vscsChildRaw := vscsChildRaw.(map[string]interface{})
+					vscsMap["vsc_id"] = vscsChildRaw["VscId"]
+					vscsMap["vsc_status"] = vscsChildRaw["VscStatus"]
+					vscsMap["vsc_type"] = vscsChildRaw["VscType"]
 
 					vscsMaps = append(vscsMaps, vscsMap)
 				}
@@ -196,9 +193,9 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 	update := false
 	d.Partial(true)
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "BindVscMountPointAlias"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["MountPointId"] = parts[1]
@@ -207,13 +204,11 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("alias_prefix") {
 		update = true
 	}
-	if v, ok := d.GetOk("alias_prefix"); ok {
-		request["AliasPrefix"] = v
-	}
+	request["AliasPrefix"] = d.Get("alias_prefix")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -229,12 +224,13 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 	update = false
+	parts = strings.Split(d.Id(), ":")
 	action = "ModifyVscMountPoint"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = parts[0]
-	query["MountPointId"] = parts[1]
-	query["InputRegionId"] = client.RegionId
+	request["MountPointId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+	request["InputRegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
@@ -243,7 +239,7 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -279,7 +275,8 @@ func resourceAliCloudDfsVscMountPointDelete(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
+		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
