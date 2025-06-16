@@ -123,6 +123,7 @@ func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (ob
 		"RegionId":    s.client.RegionId,
 		"ProductName": id,
 	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcGet("eventbridge", "2020-04-01", action, request, nil)
@@ -136,14 +137,18 @@ func (s *EventbridgeService) DescribeEventBridgeServiceLinkedRole(id string) (ob
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
