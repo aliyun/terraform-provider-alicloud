@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -18,22 +19,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEventBridgeServiceLinkedRole_basic0(t *testing.T) {
+func TestAccAliCloudEventBridgeServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_event_bridge_service_linked_role.default"
-	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventServiceLinkedRoleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudEventBridgeServiceLinkedRoleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEventBridgeServiceLinkedRole")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AliCloudEventBridgeServiceLinkedRoleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		Steps: []resource.TestStep{
@@ -56,52 +55,17 @@ func TestAccAlicloudEventBridgeServiceLinkedRole_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEventBridgeServiceLinkedRole_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_service_linked_role.default"
-	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventServiceLinkedRoleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeServiceLinkedRole")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+var AliCloudEventBridgeServiceLinkedRoleMap0 = map[string]string{}
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_name": "AliyunServiceRoleForEventBridgeSendToMNS",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_name": "AliyunServiceRoleForEventBridgeSendToMNS",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+func AliCloudEventBridgeServiceLinkedRoleBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+`, name)
 }
 
-var AlicloudEventBridgeEventServiceLinkedRoleMap0 = map[string]string{
-	"product_name": "AliyunServiceRoleForEventBridgeSourceRocketMQ",
-}
-
-func testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence(name string) string {
-	return ""
-}
-
-func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
+func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)
@@ -164,7 +128,7 @@ func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEventBridgeServiceLinkedRoleCreate(dInit, rawClient)
+	err = resourceAliCloudEventBridgeServiceLinkedRoleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -190,7 +154,7 @@ func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEventBridgeServiceLinkedRoleCreate(dInit, rawClient)
+		err := resourceAliCloudEventBridgeServiceLinkedRoleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -229,7 +193,7 @@ func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEventBridgeServiceLinkedRoleRead(dExisted, rawClient)
+		err := resourceAliCloudEventBridgeServiceLinkedRoleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -248,7 +212,7 @@ func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEventBridgeServiceLinkedRoleDelete(dExisted, rawClient)
+	err = resourceAliCloudEventBridgeServiceLinkedRoleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "EntityNotExist.Role"}
@@ -270,7 +234,7 @@ func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEventBridgeServiceLinkedRoleDelete(dExisted, rawClient)
+		err := resourceAliCloudEventBridgeServiceLinkedRoleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
