@@ -35,7 +35,7 @@ variable "region" {
 }
 
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 data "alicloud_regions" "default" {
@@ -155,45 +155,45 @@ The following arguments are supported:
 
 The rule_actions supports the following:
 
-* `order` (Required, Int) Forwarding priority.
-* `rule_action_type` (Required) The type of the forwarding action. Valid values: `ForwardGroup`, `Redirect`, `FixResponse`, `Rewrite`, `AddHeader`, `RemoveHeader`, `Drop`.
-* `rule_action_value` (Optional, Available since v1.207.0) The value of the forwarding action type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
-* `forward_group_config` (Optional, Set) Forwarding configuration. See [`forward_group_config`](#rule_actions-forward_group_config) below.
+* `order` - (Required, Int) Forwarding priority.
+* `rule_action_type` - (Required) The type of the forwarding action. Valid values: `ForwardGroup`, `Redirect`, `FixResponse`, `Rewrite`, `AddHeader`, `RemoveHeader`, `Drop`.
+* `rule_action_value` - (Optional, Available since v1.207.0) The value of the forwarding action type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
+* `forward_group_config` - (Optional, Set) Forwarding configuration. See [`forward_group_config`](#rule_actions-forward_group_config) below.
 -> **NOTE:** From version 1.207.0, We recommend that you do not use `forward_group_config`, and we recommend that you use the `rule_action_type` and `rule_action_value` to configure forwarding actions.
 
 ### `rule_actions-forward_group_config`
 
 The forward_group_config supports the following:
 
-* `server_group_tuples` (Required, Set) The information about the endpoint group. See [`server_group_tuples`](#rule_actions-forward_group_config-server_group_tuples) below.
+* `server_group_tuples` - (Required, Set) The information about the endpoint group. See [`server_group_tuples`](#rule_actions-forward_group_config-server_group_tuples) below.
 
 ### `rule_actions-forward_group_config-server_group_tuples`
 
 The server_group_tuples supports the following:
 
-* `endpoint_group_id` (Required) The ID of the endpoint group.
+* `endpoint_group_id` - (Required) The ID of the endpoint group.
 
 ### `rule_conditions`
 
 The rule_conditions supports the following:
 
-* `rule_condition_type` (Required) The type of the forwarding conditions. Valid values: `Host`, `Path`, `RequestHeader`, `Query`, `Method`, `Cookie`, `SourceIP`. **NOTE:** From version 1.231.0, `rule_condition_type` can be set to `RequestHeader`, `Query`, `Method`, `Cookie`, `SourceIP`.
-* `rule_condition_value` (Optional, Available since v1.231.0) The value of the forwarding condition type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
-* `path_config` (Optional, Set) The configuration of the path. See [`path_config`](#rule_conditions-path_config) below.
-* `host_config` (Optional, Set) The configuration of the domain name. See [`host_config`](#rule_conditions-host_config) below.
+* `rule_condition_type` - (Required) The type of the forwarding conditions. Valid values: `Host`, `Path`, `RequestHeader`, `Query`, `Method`, `Cookie`, `SourceIP`. **NOTE:** From version 1.231.0, `rule_condition_type` can be set to `RequestHeader`, `Query`, `Method`, `Cookie`, `SourceIP`.
+* `rule_condition_value` - (Optional, Available since v1.231.0) The value of the forwarding condition type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
+* `path_config` - (Optional, Set) The configuration of the path. See [`path_config`](#rule_conditions-path_config) below.
+* `host_config` - (Optional, Set) The configuration of the domain name. See [`host_config`](#rule_conditions-host_config) below.
 -> **NOTE:** From version 1.231.0, We recommend that you do not use `path_config` or `host_config`, and we recommend that you use the `rule_condition_type` and `rule_condition_value` to configure forwarding conditions.
 
 ### `rule_conditions-path_config`
 
 The path_config supports the following:
 
-* `values` (Optional, List) The length of the path is 1-128 characters. It must start with a forward slash (/), and can only contain letters, numbers, dollar sign ($), dash (-), and underscores (_) , half width full stop (.), plus sign (+), forward slash (/), and (&), wavy line (~), at (@), half width colon (:), apostrophe ('). It supports asterisk (*) and half width question mark (?) as wildcards.
+* `values` - (Optional, List) The length of the path is 1-128 characters. It must start with a forward slash (/), and can only contain letters, numbers, dollar sign ($), dash (-), and underscores (_) , half width full stop (.), plus sign (+), forward slash (/), and (&), wavy line (~), at (@), half width colon (:), apostrophe ('). It supports asterisk (*) and half width question mark (?) as wildcards.
 
 ### `rule_conditions-host_config`
 
 The host_config supports the following:
 
-* `values` (Optional, List) The domain name is 3-128 characters long, which can contain letters, numbers, dashes (-) and width period (.), and supports the use of asterisk (*) and width question mark (?) as wildcard characters.
+* `values` - (Optional, List) The domain name is 3-128 characters long, which can contain letters, numbers, dashes (-) and width period (.), and supports the use of asterisk (*) and width question mark (?) as wildcard characters.
 
 ## Attributes Reference
 

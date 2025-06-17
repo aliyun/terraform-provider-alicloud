@@ -143,16 +143,7 @@ func TestAccAliCloudGaForwardingRule_basic0(t *testing.T) {
 					"rule_actions": []map[string]interface{}{
 						{
 							"order":            "25",
-							"rule_action_type": "ForwardGroup",
-							"forward_group_config": []map[string]interface{}{
-								{
-									"server_group_tuples": []map[string]interface{}{
-										{
-											"endpoint_group_id": "${alicloud_ga_endpoint_group.update.id}",
-										},
-									},
-								},
-							},
+							"rule_action_type": "Drop",
 						},
 					},
 				}),
@@ -167,7 +158,16 @@ func TestAccAliCloudGaForwardingRule_basic0(t *testing.T) {
 					"rule_actions": []map[string]interface{}{
 						{
 							"order":            "30",
-							"rule_action_type": "Redirect",
+							"rule_action_type": "ForwardGroup",
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"endpoint_group_id": "${alicloud_ga_endpoint_group.update.id}",
+										},
+									},
+								},
+							},
 						},
 					},
 				}),
@@ -361,9 +361,8 @@ func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_actions": []map[string]interface{}{
 						{
-							"order":             "25",
-							"rule_action_type":  "ForwardGroup",
-							"rule_action_value": `[{\"type\":\"endpointgroup\", \"value\":\"` + "${alicloud_ga_endpoint_group.update.id}" + `\"}]`,
+							"order":            "25",
+							"rule_action_type": "Drop",
 						},
 					},
 				}),
@@ -377,8 +376,9 @@ func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_actions": []map[string]interface{}{
 						{
-							"order":            "30",
-							"rule_action_type": "Redirect",
+							"order":             "30",
+							"rule_action_type":  "ForwardGroup",
+							"rule_action_value": `[{\"type\":\"endpointgroup\", \"value\":\"` + "${alicloud_ga_endpoint_group.update.id}" + `\"}]`,
 						},
 					},
 				}),
