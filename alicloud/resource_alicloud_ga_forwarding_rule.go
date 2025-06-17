@@ -226,7 +226,7 @@ func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 		ruleActionsMap["Order"] = ruleActionsArg["order"]
 		ruleActionsMap["RuleActionType"] = ruleActionsArg["rule_action_type"]
 
-		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok {
+		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok && fmt.Sprint(ruleActionValue) != "" && fmt.Sprint(ruleActionsMap["RuleActionType"]) != "Drop" {
 			ruleActionsMap["RuleActionValue"] = ruleActionValue
 		}
 
@@ -508,7 +508,7 @@ func resourceAliCloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 		ruleActionsMap["Order"] = ruleActionsArg["order"]
 		ruleActionsMap["RuleActionType"] = ruleActionsArg["rule_action_type"]
 
-		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok {
+		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok && fmt.Sprint(ruleActionValue) != "" && fmt.Sprint(ruleActionsMap["RuleActionType"]) != "Drop" {
 			ruleActionsMap["RuleActionValue"] = ruleActionValue
 		}
 
