@@ -31,7 +31,7 @@ resource "random_integer" "default" {
 
 resource "alicloud_hbr_vault" "default" {
   vault_name = "terraform-example-${random_integer.default.result}"
-  vault_type = "OTS_BACKUP"
+  vault_type = "STANDARD"
 }
 
 resource "alicloud_ots_instance" "default" {
