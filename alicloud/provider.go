@@ -1736,7 +1736,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_bgp_group":                                         resourceAlicloudVpcBgpGroup(),
 			"alicloud_ram_security_preference":                               resourceAliCloudRamSecurityPreference(),
 			"alicloud_nas_snapshot":                                          resourceAlicloudNasSnapshot(),
-			"alicloud_hbr_replication_vault":                                 resourceAlicloudHbrReplicationVault(),
+			"alicloud_hbr_replication_vault":                                 resourceAliCloudHbrReplicationVault(),
 			"alicloud_alidns_address_pool":                                   resourceAlicloudAlidnsAddressPool(),
 			"alicloud_ecs_prefix_list":                                       resourceAlicloudEcsPrefixList(),
 			"alicloud_alidns_access_strategy":                                resourceAlicloudAlidnsAccessStrategy(),
