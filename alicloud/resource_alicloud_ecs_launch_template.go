@@ -84,6 +84,10 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -323,6 +327,10 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -471,6 +479,10 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 			if device, ok := dataDisksArg["device"].(string); ok && device != "" {
 				dataDisksMap["Device"] = device
+			}
+
+			if kmsKeyId, ok := dataDisksArg["kms_key_id"].(string); ok && kmsKeyId != "" {
+				dataDisksMap["KMSKeyId"] = kmsKeyId
 			}
 
 			dataDisksMap["DeleteWithInstance"] = requests.NewBoolean(dataDisksArg["delete_with_instance"].(bool))
@@ -637,6 +649,7 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			systemDiskMap["PerformanceLevel"] = systemDiskArg["performance_level"]
 			systemDiskMap["Size"] = requests.NewInteger(systemDiskArg["size"].(int))
 			systemDiskMap["Encrypted"] = requests.NewBoolean(systemDiskArg["encrypted"].(bool))
+			systemDiskMap["KMSKeyId"] = systemDiskArg["kms_key_id"]
 		}
 		request["SystemDisk"] = systemDiskMap
 
@@ -782,6 +795,7 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 					"size":                 m1["Size"],
 					"snapshot_id":          m1["SnapshotId"],
 					"device":               m1["Device"],
+					"kms_key_id":           m1["KMSKeyId"],
 				}
 				dataDisk = append(dataDisk, temp1)
 
@@ -857,6 +871,7 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	systemDiskMap["performance_level"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.PerformanceLevel"]
 	systemDiskMap["size"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.Size"]
 	systemDiskMap["encrypted"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.Encrypted"]
+	systemDiskMap["kms_key_id"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.KMSKeyId"]
 	systemDiskSli = append(systemDiskSli, systemDiskMap)
 	d.Set("system_disk", systemDiskSli)
 
@@ -953,6 +968,10 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 
 			if device, ok := DataDisksMap["device"].(string); ok && device != "" {
 				DataDisks[i]["Device"] = device
+			}
+
+			if kmsKeyId, ok := DataDisksMap["kms_key_id"].(string); ok && kmsKeyId != "" {
+				DataDisks[i]["KMSKeyId"] = kmsKeyId
 			}
 
 			DataDisks[i]["DeleteWithInstance"] = DataDisksMap["delete_with_instance"]
@@ -1165,6 +1184,7 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 			systemDiskMap["PerformanceLevel"] = systemDiskArg["performance_level"]
 			systemDiskMap["Size"] = requests.NewInteger(systemDiskArg["size"].(int))
 			systemDiskMap["Encrypted"] = requests.NewBoolean(systemDiskArg["encrypted"].(bool))
+			systemDiskMap["KMSKeyId"] = systemDiskArg["kms_key_id"]
 		}
 		request["SystemDisk"] = systemDiskMap
 	} else {

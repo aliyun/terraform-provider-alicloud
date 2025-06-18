@@ -203,6 +203,7 @@ The system_disk supports the following:
 * `performance_level` - (Optional) The performance level of the ESSD used as the system disk. Valid Values: `PL0`, `PL1`, `PL2`, and `PL3`. Default to: `PL0`.
 * `size` - (Optional, Computed) Size of the system disk, measured in GB. Value range: [20, 500].
 * `encrypted` - (Optional) Specifies whether the system disk is encrypted.
+* `kms_key_id` - (Optional, Available since v1.252.0) The ID of the KMS key to use for the system disk.
 
 ### `network_interfaces`
 
@@ -228,6 +229,7 @@ The data_disks supports the following:
 * `size` - (Optional) The size of the data disk.
 * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
 * `device` - (Optional, Available since v1.230.1) The mount point of the data disk.
+* `kms_key_id` - (Optional, Available since v1.252.0) The ID of the KMS key used for the data disk.
 
 ## Attributes Reference
 
