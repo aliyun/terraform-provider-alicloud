@@ -22,15 +22,15 @@ func (s *RdsServiceV2) DescribeRdsCustom(id string) (object map[string]interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeRCInstanceAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "DescribeRCInstanceAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -51,21 +51,21 @@ func (s *RdsServiceV2) DescribeRdsCustom(id string) (object map[string]interface
 
 	return response, nil
 }
-func (s *RdsServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
+func (s *RdsServiceV2) DescribeCustomListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTagResources"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 	request["RegionId"] = client.RegionId
-
 	request["ResourceType"] = "Custom"
+	action := "ListTagResources"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -119,10 +119,10 @@ func (s *RdsServiceV2) RdsCustomStateRefreshFunc(id string, field string, failSt
 func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
-		var err error
 		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
@@ -138,14 +138,14 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
+				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -168,7 +168,6 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -176,9 +175,10 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
+			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, false)
+				response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

@@ -12,19 +12,13 @@ Provides a RDS Custom resource.
 
 Dedicated RDS User host.
 
-For information about RDS Custom and how to use it, see [What is Custom](https://www.alibabacloud.com/help/en/).
+For information about RDS Custom and how to use it, see [What is Custom](https://next.api.alibabacloud.com/document/Rds/2014-08-15/RunRCInstances).
 
--> **NOTE:** Available since v1.235.0.
+-> **NOTE:** Available since v1.247.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_custom&exampleId=077cbbd5-07d0-20a2-a525-2b5c4eb752adf141c4d6&activeTab=example&spm=docs.r.rds_custom.0.077cbbd507&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -32,91 +26,108 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "cn-chengdu"
+  region = "cn-beijing"
+}
+
+variable "cluster_id" {
+  default = "c18c40b2b336840e2b2bbf8ab291758e2"
+}
+
+variable "deploymentsetid" {
+  default = "ds-2ze78ef5kyj9eveue92m"
+}
+
+variable "vswtich-id" {
+  default = "example_vswitch"
+}
+
+variable "vpc_name" {
+  default = "beijing111"
+}
+
+variable "example_region_id" {
+  default = "cn-beijing"
+}
+
+variable "description" {
+  default = "ran_1-08_rccreatenodepool_api"
 }
 
 variable "example_zone_id" {
-  default = "cn-chengdu-b"
+  default = "cn-beijing-h"
+}
+
+variable "securitygroup_name" {
+  default = "rds_custom_init_sg_cn_beijing"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_vpcs" "default" {
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = var.example_zone_id
-}
-
 resource "alicloud_vpc" "vpcId" {
-  cidr_block = "172.16.0.0/12"
+  vpc_name = var.vpc_name
 }
 
 resource "alicloud_vswitch" "vSwitchId" {
   vpc_id       = alicloud_vpc.vpcId.id
-  cidr_block   = "172.16.5.0/24"
   zone_id      = var.example_zone_id
-  vswitch_name = format("%s1", var.name)
+  vswitch_name = var.vswtich-id
+  cidr_block   = "172.16.5.0/24"
 }
 
 resource "alicloud_security_group" "securityGroupId" {
-  vpc_id = alicloud_vpc.vpcId.id
+  vpc_id              = alicloud_vpc.vpcId.id
+  security_group_name = var.securitygroup_name
 }
 
 resource "alicloud_ecs_deployment_set" "deploymentSet" {
-  domain      = "Default"
-  granularity = "Host"
-  strategy    = "Availability"
 }
 
 resource "alicloud_ecs_key_pair" "KeyPairName" {
-  key_pair_name = format("%s4", var.name)
+  key_pair_name = alicloud_vswitch.vSwitchId.id
 }
 
+
 resource "alicloud_rds_custom" "default" {
+  amount        = "1"
+  auto_renew    = false
+  period        = "1"
+  auto_pay      = true
+  instance_type = "mysql.x2.xlarge.6cm"
   data_disk {
     category          = "cloud_essd"
     size              = "50"
     performance_level = "PL1"
   }
-
-  host_name         = "1731641300"
-  create_mode       = "0"
-  description       = var.name
-  instance_type     = "mysql.x2.xlarge.6cm"
-  password          = "example@12356"
-  amount            = "1"
-  io_optimized      = "optimized"
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
-  deployment_set_id = alicloud_ecs_deployment_set.deploymentSet.id
-  status            = "Running"
-  system_disk {
-    category = "cloud_essd"
-    size     = "40"
-  }
-
-  auto_pay                   = "true"
-  internet_max_bandwidth_out = "0"
-  internet_charge_type       = "PayByTraffic"
-  security_group_ids = [
-    alicloud_security_group.securityGroupId.id
-  ]
-  instance_charge_type          = "Prepaid"
-  vswitch_id                    = alicloud_vswitch.vSwitchId.id
-  key_pair_name                 = alicloud_ecs_key_pair.KeyPairName.key_pair_name
+  status                        = "Running"
+  security_group_ids            = ["${alicloud_security_group.securityGroupId.id}"]
+  io_optimized                  = "optimized"
+  description                   = var.description
+  key_pair_name                 = alicloud_ecs_key_pair.KeyPairName.id
   zone_id                       = var.example_zone_id
-  auto_renew                    = "false"
-  period                        = "1"
+  instance_charge_type          = "Prepaid"
+  internet_max_bandwidth_out    = "0"
   image_id                      = "aliyun_2_1903_x64_20G_alibase_20240628.vhd"
   security_enhancement_strategy = "Active"
   period_unit                   = "Month"
+  password                      = "jingyiTEST@123"
+  system_disk {
+    size     = "40"
+    category = "cloud_essd"
+  }
+  host_name         = "1743386110"
+  create_mode       = "0"
+  spot_strategy     = "NoSpot"
+  vswitch_id        = alicloud_vswitch.vSwitchId.id
+  support_case      = "eni"
+  deployment_set_id = var.deploymentsetid
+  dry_run           = false
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `amount` - (Required, Int) Represents the number of instances created
+* `amount` - (Optional, Int) Represents the number of instances created
 * `auto_pay` - (Optional) Whether to pay automatically. Value range:
   - `true` (default): automatic payment. You need to ensure that your account balance is sufficient.
   - `false`: only orders are generated without deduction.
@@ -126,6 +137,7 @@ The following arguments are supported:
 -> **NOTE:** >
 
 * `auto_renew` - (Optional) Whether the instance is automatically renewed. Valid values: true/false. The default is false.
+* `create_extra_param` - (Optional, Available since v1.252.0) Reserved parameters are not supported.
 * `create_mode` - (Optional) Whether to allow joining the ACK cluster. When this parameter is set to `1`, the created instance can be added to the ACK cluster through The `AttachRCInstances` API to efficiently manage container applications.
   - `1`: Yes.
   - `0` (default): No.
@@ -160,25 +172,27 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `security_enhancement_strategy` - (Optional) Reserved parameters are not supported.
 * `security_group_ids` - (Optional, ForceNew, List) Security group list
+* `spot_strategy` - (Optional, Available since v1.252.0) The bidding strategy for pay-as-you-go instances. This parameter takes effect when the value of `InstanceChargeType` is set to **PostPaid. Value range:
+  - `NoSpot`: normal pay-as-you-go instances.
+  - `SpotAsPriceGo`: The system automatically bids and follows the actual price in the current market.
+
+Default value: **NoSpot * *.
 * `status` - (Optional, Computed) The status of the resource
+* `support_case` - (Optional, Available since v1.252.0) Supported scenarios: createMode:supportCase, for example: NATIVE("0", "eni"),RCK("1", "rck"),ACK_EDGE("1", "edge");
 * `system_disk` - (Optional, List) System disk specifications. See [`system_disk`](#system_disk) below.
 * `tags` - (Optional, Map) The tag of the resource
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch. The zone in which the vSwitch is located must correspond to the zone ID entered in ZoneId.
-
-  The network type InstanceNetworkType must be VPC.
+The network type InstanceNetworkType must be VPC.
 * `zone_id` - (Optional, ForceNew) The zone ID  of the resource
 
 ### `data_disk`
 
 The data_disk supports the following:
 * `category` - (Optional, ForceNew) Instance storage type
-
-  local_ssd: local SSD disk
-
-  cloud_essd:ESSD PL1 cloud disk
+local_ssd: local SSD disk
+cloud_essd:ESSD PL1 cloud disk
 * `performance_level` - (Optional, ForceNew) Cloud Disk Performance
-
-  Currently only supports PL1
+Currently only supports PL1
 * `size` - (Optional, ForceNew, Int) Instance storage space. Unit: GB.
 
 ### `system_disk`
@@ -198,7 +212,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Custom.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom.
-* `update` - (Defaults to 5 mins) Used when update the Custom.
+* `update` - (Defaults to 7 mins) Used when update the Custom.
 
 ## Import
 
