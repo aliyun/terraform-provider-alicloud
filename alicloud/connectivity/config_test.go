@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestRefreshAuthCredential_ECS_Role(t *testing.T) {
+func TestUnitCommonRefreshAuthCredential_ECS_Role(t *testing.T) {
 	client := NewTestClient(t)
 	err := client.config.RefreshAuthCredential()
 
@@ -14,7 +14,7 @@ func TestRefreshAuthCredential_ECS_Role(t *testing.T) {
 	assert.NotEmpty(t, client.config.SecretKey)
 }
 
-func TestRefreshAuthCredential_OIDC(t *testing.T) {
+func TestUnitCommonRefreshAuthCredential_OIDC(t *testing.T) {
 	client := NewTestClient(t)
 	config := client.config
 	err := config.RefreshAuthCredential()
@@ -24,7 +24,7 @@ func TestRefreshAuthCredential_OIDC(t *testing.T) {
 	assert.NotEmpty(t, config.SecretKey)
 }
 
-func TestRefreshAuthCredential_AssumeRole(t *testing.T) {
+func TestUnitCommonRefreshAuthCredential_AssumeRole(t *testing.T) {
 	client := NewTestClient(t)
 	config := client.config
 	err := config.RefreshAuthCredential()
@@ -32,7 +32,7 @@ func TestRefreshAuthCredential_AssumeRole(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRefreshAuthCredential_Error(t *testing.T) {
+func TestUnitCommonRefreshAuthCredential_Error(t *testing.T) {
 	config := &Config{
 		AssumeRoleWithOidc: &AssumeRoleWithOidc{
 			RoleARN: "invalid-arn",

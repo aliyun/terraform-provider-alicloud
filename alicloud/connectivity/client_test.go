@@ -44,7 +44,7 @@ func NewTestClient(t *testing.T) *AliyunClient {
 	return client
 }
 
-func TestWithEcsClient_UsingHttpMock(t *testing.T) {
+func TestUnitCommonWithEcsClient_UsingHttpMock(t *testing.T) {
 	var accessKey, secretKey string
 	accessKey = os.Getenv("ALICLOUD_ACCESS_KEY")
 	secretKey = os.Getenv("ALICLOUD_SECRET_KEY")
