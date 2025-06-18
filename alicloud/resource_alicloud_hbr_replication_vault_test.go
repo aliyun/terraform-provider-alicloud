@@ -107,7 +107,7 @@ func testSweepHbrReplicationVault(region string) error {
 	return nil
 }
 
-func TestAccAlicloudHBRReplicationVault_basic0(t *testing.T) {
+func TestAccAliCloudHBRReplicationVault_basic0(t *testing.T) {
 	resourceId := "alicloud_hbr_replication_vault.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudHBRReplicationVaultMap0)
@@ -194,7 +194,7 @@ func TestAccAlicloudHBRReplicationVault_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRReplicationVault_basic1(t *testing.T) {
+func TestAccAliCloudHBRReplicationVault_basic1(t *testing.T) {
 	resourceId := "alicloud_hbr_replication_vault.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudHBRReplicationVaultMap0)
@@ -391,7 +391,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrReplicationVaultCreate(dInit, rawClient)
+	err = resourceAliCloudHbrReplicationVaultCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -418,7 +418,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrReplicationVaultCreate(dInit, rawClient)
+		err := resourceAliCloudHbrReplicationVaultCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -445,7 +445,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrReplicationVaultUpdate(dExisted, rawClient)
+	err = resourceAliCloudHbrReplicationVaultUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateVault
@@ -487,7 +487,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrReplicationVaultUpdate(dExisted, rawClient)
+		err := resourceAliCloudHbrReplicationVaultUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -526,7 +526,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrReplicationVaultRead(dExisted, rawClient)
+		err := resourceAliCloudHbrReplicationVaultRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -545,7 +545,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrReplicationVaultDelete(dExisted, rawClient)
+	err = resourceAliCloudHbrReplicationVaultDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -567,7 +567,7 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrReplicationVaultDelete(dExisted, rawClient)
+		err := resourceAliCloudHbrReplicationVaultDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -578,3 +578,142 @@ func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 	}
 
 }
+
+// Test Hbr ReplicationVault. >>> Resource test cases, automatically generated.
+// Case ReplicationVault配置 10880
+func TestAccAliCloudHbrReplicationVault_basic10880(t *testing.T) {
+	resourceId := "alicloud_hbr_replication_vault.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrReplicationVaultMap10880)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacchbr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrReplicationVaultBasicDependence10880)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckHbrReplicationVaultDestroyWithProviders(&providers),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provider":                     "alicloud.hz",
+					"vault_name":                   "1749438278",
+					"replication_source_region_id": "cn-shanghai",
+					"replication_source_vault_id":  "${alicloud_hbr_vault.defaultYI0zy8.id}",
+					"description":                  "1749438278",
+					"encrypt_type":                 "KMS",
+					"kms_key_id":                   "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_type":                 "KMS",
+						"vault_name":                   CHECKSET,
+						"replication_source_region_id": "cn-shanghai",
+						"replication_source_vault_id":  CHECKSET,
+						"description":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudHbrReplicationVaultMap10880 = map[string]string{
+	"status":              CHECKSET,
+	"vault_storage_class": CHECKSET,
+	"region_id":           CHECKSET,
+}
+
+func AlicloudHbrReplicationVaultBasicDependence10880(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+provider "alicloud" {
+	alias  = "sh"
+	region = "cn-shanghai"
+}
+
+provider "alicloud" {
+	alias  = "hz"
+	region = "cn-hangzhou"
+}
+
+resource "alicloud_hbr_vault" "defaultYI0zy8" {
+  provider     = alicloud.sh
+  vault_type   = "STANDARD"
+  encrypt_type = "KMS"
+  vault_name   = "1749438277"
+  kms_key_id = alicloud_kms_key.sh.id
+}
+
+resource "alicloud_kms_key" "sh" {
+	provider     = alicloud.sh
+	description            = var.name
+	pending_window_in_days = 7
+	key_state              = "Enabled"
+}
+
+resource "alicloud_kms_key" "default" {
+	provider     = alicloud.hz
+	description            = var.name
+	pending_window_in_days = 7
+	key_state              = "Enabled"
+}
+
+`, name)
+}
+
+func testAccCheckHbrReplicationVaultDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, provider := range *providers {
+			if provider.Meta() == nil {
+				continue
+			}
+			if err := testAccCheckHbrReplicationVaultDestroyWithProvider(s, provider); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func testAccCheckHbrReplicationVaultDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	hbrService := HbrService{provider.Meta().(*connectivity.AliyunClient)}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_hbr_replication_vault" {
+			continue
+		}
+
+		_, err := hbrService.DescribeHbrReplicationVault(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Test Hbr ReplicationVault. <<< Resource test cases, automatically generated.
