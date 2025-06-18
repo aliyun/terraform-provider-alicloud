@@ -2,7 +2,7 @@ package connectivity
 
 import "testing"
 
-func TestRegionDefinitions(t *testing.T) {
+func TestUnitCommonRegionDefinitions(t *testing.T) {
 	t.Run("AllExportedRegionsInValidRegions", func(t *testing.T) {
 		definedRegions := []Region{
 			Hangzhou, Qingdao, Beijing,

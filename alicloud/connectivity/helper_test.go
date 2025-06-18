@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestConvertKebabToSnake(t *testing.T) {
+func TestUnitCommonConvertKebabToSnake(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -25,7 +25,7 @@ func TestConvertKebabToSnake(t *testing.T) {
 	}
 }
 
-func TestIsInteger(t *testing.T) {
+func TestUnitCommonIsInteger(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -49,7 +49,7 @@ func TestIsInteger(t *testing.T) {
 	}
 }
 
-func TestIsString(t *testing.T) {
+func TestUnitCommonIsString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    interface{}

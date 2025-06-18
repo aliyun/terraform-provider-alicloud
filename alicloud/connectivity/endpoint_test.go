@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestLoadEndpointFromEnv(t *testing.T) {
+func TestUnitCommonLoadEndpointFromEnv(t *testing.T) {
 	t.Setenv("ALIBABA_CLOUD_ENDPOINT_ECS", "https://ecs.test.com")
 	defer os.Unsetenv("ALIBABA_CLOUD_ENDPOINT_ECS")
 
@@ -27,7 +27,7 @@ func TestLoadEndpointFromEnv(t *testing.T) {
 	assert.Equal(t, "https://ecs.test.com", val)
 }
 
-func TestLoadEndpointFromLocal(t *testing.T) {
+func TestUnitCommonLoadEndpointFromLocal(t *testing.T) {
 	content := `<?xml version="1.0" encoding="UTF-8"?>
 <Endpoints>
   <Endpoint name="cn-beijing">
@@ -64,7 +64,7 @@ func TestLoadEndpointFromLocal(t *testing.T) {
 	assert.Equal(t, "ecs.cn-beijing.aliyuncs.com", val)
 }
 
-func TestIrregularProductEndpoint(t *testing.T) {
+func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 	client := &AliyunClient{
 		config: &Config{
 			Endpoints: new(sync.Map),
@@ -92,7 +92,7 @@ func TestIrregularProductEndpoint(t *testing.T) {
 	}
 }
 
-func TestInternationalRegionEndpoint(t *testing.T) {
+func TestUnitCommonInternationalRegionEndpoint(t *testing.T) {
 	client := &AliyunClient{
 		config: &Config{
 			Endpoints: new(sync.Map),
@@ -120,7 +120,7 @@ func TestInternationalRegionEndpoint(t *testing.T) {
 	}
 }
 
-func TestEndpointErrorHandling(t *testing.T) {
+func TestUnitCommonEndpointErrorHandling(t *testing.T) {
 	client := NewTestClient(t)
 
 	err := client.loadEndpoint("invalid_product")

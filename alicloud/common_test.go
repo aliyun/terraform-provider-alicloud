@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExpandStringList(t *testing.T) {
+func TestUnitCommonExpandStringList(t *testing.T) {
 	tests := []struct {
 		name   string
 		input  []interface{}
@@ -28,14 +28,14 @@ func TestExpandStringList(t *testing.T) {
 	}
 }
 
-func TestConvertListStringToListInterface(t *testing.T) {
+func TestUnitCommonConvertListStringToListInterface(t *testing.T) {
 	input := []string{"a", "b", "c"}
 	expected := []interface{}{"a", "b", "c"}
 	result := convertListStringToListInterface(input)
 	assert.Equal(t, expected, result)
 }
 
-func TestUserDataHashSum(t *testing.T) {
+func TestUnitCommonUserDataHashSum(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -51,7 +51,7 @@ func TestUserDataHashSum(t *testing.T) {
 	}
 }
 
-func TestWriteToFile(t *testing.T) {
+func TestUnitCommonWriteToFile(t *testing.T) {
 	tmpFile := fmt.Sprintf("%s/testfile.txt", t.TempDir())
 
 	t.Run("write content", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestWriteToFile(t *testing.T) {
 	})
 }
 
-func TestComputePeriodByUnit(t *testing.T) {
+func TestUnitCommonComputePeriodByUnit(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name        string
@@ -118,7 +118,7 @@ func TestComputePeriodByUnit(t *testing.T) {
 	}
 }
 
-func TestPaymentTypeConversion(t *testing.T) {
+func TestUnitCommonPaymentTypeConversion(t *testing.T) {
 	tests := []struct {
 		input    interface{}
 		expected interface{}
@@ -136,7 +136,7 @@ func TestPaymentTypeConversion(t *testing.T) {
 	}
 }
 
-func TestIPv6Compression(t *testing.T) {
+func TestUnitCommonIPv6Compression(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
@@ -160,14 +160,14 @@ func TestIPv6Compression(t *testing.T) {
 	}
 }
 
-func TestUniqueStrings(t *testing.T) {
+func TestUnitCommonUniqueStrings(t *testing.T) {
 	input := []string{"a", "b", "a", "c"}
 	expected := []string{"a", "b", "c"}
 	result := Unique(input)
 	assert.ElementsMatch(t, expected, result)
 }
 
-func TestInterfaceToBool(t *testing.T) {
+func TestUnitCommonInterfaceToBool(t *testing.T) {
 	tests := []struct {
 		input    interface{}
 		expected bool
