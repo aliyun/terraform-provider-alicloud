@@ -16,6 +16,11 @@ func NewTestClient(t *testing.T) *AliyunClient {
 	accessKey := os.Getenv("ALICLOUD_ACCESS_KEY")
 	secretKey := os.Getenv("ALICLOUD_SECRET_KEY")
 
+	if accessKey == "" || secretKey == "" {
+		t.Skipf("Skipping the test case as some necessary params are empty")
+		t.Skipped()
+	}
+
 	config := &Config{
 		Region:      Beijing,
 		RegionId:    "cn-beijing",

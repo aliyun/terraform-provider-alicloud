@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -184,4 +186,296 @@ func TestUnitCommonInterfaceToBool(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestUnitCommonIsProtocolValid(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"ValidHTTP", "http", true},
+		{"ValidHTTPS", "https", true},
+		{"ValidTCP", "tcp", true},
+		{"ValidUDP", "udp", true},
+		{"InvalidProtocol", "icmp", false},
+		{"UpperCaseHTTP", "HTTP", false},
+		{"MixedCaseHttP", "HttP", false},
+		{"EmptyString", "", false},
+		{"PartialMatch", "htt", false},
+		{"ExtraCharacters", "http ", false},
+		{"NumberSuffix", "http1", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isProtocolValid(tc.input)
+			if result != tc.expected {
+				t.Errorf("input: %s, except: %v, result: %v", tc.input, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonExpandIntList(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []interface{}
+		expected []int
+	}{
+		{"EmptySlice", []interface{}{}, []int{}},
+		{"SingleInt", []interface{}{42}, []int{42}},
+		{"MixedTypes", []interface{}{1, 2, 3}, []int{1, 2, 3}},
+		{"NegativeValues", []interface{}{-5, 0, 10}, []int{-5, 0, 10}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := expandIntList(tc.input)
+			if !reflect.DeepEqual(result, tc.expected) {
+				t.Errorf("input: %v, except: %v, result: %v", tc.input, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertListToJsonString(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []interface{}
+		expected string
+	}{
+		{"EmptySlice", []interface{}{}, ""},
+		{"StringValues", []interface{}{"a", "b"}, `["a","b"]`},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := convertListToJsonString(tc.input)
+			if result != tc.expected {
+				t.Errorf("input: %v, except: %q, result: %q", tc.input, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonBase64Encoding(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{"SingleValue", []string{"hello"}, []string{"hello"}},
+		{"MultipleValues", []string{"a", "b", "c"}, []string{"a", "b", "c"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			encoded := encodeToBase64String(tc.input)
+			decoded, err := decodeFromBase64String(encoded)
+			if err != nil {
+				t.Fatalf("decode err: %v", err)
+			}
+
+			if !reflect.DeepEqual(decoded, tc.expected) {
+				t.Errorf("input: %v, encode: %s, decode: %v", tc.input, encoded, decoded)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertJsonStringToMap(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected map[string]interface{}
+		hasError bool
+	}{
+		{"ValidJSON", `{"key":"value"}`, map[string]interface{}{"key": "value"}, false},
+		{"EmptyJSON", `{}`, map[string]interface{}{}, false},
+		{"InvalidJSON", `{invalid}`, nil, true},
+		{"NestedJSON", `{"a":1,"b":{"c":2}}`, map[string]interface{}{"a": 1.0, "b": map[string]interface{}{"c": 2.0}}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := convertJsonStringToMap(tc.input)
+
+			if tc.hasError {
+				if err == nil {
+					t.Error("except error but return nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("err: %v", err)
+				}
+				if !reflect.DeepEqual(result, tc.expected) {
+					t.Errorf("input: %q, except: %v, result: %v", tc.input, tc.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertListToCommaSeparate(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []interface{}
+		expected string
+	}{
+		{"EmptySlice", []interface{}{}, ""},
+		{"SingleString", []interface{}{"a"}, "a"},
+		{"MultipleStrings", []interface{}{"a", "b", "c"}, "a,b,c"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := convertListToCommaSeparate(tc.input)
+			if result != tc.expected {
+				t.Errorf("input: %v, except: %q, result: %q", tc.input, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonFilterEmptyStrings(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []interface{}
+		expected []interface{}
+	}{
+		{"AllEmpty", []interface{}{"", nil, 0}, []interface{}{nil, 0}},
+		{"MixedValues", []interface{}{"a", "", "c", nil}, []interface{}{"a", "c", nil}},
+		{"NoEmpty", []interface{}{1, "b", true}, []interface{}{1, "b", true}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := filterEmptyStrings(tc.input)
+			if !reflect.DeepEqual(result, tc.expected) {
+				t.Errorf("input: %v, except: %v, result: %v", tc.input, tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonTypeConversionFunctions(t *testing.T) {
+	t.Run("BoolToString", func(t *testing.T) {
+		if convertBoolToString(true) != "true" || convertBoolToString(false) != "false" {
+			t.Error("BoolToString failed")
+		}
+	})
+
+	t.Run("StringToBool", func(t *testing.T) {
+		if !convertStringToBool("true") || convertStringToBool("false") {
+			t.Error("StringToBool failed")
+		}
+	})
+
+	t.Run("IntToString", func(t *testing.T) {
+		if convertIntergerToString(42) != "42" {
+			t.Error("IntToString failed")
+		}
+	})
+
+	t.Run("FloatToString", func(t *testing.T) {
+		result := convertFloat64ToString(3.14)
+		if !strings.Contains(result, "3.14") {
+			t.Errorf("convertFloat64ToString failed: %s", result)
+		}
+	})
+}
+
+func TestUnitCommonConvertJsonStringToList(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []interface{}
+		hasError bool
+	}{
+		{"ValidArray", `[1, "a", true]`, []interface{}{1.0, "a", true}, false},
+		{"EmptyArray", `[]`, []interface{}{}, false},
+		{"InvalidJSON", `[1, "a"`, nil, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := convertJsonStringToList(tc.input)
+
+			if tc.hasError {
+				if err == nil {
+					t.Error("except error but return nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("err: %v", err)
+				}
+				if !reflect.DeepEqual(result, tc.expected) {
+					t.Errorf("input: %q, except: %v, result: %v", tc.input, tc.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonExpandArrayToMap(t *testing.T) {
+	inputMap := map[string]interface{}{"existing": "value"}
+	array := []interface{}{"a", "b", "c"}
+	key := "testKey"
+
+	result := expandArrayToMap(inputMap, array, key)
+
+	expected := map[string]interface{}{
+		"existing":  "value",
+		"testKey.1": "a",
+		"testKey.2": "b",
+		"testKey.3": "c",
+	}
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("except %v, result %v", expected, result)
+	}
+}
+
+func TestUnitCommonJsonConversionFunctions(t *testing.T) {
+	t.Run("JSONStringToObject", func(t *testing.T) {
+		input := `{"key":"value"}`
+		result := convertJsonStringToObject(input)
+		expected := map[string]interface{}{"key": "value"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("input: %q, except: %v, result: %v", input, expected, result)
+		}
+	})
+
+	t.Run("ObjectToJSONString", func(t *testing.T) {
+		input := map[string]interface{}{"key": "value"}
+		result := convertObjectToJsonString(input)
+		if result != `{"key":"value"}` {
+			t.Errorf("ObjectToJSONString error: %s", result)
+		}
+	})
+
+	t.Run("MapToJSONString", func(t *testing.T) {
+		input := map[string]interface{}{"key": "value"}
+		result, err := convertMaptoJsonString(input)
+		if err != nil || result != `{"key":"value"}` {
+			t.Errorf("err: %s, 错误: %v", result, err)
+		}
+	})
+
+	t.Run("MapToJSONIgnoreError", func(t *testing.T) {
+		input := map[string]interface{}{"key": make(chan int)}
+		result := convertMapToJsonStringIgnoreError(input)
+		if result != "" {
+			t.Error("err:", result)
+		}
+	})
+
+	t.Run("InterfaceToJSON", func(t *testing.T) {
+		input := struct{ Key string }{"value"}
+		result, err := convertInterfaceToJsonString(input)
+		if err != nil || result != `{"Key":"value"}` {
+			t.Errorf("result: %s, err: %v", result, err)
+		}
+	})
 }
