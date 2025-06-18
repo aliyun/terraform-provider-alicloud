@@ -204,6 +204,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 							"size":                 "50",
 							"delete_with_instance": "true",
 							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.default.id}",
 						},
 					},
 				}),
@@ -282,6 +283,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 							"encrypted":            "true",
 							"performance_level":    "PL1",
 							"size":                 "25",
+							"kms_key_id":           "${alicloud_kms_key.default.id}",
 						},
 					},
 				}),
@@ -1036,6 +1038,8 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 							"name":                 name,
 							"size":                 "40",
 							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.default.id}",
 						},
 					},
 					"resource_group_id": "rg-zkdfjahg9zxncv0",
@@ -1064,6 +1068,7 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 						{
 							"name":        "disk2",
 							"description": "test2",
+							"kms_key_id":  "${alicloud_kms_key.default.id}",
 						},
 					},
 				}),
@@ -1178,6 +1183,11 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_security_group" "update" {
   name   = "${var.name}1"
   vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+resource "alicloud_kms_key" "default" {
+	description             = var.name
+	pending_window_in_days  = "7"
+	status               = "Enabled"
 }
 `, name)
 }
