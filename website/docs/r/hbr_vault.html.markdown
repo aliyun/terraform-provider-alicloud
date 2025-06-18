@@ -48,7 +48,9 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.243.0) The tag of the resource.
 * `vault_name` - (Required) The name of Vault.
 * `vault_storage_class` - (Optional, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
-* `vault_type` - (Optional, ForceNew) The type of Vault. Valid values: `STANDARD`, `OTS_BACKUP`.
+* `vault_type` - (Optional, ForceNew) The type of Vault. Valid values:
+  - `STANDARD`: Standard backup vault.
+  - `OTS_BACKUP`: Backup vault for Tablestore. **NOTE:** We recommend that you use `STANDARD`. The cloud backup product will upgrade the backup vault, and the `vault_type` will be changed from `OTS_BACKUP` to `STANDARD`.
 * `worm_enabled` - (Optional, Bool, Available since v1.243.0) Indicates whether the immutable backup feature is enabled. Valid values: `true`, `false`.
 * `redundancy_type` - (Removed since v1.209.1) The redundancy type of the vault. **NOTE:** Field `redundancy_type` has been removed from provider version 1.209.1.
 
