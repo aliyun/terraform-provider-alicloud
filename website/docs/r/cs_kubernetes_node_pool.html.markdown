@@ -465,7 +465,6 @@ The data_disks supports the following:
 The eflo_node_group supports the following:
 * `cluster_id` - (Optional, Available since v1.252.0) The ID of the associated Lingjun cluster is required when creating a Lingjun node pool.
 * `group_id` - (Optional, Available since v1.252.0) When creating a Lingjun node pool, you need the Lingjun group ID of the associated Lingjun cluster.
-* `eflo_region_id` - (Optional, Available since v1.252.0) The region id of node group.
 
 ### `kubelet_configuration`
 

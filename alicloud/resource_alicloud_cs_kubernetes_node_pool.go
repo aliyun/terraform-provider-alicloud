@@ -158,10 +158,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"eflo_region_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 					},
 				},
 			},
@@ -1599,10 +1595,6 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		groupId, _ := jsonpath.Get("$[0].group_id", v)
 		if groupId != nil && groupId != "" {
 			objectDataLocalMap7["group_id"] = groupId
-		}
-		regionId, _ := jsonpath.Get("$[0].eflo_region_id", v)
-		if regionId != nil && regionId != "" {
-			objectDataLocalMap7["eflo_region_id"] = regionId
 		}
 
 		request["eflo_node_group"] = objectDataLocalMap7
