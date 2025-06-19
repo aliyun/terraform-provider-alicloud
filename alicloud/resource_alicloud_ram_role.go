@@ -1,118 +1,188 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudRamRole() *schema.Resource {
+func resourceAliCloudRamRole() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamRoleCreate,
-		Read:   resourceAlicloudRamRoleRead,
-		Update: resourceAlicloudRamRoleUpdate,
-		Delete: resourceAlicloudRamRoleDelete,
+		Create: resourceAliCloudRamRoleCreate,
+		Read:   resourceAliCloudRamRoleRead,
+		Update: resourceAliCloudRamRoleUpdate,
+		Delete: resourceAliCloudRamRoleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"name": {
+			"arn": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"ram_users": {
-				Type:     schema.TypeSet,
-				Optional: true,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				Set:           schema.HashString,
-				ConflictsWith: []string{"document"},
-				Deprecated:    "Field 'ram_users' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
-			"max_session_duration": {
-				Type:         schema.TypeInt,
+			"assume_role_policy_document": {
+				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      3600,
-				ValidateFunc: IntBetween(3600, 43200),
-			},
-			"services": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				Set:           schema.HashString,
-				ConflictsWith: []string{"document"},
-				Deprecated:    "Field 'services' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
-			},
-			"document": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"ram_users", "services", "version"},
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
-				ValidateFunc: validation.ValidateJsonString,
+				ConflictsWith: []string{"document", "version", "ram_users", "services"},
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"version": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Default:       "1",
-				ConflictsWith: []string{"document"},
-				// can only be '1' so far.
-				ValidateFunc: StringInSlice([]string{"1"}, false),
-				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
-			},
-			"force": {
-				Type:     schema.TypeBool,
+			"max_session_duration": {
+				Type:     schema.TypeInt,
 				Optional: true,
-			},
-			"arn": {
-				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"role_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"role_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"tags": tagsSchema(),
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.252.0. New field 'role_name' instead.",
+				ConflictsWith: []string{"role_name"},
+			},
+			"document": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+				Deprecated:    "Field 'document' has been deprecated from provider version 1.252.0. New field 'assume_role_policy_document' instead.",
+				ConflictsWith: []string{"assume_role_policy_document", "version", "ram_users", "services"},
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "1",
+				// can only be '1' so far.
+				ValidateFunc:  StringInSlice([]string{"1"}, false),
+				Deprecated:    "Field 'version' has been deprecated from provider version 1.49.0. New field 'document' instead.",
+				ConflictsWith: []string{"assume_role_policy_document", "document"},
+			},
+			"ram_users": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				Set:           schema.HashString,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Deprecated:    "Field 'ram_users' has been deprecated from provider version 1.49.0. New field 'document' instead.",
+				ConflictsWith: []string{"assume_role_policy_document", "document"},
+			},
+			"services": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				Set:           schema.HashString,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Deprecated:    "Field 'services' has been deprecated from provider version 1.49.0. New field 'document' instead.",
+				ConflictsWith: []string{"assume_role_policy_document", "document"},
+			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamRoleCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
-	request, err := buildAlicloudRamRoleCreateArgs(d, meta)
-	if err != nil {
-		return WrapError(err)
+	action := "CreateRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("role_name"); ok {
+		request["RoleName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["RoleName"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
+	if v, ok := d.GetOkExists("max_session_duration"); ok {
+		request["MaxSessionDuration"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMapJSON, err := convertListMapToJsonString(tagsMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tag"] = tagsMapJSON
+	}
+
+	assumeRolePolicyDocument, assumeRolePolicyDocumentOk := d.GetOk("assume_role_policy_document")
+	document, documentOk := d.GetOk("document")
+	ramUsers, usersOk := d.GetOk("ram_users")
+	services, servicesOk := d.GetOk("services")
+
+	if !assumeRolePolicyDocumentOk && !documentOk && !usersOk && !servicesOk {
+		return WrapError(Error("At least one of 'assume_role_policy_document', 'document', 'ram_users' or 'services' must be set."))
+	}
+
+	if assumeRolePolicyDocumentOk {
+		request["AssumeRolePolicyDocument"] = assumeRolePolicyDocument
+	} else if documentOk {
+		request["AssumeRolePolicyDocument"] = document
+	} else {
+		ramServiceV2 := RamServiceV2{client}
+
+		rolePolicyDocument, err := ramServiceV2.AssembleRolePolicyDocument(ramUsers.(*schema.Set).List(), services.(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["AssumeRolePolicyDocument"] = rolePolicyDocument
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.CreateRole(request)
-		})
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,51 +190,120 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ram.CreateRoleResponse)
-		d.SetId(response.Role.RoleName)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role", action, AlibabaCloudSdkGoERROR)
 	}
-	return resourceAlicloudRamRoleRead(d, meta)
+
+	responseRole := response["Role"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseRole["RoleName"]))
+
+	return resourceAliCloudRamRoleRead(d, meta)
 }
 
-func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamRoleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	var response map[string]interface{}
-	var err error
-	update := false
-	request := map[string]interface{}{
-		"RoleName": d.Id(),
-	}
-	if d.HasChange("document") {
-		update = true
-		request["NewAssumeRolePolicyDocument"] = d.Get("document").(string)
-	} else if d.HasChange("ram_users") || d.HasChange("services") || d.HasChange("version") {
-		update = true
-		document, err := ramService.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
-		if err != nil {
-			return WrapError(err)
+	ramServiceV2 := RamServiceV2{client}
+
+	objectRaw, err := ramServiceV2.DescribeRamRole(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_role DescribeRamRole Failed!!! %s", err)
+			d.SetId("")
+			return nil
 		}
-		request["NewAssumeRolePolicyDocument"] = document
+		return WrapError(err)
 	}
-	if d.HasChange("max_session_duration") {
-		update = true
-		request["NewMaxSessionDuration"] = d.Get("max_session_duration")
+
+	d.Set("arn", objectRaw["Arn"])
+	d.Set("assume_role_policy_document", objectRaw["AssumeRolePolicyDocument"])
+	d.Set("create_time", objectRaw["CreateDate"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("max_session_duration", objectRaw["MaxSessionDuration"])
+	d.Set("role_id", objectRaw["RoleId"])
+	d.Set("role_name", objectRaw["RoleName"])
+	d.Set("name", objectRaw["RoleName"])
+	d.Set("document", objectRaw["AssumeRolePolicyDocument"])
+
+	rolePolicy, err := ramServiceV2.ParseRolePolicyDocument(objectRaw["AssumeRolePolicyDocument"].(string))
+	if err != nil {
+		return WrapError(err)
 	}
+
+	d.Set("version", rolePolicy.Version)
+
+	if len(rolePolicy.Statement) > 0 {
+		principal := rolePolicy.Statement[0].Principal
+		d.Set("ram_users", principal.RAM)
+		d.Set("services", principal.Service)
+	}
+
+	objectRaw, err = ramServiceV2.DescribeRoleListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	tagsMaps := objectRaw["TagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	return nil
+}
+
+func resourceAliCloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	action := "UpdateRole"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RoleName"] = d.Id()
+
 	if d.HasChange("description") {
 		update = true
 		request["NewDescription"] = d.Get("description")
 	}
+
+	if d.HasChange("max_session_duration") {
+		update = true
+
+		if v, ok := d.GetOkExists("max_session_duration"); ok {
+			request["NewMaxSessionDuration"] = v
+		}
+	}
+
+	if d.HasChange("assume_role_policy_document") {
+		update = true
+		request["NewAssumeRolePolicyDocument"] = d.Get("assume_role_policy_document")
+	}
+
+	if d.HasChange("document") {
+		update = true
+		request["NewAssumeRolePolicyDocument"] = d.Get("document")
+	}
+
+	if d.HasChange("ram_users") || d.HasChange("services") || d.HasChange("version") {
+		update = true
+		ramServiceV2 := RamServiceV2{client}
+
+		rolePolicyDocument, err := ramServiceV2.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["NewAssumeRolePolicyDocument"] = rolePolicyDocument
+	}
+
 	if update {
-		action := "UpdateRole"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, false)
+			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,92 +311,77 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudRamRoleRead(d, meta)
-}
-
-func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-
-	object, err := ramService.DescribeRamRole(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
+	if d.HasChange("tags") {
+		ramServiceV2 := RamServiceV2{client}
+		if err := ramServiceV2.SetResourceTags(d, "role"); err != nil {
+			return WrapError(err)
 		}
-		return WrapError(err)
 	}
-	role := object.Role
-	rolePolicy, err := ramService.ParseRolePolicyDocument(role.AssumeRolePolicyDocument)
-	if err != nil {
-		return WrapError(err)
-	}
-	if len(rolePolicy.Statement) > 0 {
-		principal := rolePolicy.Statement[0].Principal
-		d.Set("services", principal.Service)
-		d.Set("ram_users", principal.RAM)
-	}
-	d.Set("role_id", role.RoleId)
-	d.Set("name", role.RoleName)
-	d.Set("arn", role.Arn)
-	d.Set("description", role.Description)
-	d.Set("version", rolePolicy.Version)
-	d.Set("document", role.AssumeRolePolicyDocument)
-	d.Set("max_session_duration", role.MaxSessionDuration)
-	return nil
+	return resourceAliCloudRamRoleRead(d, meta)
 }
 
-func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamRoleDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	ListPoliciesForRoleRequest := ram.CreateListPoliciesForRoleRequest()
-	ListPoliciesForRoleRequest.RegionId = client.RegionId
-	ListPoliciesForRoleRequest.RoleName = d.Id()
+	action := "DeleteRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["RoleName"] = d.Id()
 
 	if d.Get("force").(bool) {
-		var response *ram.ListPoliciesForRoleResponse
-		err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
-			})
+		listRequest := map[string]interface{}{
+			"RoleName": d.Id(),
+		}
+		listAction := "ListPoliciesForRole"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", listAction, nil, listRequest, true)
 			if err != nil {
 				if NeedRetry(err) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
-			response, _ = raw.(*ram.ListPoliciesForRoleResponse)
 			return nil
 		})
+		addDebug(listAction, response, listRequest)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+			if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) || NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		// Loop and remove the Policies from the Role
-		if len(response.Policies.Policy) > 0 {
-			for _, v := range response.Policies.Policy {
-				request := ram.CreateDetachPolicyFromRoleRequest()
-				request.RegionId = client.RegionId
-				request.RoleName = d.Id()
-				request.PolicyName = v.PolicyName
-				request.PolicyType = v.PolicyType
 
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-					raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-						return ramClient.DetachPolicyFromRole(request)
-					})
+		policyResp, err := jsonpath.Get("$.Policies.Policy", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+		}
+
+		// Loop and remove the Policies from the Role
+		if policyResp != nil && len(policyResp.([]interface{})) > 0 {
+			for _, v := range policyResp.([]interface{}) {
+				policyAction := "DetachPolicyFromRole"
+				policyRequest := map[string]interface{}{
+					"RoleName":   d.Id(),
+					"PolicyName": v.(map[string]interface{})["PolicyName"],
+					"PolicyType": v.(map[string]interface{})["PolicyType"],
+				}
+
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = client.RpcPost("Ram", "2015-05-01", policyAction, nil, policyRequest, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -265,75 +389,42 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 					return nil
 				})
+				addDebug(action, response, policyRequest)
 
-				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EntityNotExist"}) || NotFoundError(err) {
+						return nil
+					}
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-
 			}
+
 		}
 	}
 
-	deleteRoleRequest := ram.CreateDeleteRoleRequest()
-	deleteRoleRequest.RegionId = client.RegionId
-	deleteRoleRequest.RoleName = d.Id()
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeleteRole(deleteRoleRequest)
-		})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) {
+			if IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(deleteRoleRequest.GetActionName(), raw, deleteRoleRequest.RpcRequest, deleteRoleRequest)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) || NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return WrapError(ramService.WaitForRamRole(d.Id(), Deleted, DefaultTimeout))
-}
-
-func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreateRoleRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	request := ram.CreateCreateRoleRequest()
-	request.RegionId = client.RegionId
-	request.RoleName = d.Get("name").(string)
-
-	ramUsers, usersOk := d.GetOk("ram_users")
-	services, servicesOk := d.GetOk("services")
-	document, documentOk := d.GetOk("document")
-
-	if !usersOk && !servicesOk && !documentOk {
-		return &ram.CreateRoleRequest{}, WrapError(Error("At least one of 'ram_users', 'services' or 'document' must be set."))
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	if documentOk {
-		request.AssumeRolePolicyDocument = document.(string)
-	} else {
-		rolePolicyDocument, err := ramService.AssembleRolePolicyDocument(ramUsers.(*schema.Set).List(), services.(*schema.Set).List(), d.Get("version").(string))
-		if err != nil {
-			return &ram.CreateRoleRequest{}, WrapError(err)
-		}
-		request.AssumeRolePolicyDocument = rolePolicyDocument
-	}
-
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
-		request.Description = v.(string)
-	}
-
-	if v, ok := d.GetOk("max_session_duration"); ok {
-		request.MaxSessionDuration = requests.NewInteger(v.(int))
-	}
-
-	return request, nil
+	return nil
 }

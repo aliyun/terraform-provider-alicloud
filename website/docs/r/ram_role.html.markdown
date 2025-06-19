@@ -2,20 +2,25 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_role"
-sidebar_current: "docs-alicloud-resource-ram-role"
 description: |-
-  Provides a RAM Role resource.
+  Provides a Alicloud RAM Role resource.
 ---
 
 # alicloud_ram_role
 
 Provides a RAM Role resource.
 
--> **NOTE:** When you want to destroy this resource forcefully(means remove all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
+
+
+For information about RAM Role and how to use it, see [What is Role](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ram-2015-05-01-createrole).
 
 -> **NOTE:** Available since v1.0.0.
 
+-> **NOTE:** When you want to destroy this resource forcefully(means remove all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
+
 ## Example Usage
+
+Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_ram_role&exampleId=765bf4ab-a6d2-565c-d4c1-33fbf7a35376c5a3c7c1&activeTab=example&spm=docs.r.ram_role.0.765bf4aba6&intl_lang=EN_US" target="_blank">
@@ -24,10 +29,14 @@ Provides a RAM Role resource.
 </div></div>
 
 ```terraform
-# Create a new RAM Role.
-resource "alicloud_ram_role" "role" {
-  name        = "terraform-example"
-  document    = <<EOF
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_ram_role" "default" {
+  role_name                   = "terraform-example-${random_integer.default.result}"
+  assume_role_policy_document = <<EOF
   {
     "Statement": [
       {
@@ -35,7 +44,7 @@ resource "alicloud_ram_role" "role" {
         "Effect": "Allow",
         "Principal": {
           "Service": [
-            "apigateway.aliyuncs.com", 
+            "apigateway.aliyuncs.com",
             "ecs.aliyuncs.com"
           ]
         }
@@ -44,44 +53,48 @@ resource "alicloud_ram_role" "role" {
     "Version": "1"
   }
   EOF
-  description = "this is a role test."
+  description                 = "this is a role test."
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) Name of the RAM role. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-", "_", and must not begin with a hyphen.
-* `services` - (Deprecated since 1.49.0, Optional, Type: list, Conflicts with `document`) (It has been deprecated since version 1.49.0, and use field 'document' to replace.) List of services which can assume the RAM role. The format of each item in this list is `${service}.aliyuncs.com` or `${account_id}@${service}.aliyuncs.com`, such as `ecs.aliyuncs.com` and `1234567890000@ots.aliyuncs.com`. The `${service}` can be `ecs`, `log`, `apigateway` and so on, the `${account_id}` refers to someone's Alicloud account id.
-* `ram_users` - (Deprecated since 1.49.0, Optional, Type: list, Conflicts with `document`) (It has been deprecated since version 1.49.0, and use field 'document' to replace.) List of ram users who can assume the RAM role. The format of each item in this list is `acs:ram::${account_id}:root` or `acs:ram::${account_id}:user/${user_name}`, such as `acs:ram::1234567890000:root` and `acs:ram::1234567890001:user/Mary`. The `${user_name}` is the name of a RAM user which must exists in the Alicloud account indicated by the `${account_id}`.
-* `version` - (Deprecated since 1.49.0, Optional, Conflicts with `document`) (It has been deprecated since version 1.49.0, and use field 'document' to replace.) Version of the RAM role policy document. Valid value is `1`. Default value is `1`.
-* `document` - (Optional, Conflicts with `services`, `ram_users` and `version`) Authorization strategy of the RAM role. It is required when the `services` and `ram_users` are not specified.
-* `description` - (Optional) Description of the RAM role. This name can have a string of 1 to 1024 characters. **NOTE:** The `description` supports modification since V1.144.0.
-* `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
-* `max_session_duration` - (Optional, Available since v1.105.0) The maximum session duration of the RAM role. Valid values: 3600 to 43200. Unit: seconds. Default value: 3600. The default value is used if the parameter is not specified.
+* `assume_role_policy_document` - (Optional, Available since v1.252.0) The trust policy that specifies one or more trusted entities to assume the RAM role. The trusted entities can be Alibaba Cloud accounts, Alibaba Cloud services, or identity providers (IdPs).
+* `description` - (Optional) The description of the RAM role.
+* `max_session_duration` - (Optional, Int, Available since v1.105.0) The maximum session time of the RAM role. Default value: `3600`. Valid values: `3600` to `43200`.
+* `role_name` - (Optional, ForceNew, Available since v1.252.0) The name of the RAM role.
+* `tags` - (Optional, Map, Available since v1.252.0) The list of tags for the role.
+* `force` - (Optional, Bool) Specifies whether to force delete the Role. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `name` - (Optional, ForceNew, Deprecated since v1.252.0) Field `name` has been deprecated from provider version 1.252.0. New field `role_name` instead.
+* `document` - (Optional, Deprecated since v1.252.0) Field `document` has been deprecated from provider version 1.252.0. New field `assume_role_policy_document` instead.
+* `version` - (Optional, Deprecated since v1.49.0) Field `version` has been deprecated from provider version 1.49.0. New field `document` instead.
+* `ram_users` - (Optional, List, Deprecated since v1.49.0) Field `ram_users` has been deprecated from provider version 1.49.0. New field `document` instead.
+* `services` - (Optional, List, Deprecated since v1.49.0) Field `services` has been deprecated from provider version 1.49.0. New field `document` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - This ID of this resource. The value is set to `role_name`.
-* `role_id` - The role ID.
-* `arn` - The role arn.
+* `id` - The ID of the resource supplied above.
+* `arn` - The Alibaba Cloud Resource Name (ARN) of the RAM role.
+* `create_time` - (Available since v1.252.0) The time when the RAM role was created.
+* `role_id` - The ID of the RAM role.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.159.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the ram role.
-* `update` - (Defaults to 10 mins) Used when updating the ram role.
-* `delete` - (Defaults to 10 mins) Used when deleting the ram role.
+* `create` - (Defaults to 5 mins) Used when create the Role.
+* `delete` - (Defaults to 5 mins) Used when delete the Role.
+* `update` - (Defaults to 5 mins) Used when update the Role.
 
 ## Import
 
-RAM role can be imported using the id or name, e.g.
+RAM Role can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ram_role.example my-role
+$ terraform import alicloud_ram_role.example <id>
 ```

@@ -1178,3 +1178,150 @@ func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFunc(id string, field st
 }
 
 // DescribeRamSecurityPreference >>> Encapsulated.
+
+// DescribeRamRole <<< Encapsulated get interface for Ram Role.
+
+func (s *RamServiceV2) DescribeRamRole(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RoleName"] = id
+
+	action := "GetRole"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+			return object, WrapErrorf(NotFoundErr("Role", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Role", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Role", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *RamServiceV2) DescribeRoleListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	request["ResourceType"] = "role"
+	request["ResourceNames"] = "[\"" + id + "\"]"
+
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *RamServiceV2) RamRoleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeRamRole(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.AssumeRolePolicyDocument" {
+			e := jsonata.MustCompile("$replace($.AssumeRolePolicyDocument, \"[\t\n\f\n ]+\", \"\")")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *RamServiceV2) AssembleRolePolicyDocument(ramUser, service []interface{}, version string) (string, error) {
+	services := expandStringList(service)
+	users := expandStringList(ramUser)
+
+	statement := RolePolicyStatement{
+		Effect: Allow,
+		Action: "sts:AssumeRole",
+		Principal: Principal{
+			RAM:     users,
+			Service: services,
+		},
+	}
+
+	policy := RolePolicy{
+		Version:   version,
+		Statement: []RolePolicyStatement{statement},
+	}
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return "", WrapError(err)
+	}
+
+	return string(data), nil
+}
+
+func (s *RamServiceV2) ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
+	var policy RolePolicy
+	err := json.Unmarshal([]byte(policyDocument), &policy)
+	if err != nil {
+		return RolePolicy{}, WrapError(err)
+	}
+	return policy, nil
+}
+
+// DescribeRamRole >>> Encapsulated.
