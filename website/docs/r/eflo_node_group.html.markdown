@@ -20,12 +20,6 @@ For information about Eflo Node Group and how to use it, see [What is Node Group
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_node_group&exampleId=d5e2d6d0-d67a-9470-3e24-ea7bb3fc81ff9ec130f9&activeTab=example&spm=docs.r.eflo_node_group.0.d5e2d6d0d6&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 # Before executing this example, you need to confirm with the product team whether the resources are sufficient or you will get an error message with "Failure to check order before create instance"
 variable "name" {
@@ -200,8 +194,10 @@ The following arguments are supported:
 * `az` - (Required, ForceNew) Az
 * `cluster_id` - (Required, ForceNew) Cluster ID
 * `ignore_failed_node_tasks` - (Optional) Whether to allow skipping failed nodes. Default value: False
-* `image_id` - (Required, ForceNew) Image ID
+* `image_id` - (Required) Image ID. You can modify the image ID since v1.252.0.
 * `ip_allocation_policy` - (Optional, List) IP address combination policy: only one policy type can be selected for each policy, and multiple policies can be combined. See [`ip_allocation_policy`](#ip_allocation_policy) below.
+* `key_pair_name` - (Optional, ForceNew, Available since v1.252.0) key pair name
+* `login_password` - (Optional, Available since v1.252.0) Login Password
 * `machine_type` - (Required, ForceNew) Machine type
 * `node_group_description` - (Optional, ForceNew) NodeGroupDescription
 * `node_group_name` - (Required) The name of the resource

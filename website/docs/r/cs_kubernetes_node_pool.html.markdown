@@ -36,23 +36,19 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
 
--> **NOTE:** From version 1.177.0, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
+-> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
 
--> **NOTE:** From version 1.180.0, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
+-> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
 
--> **NOTE:** From version 1.185.0, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
+-> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
 
 For information about Container Service for Kubernetes (ACK) Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
+
+-> **NOTE:** Available since v1.97.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=af3b115d-df12-8c52-11c5-59a8d1bc5e6aa6ea6fdc&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.af3b115ddf&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "random_integer" "default" {
@@ -89,7 +85,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix          = "terraform-example-${random_integer.default.result}"
   cluster_spec         = "ack.pro.small"
-  vswitch_ids          = [alicloud_vswitch.default.id]
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
   new_nat_gateway      = true
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
@@ -197,7 +193,7 @@ resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
   key_name             = alicloud_key_pair.default.key_pair_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  desired_size = 0
+  desired_size = 1
 
   # spot config
   spot_strategy = "SpotWithPriceLimit"
@@ -320,10 +316,11 @@ The following arguments are supported:
   - `none`: Enables the existing default CPU affinity scheme.
 * `data_disks` - (Optional, List) Configure the data disk of the node in the node pool. See [`data_disks`](#data_disks) below.
 * `deployment_set_id` - (Optional, ForceNew) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
-* `desired_size` - (Optional, Int) Number of expected nodes in the node pool.
+* `desired_size` - (Optional) Number of expected nodes in the node pool.
+* `eflo_node_group` - (Optional, List, Available since v1.252.0) Lingjun node pool configuration. See [`eflo_node_group`](#eflo_node_group) below.
 * `force_delete` - (Optional) Whether to force deletion.
 * `image_id` - (Optional, Computed) The custom image ID. The system-provided image is used by default.
-* `image_type` - (Optional, Computed) The operating system image type and the `platform` parameter can be selected from the following values:
+* `image_type` - (Optional, Computed, Available since v1.236.0) The operating system image type and the `platform` parameter can be selected from the following values:
   - `AliyunLinux` : Alinux2 image.
   - `AliyunLinux3` : Alinux3 image.
   - `AliyunLinux3Arm64` : Alinux3 mirror ARM version.
@@ -332,12 +329,13 @@ The following arguments are supported:
   - `Windows` : Windows image.
   - `WindowsCore` : WindowsCore image.
   - `ContainerOS` : container-optimized image.
-  - `Ubuntu`: (Available since v1.236.0) Ubuntu image.
+  - `Ubuntu`: Ubuntu image.
+  - `AliyunLinux3ContainerOptimized`: Alinux3 container-optimized image.
 * `install_cloud_monitor` - (Optional) Whether to install cloud monitoring on the ECS node. After installation, you can view the monitoring information of the created ECS instance in the cloud monitoring console and recommend enable it. Default value: `false`. Valid values:
   - `true` : install cloud monitoring on the ECS node.
   - `false` : does not install cloud monitoring on the ECS node.
 * `instance_charge_type` - (Optional, Computed) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
-* `instance_types` - (Required, List) In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
+* `instance_types` - (Optional, List) In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
 * `internet_charge_type` - (Optional) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
 * `internet_max_bandwidth_out` - (Optional, Int) The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
 * `key_name` - (Optional) The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
@@ -351,8 +349,8 @@ The following arguments are supported:
   - The node IP address is the complete private IP address of the node.
   - For example, if the string `customized,aliyun,ip,com` is passed in (where 'customized' and 'ip' are fixed strings, 'aliyun' is the prefix, and 'com' is the suffix), the name of the node is `aliyun192.168.xxx.xxxcom`.
 * `node_pool_name` - (Optional) The name of node pool.
-* `on_demand_base_capacity` - (Optional, Int) The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
-* `on_demand_percentage_above_base_capacity` - (Optional, Int) The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
+* `on_demand_base_capacity` - (Optional) The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
+* `on_demand_percentage_above_base_capacity` - (Optional) The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
 * `password` - (Optional) The password of ssh login. You have to specify one of `password` and `key_name` fields. The password rule is 8 to 30 characters and contains at least three items (upper and lower case letters, numbers, and special symbols).
 * `period` - (Optional, Int) Node payment period. Its valid value is one of {1, 2, 3, 6, 12}.
 * `period_unit` - (Optional) Node payment period unit, valid value: `Month`. Default is `Month`.
@@ -375,7 +373,7 @@ The following arguments are supported:
   - `release`: in the standard mode, scaling is performed by creating and releasing ECS instances based on the usage of the application resource value.
   - `recycle`: in the speed mode, scaling is performed through creation, shutdown, and startup to increase the speed of scaling again (computing resources are not charged during shutdown, only storage fees are charged, except for local disk models).
 * `security_group_id` - (Optional, ForceNew, Computed, Deprecated since v1.145.0) The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.
-* `security_group_ids` - (Optional, ForceNew, Computed, List) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
+* `security_group_ids` - (Optional, ForceNew, Computed, Set) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
 * `security_hardening_os` - (Optional, ForceNew) Alibaba Cloud OS security reinforcement. Default value: `false`. Value:
   -`true`: enable Alibaba Cloud OS security reinforcement.
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
@@ -417,10 +415,13 @@ The following arguments are supported:
 * `tags` - (Optional, Map) Add tags only for ECS instances. The maximum length of the tag key is 128 characters. The tag key and value cannot start with aliyun or acs:, or contain https:// or http://.
 * `taints` - (Optional, List) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
 * `tee_config` - (Optional, ForceNew, Computed, List) The configuration about confidential computing for the cluster. See [`tee_config`](#tee_config) below.
+* `type` - (Optional, ForceNew, Available since v1.252.0) Node pool type, value range:
+  -'ess': common node pool (including hosting function and auto scaling function).
+  -'lingjun': Lingjun node pool.
 * `unschedulable` - (Optional) Whether the node after expansion can be scheduled.
 * `update_nodes` - (Optional) Synchronously update node labels and taints.
 * `user_data` - (Optional) Node custom data, base64-encoded.
-* `vswitch_ids` - (Required, List) The vswitches used by node pool workers.
+* `vswitch_ids` - (Optional, List) The vswitches used by node pool workers.
 
 * `kms_encrypted_password` - (Optional, Available since v1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, Available since v1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
@@ -459,6 +460,13 @@ The data_disks supports the following:
 * `size` - (Optional, Int) The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
 * `snapshot_id` - (Optional) The ID of the snapshot that you want to use to create data disk N. Valid values of N: 1 to 16. If you specify this parameter, DataDisk.N.Size is ignored. The size of the disk is the same as the size of the specified snapshot. If you specify a snapshot that is created on or before July 15, 2013, the operation fails and InvalidSnapshot.TooOld is returned.
 
+### `eflo_node_group`
+
+The eflo_node_group supports the following:
+* `cluster_id` - (Optional, Available since v1.252.0) The ID of the associated Lingjun cluster is required when creating a Lingjun node pool.
+* `group_id` - (Optional, Available since v1.252.0) When creating a Lingjun node pool, you need the Lingjun group ID of the associated Lingjun cluster.
+* `eflo_region_id` - (Optional, Available since v1.252.0) The region id of node group.
+
 ### `kubelet_configuration`
 
 The kubelet_configuration supports the following:
@@ -492,19 +500,19 @@ The kubelet_configuration supports the following:
 * `serialize_image_pulls` - (Optional) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`.
 * `system_reserved` - (Optional, Map) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more details.
 * `topology_manager_policy` - (Optional, Available since v1.242.0) Name of the Topology Manager policy used.
-* `tracing` - (Optional, List, Available since v1.242.0) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
+* `tracing` - (Optional, List) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
 
 ### `kubelet_configuration-reserved_memory`
 
 The kubelet_configuration-reserved_memory supports the following:
 * `limits` - (Optional, Map, Available since v1.242.0) Memory resource limit.
-* `numa_node` - (Optional, Int, Available since v1.242.0) The NUMA node.
+* `numa_node` - (Optional, Int) The NUMA node.
 
 ### `kubelet_configuration-tracing`
 
 The kubelet_configuration-tracing supports the following:
 * `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
-* `sampling_rate_per_million` - (Optional, Available since v1.242.0) Number of samples to be collected per million span.
+* `sampling_rate_per_million` - (Optional) Number of samples to be collected per million span.
 
 ### `labels`
 
@@ -599,9 +607,9 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 90 mins) Used when create the Nodepool.
-* `delete` - (Defaults to 60 mins) Used when delete the Nodepool.
-* `update` - (Defaults to 60 mins) Used when update the Nodepool.
+* `create` - (Defaults to 5 mins) Used when create the Nodepool.
+* `delete` - (Defaults to 5 mins) Used when delete the Nodepool.
+* `update` - (Defaults to 15 mins) Used when update the Nodepool.
 
 ## Import
 
