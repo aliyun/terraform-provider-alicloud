@@ -1,4 +1,37 @@
 ## 1.252.0 (Unreleased)
+
+- **New Resource:** `alicloud_message_service_service` [GH-8766]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_addon: upgrade addon with overwrite policy. [GH-8739]
+- resource/alicloud_vswitch: improve attribute ipv6_cidr_block_mask to GetOkExists. [GH-8767]
+- resource/alicloud_hbr_replication_vault: Add new attributes kms_key_id, encrypt_type. [GH-8768]
+- resource/alicloud_ecs_network_interface: Added the field source_dest_check. [GH-8769]
+- resource/alicloud_event_bridge_service_linked_role: Removed the product_name enums limitation; Improved alicloud_event_bridge_service_linked_role testcase and document. [GH-8773]
+- resource/alicloud_ecs_launch_template: Added the field system_disk.kms_key_id, data_disks.kms_key_id. [GH-8775]
+- resource/alicloud_rds_custom: Add new attribute spot_strategy, support_case, create_extra_param. [GH-8779]
+- resource/alicloud_ram_role: Refactored the resource alicloud_ram_role; Added the field role_name, assume_role_policy_document, tags, create_time; Deprecated the field name, document. [GH-8781]
+- resource/alicloud_cs_kubernetes_node_pool: Add new attribute eflo_node_group, type; resource/alicloud_eflo_node: Improves retry codes; resource/alicloud_eflo_node_group: Add new attribute key_pair_name, login_password. [GH-8782]
+- resource/alicloud_cs_kubernetes_node_pool: Remove useless attribute eflo_node_group.eflo_region_id. [GH-8785]
+- docs: Improved the document hbr. [GH-8777]
+- docs: Imporves example for max_compute_project. [GH-8780]
+- docs: Improved the document mns. [GH-8784]
+- testcase: Improves test case for common method. [GH-8770]
+- testcase: Improves test case for common method. [GH-8776]
+- testcase: Improves test case for common method. [GH-8778]
+- testcase: Improved alicloud_polardb_cluster testcase. [GH-8783]
+
+BUG FIXES:
+
+- resource/alicloud_ddoscoo_domain_resource: Fixed the update invalid error caused by cert_identifier. [GH-8764]
+- resource/alicloud_dfs_vsc_mount_point: Fix bug while describe dfs_vsc_mount_point. [GH-8772]
+- resource/alicloud_ga_forwarding_rule: Fixed the update error caused by rule_actions.rule_action_value. [GH-8774]
+- data-source/alicloud_cen_transit_router_route_tables: Fixed transit_router_route_table_ids, transit_router_route_table_names invalid error. [GH-8759]
+- data-source/alicloud_cen_transit_router_route_table_propagations: Fixed transit_router_attachment_id invalid error; Improved the document cen_transit_router_route_table_propagations. [GH-8761]
+- data-source/alicloud_cdn_service: Fixed the update error caused by internet_charge_type; Improved the document cdn_service. [GH-8763]
+- data-source/alicloud_cen_transit_router_vpn_attachments: Fixed name_regex, status, names invalid error; Improved alicloud_cen_transit_router_vpn_attachments testcase and document. [GH-8765]
+
 ## 1.251.0 (June 10, 2025)
 
 - **New Resource:** `alicloud_esa_kv` ([#8743](https://github.com/aliyun/terraform-provider-alicloud/issues/8743))
