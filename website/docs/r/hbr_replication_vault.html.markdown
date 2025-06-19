@@ -20,6 +20,12 @@ For information about Hybrid Backup Recovery (HBR) Replication Vault and how to 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_hbr_replication_vault&exampleId=0c1a9da3-8f3b-76e4-eee9-1e09a28821f8cc6c4c1e&activeTab=example&spm=docs.r.hbr_replication_vault.0.0c1a9da38f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "source_region" {
   default = "cn-hangzhou"

@@ -21,7 +21,7 @@ For information about Max Compute Project and how to use it, see [What is Projec
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_maxcompute_project&exampleId=c23aab84-2533-980d-679b-a8dcd048e67f34f24ad7&activeTab=example&spm=docs.r.maxcompute_project.0.c23aab8425&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_maxcompute_project&exampleId=c27f3994-bd5f-76ae-5b31-427c69b82dd1243cd636&activeTab=example&spm=docs.r.maxcompute_project.0.c27f3994bd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
