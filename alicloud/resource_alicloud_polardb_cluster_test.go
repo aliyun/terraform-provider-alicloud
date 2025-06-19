@@ -2765,9 +2765,44 @@ func deleteTDEPolicyAndRole() error {
 	}
 	ramRoleExisted, _ := schema.InternalMap(p["alicloud_ram_role"].Schema).Data(nil, nil)
 	ramRoleExisted.SetId("AliyunRDSInstanceEncryptionDefaultRole")
-	err = resourceAlicloudRamRoleDelete(ramRoleExisted, rawClient)
+	err = deleteRamRole(ramRoleExisted, rawClient)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func deleteRamRole(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["RoleName"] = d.Id()
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) || NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
 	return nil
 }
