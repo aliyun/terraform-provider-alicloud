@@ -1279,9 +1279,10 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    system_disk_category       = "cloud_efficiency"
+    eni_amount           = 2
+    instance_type_family = "ecs.g5"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1711,9 +1712,10 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    system_disk_category       = "cloud_efficiency"
+    eni_amount           = 2
+    instance_type_family = "ecs.g5"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1800,9 +1802,10 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    system_disk_category       = "cloud_efficiency"
+    eni_amount           = 2
+    instance_type_family = "ecs.g5"
 }
 
 data "alicloud_vpcs" "default" {

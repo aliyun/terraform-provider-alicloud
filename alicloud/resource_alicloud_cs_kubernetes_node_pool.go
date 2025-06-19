@@ -144,6 +144,27 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"instances", "node_count"},
 			},
+			"eflo_node_group": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eflo_region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"force_delete": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -157,7 +178,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu"}, false),
+				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu", "AliyunLinux3ContainerOptimized"}, false),
 			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
@@ -167,12 +188,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      PostPaid,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PrePaid", "PostPaid"}, false),
 			},
 			"instance_types": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"internet_charge_type": {
@@ -649,7 +670,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Deprecated: "Field 'security_group_id' has been deprecated from provider version 1.145.0. The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.",
 			},
 			"security_group_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
@@ -778,6 +799,12 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"unschedulable": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -799,7 +826,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name": {
@@ -893,6 +920,9 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("node_pool_name"); ok {
 		objectDataLocalMap["name"] = v
 	}
+	if v, ok := d.GetOk("type"); ok {
+		objectDataLocalMap["type"] = v
+	}
 
 	request["nodepool_info"] = objectDataLocalMap
 
@@ -902,10 +932,7 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		request["count"] = v
 	}
 	if v, ok := d.GetOk("security_group_ids"); ok {
-		securityGroupIds, _ := jsonpath.Get("$", v)
-		if securityGroupIds != nil && securityGroupIds != "" {
-			objectDataLocalMap1["security_group_ids"] = securityGroupIds
-		}
+		objectDataLocalMap1["security_group_ids"] = v.(*schema.Set).List()
 	}
 
 	if v, ok := d.GetOk("period"); ok {
@@ -1562,6 +1589,25 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		request["node_config"] = objectDataLocalMap6
 	}
 
+	objectDataLocalMap7 := make(map[string]interface{})
+
+	if v := d.Get("eflo_node_group"); !IsNil(v) {
+		clusterId, _ := jsonpath.Get("$[0].cluster_id", v)
+		if clusterId != nil && clusterId != "" {
+			objectDataLocalMap7["cluster_id"] = clusterId
+		}
+		groupId, _ := jsonpath.Get("$[0].group_id", v)
+		if groupId != nil && groupId != "" {
+			objectDataLocalMap7["group_id"] = groupId
+		}
+		regionId, _ := jsonpath.Get("$[0].eflo_region_id", v)
+		if regionId != nil && regionId != "" {
+			objectDataLocalMap7["eflo_region_id"] = regionId
+		}
+
+		request["eflo_node_group"] = objectDataLocalMap7
+	}
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -1634,6 +1680,7 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("node_pool_name", nodepool_infoRaw["name"])
 	d.Set("resource_group_id", nodepool_infoRaw["resource_group_id"])
+	d.Set("type", nodepool_infoRaw["type"])
 	d.Set("node_pool_id", nodepool_infoRaw["nodepool_id"])
 
 	scaling_groupRawObj, _ := jsonpath.Get("$.scaling_group", objectRaw)

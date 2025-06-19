@@ -198,7 +198,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"CSS_CHECK_ORDER_ERROR", "InternalError", "SYSTEM.CONCURRENT_OPERATE"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

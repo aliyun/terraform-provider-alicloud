@@ -44,8 +44,41 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) || NotFoundError(err) {
-			return object, WrapErrorf(NotFoundErr("EfloNode", id), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
 		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "Node"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -545,39 +578,6 @@ func (s *EfloServiceV2) EfloInvocationStateRefreshFunc(id string, field string, 
 }
 
 // DescribeEfloInvocation >>> Encapsulated.
-
-func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[string]interface{}, err error) {
-	client := s.client
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["ResourceId.1"] = id
-	request["RegionId"] = client.RegionId
-	request["ResourceType"] = "Node"
-	action := "ListTagResources"
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
-
-		if err != nil {
-			if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	return response, nil
-}
 
 // DescribeEfloExperimentPlanTemplate <<< Encapsulated get interface for Eflo ExperimentPlanTemplate.
 

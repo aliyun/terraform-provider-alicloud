@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -52,7 +53,6 @@ func resourceAliCloudEfloNodeGroup() *schema.Resource {
 			"image_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ip_allocation_policy": {
 				Type:     schema.TypeList,
@@ -146,6 +146,16 @@ func resourceAliCloudEfloNodeGroup() *schema.Resource {
 						},
 					},
 				},
+			},
+			"key_pair_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"login_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"machine_type": {
 				Type:     schema.TypeString,
@@ -242,6 +252,14 @@ func resourceAliCloudEfloNodeGroupCreate(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOk("node_group_description"); ok {
 		objectDataLocalMap["NodeGroupDescription"] = v
+	}
+
+	if v, ok := d.GetOk("key_pair_name"); ok {
+		objectDataLocalMap["KeyPairName"] = v
+	}
+
+	if v, ok := d.GetOk("login_password"); ok {
+		objectDataLocalMap["LoginPassword"] = v
 	}
 
 	if v, ok := d.GetOk("az"); ok {
@@ -365,6 +383,7 @@ func resourceAliCloudEfloNodeGroupUpdate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
 
 	var err error
 	parts := strings.Split(d.Id(), ":")
@@ -373,6 +392,20 @@ func resourceAliCloudEfloNodeGroupUpdate(d *schema.ResourceData, meta interface{
 	query = make(map[string]interface{})
 	request["NodeGroupId"] = parts[1]
 	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("key_pair_name") {
+		update = true
+		request["KeyPairName"] = d.Get("key_pair_name")
+	}
+
+	if !d.IsNewResource() && d.HasChange("image_id") {
+		update = true
+	}
+	request["ImageId"] = d.Get("image_id")
+	if !d.IsNewResource() && d.HasChange("login_password") {
+		update = true
+		request["LoginPassword"] = d.Get("login_password")
+	}
+
 	if !d.IsNewResource() && d.HasChange("node_group_name") {
 		update = true
 	}
@@ -644,6 +677,7 @@ func resourceAliCloudEfloNodeGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 
 	}
+	d.Partial(false)
 	return resourceAliCloudEfloNodeGroupRead(d, meta)
 }
 
