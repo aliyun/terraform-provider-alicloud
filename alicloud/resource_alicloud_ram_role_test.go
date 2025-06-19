@@ -3,16 +3,14 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"testing"
-
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -109,32 +107,110 @@ func testSweepRamRoles(region string) error {
 	return nil
 }
 
-func TestAccAliCloudRAMRole_basic(t *testing.T) {
-	var v *ram.GetRoleResponse
+// Test Ram Role. >>> Resource test cases, automatically generated.
+// Case  Role测试增加tag测试 5886
+func TestAccAliCloudRamRole_basic5886(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_role.default"
-	ra := resourceAttrInit(resourceId, ramRoleMap)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamRoleDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleCreateConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":                   name,
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"role_name":                   name,
+						"assume_role_policy_document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"assume_role_policy_document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_session_duration": "6000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_session_duration": "6000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
 				),
 			},
 			{
@@ -143,137 +219,338 @@ func TestAccAliCloudRAMRole_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force"},
 			},
+		},
+	})
+}
+
+func TestAccAliCloudRamRole_basic5886_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleNameConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d-N", defaultRegionToTest, rand)}),
-				),
-			},
-			{
-				Config: testAccRamRoleForceConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"force": "false"}),
-				),
-			},
-			{
-				Config: testAccRamRoleDocumentConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					// There is a bug when d.Set a set parameter. The new values can not overwrite the state
-					// when a parameter is a TypeSet and Computed. https://github.com/hashicorp/terraform-plugin-sdk/issues/20504
-					//testAccCheck(map[string]string{"services.#": "1"}),
-					testAccCheck(nil),
-				),
-			},
-			{
-				Config: testAccRamRoleCreateConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":                   name,
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+					"description":                 name,
+					"max_session_duration":        "6000",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"force": "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":       fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d", defaultRegionToTest, rand),
+						"role_name":                   name,
+						"assume_role_policy_document": CHECKSET,
+						"description":                 name,
+						"max_session_duration":        "6000",
+						"tags.%":                      "2",
+						"tags.Created":                "TF",
+						"tags.For":                    "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+// Case  Role适配废弃字段name, document
+func TestAccAliCloudRamRole_basic5888(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":     name,
+					"document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":     name,
+						"document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_session_duration": "6000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_session_duration": "6000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRamRole_basic5888_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"document":             `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+					"description":          name,
+					"max_session_duration": "6000",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"document":             CHECKSET,
+						"description":          name,
+						"max_session_duration": "6000",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+// Case  Role适配废弃字段name, version, services
+func TestAccAliCloudRamRole_basic5890(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":     name,
+					"version":  "1",
+					"services": []string{"ecs.aliyuncs.com"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"version":    "1",
+						"services.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"services": []string{"ecs.aliyuncs.com", "apigateway.aliyuncs.com"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"services.#": "2",
-						"force":      "true",
 					}),
 				),
 			},
 			{
-				Config: testAccRamRoleMaxSessionDurationConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_session_duration": "7200",
+						"description": name,
 					}),
 				),
 			},
-		},
-	})
-}
-
-func TestAccAliCloudRAMRole_multi(t *testing.T) {
-	var v *ram.GetRoleResponse
-	resourceId := "alicloud_ram_role.default.9"
-	ra := resourceAttrInit(resourceId, ramRoleMap)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamRoleDestroy,
-		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleMultiConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"max_session_duration": "6000",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
-}
-
-func testAccRamRoleCreateConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-
-func TestAccAliCloudRAMRole_Description(t *testing.T) {
-	var v *ram.GetRoleResponse
-	resourceId := "alicloud_ram_role.default"
-	ra := resourceAttrInit(resourceId, ramRoleMap)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamRoleDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamRoleCreateConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"description": "this is a test"}),
+					testAccCheck(map[string]string{
+						"max_session_duration": "6000",
+					}),
 				),
 			},
 			{
-				Config: testAccRamRoleUpdateDescription(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"description": "this is a test_update"}),
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
 				),
 			},
 			{
@@ -286,192 +563,123 @@ func TestAccAliCloudRAMRole_Description(t *testing.T) {
 	})
 }
 
-func testAccRamRoleUpdateDescription(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d"
-	  document = <<EOF
-		{
-		  "Statement": [
+func TestAccAliCloudRamRole_basic5890_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test_update"
-	  force = true
-	}`, defaultRegionToTest, rand)
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"version":              "1",
+					"services":             []string{"ecs.aliyuncs.com"},
+					"description":          name,
+					"max_session_duration": "6000",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"version":              "1",
+						"services.#":           "1",
+						"description":          name,
+						"max_session_duration": "6000",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
 }
 
-func testAccRamRoleMaxSessionDurationConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d"
-	  document = <<EOF
-		{
-		  "Statement": [
+func TestAccAliCloudRamRole_multi(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role.default.5"
+	ra := resourceAttrInit(resourceId, AliCloudRamRoleMap5886)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRole")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRoleBasicDependence5886)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
-	  max_session_duration = 7200
-	}`, defaultRegionToTest, rand)
+				Config: testAccConfig(map[string]interface{}{
+					"count":                       "6",
+					"role_name":                   name + "-${count.index}",
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+					"description":                 name + "-${count.index}",
+					"max_session_duration":        "6000",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":                   name + fmt.Sprint(-5),
+						"assume_role_policy_document": CHECKSET,
+						"description":                 name + fmt.Sprint(-5),
+						"max_session_duration":        "6000",
+						"tags.%":                      "2",
+						"tags.Created":                "TF",
+						"tags.For":                    "Test",
+					}),
+				),
+			},
+		},
+	})
 }
 
-func testAccRamRoleNameConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamRoleForceConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = false
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamRoleDocumentConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = false
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamRoleMultiConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "default" {
-	  name = "tf-testAccRamRoleConfig-%d-${count.index}"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
-	  count = 10
-	}`, rand)
-}
-
-var ramRoleMap = map[string]string{
-	"name":        CHECKSET,
-	"services.#":  "2",
-	"document":    CHECKSET,
-	"description": "this is a test",
-	"version":     "1",
-	"force":       "true",
+var AliCloudRamRoleMap5886 = map[string]string{
 	"arn":         CHECKSET,
+	"create_time": CHECKSET,
+	"role_id":     CHECKSET,
 }
 
-func testAccCheckRamRoleDestroy(s *terraform.State) error {
+func AliCloudRamRoleBasicDependence5886(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_role" {
-			continue
-		}
 
-		// Try to find the role
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetRoleRequest()
-		request.RoleName = rs.Primary.Attributes["name"]
-
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetRole(request)
-		})
-
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
-			return WrapError(err)
-		}
-	}
-	return nil
+`, name)
 }
