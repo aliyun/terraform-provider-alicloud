@@ -81,28 +81,42 @@ The alicloud_alikafka_instance resource allows you to manage your alikafka insta
 
 The following arguments are supported:
 
-* `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
+* `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
+  - `4`: eip/vpc instance
+  - `5`: vpc instance.
+* `instance_type` - (Optional, ForceNew, Available since v1.253.0) The type of the Instance. Default value: `alikafka`. Valid values:
+  - `alikafka`: Kafka Instance.
+  - `alikafka_serverless`: Serverless ApsaraMQ for Kafka Instance.
+  - `alikafka_confluent`: ApsaraMQ for Confluent Instance.
 * `partition_num` - (Optional, Available since v1.194.0) The number of partitions.
 * `topic_quota` - (Deprecated since v1.194.0) The max num of topic can be creation of the instance.
   It has been deprecated since version 1.194.0 and using `partition_num` instead.
   Currently, its value only can be set to 50 when creating it, and finally depends on `partition_num` value: <`topic_quota`> = 1000 + <`partition_num`>.
   Therefore, you can update it by updating the `partition_num`, and it is the only updating path.
-* `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
-* `disk_size` - (Required) The disk size of the instance. When modify this value, it only supports adjust to a greater value.
-* `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
-  - 4: eip/vpc instance
-  - 5: vpc instance.
+* `disk_type` - (Optional, ForceNew) The disk type of the instance. Valid values:
+  - `0`: efficient cloud disk.
+  - `1`: SSD.
+-> **NOTE:** If `instance_type` is set to `alikafka`, `disk_type` is required.
+* `disk_size` - (Optional, Int) The disk size of the instance. When modify this value, it only supports adjust to a greater value.
+-> **NOTE:** If `instance_type` is set to `alikafka`, `disk_size` is required.
 * `io_max` - (Optional) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
 * `io_max_spec` - (Optional, Available since v1.201.0) The traffic specification of the instance. We recommend that you configure this parameter.
   - You should specify one of the `io_max` and `io_max_spec` parameters, and `io_max_spec` is recommended.
   - For more information about the valid values, see [Billing](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/billing-overview).
 * `eip_max` - (Optional) The max bandwidth of the instance. It will be ignored when `deploy_type = 5`. When modify this value, it only supports adjust to a greater value.
 * `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
-* `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
-* `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
-* `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
+* `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
+* `paid_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PostPaid`, `PrePaid`. When modify this value, it only support adjust from `PostPaid` to `PrePaid`.
+* `spec_type` - (Optional) The instance edition. Default value: `normal`. Valid values:
+  - If `instance_type` is set to `alikafka`. Valid values: `normal`, `professional`, `professionalForHighRead`.
+  - If `instance_type` is set to `alikafka_serverless`. Valid values: `normal`.
+  - If `instance_type` is set to `alikafka_confluent`. Valid values: `professional`, `enterprise`.
+* `vswitch_id` - (Optional, ForceNew) The ID of attaching vswitch to instance.
 * `security_group` - (Optional, ForceNew, Available since v1.93.0) The ID of security group for this instance. If the security group is empty, system will create a default one.
-* `service_version` - (Optional, Available since v1.112.0) The version of the ApsaraMQ for Kafka instance. Default value: `2.2.0`. Valid values: `2.2.0`, `2.6.2`.
+* `service_version` - (Optional, Available since v1.112.0) The version of the Instance. Valid values:
+  - If `instance_type` is set to `alikafka`. Default value: `2.2.0`. Valid values: `2.2.0`, `2.6.2`.
+  - If `instance_type` is set to `alikafka_serverless`. Default value: `3.3.1`. Valid values: `3.3.1`.
+  - If `instance_type` is set to `alikafka_confluent`. Default value: `7.4.0`. Valid values: `7.4.0`.
 * `config` - (Optional, Available since v1.112.0) The initial configurations of the ApsaraMQ for Kafka instance. The values must be valid JSON strings. The `config` supports the following parameters:
   * `enable.vpc_sasl_ssl`: Specifies whether to enable VPC transmission encryption. Default value: `false`. Valid values:
     - `true`: Enables VPC transmission encryption. If you enable VPC transmission encryption, you must also enable access control list (ACL).
@@ -123,8 +137,13 @@ The following arguments are supported:
   - `enable`: Enables the automatic topic creation feature.
   - `disable`: Disabled the automatic topic creation feature.
 * `default_topic_partition_num` - (Optional, Int, Available since v1.241.0) The number of partitions in a topic that is automatically created.
-* `vswitch_ids` - (Optional, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
+* `password` - (Optional, Available since v1.253.0) The instance password. **NOTE:** If `instance_type` is set to `alikafka_confluent`, `password` is required.
+* `vswitch_ids` - (Optional, ForceNew, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
 * `selected_zones` - (Optional, List, Available since v1.195.0) The zones among which you want to deploy the instance.
+* `serverless_config` - (Optional, Set, Available since v1.253.0) The parameters configured for the serverless ApsaraMQ for Kafka instance. See [`serverless_config`](#serverless_config) below.
+-> **NOTE:** If `instance_type` is set to `alikafka_serverless`, `serverless_config` is required.
+* `confluent_config` - (Optional, Set, Available since v1.253.0) The configurations of Confluent. See [`confluent_config`](#confluent_config) below.
+-> **NOTE:** If `instance_type` is set to `alikafka_confluent`, `confluent_config` is required.
 
 -> **NOTE:** Field `io_max`, `disk_size`, `topic_quota`, `eip_max` should follow the following constraints.
 
@@ -135,6 +154,36 @@ The following arguments are supported:
 |60          |  1400-6100:100  |   80-450:1  |    1-500:1  |
 |90          |  2100-6100:100  |   100-450:1 |    1-500:1  |
 |120         |  2700-6100:100  |   150-450:1 |    1-500:1  |
+
+### `serverless_config`
+
+The serverless_config supports the following:
+
+* `reserved_publish_capacity` - (Optional, Int) The reserved capacity for publishing messages.
+* `reserved_subscribe_capacity` - (Optional, Int) The reserved capacity for subscribing to message.
+
+### `confluent_config`
+
+The confluent_config supports the following:
+
+* `kafka_cu` - (Optional, Int) The number of CPU cores of the Kafka broker.
+* `kafka_storage` - (Optional, Int) The disk capacity of the Kafka broker.
+* `kafka_replica` - (Optional, Int) The number of replicas of the Kafka broker.
+* `kafka_rest_proxy_cu` - (Optional, Int) The number of CPU cores of Kafka Rest Proxy.
+* `kafka_rest_proxy_replica` - (Optional, Int) The number of replicas of Kafka Rest Proxy.
+* `zookeeper_cu` - (Optional, Int) The number of CPU cores of ZooKeeper.
+* `zookeeper_storage` - (Optional, Int) The disk capacity of ZooKeeper.
+* `zookeeper_replica` - (Optional, ForceNew, Int) The number of replicas of ZooKeeper.
+* `control_center_cu` - (Optional, Int) The number of CPU cores of Control Center.
+* `control_center_storage` - (Optional, Int) The disk capacity of Control Center.
+* `control_center_replica` - (Optional, ForceNew, Int) The number of replicas of Control Center.
+* `schema_registry_cu` - (Optional, Int) The number of CPU cores of Schema Registry.
+* `schema_registry_replica` - (Optional, Int) The number of replicas of Schema Registry.
+* `connect_cu` - (Optional, Int) The number of CPU cores of Connect.
+* `connect_replica` - (Optional, Int) The number of replicas of Connect.
+* `ksql_cu` - (Optional, Int) The number of CPU cores of ksqlDB.
+* `ksql_storage` - (Optional, Int) The disk capacity of ksqlDB.
+* `ksql_replica` - (Optional, Int) The number of replicas of ksqlDB.
 
 ## Attributes Reference
 
@@ -171,5 +220,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 AliKafka instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_alikafka_instance.instance <id>
+$ terraform import alicloud_alikafka_instance.example <id>
 ```
