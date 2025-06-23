@@ -330,6 +330,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 					"disk_type":         "1",
 					"disk_size":         "500",
 					"deploy_type":       "4",
+					"instance_type":     "alikafka",
 					"eip_max":           "3",
 					"io_max":            "20",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
@@ -351,6 +352,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 						"disk_type":         "1",
 						"disk_size":         "500",
 						"deploy_type":       "4",
+						"instance_type":     "alikafka",
 						"eip_max":           "3",
 						"io_max":            "20",
 						"paid_type":         "PostPaid",
@@ -411,6 +413,7 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 					"disk_type":       "1",
 					"disk_size":       "500",
 					"deploy_type":     "4",
+					"instance_type":   "alikafka",
 					"eip_max":         "3",
 					"io_max":          "20",
 					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
@@ -431,6 +434,7 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
+						"instance_type":   "alikafka",
 						"eip_max":         "3",
 						"io_max":          "20",
 						"paid_type":       "PrePaid",
@@ -440,16 +444,6 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_size": "600",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_size": "600",
 					}),
 				),
 			},
@@ -577,6 +571,211 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_alikafka_instance.default"
+	ra := resourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deploy_type":     "4",
+					"instance_type":   "alikafka_serverless",
+					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
+					"paid_type":       "PostPaid",
+					"spec_type":       "normal",
+					"service_version": "3.3.1",
+					"config":          `{\"enable.vpc_sasl_ssl\":\"true\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"true\",\"kafka.message.max.bytes\":\"1048576\"}`,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"security_group": "${alicloud_security_group.default.id}",
+					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_ids":    []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"selected_zones": []string{"zoneb", "zonec"},
+					"serverless_config": []map[string]interface{}{
+						{
+							"reserved_publish_capacity":   "60",
+							"reserved_subscribe_capacity": "60",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deploy_type":         "4",
+						"instance_type":       "alikafka_serverless",
+						"paid_type":           "PostPaid",
+						"spec_type":           "normal",
+						"service_version":     "3.3.1",
+						"config":              CHECKSET,
+						"vswitch_ids.#":       "2",
+						"serverless_config.#": "1",
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "acceptance test",
+						"ssl_endpoint":        CHECKSET,
+						"ssl_domain_endpoint": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_config": []map[string]interface{}{
+						{
+							"reserved_publish_capacity":   "100",
+							"reserved_subscribe_capacity": "100",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"selected_zones"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_alikafka_instance.default"
+	ra := resourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deploy_type":     "5",
+					"instance_type":   "alikafka_confluent",
+					"paid_type":       "PrePaid",
+					"spec_type":       "professional",
+					"service_version": "7.4.0",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+					"password":       "YourPassword123!",
+					"vswitch_ids":    []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"selected_zones": []string{"zoneb", "zonec"},
+					"confluent_config": []map[string]interface{}{
+						{
+							"kafka_cu":                 "4",
+							"kafka_storage":            "800",
+							"kafka_replica":            "3",
+							"kafka_rest_proxy_cu":      "4",
+							"kafka_rest_proxy_replica": "2",
+							"zookeeper_cu":             "2",
+							"zookeeper_storage":        "100",
+							"zookeeper_replica":        "3",
+							"control_center_cu":        "4",
+							"control_center_storage":   "300",
+							"control_center_replica":   "1",
+							"schema_registry_cu":       "2",
+							"schema_registry_replica":  "2",
+							"connect_cu":               "4",
+							"connect_replica":          "2",
+							"ksql_cu":                  "4",
+							"ksql_storage":             "100",
+							"ksql_replica":             "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deploy_type":        "5",
+						"instance_type":      "alikafka_confluent",
+						"paid_type":          "PrePaid",
+						"spec_type":          "professional",
+						"service_version":    "7.4.0",
+						"vswitch_ids.#":      "2",
+						"confluent_config.#": "1",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"confluent_config": []map[string]interface{}{
+						{
+							"kafka_cu":                 "8",
+							"kafka_storage":            "2000",
+							"kafka_replica":            "5",
+							"kafka_rest_proxy_cu":      "5",
+							"kafka_rest_proxy_replica": "4",
+							"zookeeper_cu":             "5",
+							"zookeeper_storage":        "300",
+							"zookeeper_replica":        "3",
+							"control_center_cu":        "5",
+							"control_center_storage":   "400",
+							"control_center_replica":   "1",
+							"schema_registry_cu":       "5",
+							"schema_registry_replica":  "3",
+							"connect_cu":               "5",
+							"connect_replica":          "4",
+							"ksql_cu":                  "5",
+							"ksql_storage":             "200",
+							"ksql_replica":             "4",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"confluent_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "selected_zones"},
+			},
+		},
+	})
+}
+
 func resourceAlikafkaInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -595,8 +794,8 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 	}
 
 	resource "alicloud_security_group" "default" {
-  		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+		security_group_name = var.name
+		vpc_id              = data.alicloud_vpcs.default.ids.0
 	}
 
 	resource "alicloud_kms_key" "key" {
@@ -632,6 +831,7 @@ var alikafkaInstanceBasicMap = map[string]string{
 	"disk_type":        CHECKSET,
 	"disk_size":        CHECKSET,
 	"deploy_type":      CHECKSET,
+	"instance_type":    CHECKSET,
 	"io_max":           CHECKSET,
 	"vswitch_id":       CHECKSET,
 	"paid_type":        CHECKSET,
@@ -651,4 +851,16 @@ var alikafkaInstanceBasicMap = map[string]string{
 	"group_left":       CHECKSET,
 	"is_partition_buy": CHECKSET,
 	"status":           CHECKSET,
+}
+
+var alikafkaInstanceServerlessMap = map[string]string{
+	"deploy_type":   CHECKSET,
+	"instance_type": CHECKSET,
+	"io_max":        CHECKSET,
+	"vswitch_id":    CHECKSET,
+	"paid_type":     CHECKSET,
+	"spec_type":     CHECKSET,
+	"vpc_id":        CHECKSET,
+	"zone_id":       CHECKSET,
+	"status":        CHECKSET,
 }

@@ -30,29 +30,30 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"disk_type": {
-				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
-			},
-			"disk_size": {
-				Type:     schema.TypeInt,
-				Required: true,
-			},
 			"deploy_type": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: IntInSlice([]int{4, 5}),
 			},
-			"partition_num": {
-				Type:         schema.TypeInt,
+			"disk_type": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"disk_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"instance_type": {
+				Type:         schema.TypeString,
 				Optional:     true,
-				AtLeastOneOf: []string{"partition_num", "topic_quota"},
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"alikafka", "alikafka_serverless", "alikafka_confluent"}, false),
+			},
+			"partition_num": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"topic_quota": {
 				Type:     schema.TypeInt,
@@ -74,10 +75,9 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Computed: true,
 			},
 			"io_max_spec": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ExactlyOneOf: []string{"io_max", "io_max_spec"},
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"name": {
 				Type:         schema.TypeString,
@@ -138,6 +138,12 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -159,9 +165,14 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"password": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -171,6 +182,108 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tagsSchema(),
+			"serverless_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"reserved_publish_capacity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"reserved_subscribe_capacity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"confluent_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"kafka_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"kafka_storage": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"kafka_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"kafka_rest_proxy_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"kafka_rest_proxy_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"zookeeper_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"zookeeper_storage": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"zookeeper_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"control_center_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"control_center_storage": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"control_center_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"schema_registry_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"schema_registry_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"connect_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"connect_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"ksql_cu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"ksql_storage": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"ksql_replica": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"end_point": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -239,9 +352,15 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 
 	// 1. Create order
 	var createOrderAction string
+	var instanceType string
 	createOrderResponse := make(map[string]interface{})
 	createOrderReq := make(map[string]interface{})
 	createOrderReq["RegionId"] = client.RegionId
+	createOrderReq["DeployType"] = d.Get("deploy_type")
+
+	createOrderReq["DiskType"] = d.Get("disk_type")
+
+	createOrderReq["DiskSize"] = d.Get("disk_size")
 
 	if v, ok := d.GetOk("partition_num"); ok {
 		createOrderReq["PartitionNum"] = v
@@ -249,11 +368,9 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		createOrderReq["TopicQuota"] = v
 	}
 
-	createOrderReq["DiskType"] = d.Get("disk_type")
-
-	createOrderReq["DiskSize"] = d.Get("disk_size")
-
-	createOrderReq["DeployType"] = d.Get("deploy_type")
+	if v, ok := d.GetOk("instance_type"); ok {
+		instanceType = fmt.Sprint(v)
+	}
 
 	if v, ok := d.GetOk("io_max"); ok {
 		createOrderReq["IoMax"] = v
@@ -275,12 +392,124 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		createOrderReq["ResourceGroupId"] = v
 	}
 
+	if v, ok := d.GetOk("serverless_config"); ok {
+		serverlessConfigMap := map[string]interface{}{}
+		for _, serverlessConfigList := range v.([]interface{}) {
+			serverlessConfigArg := serverlessConfigList.(map[string]interface{})
+
+			if reservedPublishCapacity, ok := serverlessConfigArg["reserved_publish_capacity"]; ok {
+				serverlessConfigMap["ReservedPublishCapacity"] = reservedPublishCapacity
+			}
+
+			if reservedSubscribeCapacity, ok := serverlessConfigArg["reserved_subscribe_capacity"]; ok {
+				serverlessConfigMap["ReservedSubscribeCapacity"] = reservedSubscribeCapacity
+			}
+		}
+
+		serverlessConfigJson, err := convertMaptoJsonString(serverlessConfigMap)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		createOrderReq["ServerlessConfig"] = serverlessConfigJson
+	}
+
+	if v, ok := d.GetOk("confluent_config"); ok {
+		confluentConfigMap := map[string]interface{}{}
+		for _, confluentConfigList := range v.([]interface{}) {
+			confluentConfigArg := confluentConfigList.(map[string]interface{})
+
+			if kafkaCU, ok := confluentConfigArg["kafka_cu"]; ok {
+				confluentConfigMap["KafkaCU"] = kafkaCU
+			}
+
+			if kafkaStorage, ok := confluentConfigArg["kafka_storage"]; ok {
+				confluentConfigMap["KafkaStorage"] = kafkaStorage
+			}
+
+			if kafkaReplica, ok := confluentConfigArg["kafka_replica"]; ok {
+				confluentConfigMap["KafkaReplica"] = kafkaReplica
+			}
+
+			if kafkaRestProxyCU, ok := confluentConfigArg["kafka_rest_proxy_cu"]; ok {
+				confluentConfigMap["KafkaRestProxyCU"] = kafkaRestProxyCU
+			}
+
+			if kafkaRestProxyReplica, ok := confluentConfigArg["kafka_rest_proxy_replica"]; ok {
+				confluentConfigMap["KafkaRestProxyReplica"] = kafkaRestProxyReplica
+			}
+
+			if zookeeperCU, ok := confluentConfigArg["zookeeper_cu"]; ok {
+				confluentConfigMap["ZooKeeperCU"] = zookeeperCU
+			}
+
+			if zookeeperStorage, ok := confluentConfigArg["zookeeper_storage"]; ok {
+				confluentConfigMap["ZooKeeperStorage"] = zookeeperStorage
+			}
+
+			if zookeeperReplica, ok := confluentConfigArg["zookeeper_replica"]; ok {
+				confluentConfigMap["ZooKeeperReplica"] = zookeeperReplica
+			}
+
+			if controlCenterCU, ok := confluentConfigArg["control_center_cu"]; ok {
+				confluentConfigMap["ControlCenterCU"] = controlCenterCU
+			}
+
+			if controlCenterStorage, ok := confluentConfigArg["control_center_storage"]; ok {
+				confluentConfigMap["ControlCenterStorage"] = controlCenterStorage
+			}
+
+			if controlCenterReplica, ok := confluentConfigArg["control_center_replica"]; ok {
+				confluentConfigMap["ControlCenterReplica"] = controlCenterReplica
+			}
+
+			if schemaRegistryCU, ok := confluentConfigArg["schema_registry_cu"]; ok {
+				confluentConfigMap["SchemaRegistryCU"] = schemaRegistryCU
+			}
+
+			if schemaRegistryReplica, ok := confluentConfigArg["schema_registry_replica"]; ok {
+				confluentConfigMap["SchemaRegistryReplica"] = schemaRegistryReplica
+			}
+
+			if connectCU, ok := confluentConfigArg["connect_cu"]; ok {
+				confluentConfigMap["ConnectCU"] = connectCU
+			}
+
+			if connectReplica, ok := confluentConfigArg["connect_replica"]; ok {
+				confluentConfigMap["ConnectReplica"] = connectReplica
+			}
+
+			if ksqlCU, ok := confluentConfigArg["ksql_cu"]; ok {
+				confluentConfigMap["KsqlCU"] = ksqlCU
+			}
+
+			if ksqlStorage, ok := confluentConfigArg["ksql_storage"]; ok {
+				confluentConfigMap["KsqlStorage"] = ksqlStorage
+			}
+
+			if ksqlReplica, ok := confluentConfigArg["ksql_replica"]; ok {
+				confluentConfigMap["KsqlReplica"] = ksqlReplica
+			}
+		}
+
+		confluentConfigJson, err := convertMaptoJsonString(confluentConfigMap)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		createOrderReq["ConfluentConfig"] = confluentConfigJson
+	}
+
 	if v, ok := d.GetOk("paid_type"); ok {
 		switch v.(string) {
 		case "PostPaid":
 			createOrderAction = "CreatePostPayOrder"
+
+			createOrderReq["PaidType"] = convertAliKafkaPostPaidTypeRequest(instanceType)
 		case "PrePaid":
 			createOrderAction = "CreatePrePayOrder"
+
+			createOrderReq["PaidType"] = convertAliKafkaPrePaidTypeRequest(instanceType)
 		}
 	}
 
@@ -288,7 +517,7 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		createOrderResponse, err = client.RpcPost("alikafka", "2019-09-16", createOrderAction, nil, createOrderReq, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL", "ONS_SYSTEM_ERROR"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "ONS_SYSTEM_ERROR"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -369,6 +598,10 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		startInstanceReq["KMSKeyId"] = v
 	}
 
+	if v, ok := d.GetOk("password"); ok {
+		startInstanceReq["Password"] = v
+	}
+
 	if v, ok := d.GetOk("selected_zones"); ok {
 		startInstanceReq["SelectedZones"] = formatSelectedZonesReq(v.([]interface{}))
 	}
@@ -376,7 +609,7 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		startInstanceResponse, err = client.RpcPost("alikafka", "2019-09-16", startInstanceAction, nil, startInstanceReq, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -422,6 +655,7 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("disk_type", object["DiskType"])
 	d.Set("disk_size", object["DiskSize"])
 	d.Set("deploy_type", object["DeployType"])
+	d.Set("instance_type", convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"])))
 	d.Set("io_max", object["IoMax"])
 	d.Set("io_max_spec", object["IoMaxSpec"])
 	d.Set("eip_max", object["EipMax"])
@@ -429,7 +663,7 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
-	d.Set("paid_type", PostPaid)
+	d.Set("paid_type", convertAliKafkaPaidTypeResponse(fmt.Sprint(object["PaidType"])))
 	d.Set("spec_type", object["SpecType"])
 	d.Set("security_group", object["SecurityGroup"])
 	d.Set("end_point", object["EndPoint"])
@@ -454,25 +688,112 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 		}
 	}
 
-	if fmt.Sprint(object["PaidType"]) == "0" {
-		d.Set("paid_type", PrePaid)
+	serverlessConfigMaps := make([]map[string]interface{}, 0)
+	serverlessConfigMap := map[string]interface{}{}
+	serverlessConfigMap["reserved_publish_capacity"] = object["ReservedPublishCapacity"]
+	serverlessConfigMap["reserved_subscribe_capacity"] = object["ReservedSubscribeCapacity"]
+	serverlessConfigMaps = append(serverlessConfigMaps, serverlessConfigMap)
+	d.Set("serverless_config", serverlessConfigMaps)
+
+	if confluentConfig, ok := object["ConfluentConfig"]; ok {
+		confluentConfigMaps := make([]map[string]interface{}, 0)
+		confluentConfigMap := map[string]interface{}{}
+		confluentConfigArg := confluentConfig.(map[string]interface{})
+
+		if kafkaCU, ok := confluentConfigArg["KafkaCU"]; ok {
+			confluentConfigMap["kafka_cu"] = kafkaCU
+		}
+
+		if kafkaStorage, ok := confluentConfigArg["KafkaStorage"]; ok {
+			confluentConfigMap["kafka_storage"] = kafkaStorage
+		}
+
+		if kafkaReplica, ok := confluentConfigArg["KafkaReplica"]; ok {
+			confluentConfigMap["kafka_replica"] = kafkaReplica
+		}
+
+		if kafkaRestProxyCU, ok := confluentConfigArg["KafkaRestProxyCU"]; ok {
+			confluentConfigMap["kafka_rest_proxy_cu"] = kafkaRestProxyCU
+		}
+
+		if kafkaRestProxyReplica, ok := confluentConfigArg["KafkaRestProxyReplica"]; ok {
+			confluentConfigMap["kafka_rest_proxy_replica"] = kafkaRestProxyReplica
+		}
+
+		if zookeeperCU, ok := confluentConfigArg["ZooKeeperCU"]; ok {
+			confluentConfigMap["zookeeper_cu"] = zookeeperCU
+		}
+
+		if zookeeperStorage, ok := confluentConfigArg["ZooKeeperStorage"]; ok {
+			confluentConfigMap["zookeeper_storage"] = zookeeperStorage
+		}
+
+		if zookeeperReplica, ok := confluentConfigArg["ZooKeeperReplica"]; ok {
+			confluentConfigMap["zookeeper_replica"] = zookeeperReplica
+		}
+
+		if controlCenterCU, ok := confluentConfigArg["ControlCenterCU"]; ok {
+			confluentConfigMap["control_center_cu"] = controlCenterCU
+		}
+
+		if controlCenterStorage, ok := confluentConfigArg["ControlCenterStorage"]; ok {
+			confluentConfigMap["control_center_storage"] = controlCenterStorage
+		}
+
+		if controlCenterReplica, ok := confluentConfigArg["ControlCenterReplica"]; ok {
+			confluentConfigMap["control_center_replica"] = controlCenterReplica
+		}
+
+		if schemaRegistryCU, ok := confluentConfigArg["SchemaRegistryCU"]; ok {
+			confluentConfigMap["schema_registry_cu"] = schemaRegistryCU
+		}
+
+		if schemaRegistryReplica, ok := confluentConfigArg["SchemaRegistryReplica"]; ok {
+			confluentConfigMap["schema_registry_replica"] = schemaRegistryReplica
+		}
+
+		if connectCU, ok := confluentConfigArg["ConnectCU"]; ok {
+			confluentConfigMap["connect_cu"] = connectCU
+		}
+
+		if connectReplica, ok := confluentConfigArg["ConnectReplica"]; ok {
+			confluentConfigMap["connect_replica"] = connectReplica
+		}
+
+		if ksqlCU, ok := confluentConfigArg["KsqlCU"]; ok {
+			confluentConfigMap["ksql_cu"] = ksqlCU
+		}
+
+		if ksqlStorage, ok := confluentConfigArg["KsqlStorage"]; ok {
+			confluentConfigMap["ksql_storage"] = ksqlStorage
+		}
+
+		if ksqlReplica, ok := confluentConfigArg["KsqlReplica"]; ok {
+			confluentConfigMap["ksql_replica"] = ksqlReplica
+		}
+
+		confluentConfigMaps = append(confluentConfigMaps, confluentConfigMap)
+
+		d.Set("confluent_config", confluentConfigMaps)
 	}
 
-	quota, err := alikafkaService.GetQuotaTip(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
+	if fmt.Sprint(convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"]))) == "alikafka" {
+		quota, err := alikafkaService.GetQuotaTip(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
 
-	d.Set("topic_quota", quota["TopicQuota"])
-	d.Set("partition_num", quota["PartitionNumOfBuy"])
-	d.Set("topic_num_of_buy", quota["TopicNumOfBuy"])
-	d.Set("topic_used", quota["TopicUsed"])
-	d.Set("topic_left", quota["TopicLeft"])
-	d.Set("partition_used", quota["PartitionUsed"])
-	d.Set("partition_left", quota["PartitionLeft"])
-	d.Set("group_used", quota["GroupUsed"])
-	d.Set("group_left", quota["GroupLeft"])
-	d.Set("is_partition_buy", quota["IsPartitionBuy"])
+		d.Set("topic_quota", quota["TopicQuota"])
+		d.Set("partition_num", quota["PartitionNumOfBuy"])
+		d.Set("topic_num_of_buy", quota["TopicNumOfBuy"])
+		d.Set("topic_used", quota["TopicUsed"])
+		d.Set("topic_left", quota["TopicLeft"])
+		d.Set("partition_used", quota["PartitionUsed"])
+		d.Set("partition_left", quota["PartitionLeft"])
+		d.Set("group_used", quota["GroupUsed"])
+		d.Set("group_left", quota["GroupLeft"])
+		d.Set("is_partition_buy", quota["IsPartitionBuy"])
+	}
 
 	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
@@ -511,7 +832,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -556,7 +877,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 				if err != nil {
-					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -632,10 +953,127 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	request["EipMax"] = d.Get("eip_max").(int)
 
+	if !d.IsNewResource() && d.HasChange("serverless_config") {
+		update = true
+
+		if v, ok := d.GetOk("serverless_config"); ok {
+			serverlessConfigMap := map[string]interface{}{}
+			for _, serverlessConfigList := range v.([]interface{}) {
+				serverlessConfigArg := serverlessConfigList.(map[string]interface{})
+
+				if reservedPublishCapacity, ok := serverlessConfigArg["reserved_publish_capacity"]; ok {
+					serverlessConfigMap["ReservedPublishCapacity"] = reservedPublishCapacity
+				}
+
+				if reservedSubscribeCapacity, ok := serverlessConfigArg["reserved_subscribe_capacity"]; ok {
+					serverlessConfigMap["ReservedSubscribeCapacity"] = reservedSubscribeCapacity
+				}
+			}
+
+			serverlessConfigJson, err := convertMaptoJsonString(serverlessConfigMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			request["ServerlessConfig"] = serverlessConfigJson
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("confluent_config") {
+		update = true
+
+		if v, ok := d.GetOk("confluent_config"); ok {
+			confluentConfigMap := map[string]interface{}{}
+			for _, confluentConfigList := range v.([]interface{}) {
+				confluentConfigArg := confluentConfigList.(map[string]interface{})
+
+				if kafkaCU, ok := confluentConfigArg["kafka_cu"]; ok {
+					confluentConfigMap["KafkaCU"] = kafkaCU
+				}
+
+				if kafkaStorage, ok := confluentConfigArg["kafka_storage"]; ok {
+					confluentConfigMap["KafkaStorage"] = kafkaStorage
+				}
+
+				if kafkaReplica, ok := confluentConfigArg["kafka_replica"]; ok {
+					confluentConfigMap["KafkaReplica"] = kafkaReplica
+				}
+
+				if kafkaRestProxyCU, ok := confluentConfigArg["kafka_rest_proxy_cu"]; ok {
+					confluentConfigMap["KafkaRestProxyCU"] = kafkaRestProxyCU
+				}
+
+				if kafkaRestProxyReplica, ok := confluentConfigArg["kafka_rest_proxy_replica"]; ok {
+					confluentConfigMap["KafkaRestProxyReplica"] = kafkaRestProxyReplica
+				}
+
+				if zookeeperCU, ok := confluentConfigArg["zookeeper_cu"]; ok {
+					confluentConfigMap["ZooKeeperCU"] = zookeeperCU
+				}
+
+				if zookeeperStorage, ok := confluentConfigArg["zookeeper_storage"]; ok {
+					confluentConfigMap["ZooKeeperStorage"] = zookeeperStorage
+				}
+
+				if zookeeperReplica, ok := confluentConfigArg["zookeeper_replica"]; ok {
+					confluentConfigMap["ZooKeeperReplica"] = zookeeperReplica
+				}
+
+				if controlCenterCU, ok := confluentConfigArg["control_center_cu"]; ok {
+					confluentConfigMap["ControlCenterCU"] = controlCenterCU
+				}
+
+				if controlCenterStorage, ok := confluentConfigArg["control_center_storage"]; ok {
+					confluentConfigMap["ControlCenterStorage"] = controlCenterStorage
+				}
+
+				if controlCenterReplica, ok := confluentConfigArg["control_center_replica"]; ok {
+					confluentConfigMap["ControlCenterReplica"] = controlCenterReplica
+				}
+
+				if schemaRegistryCU, ok := confluentConfigArg["schema_registry_cu"]; ok {
+					confluentConfigMap["SchemaRegistryCU"] = schemaRegistryCU
+				}
+
+				if schemaRegistryReplica, ok := confluentConfigArg["schema_registry_replica"]; ok {
+					confluentConfigMap["SchemaRegistryReplica"] = schemaRegistryReplica
+				}
+
+				if connectCU, ok := confluentConfigArg["connect_cu"]; ok {
+					confluentConfigMap["ConnectCU"] = connectCU
+				}
+
+				if connectReplica, ok := confluentConfigArg["connect_replica"]; ok {
+					confluentConfigMap["ConnectReplica"] = connectReplica
+				}
+
+				if ksqlCU, ok := confluentConfigArg["ksql_cu"]; ok {
+					confluentConfigMap["KsqlCU"] = ksqlCU
+				}
+
+				if ksqlStorage, ok := confluentConfigArg["ksql_storage"]; ok {
+					confluentConfigMap["KsqlStorage"] = ksqlStorage
+				}
+
+				if ksqlReplica, ok := confluentConfigArg["ksql_replica"]; ok {
+					confluentConfigMap["KsqlReplica"] = ksqlReplica
+				}
+			}
+
+			confluentConfigJson, err := convertMaptoJsonString(confluentConfigMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			request["ConfluentConfig"] = confluentConfigJson
+		}
+	}
+
 	if update {
 		action := "UpgradePostPayOrder"
 
 		if d.Get("paid_type").(string) == string(PrePaid) {
+			request["PaidType"] = convertAliKafkaPrePaidTypeRequest(d.Get("instance_type").(string))
 			action = "UpgradePrePayOrder"
 		}
 
@@ -657,9 +1095,16 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("disk_size"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "DiskSize", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if d.HasChange("disk_size") {
+			stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("disk_size"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "DiskSize", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
 		if d.HasChange("io_max") {
@@ -669,19 +1114,18 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 		}
 
-		stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("eip_max"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "EipMax", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		if d.HasChange("spec_type") {
+			stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("spec_type"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "SpecType", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
-		stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("spec_type"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "SpecType", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
-		stateConf = BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		if d.HasChange("eip_max") {
+			stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("eip_max"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "EipMax", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
 		d.SetPartial("partition_num")
@@ -690,6 +1134,8 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("io_max_spec")
 		d.SetPartial("spec_type")
 		d.SetPartial("eip_max")
+		d.SetPartial("serverless_config")
+		d.SetPartial("confluent_config")
 	}
 
 	if !d.IsNewResource() && d.HasChange("service_version") {
@@ -707,7 +1153,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -754,7 +1200,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -818,134 +1264,138 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("resource_group_id")
 	}
 
-	update = false
-	enableAutoGroupCreationReq := map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"InstanceId": d.Id(),
-	}
-
-	if d.HasChange("enable_auto_group") {
-		update = true
-
-		if v, ok := d.GetOkExists("enable_auto_group"); ok {
-			enableAutoGroupCreationReq["Enable"] = v
-		}
-	}
-
-	if update {
-		action := "EnableAutoGroupCreation"
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoGroupCreationReq, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, enableAutoGroupCreationReq)
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
-
-		d.SetPartial("enable_auto_group")
-	}
-
-	update = false
-	enableAutoTopicCreationReq := map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"InstanceId": d.Id(),
-	}
-
-	if d.HasChange("enable_auto_topic") {
-		update = true
-	}
-	if v, ok := d.GetOk("enable_auto_topic"); ok {
-		enableAutoTopicCreationReq["Operate"] = v
-	}
-
-	if update {
-		action := "EnableAutoTopicCreation"
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoTopicCreationReq, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, enableAutoTopicCreationReq)
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
-
-		d.SetPartial("enable_auto_topic")
-	}
-
-	update = false
-	updateTopicPartitionNumReq := map[string]interface{}{
-		"RegionId":        client.RegionId,
-		"Operate":         "updatePartition",
-		"UpdatePartition": true,
-		"InstanceId":      d.Id(),
-	}
-
 	object, err := alikafkaService.DescribeAliKafkaInstance(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 
-	defaultTopicPartitionNum, ok := d.GetOkExists("default_topic_partition_num")
-	if ok && fmt.Sprint(object["DefaultPartitionNum"]) != fmt.Sprint(defaultTopicPartitionNum) {
-		update = true
-		updateTopicPartitionNumReq["PartitionNum"] = defaultTopicPartitionNum
+	if fmt.Sprint(convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"]))) == "alikafka" {
+		update = false
+		enableAutoGroupCreationReq := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": d.Id(),
+		}
+
+		if d.HasChange("enable_auto_group") {
+			update = true
+
+			if v, ok := d.GetOkExists("enable_auto_group"); ok {
+				enableAutoGroupCreationReq["Enable"] = v
+			}
+		}
+
+		if update {
+			action := "EnableAutoGroupCreation"
+
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoGroupCreationReq, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, enableAutoGroupCreationReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+
+			d.SetPartial("enable_auto_group")
+		}
 	}
 
-	if update {
-		action := "EnableAutoTopicCreation"
+	if fmt.Sprint(convertAliKafkaInstanceTypeResponse(fmt.Sprint(object["PaidType"]))) != "alikafka_confluent" {
+		update = false
+		enableAutoTopicCreationReq := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": d.Id(),
+		}
 
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, updateTopicPartitionNumReq, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+		if d.HasChange("enable_auto_topic") {
+			update = true
+		}
+		if v, ok := d.GetOk("enable_auto_topic"); ok {
+			enableAutoTopicCreationReq["Operate"] = v
+		}
+
+		if update {
+			action := "EnableAutoTopicCreation"
+
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, enableAutoTopicCreationReq, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return nil
+			})
+			addDebug(action, response, enableAutoTopicCreationReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			return nil
-		})
-		addDebug(action+" updateTopicPartitionNum", response, updateTopicPartitionNumReq)
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+
+			d.SetPartial("enable_auto_topic")
 		}
 
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		update = false
+		updateTopicPartitionNumReq := map[string]interface{}{
+			"RegionId":        client.RegionId,
+			"Operate":         "updatePartition",
+			"UpdatePartition": true,
+			"InstanceId":      d.Id(),
 		}
 
-		d.SetPartial("default_topic_partition_num")
+		defaultTopicPartitionNum, ok := d.GetOkExists("default_topic_partition_num")
+		if ok && fmt.Sprint(object["DefaultPartitionNum"]) != fmt.Sprint(defaultTopicPartitionNum) {
+			update = true
+			updateTopicPartitionNumReq["PartitionNum"] = defaultTopicPartitionNum
+		}
+
+		if update {
+			action := "EnableAutoTopicCreation"
+
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, updateTopicPartitionNumReq, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action+" updateTopicPartitionNum", response, updateTopicPartitionNumReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+
+			d.SetPartial("default_topic_partition_num")
+		}
 	}
 
 	d.Partial(false)
@@ -975,7 +1425,7 @@ func resourceAliCloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1074,4 +1524,50 @@ func convertAliKafkaAutoCreateTopicEnableResponse(source interface{}) interface{
 	}
 
 	return source
+}
+
+func convertAliKafkaPaidTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "0", "4":
+		return "PrePaid"
+	case "1", "3":
+		return "PostPaid"
+	}
+
+	return "PostPaid"
+}
+
+func convertAliKafkaPostPaidTypeRequest(source string) int {
+	switch source {
+	case "alikafka":
+		return 1
+	case "alikafka_serverless":
+		return 3
+	}
+
+	return 1
+}
+
+func convertAliKafkaPrePaidTypeRequest(source string) int {
+	switch source {
+	case "alikafka":
+		return 0
+	case "alikafka_confluent":
+		return 4
+	}
+
+	return 0
+}
+
+func convertAliKafkaInstanceTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "0", "1":
+		return "alikafka"
+	case "3":
+		return "alikafka_serverless"
+	case "4":
+		return "alikafka_confluent"
+	}
+
+	return "alikafka"
 }
