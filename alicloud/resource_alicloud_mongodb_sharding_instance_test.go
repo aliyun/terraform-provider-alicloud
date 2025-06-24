@@ -512,6 +512,18 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"hidden_zone_id":    "${data.alicloud_mongodb_zones.default.zones.2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_zone_id": CHECKSET,
+						"hidden_zone_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -587,6 +599,38 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_retention_policy_on_cluster_deletion": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snapshot_backup_type": "Flash",
+					"backup_interval":      "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snapshot_backup_type": "Flash",
+						"backup_interval":      "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_release_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_release_protection": "false",
 					}),
 				),
 			},
@@ -692,6 +736,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"zone_id":              "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"secondary_zone_id":    "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"hidden_zone_id":       "${data.alicloud_mongodb_zones.default.zones.2.id}",
 					"security_group_id":    "${alicloud_security_group.default.id}",
 					"network_type":         "VPC",
 					"name":                 name,
@@ -702,6 +748,9 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"backup_time":          "11:00Z-12:00Z",
 					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
 					"backup_retention_policy_on_cluster_deletion": "1",
+					"snapshot_backup_type":                        "Flash",
+					"backup_interval":                             "60",
+					"db_instance_release_protection":              "false",
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -742,6 +791,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"vpc_id":               CHECKSET,
 						"vswitch_id":           CHECKSET,
 						"zone_id":              CHECKSET,
+						"secondary_zone_id":    CHECKSET,
+						"hidden_zone_id":       CHECKSET,
 						"security_group_id":    CHECKSET,
 						"network_type":         "VPC",
 						"name":                 name,
@@ -752,12 +803,15 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"backup_time":          "11:00Z-12:00Z",
 						"backup_period.#":      "3",
 						"backup_retention_policy_on_cluster_deletion": "1",
-						"mongo_list.#":         "2",
-						"shard_list.#":         "2",
-						"config_server_list.#": "1",
-						"tags.%":               "2",
-						"tags.Created":         "TF",
-						"tags.For":             "ShardingInstance",
+						"snapshot_backup_type":                        "Flash",
+						"backup_interval":                             "60",
+						"db_instance_release_protection":              "false",
+						"mongo_list.#":                                "2",
+						"shard_list.#":                                "2",
+						"config_server_list.#":                        "1",
+						"tags.%":                                      "2",
+						"tags.Created":                                "TF",
+						"tags.For":                                    "ShardingInstance",
 					}),
 				),
 			},

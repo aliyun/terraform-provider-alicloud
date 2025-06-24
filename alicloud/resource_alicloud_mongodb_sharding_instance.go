@@ -24,7 +24,7 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(120 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -73,6 +73,14 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"hidden_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -153,6 +161,18 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"snapshot_backup_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "Flash"}, false),
+			},
+			"backup_interval": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"-1", "15", "30", "60", "120", "180", "240", "360", "480", "720"}, false),
+			},
 			"tde_status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -161,6 +181,11 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 					return d.Get("engine_version").(string) < "4.0"
 				},
 			},
+			"db_instance_release_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"tags": tagsSchema(),
 			"mongo_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -262,7 +287,6 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 					},
 				},
 			},
-			"tags": tagsSchema(),
 			"retention_period": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -337,6 +361,14 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		if request["VpcId"] == nil {
 			request["VpcId"] = vsw.VpcId
 		}
+	}
+
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		request["SecondaryZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("hidden_zone_id"); ok {
+		request["HiddenZoneId"] = v
 	}
 
 	if v, ok := d.GetOk("network_type"); ok {
@@ -486,10 +518,13 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("secondary_zone_id", object["SecondaryZoneId"])
+	d.Set("hidden_zone_id", object["HiddenZoneId"])
 	d.Set("network_type", object["NetworkType"])
 	d.Set("name", object["DBInstanceDescription"])
 	d.Set("instance_charge_type", object["ChargeType"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("db_instance_release_protection", object["DBInstanceReleaseProtection"])
 
 	groupIp, err := ddsService.DescribeMongoDBShardingSecurityGroupId(d.Id())
 	if err != nil {
@@ -527,6 +562,8 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
+	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
+	d.Set("backup_interval", backupPolicy["BackupInterval"])
 
 	tdeInfo, err := ddsService.DescribeMongoDBShardingTDEInfo(d.Id())
 	if err != nil {
@@ -743,6 +780,56 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	}
 
 	update = false
+	migrateAvailableZoneReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"Vswitch":      d.Get("vswitch_id").(string),
+		"ZoneId":       d.Get("zone_id").(string),
+	}
+
+	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		migrateAvailableZoneReq["SecondaryZoneId"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("hidden_zone_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("hidden_zone_id"); ok {
+		migrateAvailableZoneReq["HiddenZoneId"] = v
+	}
+
+	if update {
+		action := "MigrateAvailableZone"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, migrateAvailableZoneReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, migrateAvailableZoneReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("secondary_zone_id")
+		d.SetPartial("hidden_zone_id")
+	}
+
+	update = false
 	modifySecurityGroupConfigurationReq := map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
@@ -937,7 +1024,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("resource_group_id")
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
 		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
@@ -945,6 +1032,8 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
 		d.SetPartial("backup_retention_policy_on_cluster_deletion")
+		d.SetPartial("snapshot_backup_type")
+		d.SetPartial("backup_interval")
 	}
 
 	if d.HasChange("tde_status") {
@@ -981,6 +1070,43 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("tde_status")
+	}
+
+	if d.HasChange("db_instance_release_protection") {
+		action := "ModifyDBInstanceAttribute"
+
+		modifyDBInstanceAttributeReq := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOkExists("db_instance_release_protection"); ok {
+			modifyDBInstanceAttributeReq["DBInstanceReleaseProtection"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceAttributeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceAttributeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("db_instance_release_protection")
 	}
 
 	if err := ddsService.setInstanceTags(d); err != nil {
