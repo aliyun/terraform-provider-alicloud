@@ -96,6 +96,8 @@ The following arguments are supported:
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB Sharding Instance does not support multiple-zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
+* `secondary_zone_id` - (Optional, Available since v1.253.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
+* `hidden_zone_id` - (Optional, Available since v1.253.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
 * `security_group_id` - (Optional, Available since v1.76.0) The Security Group ID of ECS.
 * `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic` or `VPC`.
 * `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
@@ -113,7 +115,12 @@ The following arguments are supported:
   - `0`: All backup sets are immediately deleted when the instance is released.
   - `1 `: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
   - `2 `: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
+* `snapshot_backup_type` - (Optional, Available since v1.253.0) The snapshot backup type. Default value: `Standard`. Valid values:
+  - `Standard`: Standard backup.
+  - `Flash `: Single-digit second backup.
+* `backup_interval` - (Optional, Available since v1.253.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
+* `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
 * `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
 * `config_server_list` - (Optional, ForceNew, Set, Available since v1.223.0) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
@@ -173,7 +180,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the Sharding Instance (until it reaches the initial `Running` status).
-* `update` - (Defaults to 30 mins) Used when updating the Sharding Instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 120 mins) Used when updating the Sharding Instance (until it reaches the initial `Running` status).
 * `delete` - (Defaults to 30 mins) Used when deleting the Sharding Instance.
 
 ## Import
