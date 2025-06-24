@@ -29,6 +29,7 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 			"ad_connector_office_site_name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_:-]{1,254}$`), "It must be `2` to `255` characters in length, The name must start with a letter, and can contain letters, digits, colons (:), underscores (_), and hyphens (-).")),
 			},
 			"ad_hostname": {
@@ -59,15 +60,18 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ANY", "INTERNET", "VPC"}, false),
 			},
 			"dns_address": {
 				Type:     schema.TypeList,
 				Required: true,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"domain_name": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Required: true,
 			},
 			"domain_password": {
@@ -77,6 +81,7 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 			},
 			"domain_user_name": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 			},
 			"enable_admin_access": {
@@ -93,6 +98,7 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 			},
 			"mfa_enabled": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 			},
 			"protocol_type": {
@@ -112,10 +118,12 @@ func resourceAlicloudEcdAdConnectorOfficeSite() *schema.Resource {
 			"sub_domain_dns_address": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"sub_domain_name": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 			},
 			"verify_code": {
