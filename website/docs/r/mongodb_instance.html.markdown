@@ -91,8 +91,8 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
   The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `secondary_zone_id` - (Optional, ForceNew, Available since v1.199.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
-* `hidden_zone_id` - (Optional, ForceNew, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
+* `secondary_zone_id` - (Optional, Available since v1.199.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values. From version 1.253.0, `secondary_zone_id` can be modified.
+* `hidden_zone_id` - (Optional, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values. From version 1.253.0, `hidden_zone_id` can be modified.
 * `security_group_id` - (Optional, Available since v1.73.0) The Security Group ID of ECS.
 * `replication_factor` - (Optional, Int) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
 * `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic`, `VPC`.
@@ -139,6 +139,7 @@ The following arguments are supported:
 * `encryptor_name` - (Optional, Available since v1.212.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
 * `encryption_key` - (Optional, Available since v1.212.0) The ID of the custom key.
 * `role_arn` - (Optional, Available since v1.212.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
+* `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `parameters` - (Optional, Set, Available since v1.203.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 * `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
 
@@ -174,7 +175,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the MongoDB instance (until it reaches the initial `Running` status).
-* `update` - (Defaults to 30 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 120 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).
 * `delete` - (Defaults to 30 mins) Used when deleting the MongoDB instance.
 
 ## Import
@@ -182,5 +183,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 MongoDB instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_mongodb_instance.example dds-bp1291daeda44194
+$ terraform import alicloud_mongodb_instance.example <id>
 ```
