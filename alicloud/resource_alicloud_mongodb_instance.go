@@ -26,7 +26,7 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(120 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -80,12 +80,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 			"secondary_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"hidden_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -266,6 +264,10 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"db_instance_release_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"tags": tagsSchema(),
 			"parameters": {
@@ -531,6 +533,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("replica_set_name", object["ReplicaSetName"])
+	d.Set("db_instance_release_protection", object["DBInstanceReleaseProtection"])
 
 	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
 		period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
@@ -854,6 +857,56 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		d.SetPartial("storage_type")
 		d.SetPartial("provisioned_iops")
+	}
+
+	update = false
+	migrateAvailableZoneReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"Vswitch":      d.Get("vswitch_id").(string),
+		"ZoneId":       d.Get("zone_id").(string),
+	}
+
+	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		migrateAvailableZoneReq["SecondaryZoneId"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("hidden_zone_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("hidden_zone_id"); ok {
+		migrateAvailableZoneReq["HiddenZoneId"] = v
+	}
+
+	if update {
+		action := "MigrateAvailableZone"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, migrateAvailableZoneReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, migrateAvailableZoneReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("secondary_zone_id")
+		d.SetPartial("hidden_zone_id")
 	}
 
 	update = false
@@ -1197,6 +1250,43 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("tde_status")
 		d.SetPartial("encryptor_name")
 		d.SetPartial("encryption_key")
+	}
+
+	if d.HasChange("db_instance_release_protection") {
+		action := "ModifyDBInstanceAttribute"
+
+		modifyDBInstanceAttributeReq := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOkExists("db_instance_release_protection"); ok {
+			modifyDBInstanceAttributeReq["DBInstanceReleaseProtection"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceAttributeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceAttributeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("db_instance_release_protection")
 	}
 
 	if err := ddsService.setInstanceTags(d); err != nil {

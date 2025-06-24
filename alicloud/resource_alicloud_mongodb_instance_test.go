@@ -440,6 +440,18 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"hidden_zone_id":    "${data.alicloud_mongodb_zones.default.zones.2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_zone_id": CHECKSET,
+						"hidden_zone_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -652,6 +664,26 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_release_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_release_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -748,6 +780,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 					"ssl_action":                                  "Open",
 					"maintain_start_time":                         "00:00Z",
 					"maintain_end_time":                           "03:00Z",
+					"db_instance_release_protection":              "false",
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "operationProfiling.slowOpThresholdMs",
@@ -793,6 +826,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 						"ssl_status":                                  "Open",
 						"maintain_start_time":                         "00:00Z",
 						"maintain_end_time":                           "03:00Z",
+						"db_instance_release_protection":              "false",
 						"parameters.#":                                "1",
 						"tags.%":                                      "2",
 						"tags.Created":                                "TF",
