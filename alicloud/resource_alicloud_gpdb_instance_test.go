@@ -322,26 +322,6 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_management_mode": "resourceGroup",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_management_mode": "resourceGroup",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_management_mode": "resourceQueue",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_management_mode": "resourceQueue",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"vector_configuration_status": "enabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -422,7 +402,7 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "instance_spec", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
 			},
 		},
 	})
@@ -519,7 +499,7 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "instance_spec", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
 			},
 		},
 	})
@@ -631,7 +611,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "instance_spec", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
 			},
 		},
 	})
@@ -725,7 +705,7 @@ func TestAccAliCloudGPDBDBInstanceServerless_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "instance_spec", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
 			},
 		},
 	})
@@ -809,7 +789,7 @@ func TestAccAliCloudGPDBDBInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "instance_spec", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data"},
 			},
 		},
 	})

@@ -79,10 +79,10 @@ The following arguments are supported:
 * `db_instance_category` - (Optional, ForceNew) The db instance category. Valid values: `Basic`, `HighAvailability`.
 -> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
 * `db_instance_mode` - (Required, ForceNew) The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`.
-* `instance_spec` - (Optional) The specification of segment nodes.
-  * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
-  * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
-  * When `db_instance_category` is `Serverless`, Valid values: `4C16G`, `8C32G`.
+* `instance_spec` - (Optional) The specification of segment nodes. Valid values:
+  - If `db_instance_category` is set to `HighAvailability`, and `db_instance_mode` is set to `StorageElastic`. Valid values: `2C16G`, `4C32G`, `16C128G`.
+  - If `db_instance_category` is set to `Basic`, and `db_instance_mode` is set to `StorageElastic`. Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
+  - If `db_instance_mode` is set to `Serverless`. Valid values: `4C16G`, `8C32G`.
 -> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
 * `storage_size` - (Optional, Int) The storage capacity. Unit: GB. Valid values: `50` to `4000`.
 -> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
