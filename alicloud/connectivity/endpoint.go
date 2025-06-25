@@ -312,6 +312,13 @@ var productCodeToLocationCode = map[string]string{
 	"eflo_cnp":             "eflocnp",         // Eflo-CNP
 }
 
+// productCodeToConfigEndpoints records all products' code mapping to endpoints' subfield name
+// Key: product code
+// Value: Field endpoints' subfield name, such as vpc, ecs, log
+var productCodeToConfigEndpoints = map[string]string{
+	"sls": "log",
+}
+
 // irregularProductEndpoint specially records those product codes that
 // cannot be parsed out by the location service.
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
