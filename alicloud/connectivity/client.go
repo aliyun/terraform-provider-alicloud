@@ -1807,7 +1807,12 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	return result, nil
 }
 func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+	configEndpoints := productCodeToConfigEndpoints[productCode]
+	if configEndpoints == "" {
+		configEndpoints = productCode
+	}
+
+	if v, ok := client.config.Endpoints.Load(configEndpoints); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
 		}

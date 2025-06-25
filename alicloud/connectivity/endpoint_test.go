@@ -127,3 +127,65 @@ func TestUnitCommonEndpointErrorHandling(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Illegal")
 }
+
+func TestUnitSlsEndpoint(t *testing.T) {
+	var endpoints sync.Map
+	endpoints.Store("log", "cn-shanghai.log.aliyuncs.com")
+
+	client := NewTestClient(t)
+	client.config.Region = Hangzhou
+	client.config.RegionId = "cn-hangzhou"
+	client.config.Endpoints = &endpoints
+
+	testCases := []struct {
+		productCode    string
+		configEndpoint string
+		expected       string
+	}{
+		{"sls", "log", "cn-shanghai.log.aliyuncs.com"},
+		{"alb", "alb", "alb.cn-hangzhou.aliyuncs.com"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.productCode, func(t *testing.T) {
+			endpoint, err := client.loadApiEndpoint(tc.productCode)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, endpoint)
+
+			val, ok := client.config.Endpoints.Load(tc.configEndpoint)
+			assert.True(t, ok)
+			assert.Equal(t, tc.expected, val)
+		})
+	}
+}
+
+func TestUnitSlsWithoutEndpoint(t *testing.T) {
+	client := NewTestClient(t)
+
+	testCases := []struct {
+		productCode    string
+		configEndpoint string
+		RegionId       string
+		expected       string
+	}{
+		{"sls", "", "cn-hangzhou", "cn-hangzhou.log.aliyuncs.com"},
+		{"slb", "", "cn-hangzhou", "slb.aliyuncs.com"},
+		{"sls", "", "eu-central-1", "eu-central-1.log.aliyuncs.com"},
+		{"alb", "", "eu-central-1", "alb.eu-central-1.aliyuncs.com"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.productCode, func(t *testing.T) {
+			client.config.Region = Region(tc.RegionId)
+			client.config.RegionId = tc.RegionId
+
+			endpoint, err := client.loadApiEndpoint(tc.productCode)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, endpoint)
+
+			val, ok := client.config.Endpoints.Load(tc.productCode)
+			assert.True(t, ok)
+			assert.Equal(t, tc.expected, val)
+		})
+	}
+}
