@@ -53,8 +53,8 @@ resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "13.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = "pg.n4.2c.2m"
+  instance_storage         = 30
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
 }
@@ -97,14 +97,14 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
-					"db_instance_storage_type": "cloud_essd",
+					"db_instance_storage_type": "general_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"source_db_instance_id":    CHECKSET,
-						"db_instance_storage_type": "cloud_essd",
+						"db_instance_storage_type": "general_essd",
 						"payment_type":             "PayAsYouGo",
 						"backup_id":                CHECKSET,
 						"engine_version":           "13.0",
@@ -148,7 +148,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"db_instance_class": "pg.n4.4c.2m",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -184,8 +184,8 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ssl_enabled":     "1",
 						"ca_type":         "aliyun",
-						"acl":             "perfer",
-						"replication_acl": "perfer",
+						"acl":             "prefer",
+						"replication_acl": "prefer",
 						"server_cert":     CHECKSET,
 						"server_key":      CHECKSET,
 					}),
