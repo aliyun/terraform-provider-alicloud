@@ -901,6 +901,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_threat_detection_cycle_task":                          resourceAliCloudThreatDetectionCycleTask(),
 			"alicloud_message_service_service":                              resourceAliCloudMessageServiceService(),
 			"alicloud_esa_routine_route":                                    resourceAliCloudEsaRoutineRoute(),
 			"alicloud_esa_routine":                                          resourceAliCloudEsaRoutine(),
