@@ -101,6 +101,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"db_instance_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"db_instance_storage": {
@@ -117,7 +118,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_essd", "cloud_essd2", "cloud_essd3", "cloud_ssd", "local_ssd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_essd", "cloud_essd2", "cloud_essd3", "cloud_ssd", "local_ssd", "general_essd"}, false),
 			},
 			"db_name": {
 				Type:     schema.TypeString,
