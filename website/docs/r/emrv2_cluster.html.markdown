@@ -246,6 +246,7 @@ The node_groups mapping supports the following:
 * `node_group_name` - (Required) The node group name of emr cluster.
 * `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
+* `private_pool_options` - (Optional, Available since v1.253.0) The node group specific private pool resources. See [`private_pool_options`](#node_groups-private_pool_options) below.
 * `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance. See [`spot_bid_prices`](#node_groups-spot_bid_prices) below.
 * `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group. **NOTE:** From version 1.236.0, `vswitch_ids` can be modified.
 * `with_public_ip` - (Optional) Whether the node has a public IP address enabled. **NOTE:** From version 1.236.0, `with_public_ip` can be modified.
@@ -262,6 +263,13 @@ The node_groups mapping supports the following:
 * `auto_scaling_policy` - (Optional, Available since v1.227.0) The node group auto scaling policy for emr cluster. See [`auto_scaling_policy`](#node_groups-auto_scaling_policy) below.
 * `ack_config` - (Optional, Available since v1.236.0) The node group of ack configuration for emr cluster to deploying on kubernetes. See [`ack_config`](#node_groups-ack_config) below.
 * `node_resize_strategy` - (Optional, Available since v1.219.0) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
+
+### `node_groups-private_pool_options`
+
+The private_pool_options mapping supports the following:
+
+* `private_pool_ids` - (Optional) The node group specific private pool resource ids.
+* `match_criteria` - (Optional) The node group specific private pool resource match criteria. Valid values: `Open`, `Target`, `None`.
 
 ### `node_groups-subscription_config`
 
