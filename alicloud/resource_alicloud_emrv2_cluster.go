@@ -295,6 +295,25 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						"private_pool_options": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"private_pool_ids": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"match_criteria": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validation.StringInSlice([]string{"Open", "Target", "None"}, false),
+									},
+								},
+							},
+							MaxItems: 1,
+						},
 						"spot_strategy": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -1062,6 +1081,31 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					nodeGroup["SubscriptionConfig"] = subscriptionConfig
 				}
 			}
+			if v, ok := kv["private_pool_options"]; ok {
+				privatePoolOptions := v.(*schema.Set).List()
+				if len(privatePoolOptions) == 1 {
+					if value, exists := nodeGroup["PaymentType"]; exists && "PayAsYouGo" != value {
+						return WrapError(Error("EMR cluster only 'PayAsYouGo' paymentType nodeGroup use private pool options."))
+					}
+					if value, exists := nodeGroup["node_group_type"]; exists && "TASK" != value {
+						return WrapError(Error("EMR cluster only the node group type of 'TASK' use private pool options."))
+					}
+
+					privatePoolOption := map[string]interface{}{}
+					privatePoolOptionMap := privatePoolOptions[0].(map[string]interface{})
+					if value, exists := privatePoolOptionMap["private_pool_ids"]; exists {
+						var ppIds []string
+						for _, ppId := range value.(*schema.Set).List() {
+							ppIds = append(ppIds, ppId.(string))
+						}
+						privatePoolOption["PrivatePoolIds"] = ppIds
+					}
+					if value, exists := privatePoolOptionMap["match_criteria"]; exists {
+						privatePoolOption["MatchCriteria"] = value
+					}
+					nodeGroup["PrivatePoolOptions"] = privatePoolOption
+				}
+			}
 			if v, ok := kv["spot_bid_prices"]; ok {
 				spotBidPriceList := v.(*schema.Set).List()
 				if len(spotBidPriceList) > 0 {
@@ -1789,6 +1833,24 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 				nodeGroup["instance_types"] = instanceTypes
 			}
 
+			if v, ok := nodeGroupMap["PrivatePoolOptions"]; ok {
+				var privatePoolOptions []map[string]interface{}
+				privatePoolOptionsMap := v.(map[string]interface{})
+				if ppIds, ppIdsExists := privatePoolOptionsMap["PrivatePoolIds"]; ppIdsExists && len(ppIds.([]interface{})) > 0 {
+					privatePoolOption := map[string]interface{}{}
+					var privatePoolIDs []string
+					for _, ppId := range ppIds.([]interface{}) {
+						privatePoolIDs = append(privatePoolIDs, ppId.(string))
+					}
+					privatePoolOption["private_pool_ids"] = privatePoolIDs
+					if mc, mcExists := privatePoolOptionsMap["MatchCriteria"]; mcExists && mc.(string) != "" {
+						privatePoolOption["match_criteria"] = mc
+					}
+					privatePoolOptions = append(privatePoolOptions, privatePoolOption)
+					nodeGroup["private_pool_options"] = privatePoolOptions
+				}
+			}
+
 			if v, ok := nodeGroupMap["AckConfig"]; ok && len(v.(map[string]interface{})) > 0 {
 				var ackConfigs []map[string]interface{}
 				ackConfig := map[string]interface{}{}
@@ -2424,6 +2486,28 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"GracefulShutdown":   newNodeGroup["graceful_shutdown"],
 					"SpotInstanceRemedy": newNodeGroup["spot_instance_remedy"],
 				}
+				if value, exists := newNodeGroup["private_pool_options"]; exists && len(value.(*schema.Set).List()) > 0 {
+					if value, exists := newNodeGroup["payment_type"]; exists && "PayAsYouGo" != value {
+						return WrapError(Error("EMR cluster only 'PayAsYouGo' paymentType nodeGroup use private pool options."))
+					}
+					if value, exists := newNodeGroup["node_group_type"]; exists && "TASK" != value {
+						return WrapError(Error("EMR cluster only the node group type of 'TASK' use private pool options."))
+					}
+
+					privatePoolOptions := map[string]interface{}{}
+					privatePoolOptionsMap := value.(*schema.Set).List()[0].(map[string]interface{})
+					if ppIds, ppIdsExists := privatePoolOptionsMap["private_pool_ids"]; ppIdsExists && len(ppIds.(*schema.Set).List()) > 0 {
+						var privatePoolIds []string
+						for _, ppId := range ppIds.(*schema.Set).List() {
+							privatePoolIds = append(privatePoolIds, ppId.(string))
+						}
+						privatePoolOptions["PrivatePoolIds"] = privatePoolIds
+					}
+					if mm, mmExists := privatePoolOptionsMap["match_criteria"]; mmExists && mm.(string) != "" {
+						privatePoolOptions["MatchCriteria"] = mm
+					}
+					nodeGroupParam["PrivatePoolOptions"] = privatePoolOptions
+				}
 				if value, exists := newNodeGroup["auto_scaling_policy"]; exists && len(value.([]interface{})) > 0 {
 					nodeGroupParam["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
 				}
@@ -2934,6 +3018,18 @@ func resourceAlicloudEmrV2ClusterDelete(d *schema.ResourceData, meta interface{}
 					}
 				}
 			}
+		}
+
+		// EMR Cluster maybe auto deleted cause all nodes released.
+		emrCluster, err := emrService.GetEmrV2Cluster(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if "TERMINATED" == emrCluster["ClusterState"].(string) {
+			return nil
 		}
 	}
 

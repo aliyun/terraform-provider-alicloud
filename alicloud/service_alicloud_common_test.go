@@ -1136,14 +1136,29 @@ resource "alicloud_ecs_key_pair" "default" {
   key_pair_name = "${var.name}"
 }
 
+resource "alicloud_ecs_capacity_reservation" default {
+  capacity_reservation_name = "${var.name}"
+  platform                  = "linux"
+  end_time_type             = "Unlimited"
+  instance_amount           = 1
+  instance_type             = "ecs.g7.xlarge"
+  match_criteria            = "Target"
+  resource_group_id         = "${data.alicloud_resource_manager_resource_groups.default.ids.0}"
+  zone_ids                  = ["${data.alicloud_zones.default.zones.0.id}"]
+
+  tags = {
+    Created = "terraform-example"
+  }
+}
+
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    security_group_name = "${var.name}"
+    vpc_id              = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_ram_role" "default" {
-  name        = var.name
-  document    = <<EOF
+  role_name                   = var.name
+  assume_role_policy_document = <<EOF
     {
         "Statement": [
         {
@@ -1209,13 +1224,13 @@ resource "alicloud_ecs_key_pair" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    security_group_name = "${var.name}"
+    vpc_id              = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_ram_role" "default" {
-    name        = var.name
-    document    = <<EOF
+    role_name                   = var.name
+    assume_role_policy_document = <<EOF
     {
         "Statement": [
         {
@@ -1245,6 +1260,8 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 	node_cidr_mask     = 24
 	proxy_mode         = "ipvs"
 	service_cidr       = "192.168.0.0/16"
+
+    deletion_protection = "false"
 
     addons {
         name = "terway-eniip"

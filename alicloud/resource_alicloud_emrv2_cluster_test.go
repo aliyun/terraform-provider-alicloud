@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -94,6 +95,14 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	getTomorrowHourTimestamp := func(hour int) string {
+		loc, _ := time.LoadLocation("Europe/Berlin")
+		tomorrow := time.Now().In(loc).AddDate(0, 0, 1)
+		t := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), hour, 0, 0, 0, loc)
+		return fmt.Sprintf("%d", t.UnixMilli())
+	}
+	startTime := getTomorrowHourTimestamp(15)
+	endTime := getTomorrowHourTimestamp(17)
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
@@ -118,7 +127,7 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":            "${alicloud_vpc.default.id}",
-							"ram_role":          "${alicloud_ram_role.default.name}",
+							"ram_role":          "${alicloud_ram_role.default.role_name}",
 							"security_group_id": "${alicloud_security_group.default.id}",
 							"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
 							"key_pair_name":     "${alicloud_ecs_key_pair.default.id}",
@@ -411,6 +420,12 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 							"with_public_ip":       "false",
 							"graceful_shutdown":    "false",
 							"spot_instance_remedy": "false",
+							"private_pool_options": []map[string]interface{}{
+								{
+									"private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.id}"},
+									"match_criteria":   "Target",
+								},
+							},
 							"node_resize_strategy": "PRIORITY",
 							"auto_scaling_policy": []map[string]interface{}{
 								{
@@ -466,9 +481,9 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 											"min_adjustment_value": "1",
 											"time_trigger": []map[string]interface{}{
 												{
-													"launch_time":            "16:00:00",
-													"start_time":             "1745739800000",
-													"end_time":               "1745744400000",
+													"launch_time":            "22:00:00",
+													"start_time":             startTime,
+													"end_time":               endTime,
 													"launch_expiration_time": "3600",
 													"recurrence_type":        "DAILY",
 													"recurrence_value":       "3",
@@ -505,8 +520,9 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"node_groups.#": "3",
-						"force_sleep":   "240",
+						"node_groups.#":                        "3",
+						"node_groups.2.private_pool_options.#": "1",
+						"force_sleep":                          "240",
 					}),
 				),
 			},
@@ -556,7 +572,7 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":                 "${alicloud_vpc.default.id}",
-							"ram_role":               "${alicloud_ram_role.default.name}",
+							"ram_role":               "${alicloud_ram_role.default.role_name}",
 							"security_group_id":      "${alicloud_security_group.default.id}",
 							"zone_id":                "${data.alicloud_zones.default.zones.0.id}",
 							"key_pair_name":          "${alicloud_ecs_key_pair.default.id}",
@@ -1217,7 +1233,7 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":            "${alicloud_vpc.default.id}",
-							"ram_role":          "${alicloud_ram_role.default.name}",
+							"ram_role":          "${alicloud_ram_role.default.role_name}",
 							"security_group_id": "${alicloud_security_group.default.id}",
 							"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
 							"key_pair_name":     "${alicloud_ecs_key_pair.default.id}",
@@ -1305,6 +1321,39 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 								},
 							},
 						},
+						{
+							"node_group_type":      "TASK",
+							"node_group_name":      "emr-task-1",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"private_pool_options": []map[string]interface{}{
+								{
+									"private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.id}"},
+									"match_criteria":   "Target",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
 					},
 					"tags": map[string]interface{}{
 						"Created": "TF",
@@ -1324,7 +1373,7 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 						"tags.For":          "acceptance test",
 						"node_attributes.#": "1",
 						"applications.#":    "3",
-						"node_groups.#":     "3",
+						"node_groups.#":     "4",
 					}),
 				),
 			},
@@ -1449,11 +1498,44 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 								},
 							},
 						},
+						{
+							"node_group_type":      "TASK",
+							"node_group_name":      "emr-task-1",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"private_pool_options": []map[string]interface{}{
+								{
+									"private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.id}"},
+									"match_criteria":   "Target",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"node_groups.#": "4",
+						"node_groups.#": "5",
 						"force_sleep":   "60",
 					}),
 				),
@@ -1569,11 +1651,44 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 								},
 							},
 						},
+						{
+							"node_group_type":      "TASK",
+							"node_group_name":      "emr-task-1",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"private_pool_options": []map[string]interface{}{
+								{
+									"private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.id}"},
+									"match_criteria":   "Target",
+								},
+							},
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"node_groups.#": "4",
+						"node_groups.#": "5",
 						"force_sleep":   "240",
 					}),
 				),
@@ -1622,7 +1737,7 @@ func TestAccAliCloudEmrV2Cluster_basic3(t *testing.T) {
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":               "${alicloud_vpc.default.id}",
-							"ram_role":             "${alicloud_ram_role.default.name}",
+							"ram_role":             "${alicloud_ram_role.default.role_name}",
 							"security_group_id":    "${alicloud_security_group.default.id}",
 							"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
 							"key_pair_name":        "${alicloud_ecs_key_pair.default.id}",
