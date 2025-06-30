@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_hbr_udm_snapshots":                   dataSourceAliCloudHbrUdmSnapshots(),
 			"alicloud_sls_alerts":                          dataSourceAliCloudSlsAlerts(),
 			"alicloud_fcv3_triggers":                       dataSourceAliCloudFcv3Triggers(),
 			"alicloud_ims_oidc_providers":                  dataSourceAliCloudImsOidcProviders(),
