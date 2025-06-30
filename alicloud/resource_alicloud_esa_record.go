@@ -308,7 +308,7 @@ func resourceAliCloudEsaRecordCreate(d *schema.ResourceData, meta interface{}) e
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
