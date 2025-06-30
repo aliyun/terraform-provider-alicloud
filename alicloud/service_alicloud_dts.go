@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -504,6 +506,64 @@ func (s *DtsService) DescribeDtsMigrationJob(id string) (object map[string]inter
 		return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+func (s *DtsService) QueryChangedJobParameters(dtsJobId string) (string, error) {
+	client := s.client
+	action := "DescribeDtsJobConfig"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"DtsJobId": dtsJobId,
+	}
+	resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+	if err != nil {
+		return "", err
+	}
+
+	addDebug(action, resp, request)
+
+	// Parameters 必须为 []interface{}
+	parameters, ok := resp["Parameters"].([]interface{})
+	if !ok {
+		return "", fmt.Errorf("no Parameters found in response")
+	}
+
+	changed := make([]map[string]interface{}, 0)
+
+	// filter 被修改的项
+	for _, item := range parameters {
+		param, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rv, rvOk := param["RunningValue"]
+		dv, dvOk := param["DefaultValue"]
+		if rvOk && dvOk && rv != dv {
+			changed = append(changed, map[string]interface{}{
+				"module": param["Module"],
+				"name":   param["Name"],
+				"value":  rv,
+			})
+		}
+	}
+
+	if len(changed) == 0 {
+		return "", nil
+	}
+
+	// 按 name 排序
+	sort.Slice(changed, func(i, j int) bool {
+		ni, _ := changed[i]["name"].(string)
+		nj, _ := changed[j]["name"].(string)
+		return ni < nj
+	})
+
+	// 转一行字符串
+	b, err := json.Marshal(changed)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func (s *DtsService) DtsMigrationJobStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
