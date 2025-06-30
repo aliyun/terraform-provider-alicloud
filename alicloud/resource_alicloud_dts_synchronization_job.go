@@ -52,7 +52,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small"}, false),
+				ValidateFunc: StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
@@ -251,6 +251,10 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Synchronizing", "Suspending"}, false),
+			},
+			"job_parameters": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -647,6 +651,48 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		d.SetPartial("db_list")
+
+		target := d.Get("status").(string)
+		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("job_parameters") {
+		modifyJobConfigReq := map[string]interface{}{
+			"DtsJobId": d.Id(),
+			"RegionId": client.RegionId,
+		}
+		if v, ok := d.GetOk("job_parameters"); ok {
+			modifyJobConfigReq["Parameters"] = v
+		}
+
+		action := "ModifyDtsJobConfig"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyJobConfigReq, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyJobConfigReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		// Read函数中无法返回该字段，所以手动更新该字段
+		d.Set("job_parameters", d.Get("job_parameters"))
+		d.SetPartial("job_parameters")
 
 		target := d.Get("status").(string)
 		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
