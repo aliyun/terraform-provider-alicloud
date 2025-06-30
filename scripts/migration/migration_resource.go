@@ -56,7 +56,8 @@ var specialResourceMap = map[string]map[string]string{
 		"reserved_instance":       "reserved_instance",
 	},
 	"rds": {
-		"instance": "db_instance",
+		"instance":          "db_instance",
+		"account_privilege": "db_account_privilege",
 	},
 	"cbwp": {
 		"common_bandwidth_package":            "common_bandwidth_package",
@@ -1475,6 +1476,7 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service/" + namespace
 
 	serviceConstructRe := regexp.MustCompile(`&\b([A-Za-z]+)(Service)(V2)?\b`)
+	resourceIdRe := regexp.MustCompile(`(resourceId\s*:?=\s*)"([^"]+)"`)
 
 	skipCheckDestroyFunc := false
 	testAccCheckDestroyRe := regexp.MustCompile(`testAccCheck(\w+)Destroy\b`)
@@ -1538,6 +1540,7 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "defaultRegionToTest", "provider.DefaultRegionToTest")
 		line = strings.ReplaceAll(line, "resourceTestAccConfigFunc", "tftest.ResourceTestAccConfig")
 		line = strings.ReplaceAll(line, "resourceCheckInit", "tftest.ResourceCheckInit")
+		line = resourceIdRe.ReplaceAllString(line, `${1}tftest.FormatResourceId("${2}")`)
 		line = strings.ReplaceAll(line, "testAccPreCheck(t)", "tftest.PreCheck(nil, t)")
 		line = strings.ReplaceAll(line, "Providers:     testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
 		line = strings.ReplaceAll(line, "Providers:    testAccProviders", "ProtoV5ProviderFactories: tftest.ProtoV5ProviderFactories")
