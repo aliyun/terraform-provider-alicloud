@@ -326,6 +326,8 @@ func TestUnitCommonConvertListToCommaSeparate(t *testing.T) {
 		{"EmptySlice", []interface{}{}, ""},
 		{"SingleString", []interface{}{"a"}, "a"},
 		{"MultipleStrings", []interface{}{"a", "b", "c"}, "a,b,c"},
+		{"MultipleContainsNilStrings", []interface{}{"a", nil, "c"}, "a,c"},
+		{"MultipleContainsBooleanIntegerStrings", []interface{}{"a", false, 1, "c"}, "a,false,1,c"},
 	}
 
 	for _, tc := range testCases {

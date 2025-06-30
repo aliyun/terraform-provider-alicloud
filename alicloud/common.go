@@ -397,11 +397,14 @@ func convertListToCommaSeparate(configured []interface{}) string {
 	}
 	result := ""
 	for i, v := range configured {
+		if v == nil {
+			continue
+		}
 		rail := ","
 		if i == len(configured)-1 {
 			rail = ""
 		}
-		result += v.(string) + rail
+		result += fmt.Sprint(v) + rail
 	}
 	return result
 }
