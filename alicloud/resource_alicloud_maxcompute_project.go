@@ -144,6 +144,10 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"enable_dr": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"enable_decimal2": {
 							Type:     schema.TypeBool,
 							Optional: true,
@@ -217,6 +221,11 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"AVAILABLE", "READONLY", "DELETING", "FROZEN"}, false),
 			},
 			"tags": tagsSchema(),
+			"three_tier_model": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"type": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -314,30 +323,15 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	if objectRaw["comment"] != nil {
-		d.Set("comment", objectRaw["comment"])
-	}
-	if objectRaw["createdTime"] != nil {
-		d.Set("create_time", objectRaw["createdTime"])
-	}
-	if objectRaw["defaultQuota"] != nil {
-		d.Set("default_quota", objectRaw["defaultQuota"])
-	}
-	if objectRaw["owner"] != nil {
-		d.Set("owner", objectRaw["owner"])
-	}
-	if objectRaw["regionId"] != nil {
-		d.Set("region_id", objectRaw["regionId"])
-	}
-	if objectRaw["status"] != nil {
-		d.Set("status", objectRaw["status"])
-	}
-	if objectRaw["type"] != nil {
-		d.Set("type", objectRaw["type"])
-	}
-	if objectRaw["name"] != nil {
-		d.Set("project_name", objectRaw["name"])
-	}
+	d.Set("comment", objectRaw["comment"])
+	d.Set("create_time", objectRaw["createdTime"])
+	d.Set("default_quota", objectRaw["defaultQuota"])
+	d.Set("owner", objectRaw["owner"])
+	d.Set("region_id", objectRaw["regionId"])
+	d.Set("status", objectRaw["status"])
+	d.Set("three_tier_model", objectRaw["threeTierModel"])
+	d.Set("type", objectRaw["type"])
+	d.Set("project_name", objectRaw["name"])
 
 	ipWhiteListMaps := make([]map[string]interface{}, 0)
 	ipWhiteListMap := make(map[string]interface{})
@@ -351,10 +345,8 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 
 		ipWhiteListMaps = append(ipWhiteListMaps, ipWhiteListMap)
 	}
-	if objectRaw["ipWhiteList"] != nil {
-		if err := d.Set("ip_white_list", ipWhiteListMaps); err != nil {
-			return err
-		}
+	if err := d.Set("ip_white_list", ipWhiteListMaps); err != nil {
+		return err
 	}
 	propertiesMaps := make([]map[string]interface{}, 0)
 	propertiesMap := make(map[string]interface{})
@@ -364,6 +356,7 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 	}
 	if len(properties1Raw) > 0 {
 		propertiesMap["allow_full_scan"] = properties1Raw["allowFullScan"]
+		propertiesMap["enable_dr"] = properties1Raw["enableDr"]
 		propertiesMap["enable_decimal2"] = properties1Raw["enableDecimal2"]
 		propertiesMap["retention_days"] = properties1Raw["retentionDays"]
 		propertiesMap["sql_metering_max"] = properties1Raw["sqlMeteringMax"]
@@ -399,11 +392,10 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		propertiesMap["table_lifecycle"] = tableLifecycleMaps
 		propertiesMaps = append(propertiesMaps, propertiesMap)
 	}
-	if objectRaw["properties"] != nil {
-		if err := d.Set("properties", propertiesMaps); err != nil {
-			return err
-		}
+	if err := d.Set("properties", propertiesMaps); err != nil {
+		return err
 	}
+
 	securityPropertiesMaps := make([]map[string]interface{}, 0)
 	securityPropertiesMap := make(map[string]interface{})
 	securityProperties1Raw := make(map[string]interface{})
@@ -433,10 +425,8 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 		securityPropertiesMap["project_protection"] = projectProtectionMaps
 		securityPropertiesMaps = append(securityPropertiesMaps, securityPropertiesMap)
 	}
-	if objectRaw["securityProperties"] != nil {
-		if err := d.Set("security_properties", securityPropertiesMaps); err != nil {
-			return err
-		}
+	if err := d.Set("security_properties", securityPropertiesMaps); err != nil {
+		return err
 	}
 
 	objectRaw, err = maxComputeServiceV2.DescribeProjectListTagResources(d.Id())
@@ -458,8 +448,48 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var query map[string]*string
 	var body map[string]interface{}
+	maxComputeServiceV2 := MaxComputeServiceV2{client}
 	update := false
 	d.Partial(true)
+
+	if d.HasChange("three_tier_model") {
+		var err error
+		object, err := maxComputeServiceV2.DescribeMaxComputeProject(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("three_tier_model").(bool)
+		if object["threeTierModel"].(bool) != target && target {
+			if target == true {
+				projectName := d.Id()
+				action := fmt.Sprintf("/api/v1/projects/%s/modelTier", projectName)
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["projectName"] = d.Id()
+
+				body = request
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
 
 	projectName := d.Id()
 	action := fmt.Sprintf("/api/v1/projects/%s/meta", projectName)
@@ -505,6 +535,12 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 		type1, _ := jsonpath.Get("$[0].table_lifecycle[0].type", v)
 		if type1 != nil && (d.HasChange("properties.0.table_lifecycle.0.type") || type1 != "") {
 			tableLifecycle["type"] = type1
+		}
+
+		objectDataLocalMap["tableLifecycle"] = tableLifecycle
+		enableDr1, _ := jsonpath.Get("$[0].enable_dr", v)
+		if enableDr1 != nil && (d.HasChange("properties.0.enable_dr") || enableDr1 != "") {
+			objectDataLocalMap["enableDr"] = enableDr1
 		}
 
 		objectDataLocalMap["tableLifecycle"] = tableLifecycle
@@ -768,7 +804,6 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if d.HasChange("tags") {
-		maxComputeServiceV2 := MaxComputeServiceV2{client}
 		if err := maxComputeServiceV2.SetResourceTags(d, "project"); err != nil {
 			return WrapError(err)
 		}

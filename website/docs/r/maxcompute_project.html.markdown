@@ -52,6 +52,8 @@ If the calculation Quota is not specified, the default Quota resource will be co
 * `properties` - (Optional, List) Project base attributes See [`properties`](#properties) below.
 * `security_properties` - (Optional, List) Security-related attributes See [`security_properties`](#security_properties) below.
 * `status` - (Optional, Computed) The project status. Default value: AVAILABLE. Value: (AVAILABLE/READONLY/FROZEN/DELETING)
+* `three_tier_model` - (Optional, Bool, Available since v1.253.0) Indicates whether data storage by schema is supported. Valid values:
+  - `true`: supported.
 * `tags` - (Optional, Map) The tag of the resource
 
 ### `ip_white_list`
@@ -69,8 +71,9 @@ The ip_white_list supports the following:
 ### `properties`
 
 The properties supports the following:
-* `allow_full_scan` - (Optional) Whether to allow full table scan. Default: false
-* `enable_decimal2` - (Optional) Whether to turn on Decimal2.0
+* `allow_full_scan` - (Optional, Bool) Whether to allow full table scan. Default: `false`.
+* `enable_dr` - (Optional, Bool, Available since v1.253.0) Enable multi-AZ storage disaster tolerance. Valid values: `true`, `false`.
+* `enable_decimal2` - (Optional, Bool) Whether to turn on Decimal2.0.
 * `encryption` - (Optional, List) Storage encryption. For details, see [Storage Encryption](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/storage-encryption)
   -> **NOTE :**:
 To enable storage encryption, you need to modify the parameters of the basic attributes of the MaxCompute project. This operation permission is authenticated by RAM, and you need to have the Super_Administrator role permission of the corresponding project.
@@ -95,7 +98,7 @@ hive: the type system of the Hive compatibility mode introduced by MaxCompute 2.
 
 The properties-encryption supports the following:
 * `algorithm` - (Optional) The encryption algorithm supported by the key, including AES256, AESCTR, and RC4.
-* `enable` - (Optional) Only enable function is supported. Value: (true)
+* `enable` - (Optional, Bool) Only enable function is supported. Value: (true)
 
 -> **NOTE:** cannot be turned off after the function is turned on
 
@@ -112,19 +115,19 @@ inherit: If you do not set the lifecycle of the table when creating a table, the
 ### `security_properties`
 
 The security_properties supports the following:
-* `enable_download_privilege` - (Optional) Set whether to enable the [Download permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/download-control), that is, set the ODPS. security.enabledownloadprivilege property.
-* `label_security` - (Optional) Set whether to use the [Label permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/label-based-access-control), that is, set the LabelSecurity attribute, which is not used by default.
-* `object_creator_has_access_permission` - (Optional) Sets whether to allow the creator of the object to have access to the object, I .e. sets the attribute. The default is the allowed state.
-* `object_creator_has_grant_permission` - (Optional) The ObjectCreatorHasGrantPermission attribute is set to allow the object creator to have the authorization permission on the object. The default is the allowed state.
+* `enable_download_privilege` - (Optional, Bool) Set whether to enable the [Download permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/download-control), that is, set the ODPS. security.enabledownloadprivilege property.
+* `label_security` - (Optional, Bool) Set whether to use the [Label permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/label-based-access-control), that is, set the LabelSecurity attribute, which is not used by default.
+* `object_creator_has_access_permission` - (Optional, Bool) Sets whether to allow the creator of the object to have access to the object, I .e. sets the attribute. The default is the allowed state.
+* `object_creator_has_grant_permission` - (Optional, Bool) The ObjectCreatorHasGrantPermission attribute is set to allow the object creator to have the authorization permission on the object. The default is the allowed state.
 * `project_protection` - (Optional, List) Project protection See [`project_protection`](#security_properties-project_protection) below.
-* `using_acl` - (Optional) Set whether to use the [ACL permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/maxcompute-permissions), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
-* `using_policy` - (Optional) Set whether to use the Policy permission control function (https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
+* `using_acl` - (Optional, Bool) Set whether to use the [ACL permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/maxcompute-permissions), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
+* `using_policy` - (Optional, Bool) Set whether to use the Policy permission control function (https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
 
 ### `security_properties-project_protection`
 
 The security_properties-project_protection supports the following:
 * `exception_policy` - (Optional, JsonString) Set [Exceptions or Trusted Items](https://www.alibabacloud.com/help/en/maxcompute/security-and-compliance/project-data-protection)
-* `protected` - (Optional) Whether enabled, value:(true/false)
+* `protected` - (Optional, Bool) Whether enabled, value:(true/false)
 
 ## Attributes Reference
 
