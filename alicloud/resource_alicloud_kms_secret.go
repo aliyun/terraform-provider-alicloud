@@ -29,6 +29,12 @@ func resourceAliCloudKmsSecret() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("secret_type"); ok && v.(string) == "RAMCredentials" {
+						return d.Id() != ""
+					}
+					return false
+				},
 			},
 			"secret_data": {
 				Type:      schema.TypeString,
@@ -50,7 +56,7 @@ func resourceAliCloudKmsSecret() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Generic", "Rds", "RAMCredentials", "ECS"}, false),
+				ValidateFunc: StringInSlice([]string{"Generic", "Rds", "Redis", "RAMCredentials", "ECS", "PolarDB"}, false),
 			},
 			"secret_data_type": {
 				Type:         schema.TypeString,
@@ -211,7 +217,7 @@ func resourceAliCloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["SecretName"]))
+	d.SetId(fmt.Sprint(response["SecretName"]))
 
 	return resourceAliCloudKmsSecretUpdate(d, meta)
 }
