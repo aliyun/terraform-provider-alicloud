@@ -3531,6 +3531,7 @@ func (s *EcsService) DescribeEcsCapacityReservation(id string) (object map[strin
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *EcsService) EcsCapacityReservationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsCapacityReservation(d.Id())
@@ -3548,6 +3549,7 @@ func (s *EcsService) EcsCapacityReservationStateRefreshFunc(d *schema.ResourceDa
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
 func (s *EcsService) DescribeEcsElasticityAssurance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	if err != nil {
@@ -3590,6 +3592,7 @@ func (s *EcsService) DescribeEcsElasticityAssurance(id string) (object map[strin
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *EcsService) EcsElasticityAssuranceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcsElasticityAssurance(d.Id())
@@ -3606,6 +3609,47 @@ func (s *EcsService) EcsElasticityAssuranceStateRefreshFunc(d *schema.ResourceDa
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *EcsService) DescribeInstanceAttachmentAttribute(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceIds"] = "[\"" + id + "\"]"
+	request["RegionId"] = client.RegionId
+	action := "DescribeInstanceAttachmentAttributes"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Instances.Instance[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.Instance[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *EcsService) isSupportedNetworkCardIndex(instanceType string) (bool, error) {

@@ -687,6 +687,17 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"private_pool_options_match_criteria": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Open", "Target", "None"}, false),
+			},
+			"private_pool_options_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -1145,6 +1156,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DedicatedHostId"] = v
 	}
 
+	if v, ok := d.GetOk("private_pool_options_match_criteria"); ok {
+		request["PrivatePoolOptions.MatchCriteria"] = v
+	}
+
+	if v, ok := d.GetOk("private_pool_options_id"); ok {
+		request["PrivatePoolOptions.Id"] = v
+	}
+
 	if v, ok := d.GetOk("image_options"); ok {
 		for _, raw := range v.(*schema.Set).List() {
 			imageOptionsArg := raw.(map[string]interface{})
@@ -1496,6 +1515,14 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 
 	d.Set("enable_jumbo_frame", instanceAttribute.EnableJumboFrame)
 
+	instanceAttachmentAttribute, err := ecsService.DescribeInstanceAttachmentAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("private_pool_options_match_criteria", instanceAttachmentAttribute["PrivatePoolOptionsMatchCriteria"])
+	d.Set("private_pool_options_id", instanceAttachmentAttribute["PrivatePoolOptionsId"])
+
 	return nil
 }
 
@@ -1796,7 +1823,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 					return ecsClient.StartInstance(startRequest)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
+					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
 						time.Sleep(time.Second)
 						return resource.RetryableError(err)
 					}
@@ -2219,6 +2246,52 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		d.SetPartial("ipv6_addresses")
+	}
+
+	update := false
+	var response map[string]interface{}
+	modifyInstanceAttachmentAttributesReq := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"InstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("private_pool_options_match_criteria") {
+		update = true
+	}
+	if v, ok := d.GetOk("private_pool_options_match_criteria"); ok {
+		modifyInstanceAttachmentAttributesReq["PrivatePoolOptions.MatchCriteria"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("private_pool_options_id") {
+		update = true
+
+		if v, ok := d.GetOk("private_pool_options_id"); ok {
+			modifyInstanceAttachmentAttributesReq["PrivatePoolOptions.Id"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyInstanceAttachmentAttributes"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, modifyInstanceAttachmentAttributesReq, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyInstanceAttachmentAttributesReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("private_pool_options_match_criteria")
+		d.SetPartial("private_pool_options_id")
 	}
 
 	d.Partial(false)
