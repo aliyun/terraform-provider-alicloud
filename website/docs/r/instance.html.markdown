@@ -240,6 +240,11 @@ The following arguments are supported:
   - `true`: Uses the preset password.
   - `false`: Does not use the preset password.
 -> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
+* `private_pool_options_match_criteria` - (Optional, Available since v1.253.0) The type of the private pool. Default value: `None`. Valid values:
+  - `Open`: Open private pool.
+  - `Target`: Specified private pool. **NOTE:** If `private_pool_options_match_criteria` is set to `Target`, `private_pool_options_id` is required.
+  - `None`: No private pool. The capacity in private pools is not used.
+* `private_pool_options_id` - (Optional, Available since v1.253.0) The ID of the private pool.
 
 * `image_options` - (Optional, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
 
