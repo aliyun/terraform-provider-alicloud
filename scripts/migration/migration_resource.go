@@ -24,6 +24,7 @@ var (
 	sourceProviderDir = flag.String("s", "", "source provider dir path")
 	destProviderDir   = flag.String("t", "", "target provider dir path")
 	functionName      = flag.String("f", "", "function name in service")
+	mode              = flag.String("m", "", "migration mode (sdk or default)")
 )
 
 var specialServiceMap = map[string]string{
@@ -93,6 +94,11 @@ var specialResourceMap = map[string]map[string]string{
 		"kubernetes_node_pool":   "cs_kubernetes_node_pool",
 		"kubernetes_permissions": "cs_kubernetes_permissions",
 	},
+	"cen": {
+		"bandwidth_package":            "cen_bandwidth_package",
+		"bandwidth_package_attachment": "cen_bandwidth_package_attachment",
+		"instance":                     "cen_instance",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -147,6 +153,14 @@ var specialDataSourceMap = map[string]map[string]string{
 		"kubernetes_node_pool":   "cs_kubernetes_node_pools",
 		"kubernetes_permissions": "cs_kubernetes_permissions",
 	},
+	"dms_enterprise": {
+		"user_tenant": "dms_user_tenants",
+	},
+	"cen": {
+		"instance":                          "cen_instances",
+		"transit_router_available_resource": "cen_transit_router_available_resources",
+		"transit_router_service":            "cen_transit_router_service",
+	},
 }
 
 var irregularPlurals = map[string]string{
@@ -162,9 +176,13 @@ func main() {
 	if *namespace == "" || *sourceProviderDir == "" || *destProviderDir == "" {
 		log.Fatal("Parameters -n, -s, -t are required")
 	}
+	serviceName := *namespace
+	if v, ok := specialServiceMap[*namespace]; ok {
+		serviceName = v
+	}
 
 	if functionName != nil && *functionName != "" {
-		if err := migrateServiceFunction(namespace); err != nil {
+		if err := migrateServiceFunction(&serviceName); err != nil {
 			log.Printf("Error migrate function: %v", err)
 		}
 		return
@@ -187,10 +205,6 @@ func main() {
 		migrateSingleResource(namespace, &res)
 	}
 
-	serviceName := *namespace
-	if v, ok := specialServiceMap[*namespace]; ok {
-		serviceName = v
-	}
 	serviceFileName := fmt.Sprintf("service_alicloud_%s.go", serviceName)
 	if err := migrateService(serviceFileName, "v1"); err != nil {
 		log.Printf("Error migrateService: %v", err)
@@ -946,12 +960,31 @@ func commonReplaces(line string) string {
 	rdkNestedRe := regexp.MustCompile(`rdk\.StringPointer\(\s*StringPointer\(([^)]+)\)\s*\)`)
 	line = rdkNestedRe.ReplaceAllString(line, `rdk.StringPointer($1)`)
 
-	createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
-	line = createRequestRe.ReplaceAllString(line,
-		"action := \"$2\"\n\trequest := make(map[string]interface{})")
+	if mode != nil && *mode == "sdk" {
+		createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
+		line = createRequestRe.ReplaceAllString(line,
+			"action := \"${2}\"\n\trequest := &${1}.${2}Request{}")
+		line = strings.ReplaceAll(line, "request.GetActionName()", "action")
 
-	fieldAccessRe := regexp.MustCompile(`\b(request|req)\.(\w+)\b`)
-	line = fieldAccessRe.ReplaceAllString(line, `${1}["${2}"]`)
+		if strings.Contains(line, "requests.NewBoolean") {
+			line = strings.ReplaceAll(line, "requests.NewBoolean", "tea.Bool")
+		} else if strings.Contains(line, "requests.NewInteger") {
+			line = strings.ReplaceAll(line, "requests.NewInteger", "tea.Int32")
+		} else {
+			requestStringAssignRe := regexp.MustCompile(`(request\.\w+)\s*=\s*([^;]+)`)
+			line = requestStringAssignRe.ReplaceAllString(line, `$1 = tea.String($2)`)
+		}
+
+		line = strings.ReplaceAll(line, "\"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn\"", "cbn \"github.com/alibabacloud-go/cbn-20170912/v2/client\"")
+
+	} else {
+		createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
+		line = createRequestRe.ReplaceAllString(line,
+			"action := \"$2\"\n\trequest := make(map[string]interface{})")
+
+		fieldAccessRe := regexp.MustCompile(`\b(request|req)\.(\w+)\b`)
+		line = fieldAccessRe.ReplaceAllString(line, `${1}["${2}"]`)
+	}
 
 	return line
 }
