@@ -45,11 +45,13 @@ The following arguments are supported:
 * `secret_name` - (Required, ForceNew) The name of the secret. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
 * `secret_data` - (Required) The data of the secret. **NOTE:** From version 1.204.1, `secret_data` updating diff will be ignored when `secret_type` is not `Generic`.
 * `version_id` - (Required) The version number of the initial version.
-* `secret_type` - (Optional, ForceNew, Computed, Available since v1.204.1) The type of the secret. Valid values:
+* `secret_type` - (Optional, ForceNew, Available since v1.204.1) The type of the secret. Valid values:
   - `Generic`: Generic secret.
   - `Rds`: ApsaraDB RDS secret.
+  - `Redis`: (Available since v1.253.0) ApsaraDB for Redis secret.
   - `RAMCredentials`: RAM secret.
   - `ECS`: ECS secret.
+  - `PolarDB`: (Available since v1.253.0) PolarDB secret.
 * `secret_data_type` - (Optional) The type of the secret value. Default value: `text`. Valid values: `text`, `binary`.
 * `encryption_key_id` - (Optional, ForceNew) The ID of the KMS key.
 * `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The ID of the KMS instance.
