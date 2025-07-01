@@ -10,10 +10,10 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
+func TestAccAliCloudMaxcomputeProject_basic1968(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxcomputeProjectMap1968)
+	ra := resourceAttrInit(resourceId, AliCloudMaxcomputeProjectMap1968)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MaxComputeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMaxcomputeProject")
@@ -22,7 +22,7 @@ func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxcomputeProjectBasicDependence1968)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxcomputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -33,11 +33,12 @@ func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"default_quota": "默认后付费Quota",
-					"project_name":  "${var.name}",
-					"comment":       "${var.name}",
-					"product_type":  "PayAsYouGo",
-					"is_logical":    "false",
+					"default_quota":    "默认后付费Quota",
+					"project_name":     "${var.name}",
+					"comment":          "${var.name}",
+					"product_type":     "PayAsYouGo",
+					"is_logical":       "false",
+					"three_tier_model": "true",
 					"ip_white_list": []map[string]interface{}{
 						{
 							"ip_list":     "1.1.1.1,2.2.2.2",
@@ -47,6 +48,7 @@ func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
 					"properties": []map[string]interface{}{
 						{
 							"allow_full_scan":  "false",
+							"enable_dr":        "true",
 							"enable_decimal2":  "true",
 							"retention_days":   "1",
 							"sql_metering_max": "0",
@@ -87,6 +89,7 @@ func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
 						"project_name":          CHECKSET,
 						"comment":               CHECKSET,
 						"product_type":          CHECKSET,
+						"three_tier_model":      "true",
 						"ip_white_list.#":       "1",
 						"properties.#":          "1",
 						"security_properties.#": "1",
@@ -124,10 +127,10 @@ func TestAccAlicloudMaxcomputeProject_basic1968(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMaxcomputeProject_basic1968_twin(t *testing.T) {
+func TestAccAliCloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxcomputeProjectMap1968)
+	ra := resourceAttrInit(resourceId, AliCloudMaxcomputeProjectMap1968)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MaxComputeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMaxcomputeProject")
@@ -136,7 +139,7 @@ func TestAccAlicloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxcomputeProjectBasicDependence1968)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxcomputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -171,6 +174,16 @@ func TestAccAlicloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"three_tier_model": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"three_tier_model": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"is_logical": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -179,11 +192,11 @@ func TestAccAlicloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"default_quota": "os_terrform",
+					"default_quota": "os_osterraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_quota": "os_terrform",
+						"default_quota": "os_osterraform",
 					}),
 				),
 			},
@@ -197,9 +210,9 @@ func TestAccAlicloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 	})
 }
 
-var AlicloudMaxcomputeProjectMap1968 = map[string]string{}
+var AliCloudMaxcomputeProjectMap1968 = map[string]string{}
 
-func AlicloudMaxcomputeProjectBasicDependence1968(name string) string {
+func AliCloudMaxcomputeProjectBasicDependence1968(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -207,7 +220,7 @@ variable "name" {
 `, name)
 }
 
-var AlicloudMaxComputeProjectMap7168 = map[string]string{
+var AliCloudMaxComputeProjectMap7168 = map[string]string{
 	"status":       CHECKSET,
 	"owner":        CHECKSET,
 	"project_name": CHECKSET,
@@ -215,7 +228,7 @@ var AlicloudMaxComputeProjectMap7168 = map[string]string{
 	"type":         CHECKSET,
 }
 
-func AlicloudMaxComputeProjectBasicDependence7168(name string) string {
+func AliCloudMaxComputeProjectBasicDependence7168(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -229,7 +242,7 @@ variable "name" {
 func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeProjectMap7168)
+	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap7168)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMaxComputeProject")
@@ -237,7 +250,7 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeProjectBasicDependence7168)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence7168)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -366,6 +379,7 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 							"sql_metering_max": "1024",
 							"retention_days":   "2",
 							"allow_full_scan":  "false",
+							"enable_dr":        "true",
 							"timezone":         "Asia/Shanghai",
 							"table_lifecycle": []map[string]interface{}{
 								{
@@ -385,7 +399,8 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status": "AVAILABLE",
+						"status":       "AVAILABLE",
+						"properties.#": "1",
 					}),
 				),
 			},
