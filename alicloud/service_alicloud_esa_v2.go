@@ -8,6 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/tidwall/sjson"
@@ -3156,3 +3157,81 @@ func (s *EsaServiceV2) EsaVersionStateRefreshFunc(id string, field string, failS
 }
 
 // DescribeEsaVersion >>> Encapsulated.
+// DescribeEsaCustomScenePolicy <<< Encapsulated get interface for Esa CustomScenePolicy.
+
+func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["PolicyId"] = id
+
+	action := "DescribeCustomScenePolicies"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.DataModule[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DataModule[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("CustomScenePolicy", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEsaCustomScenePolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.Objects" {
+			e := jsonata.MustCompile("$reduce($.Objects, function($i, $j){$i & ',' & $j})")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEsaCustomScenePolicy >>> Encapsulated.
