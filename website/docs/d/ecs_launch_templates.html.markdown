@@ -113,12 +113,12 @@ resource "alicloud_ecs_launch_template" "default" {
   }
 }
 
-data "alicloud_ecs_launch_templates" "example" {
-  ids = ["${alicloud_ecs_launch_template.default.id}"]
+data "alicloud_ecs_launch_templates" "ids" {
+  ids = [alicloud_ecs_launch_template.default.id]
 }
 
-output "first_ecs_launch_template_id" {
-  value = data.alicloud_ecs_launch_templates.example.templates.0.id
+output "ecs_launch_template_id_0" {
+  value = data.alicloud_ecs_launch_templates.ids.templates.0.id
 }
 ```
 
@@ -126,13 +126,13 @@ output "first_ecs_launch_template_id" {
 
 The following arguments are supported:
 
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Launch Template IDs.
-* `launch_template_name` - (Optional, ForceNew) The Launch Template Name.
-* `template_tags` - (Optional) The template tags.
+* `ids` - (Optional, ForceNew, List)  A list of Launch Template IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Launch Template name.
+* `launch_template_name` - (Optional, ForceNew) The name of the launch template.
+* `template_resource_group_id` - (Optional, ForceNew) The ID of the Resource Group.
+* `template_tags` - (Optional) The tags of the launch template.
+* `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `template_resource_group_id` - (Optional, ForceNew) The template resource group id.
 
 ## Attributes Reference
 
@@ -140,8 +140,50 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Launch Template names.
 * `templates` - A list of Ecs Launch Templates. Each element contains the following attributes:
-  * `auto_release_time` - (Optional) Instance auto release time.
-  * `created_by` - CreatedBy.
+  * `id` - The ID of the Launch Template.
+  * `launch_template_id` - The ID of the Launch Template.
+  * `launch_template_name` - The name of the Launch Template.
+  * `default_version_number` - The default version number of the launch template.
+  * `latest_version_number` - The latest version number of the launch template.
+  * `created_by` - The ID of the Alibaba Cloud account that created the launch template.
+  * `modified_time` - The time when a version was added to or deleted from the launch template.
+  * `resource_group_id` - The ID of the resource group to which to assign the instance, Elastic Block Storage (EBS) device, and ENI.
+  * `template_tags` - The tags of the launch template.
+-> **NOTE:** Except for the fields `id`, `launch_template_id`, `launch_template_name`, `default_version_number`, `latest_version_number`, `created_by`, `modified_time`, `resource_group_id`, `template_tags`, all other fields take effect only if `enable_details` is set to `true`.
+  * `auto_release_time` - The automatic release time of the instance.
+  * `deployment_set_id` - The ID of the deployment set.
+  * `description` - The Description of Template.
+  * `enable_vm_os_config` - Indicates whether the operating system configuration of the instance is enabled.
+  * `host_name` - The hostname of the instance.
+  * `image_id` - The ID of the image.
+  * `image_owner_alias` - The source of the image.
+  * `instance_charge_type` - The billing method of the instance.
+  * `instance_name` - The name of the instance.
+  * `instance_type` - The instance type of the instance.
+  * `internet_charge_type` - The billing method for network usage.
+  * `internet_max_bandwidth_in` - The maximum inbound public bandwidth.
+  * `internet_max_bandwidth_out` - The maximum outbound public bandwidth.
+  * `io_optimized` - Indicates whether the instance is I/O optimized.
+  * `key_pair_name` - The name of the key pair.
+  * `network_type` - Network type of the instance.
+  * `password_inherit` - Whether to use the password preset by the mirror.
+  * `period` - The subscription period of the instance.
+  * `private_ip_address` - The private IP address of the instance.
+  * `ram_role_name` - The RAM role name of the instance.
+  * `security_enhancement_strategy` - Whether or not to activate the security enhancement feature and install network security software free of charge.
+  * `security_group_id` - The security group ID.
+  * `security_group_ids` - The security group IDs.
+  * `spot_duration` - The protection period of the preemptible instance.
+  * `spot_price_limit` - Sets the maximum hourly instance price.
+  * `spot_strategy` - The spot strategy for a Pay-As-You-Go instance.
+  * `user_data` - The user data of the instance.
+  * `version_description` - The Version Description.
+  * `vpc_id` - VpcId.
+  * `vswitch_id` - The vswitch id.
+  * `zone_id` - The Zone Id.
+  * `http_endpoint` - Whether to enable access to instance metadata.
+  * `http_tokens` - Whether to use the hardened mode (IMDSv2) when accessing instance metadata.
+  * `http_put_response_hop_limit` - The HTTP PUT response hop limit required for instance metadata requests.
   * `data_disks` - The list of data disks created with instance.
     * `encrypted` - Encrypted the data in this disk.
     * `name` - The name of the data disk.
@@ -151,44 +193,12 @@ The following attributes are exported in addition to the arguments listed above:
     * `category` - The category of the disk.
     * `delete_with_instance` - Indicates whether the data disk is released with the instance.
     * `description` - The description of the data disk.
-  * `default_version_number` - The Default Version Number.
-  * `deployment_set_id` - The Deployment Set Id.
-  * `description` - The Description of Template.
-  * `enable_vm_os_config` - Whether to enable the instance operating system configuration.
-  * `host_name` - Instance host name.
-  * `id` - The ID of the Launch Template.
-  * `image_id` - The Image Id.
-  * `image_owner_alias` - Mirror source.
-  * `instance_charge_type` - Internet bandwidth billing method.
-  * `instance_name` - The Instance Name.
-  * `instance_type` - Instance type.
-  * `internet_charge_type` - Internet bandwidth billing method.
-  * `internet_max_bandwidth_in` - The maximum inbound bandwidth from the Internet network, measured in Mbit/s.
-  * `internet_max_bandwidth_out` - Maximum outbound bandwidth from the Internet, its unit of measurement is Mbit/s.
-  * `io_optimized` - Whether it is an I/O-optimized instance or not.
-  * `key_pair_name` - The name of the key pair.
-  * `latest_version_number` - The Latest Version Number.
-  * `launch_template_id` - The ID of the Launch Template.
-  * `launch_template_name` - The Launch Template Name.
-  * `modified_time` - The Modified Time.
   * `network_interfaces` - The list of network interfaces created with instance.
     * `description` - The ENI description.
     * `name` - The ENI name.
     * `primary_ip` - The primary private IP address of the ENI.
     * `security_group_id` - The security group ID must be one in the same VPC.
     * `vswitch_id` - The vSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
-  * `network_type` - Network type of the instance.
-  * `password_inherit` - Whether to use the password preset by the mirror.
-  * `period` - The subscription period of the instance.
-  * `private_ip_address` - The private IP address of the instance.
-  * `ram_role_name` - The RAM role name of the instance.
-  * `resource_group_id` - The ID of the resource group to which to assign the instance, Elastic Block Storage (EBS) device, and ENI.
-  * `security_enhancement_strategy` - Whether or not to activate the security enhancement feature and install network security software free of charge.
-  * `security_group_id` - The security group ID.
-  * `security_group_ids` - The security group IDs.
-  * `spot_duration` - The protection period of the preemptible instance.
-  * `spot_price_limit` - Sets the maximum hourly instance price.
-  * `spot_strategy` - The spot strategy for a Pay-As-You-Go instance.
   * `system_disk` - The System Disk.
     * `category` - The category of the system disk.
     * `delete_with_instance` - Specifies whether to release the system disk when the instance is released.
@@ -197,12 +207,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `name` - System disk name.
     * `performance_level` - The performance level of the ESSD used as the system disk.
     * `size` - Size of the system disk, measured in GB.
-  * `template_tags` - The template tags.
-  * `user_data` - The User Data.
-  * `version_description` - The Version Description.
-  * `vpc_id` - VpcId.
-  * `vswitch_id` - The vswitch id.
-  * `zone_id` - The Zone Id.
-  * `http_endpoint` - Whether to enable access to instance metadata.
-  * `http_tokens` - Whether to use the hardened mode (IMDSv2) when accessing instance metadata.
-  * `http_put_response_hop_limit` - The HTTP PUT response hop limit required for instance metadata requests.
