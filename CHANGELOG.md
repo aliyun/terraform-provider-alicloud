@@ -1,31 +1,33 @@
-## 1.253.0 (Unreleased)
+## 1.254.0 (Unreleased)
+## 1.253.0 (July 4, 2025)
 
-- **New Resource:** `alicloud_threat_detection_cycle_task` [GH-8792]
-- **New Resource:** `alicloud_cloud_firewall_policy_advanced_config` [GH-8797]
-- **New Resource:** `alicloud_esa_version` [GH-8812]
-- **New Data Source:** `alicloud_hbr_udm_snapshots` [GH-8796]
+- **New Resource:** `alicloud_threat_detection_cycle_task` ([#8792](https://github.com/aliyun/terraform-provider-alicloud/issues/8792))
+- **New Resource:** `alicloud_cloud_firewall_policy_advanced_config` ([#8797](https://github.com/aliyun/terraform-provider-alicloud/issues/8797))
+- **New Resource:** `alicloud_esa_version` ([#8812](https://github.com/aliyun/terraform-provider-alicloud/issues/8812))
+- **New Resource:** `alicloud_esa_custom_scene_policy` ([#8815](https://github.com/aliyun/terraform-provider-alicloud/issues/8815))
+- **New Data Source:** `alicloud_hbr_udm_snapshots` ([#8796](https://github.com/aliyun/terraform-provider-alicloud/issues/8796))
 
 ENHANCEMENTS:
 
-- resource/alicloud_alikafka_instance: Added the field instance_type, password, serverless_config, confluent_config; Changed the field disk_type, disk_size, vswitch_id from Required to Optional. [GH-8787]
-- resource/alicloud_mongodb_instance: Added the field db_instance_release_protection; Removed the ForceNew for field secondary_zone_id, hidden_zone_id. [GH-8788]
-- resource/alicloud_mongodb_sharding_instance: Added the field secondary_zone_id, hidden_zone_id, snapshot_backup_type, backup_interval, db_instance_release_protection. [GH-8789]
-- resource/alicloud_emrv2_cluster: Added the node_groups field private_pool_options. [GH-8794]
-- resource/alicloud_esa_cache_rule: Added retry strategy for error code LockFailed. [GH-8800]
-- resource/alicloud_esa_record: Added retry strategy for error code Site.ServiceBusy. [GH-8801]
-- resource/alicloud_instance: Added the field private_pool_options_match_criteria, private_pool_options_id; Added retry strategy for error code InvalidOperation.Conflict. [GH-8805]
-- resource/alicloud_maxcompute_project: Added the field three_tier_model, properties.enable_dr. [GH-8806]
-- resource/alicloud_kms_secret: Supported secret_type set to Redis, PolarDB; Fixed the create error caused by setting secret_type to RAMCredentials. [GH-8807]
-- data-source/alicloud_ecs_key_pairs: Refactored the data source alicloud_ecs_key_pairs; Improved alicloud_ecs_key_pairs testcase and document. [GH-8811]
-- docs: Improved the document kms_secret. [GH-8795]
-- docs: Imporves description for esa_certificate. [GH-8810]
-- docs: Improved the document ecs_launch_templates. [GH-8813]
-- testcase: Improves test for convertListToCommaSeparate. [GH-8799]
+- resource/alicloud_alikafka_instance: Added the field instance_type, password, serverless_config, confluent_config; Changed the field disk_type, disk_size, vswitch_id from Required to Optional. ([#8787](https://github.com/aliyun/terraform-provider-alicloud/issues/8787))
+- resource/alicloud_mongodb_instance: Added the field db_instance_release_protection; Removed the ForceNew for field secondary_zone_id, hidden_zone_id. ([#8788](https://github.com/aliyun/terraform-provider-alicloud/issues/8788))
+- resource/alicloud_mongodb_sharding_instance: Added the field secondary_zone_id, hidden_zone_id, snapshot_backup_type, backup_interval, db_instance_release_protection. ([#8789](https://github.com/aliyun/terraform-provider-alicloud/issues/8789))
+- resource/alicloud_emrv2_cluster: Added the node_groups field private_pool_options. ([#8794](https://github.com/aliyun/terraform-provider-alicloud/issues/8794))
+- resource/alicloud_esa_cache_rule: Added retry strategy for error code LockFailed. ([#8800](https://github.com/aliyun/terraform-provider-alicloud/issues/8800))
+- resource/alicloud_esa_record: Added retry strategy for error code Site.ServiceBusy. ([#8801](https://github.com/aliyun/terraform-provider-alicloud/issues/8801))
+- resource/alicloud_instance: Added the field private_pool_options_match_criteria, private_pool_options_id; Added retry strategy for error code InvalidOperation.Conflict. ([#8805](https://github.com/aliyun/terraform-provider-alicloud/issues/8805))
+- resource/alicloud_maxcompute_project: Added the field three_tier_model, properties.enable_dr. ([#8806](https://github.com/aliyun/terraform-provider-alicloud/issues/8806))
+- resource/alicloud_kms_secret: Supported secret_type set to Redis, PolarDB; Fixed the create error caused by setting secret_type to RAMCredentials. ([#8807](https://github.com/aliyun/terraform-provider-alicloud/issues/8807))
+- data-source/alicloud_ecs_key_pairs: Refactored the data source alicloud_ecs_key_pairs; Improved alicloud_ecs_key_pairs testcase and document. ([#8811](https://github.com/aliyun/terraform-provider-alicloud/issues/8811))
+- docs: Improved the document kms_secret. ([#8795](https://github.com/aliyun/terraform-provider-alicloud/issues/8795))
+- docs: Imporves description for esa_certificate. ([#8810](https://github.com/aliyun/terraform-provider-alicloud/issues/8810))
+- docs: Improved the document ecs_launch_templates. ([#8813](https://github.com/aliyun/terraform-provider-alicloud/issues/8813))
+- testcase: Improves test for convertListToCommaSeparate. ([#8799](https://github.com/aliyun/terraform-provider-alicloud/issues/8799))
 
 BUG FIXES:
 
-- client: Fixed log endpoint invalid error. [GH-8791]
-- resource/alicloud_gpdb_instance: Fixed the read error in field instance_spec. [GH-8790]
+- client: Fixed log endpoint invalid error. ([#8791](https://github.com/aliyun/terraform-provider-alicloud/issues/8791))
+- resource/alicloud_gpdb_instance: Fixed the read error in field instance_spec. ([#8790](https://github.com/aliyun/terraform-provider-alicloud/issues/8790))
 
 ## 1.252.0 (June 19, 2025)
 
