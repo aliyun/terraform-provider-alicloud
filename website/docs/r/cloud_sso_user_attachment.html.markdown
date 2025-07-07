@@ -2,7 +2,6 @@
 subcategory: "Cloud SSO"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_sso_user_attachment"
-sidebar_current: "docs-alicloud-resource-cloud-sso-user-attachment"
 description: |-
   Provides a Alicloud Cloud SSO User Attachment resource.
 ---
@@ -29,25 +28,24 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
-data "alicloud_cloud_sso_directories" "default" {}
 
-resource "alicloud_cloud_sso_directory" "default" {
-  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name = var.name
-}
-
-locals {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+data "alicloud_cloud_sso_directories" "default" {
 }
 
 resource "random_integer" "default" {
   min = 10000
   max = 99999
+}
+
+resource "alicloud_cloud_sso_directory" "default" {
+  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  directory_name = var.name
 }
 
 resource "alicloud_cloud_sso_user" "default" {
@@ -66,21 +64,24 @@ resource "alicloud_cloud_sso_user_attachment" "default" {
   user_id      = alicloud_cloud_sso_user.default.user_id
   group_id     = alicloud_cloud_sso_group.default.group_id
 }
+
+locals {
+  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `group_id` - (Required, ForceNew) The Group ID.
-* `user_id` - (Required, ForceNew) The User ID.
+* `directory_id` - (Required, ForceNew) The ID of the directory.
+* `group_id` - (Required, ForceNew) The ID of the group.
+* `user_id` - (Required, ForceNew) The ID of the user.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of User Attachment. The value formats as `<directory_id>:<group_id>:<user_id>`.
+* `id` - The resource ID of User Attachment. It formats as `<directory_id>:<group_id>:<user_id>`.
 
 ## Import
 
