@@ -585,7 +585,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"is_enterprise_security_group": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				ForceNew:      true,
 				Computed:      true,
 				ConflictsWith: []string{"security_group_id"},
 			},
@@ -774,6 +773,21 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						"sls_project_name": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"auto_mode": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							ForceNew: true,
 							Optional: true,
 						},
 					},
@@ -1045,6 +1059,15 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		}
 	}
 
+	if v, ok := d.GetOk("auto_mode"); ok {
+		m := v.([]interface{})[0].(map[string]interface{})
+		if vv, ok := m["enabled"]; ok {
+			request.AutoMode = &roacs.CreateClusterRequestAutoMode{
+				Enable: tea.Bool(vv.(bool)),
+			}
+		}
+	}
+
 	var err error
 	var resp *roacs.CreateClusterResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1237,6 +1260,14 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 			})
 		}
 		d.Set("operation_policy", m)
+	}
+
+	if object.AutoMode != nil {
+		m := make(map[string]interface{})
+		if object.AutoMode.Enable != nil {
+			m["enabled"] = tea.BoolValue(object.AutoMode.Enable)
+		}
+		d.Set("auto_mode", []map[string]interface{}{m})
 	}
 
 	// Get slb information and set connect
