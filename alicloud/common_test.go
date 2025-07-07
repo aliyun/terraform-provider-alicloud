@@ -1323,3 +1323,243 @@ func TestUnitCommonGetDaysBetween2Date(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonConvertMapFloat64ToJsonString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "EmptyMap",
+			input:    map[string]interface{}{},
+			expected: "{}",
+			wantErr:  false,
+		},
+		{
+			name: "SingleValue",
+			input: map[string]interface{}{
+				"key": json.Number("123.45"),
+			},
+			expected: `{"key":123.45}`,
+			wantErr:  false,
+		},
+		{
+			name: "MultipleValues",
+			input: map[string]interface{}{
+				"intValue":    json.Number("42"),
+				"floatValue":  json.Number("3.14159"),
+				"stringValue": json.Number("100.0"),
+			},
+			expected: `{"floatValue":3.14159,"intValue":42,"stringValue":100.0}`,
+			wantErr:  false,
+		},
+		{
+			name: "NegativeAndZero",
+			input: map[string]interface{}{
+				"negative": json.Number("-15.75"),
+				"zero":     json.Number("0"),
+			},
+			expected: `{"negative":-15.75,"zero":0}`,
+			wantErr:  false,
+		},
+		{
+			name: "LargeNumbers",
+			input: map[string]interface{}{
+				"largeInt":   json.Number("1234567890"),
+				"largeFloat": json.Number("123456.789012"),
+			},
+			expected: `{"largeFloat":123456.789012,"largeInt":1234567890}`,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := convertMapFloat64ToJsonString(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertMapFloat64ToJsonString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && result != tt.expected {
+				t.Errorf("convertMapFloat64ToJsonString() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonIsSubCollection(t *testing.T) {
+	tests := []struct {
+		name     string
+		sub      []string
+		full     []string
+		expected bool
+	}{
+		{
+			name:     "EmptySubset",
+			sub:      []string{},
+			full:     []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "ExactMatch",
+			sub:      []string{"a", "b"},
+			full:     []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "PartialMatch",
+			sub:      []string{"a", "d"},
+			full:     []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "CaseSensitive",
+			sub:      []string{"A", "b"},
+			full:     []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "DuplicateInSub",
+			sub:      []string{"a", "a"},
+			full:     []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "EmptyFull",
+			sub:      []string{"a"},
+			full:     []string{},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsSubCollection(tt.sub, tt.full)
+			if result != tt.expected {
+				t.Errorf("IsSubCollection(%v, %v) = %v, want %v", tt.sub, tt.full, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonMergeMaps(t *testing.T) {
+	tests := []struct {
+		name     string
+		maps     []map[string]interface{}
+		expected map[string]interface{}
+	}{
+		{
+			name: "SimpleMerge",
+			maps: []map[string]interface{}{
+				{"a": 1},
+				{"b": 2},
+			},
+			expected: map[string]interface{}{
+				"a": 1,
+				"b": 2,
+			},
+		},
+		{
+			name: "NestedMapMerge",
+			maps: []map[string]interface{}{
+				{"a": []map[string]interface{}{{"x": 1}}},
+				{"a": []map[string]interface{}{{"y": 2}}},
+			},
+			expected: map[string]interface{}{
+				"a": map[string]interface{}{
+					"x": 1,
+					"y": 2,
+				},
+			},
+		},
+		{
+			name: "ComplexNestedMerge",
+			maps: []map[string]interface{}{
+				{
+					"config": []map[string]interface{}{
+						{"port": 80, "enabled": true},
+					},
+				},
+				{
+					"config": []map[string]interface{}{
+						{"protocol": "http"},
+					},
+				},
+			},
+			expected: map[string]interface{}{
+				"config": map[string]interface{}{
+					"port":     80,
+					"enabled":  true,
+					"protocol": "http",
+				},
+			},
+		},
+		{
+			name:     "EmptyInput",
+			maps:     []map[string]interface{}{},
+			expected: map[string]interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeMaps(tt.maps...)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("MergeMaps() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonInArray(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		strArray []string
+		expected bool
+	}{
+		{
+			name:     "ElementExists",
+			target:   "b",
+			strArray: []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "ElementNotExists",
+			target:   "d",
+			strArray: []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "CaseSensitive",
+			target:   "A",
+			strArray: []string{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "EmptyArray",
+			target:   "a",
+			strArray: []string{},
+			expected: false,
+		},
+		{
+			name:     "DuplicateElements",
+			target:   "a",
+			strArray: []string{"a", "a", "b"},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := InArray(tt.target, tt.strArray)
+			if result != tt.expected {
+				t.Errorf("InArray(%s, %v) = %v, want %v", tt.target, tt.strArray, result, tt.expected)
+			}
+		})
+	}
+}
