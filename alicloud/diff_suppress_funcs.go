@@ -250,6 +250,18 @@ func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return true
 }
 
+func PrePaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// payment_type is the instance_charge_type's replacement.
+	// If both instance_charge_type and payment_type are "", it means hiding a default "PrePaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" {
+		return true
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+		return true
+	}
+	return false
+}
+
 func ChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	// payment_type is the instance_charge_type's replacement.
 	if _, ok := d.GetOk("payment_type"); ok {

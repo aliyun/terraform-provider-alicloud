@@ -485,9 +485,9 @@ func resourceAliCloudInstance() *schema.Resource {
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
 			"deletion_protection": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: PrePaidDiffSuppressFunc,
 			},
 			"force_delete": {
 				Type:             schema.TypeBool,
@@ -2571,7 +2571,10 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	if d.HasChange("deletion_protection") {
 		d.SetPartial("deletion_protection")
-		request["DeletionProtection"] = requests.NewBoolean(d.Get("deletion_protection").(bool))
+
+		if v, ok := d.GetOkExists("deletion_protection"); ok {
+			request["DeletionProtection"] = v
+		}
 		update = true
 	}
 

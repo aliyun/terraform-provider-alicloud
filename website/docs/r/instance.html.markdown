@@ -186,10 +186,11 @@ The following arguments are supported:
 
   Default to NoSpot. Note: Currently, the spot instance only supports domestic site account.
 * `spot_price_limit` - (Optional, Float, ForceNew) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
-* `deletion_protection` - (Optional, true) Whether enable the deletion protection or not. It does not work when the instance is spot. Default value: `false`.
-  - true: Enable deletion protection.
-  - false: Disable deletion protection.
-* `force_delete` - (Optional, Available since v1.18.0) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
+* `deletion_protection` - (Optional, Bool) Whether enable the deletion protection or not. It does not work when the instance is spot. Default value: `false`.
+  - `true`: Enable deletion protection.
+  - `false`: Disable deletion protection.
+-> **NOTE:** `deletion_protection` is valid only when `instance_charge_type` is set to `PostPaid`.
+* `force_delete` - (Optional, Available since v1.18.0) If it is true, the `PrePaid` instance will be change to `PostPaid` and then deleted forcibly.
   However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
 * `auto_release_time` - (Optional, Available since v1.70.0) The automatic release time of the `PostPaid` instance.
   The time follows the ISO 8601 standard and is in UTC time. Format: yyyy-MM-ddTHH:mm:ssZ. It must be at least half an hour later than the current time and less than 3 years since the current time.
@@ -250,7 +251,7 @@ The following arguments are supported:
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
--> **NOTE:** From version 1.5.0, instance's charge type can be changed to "PrePaid" by specifying `period` and `period_unit`, but it is irreversible.
+-> **NOTE:** From version 1.5.0, instance's charge type can be changed to `PrePaid` by specifying `period` and `period_unit`, but it is irreversible.
 
 -> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
 
