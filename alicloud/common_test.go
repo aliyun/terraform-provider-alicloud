@@ -3,6 +3,8 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"os"
 	"reflect"
 	"strings"
@@ -480,4 +482,844 @@ func TestUnitCommonJsonConversionFunctions(t *testing.T) {
 			t.Errorf("result: %s, err: %v", result, err)
 		}
 	})
+}
+
+func TestUnitCommonConvertJsonStringToStringList(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected []interface{}
+		panics   bool
+	}{
+		{
+			name:     "ValidIntegerSlice",
+			input:    []interface{}{1, 2, 3},
+			expected: []interface{}{"1", "2", "3"},
+			panics:   false,
+		},
+		{
+			name:     "ValidMixedSlice",
+			input:    []interface{}{"10", 5.5, 1},
+			expected: []interface{}{"10", "5", "1"}, // formatInt(true)=1
+			panics:   false,
+		},
+		{
+			name:     "EmptySlice",
+			input:    []interface{}{},
+			expected: []interface{}{},
+			panics:   false,
+		},
+		{
+			name:     "InvalidType",
+			input:    "not a slice",
+			expected: nil,
+			panics:   true,
+		},
+		{
+			name:     "JsonNumber",
+			input:    []interface{}{json.Number("10")},
+			expected: []interface{}{"10"},
+			panics:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil && !tt.panics {
+					t.Errorf("Unexpected panic: %v", r)
+				} else if r == nil && tt.panics {
+					t.Error("Expected panic did not occur")
+				}
+			}()
+
+			result := convertJsonStringToStringList(tt.input)
+			if len(result) != len(tt.expected) {
+				t.Fatalf("Length mismatch: got %d, want %d", len(result), len(tt.expected))
+			}
+
+			for i := range result {
+				if result[i] != tt.expected[i] {
+					t.Errorf("Index %d: got %v, want %v", i, result[i], tt.expected[i])
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertListMapToJsonString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []map[string]interface{}
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "EmptySlice",
+			input:    []map[string]interface{}{},
+			expected: "[]",
+			wantErr:  false,
+		},
+		{
+			name: "SingleMap",
+			input: []map[string]interface{}{
+				{"key1": "value1", "key2": 42},
+			},
+			expected: `[{"key1":"value1","key2":42}]`,
+			wantErr:  false,
+		},
+		{
+			name: "MultipleMaps",
+			input: []map[string]interface{}{
+				{"a": "b"},
+				{"c": 123, "d": true},
+			},
+			expected: `[{"a":"b"},{"c":123,"d":true}]`,
+			wantErr:  false,
+		},
+		{
+			name: "WithNilElement",
+			input: []map[string]interface{}{
+				{"valid": "data"},
+				nil,
+				{"another": "map"},
+			},
+			expected: `[{"valid":"data"},{"another":"map"}]`,
+			wantErr:  false,
+		},
+		{
+			name: "ComplexDataTypes",
+			input: []map[string]interface{}{
+				{
+					"string": "text",
+					"int":    100,
+					"float":  3.14,
+					"bool":   true,
+					"slice":  []interface{}{1, 2, 3},
+					"map":    map[string]interface{}{"nested": "value"},
+				},
+			},
+			expected: `[{"bool":true,"float":3.14,"int":100,"map":{"nested":"value"},"slice":[1,2,3],"string":"text"}]`,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := convertListMapToJsonString(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Error expectation failed: wantErr %v, got %v", tt.wantErr, err)
+			}
+
+			var expectedObj, resultObj interface{}
+			if err := json.Unmarshal([]byte(tt.expected), &expectedObj); err != nil {
+				t.Fatal("Invalid expected JSON:", err)
+			}
+			if err := json.Unmarshal([]byte(result), &resultObj); err != nil {
+				t.Fatal("Invalid result JSON:", err)
+			}
+
+			if !reflect.DeepEqual(expectedObj, resultObj) {
+				t.Errorf("Expected:\n%s\nGot:\n%s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertIntegerToInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    requests.Integer
+		expected int
+		wantErr  bool
+	}{
+		{
+			name:     "ValidNumber",
+			input:    requests.Integer("123"),
+			expected: 123,
+			wantErr:  false,
+		},
+		{
+			name:     "EmptyString",
+			input:    requests.Integer(""),
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "WhitespaceString",
+			input:    requests.Integer("   "),
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "NegativeNumber",
+			input:    requests.Integer("-456"),
+			expected: -456,
+			wantErr:  false,
+		},
+		{
+			name:     "MaxInt",
+			input:    requests.Integer("2147483647"),
+			expected: 2147483647,
+			wantErr:  false,
+		},
+		{
+			name:     "MinInt",
+			input:    requests.Integer("-2147483648"),
+			expected: -2147483648,
+			wantErr:  false,
+		},
+		{
+			name:     "NonNumericString",
+			input:    requests.Integer("abc"),
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "PartialNumeric",
+			input:    requests.Integer("123abc"),
+			expected: 0,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ConvertIntegerToInt(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Error expectation failed: wantErr %v, got %v", tt.wantErr, err)
+			}
+
+			if result != tt.expected {
+				t.Errorf("Expected %d, got %d", tt.expected, result)
+			}
+
+			if tt.wantErr && err != nil {
+				expectedErrMsg := fmt.Sprintf("Converting integer %s to int got an error", tt.input)
+				if !strings.Contains(err.Error(), expectedErrMsg) {
+					t.Errorf("Error message mismatch. Expected to contain: %s, got: %s",
+						expectedErrMsg, err.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonFormatInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected int
+		panic    bool
+	}{
+		{"nil", nil, 0, false},
+		{"float64", 3.14, 3, false},
+		{"float32", float32(3.0), 3, false},
+		{"int64", int64(123), 123, false},
+		{"int32", int32(456), 456, false},
+		{"int", 789, 789, false},
+		{"string_number", "123", 123, false},
+		{"string_empty", "", 0, false},
+		{"json_number", json.Number("123"), 123, false},
+		{"string_invalid", "abc", 0, true},
+		{"unsupported_type", true, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.panic {
+						t.Errorf("Unexpected panic: %v", r)
+					}
+				} else if tt.panic {
+					t.Error("Expected panic but no panic occurred")
+				}
+			}()
+
+			result := formatInt(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %d, got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonFormatBool(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected bool
+		panic    bool
+	}{
+		{"nil", nil, false, false},
+		{"bool_true", true, true, false},
+		{"bool_false", false, false, false},
+		{"string_true", "true", true, false},
+		{"string_false", "false", false, false},
+		{"string_invalid", "abc", false, true},
+		{"unsupported_type", 123, false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.panic {
+						t.Errorf("Unexpected panic: %v", r)
+					}
+				} else if tt.panic {
+					t.Error("Expected panic but no panic occurred")
+				}
+			}()
+
+			result := formatBool(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %t, got %t", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonFormatFloat64(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected float64
+		panic    bool
+	}{
+		{"nil", nil, 0.0, false},
+		{"float64", 3.14, 3.14, false},
+		{"float32", float32(3.0), 3.0, false},
+		{"int64", int64(123), 123.0, false},
+		{"int32", int32(456), 456.0, false},
+		{"int", 789, 789.0, false},
+		{"string_number", "3.14", 3.14, false},
+		{"string_empty", "", 0.0, false},
+		{"json_number", json.Number("123.45"), 123.45, false},
+		{"string_invalid", "abc", 0.0, true},
+		{"unsupported_type", true, 0.0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.panic {
+						t.Errorf("Unexpected panic: %v", r)
+					}
+				} else if tt.panic {
+					t.Error("Expected panic but no panic occurred")
+				}
+			}()
+
+			result := formatFloat64(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %f, got %f", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertArrayObjectToJsonString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "integer array",
+			input:    []int{1, 2, 3},
+			expected: "[1,2,3]",
+			wantErr:  false,
+		},
+		{
+			name:     "string array",
+			input:    []string{"a", "b", "c"},
+			expected: `["a","b","c"]`,
+			wantErr:  false,
+		},
+		{
+			name:     "mixed array",
+			input:    []interface{}{1, "a", true},
+			expected: `[1,"a",true]`,
+			wantErr:  false,
+		},
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: "null",
+			wantErr:  false,
+		},
+		{
+			name:     "empty array",
+			input:    []interface{}{},
+			expected: "[]",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := convertArrayObjectToJsonString(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertArrayObjectToJsonString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("convertArrayObjectToJsonString() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertArrayToString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		sep      string
+		expected string
+	}{
+		{
+			name:     "string array with comma",
+			input:    []interface{}{"a", "b", "c"},
+			sep:      ",",
+			expected: "a,b,c",
+		},
+		{
+			name:     "integer array with dash",
+			input:    []interface{}{1, 2, 3},
+			sep:      "-",
+			expected: "1-2-3",
+		},
+		{
+			name:     "mixed array with space",
+			input:    []interface{}{1, "a", true},
+			sep:      " ",
+			expected: "1 a true",
+		},
+		{
+			name:     "nil input",
+			input:    nil,
+			sep:      ",",
+			expected: "",
+		},
+		{
+			name:     "empty array",
+			input:    []interface{}{},
+			sep:      ",",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertArrayToString(tt.input, tt.sep)
+			if result != tt.expected {
+				t.Errorf("convertArrayToString() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonSplitMultiZoneId(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "valid multi-zone",
+			input:    "prefixMAZ(a,b,c)",
+			expected: []string{"prefixa", "prefixb", "prefixc"},
+		},
+		{
+			name:     "single zone",
+			input:    "prefixMAZ(zone)",
+			expected: []string{"prefixzone"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := splitMultiZoneId(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("splitMultiZoneId() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonCase2Camel(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"single word", "hello", "Hello"},
+		{"two words", "hello_world", "HelloWorld"},
+		{"multiple words", "this_is_a_test", "ThisIsATest"},
+		{"empty string", "", ""},
+		{"no underscores", "alreadyCamel", "AlreadyCamel"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Case2Camel(tt.input)
+			if result != tt.expected {
+				t.Errorf("Case2Camel() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonFirstLower(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"capitalized", "Hello", "hello"},
+		{"already lowercase", "hello", "hello"},
+		{"single character", "A", "a"},
+		{"empty string", "", ""},
+		{"mixed case", "GoLang", "goLang"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FirstLower(tt.input)
+			if result != tt.expected {
+				t.Errorf("FirstLower() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonSplitSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []interface{}
+		chunk    int
+		expected [][]interface{}
+	}{
+		{
+			name:     "exact division",
+			input:    []interface{}{1, 2, 3, 4},
+			chunk:    2,
+			expected: [][]interface{}{{1, 2}, {3, 4}},
+		},
+		{
+			name:     "remainder",
+			input:    []interface{}{1, 2, 3, 4, 5},
+			chunk:    2,
+			expected: [][]interface{}{{1, 2}, {3, 4}, {5}},
+		},
+		{
+			name:     "chunk larger than slice",
+			input:    []interface{}{1, 2, 3},
+			chunk:    5,
+			expected: [][]interface{}{{1, 2, 3}},
+		},
+		{
+			name:     "empty slice",
+			input:    []interface{}{},
+			chunk:    3,
+			expected: nil,
+		},
+		{
+			name:     "single chunk",
+			input:    []interface{}{1, 2, 3},
+			chunk:    3,
+			expected: [][]interface{}{{1, 2, 3}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := SplitSlice(tt.input, tt.chunk)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("SplitSlice() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonNewInstanceDiff(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		state          *terraform.InstanceState
+		attributes     map[string]interface{}
+		attributesDiff map[string]interface{}
+		expectChanges  map[string]terraform.ResourceAttrDiff
+	}{
+		{
+			name: "simple attribute change",
+			state: &terraform.InstanceState{
+				ID: "vpc-123456",
+				Attributes: map[string]string{
+					"name":       "old_vpc_name",
+					"cidr_block": "192.168.0.0/16",
+				},
+			},
+			attributes: map[string]interface{}{
+				"name":       "old_vpc_name",
+				"cidr_block": "192.168.0.0/16",
+			},
+			attributesDiff: map[string]interface{}{
+				"name": "new_vpc_name",
+			},
+			expectChanges: map[string]terraform.ResourceAttrDiff{
+				"name": {Old: "old_vpc_name", New: "new_vpc_name"},
+			},
+		},
+		{
+			name: "add new attribute",
+			state: &terraform.InstanceState{
+				ID: "vpc-234567",
+				Attributes: map[string]string{
+					"cidr_block": "10.0.0.0/16",
+				},
+			},
+			attributes: map[string]interface{}{
+				"cidr_block": "10.0.0.0/16",
+			},
+			attributesDiff: map[string]interface{}{
+				"description": "new description",
+			},
+			expectChanges: map[string]terraform.ResourceAttrDiff{
+				"description": {Old: "", New: "new description"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := newInstanceDiff("alicloud_vpc", tt.attributes, tt.attributesDiff, tt.state)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			for attr, expectedDiff := range tt.expectChanges {
+				actualDiff, ok := diff.Attributes[attr]
+				if !ok {
+					t.Errorf("missing expected diff for attribute: %s", attr)
+					continue
+				}
+
+				if actualDiff.Old != expectedDiff.Old || actualDiff.New != expectedDiff.New {
+					t.Errorf("attribute %s mismatch:\n  expected: Old=%q, New=%q\n  actual:   Old=%q, New=%q",
+						attr, expectedDiff.Old, expectedDiff.New, actualDiff.Old, actualDiff.New)
+				}
+			}
+
+			for attr := range diff.Attributes {
+				found := false
+				for expectedAttr := range tt.expectChanges {
+					if attr == expectedAttr {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("unexpected diff attribute: %s (Old=%q, New=%q)",
+						attr, diff.Attributes[attr].Old, diff.Attributes[attr].New)
+				}
+			}
+
+		})
+	}
+}
+
+func TestUnitCommonCompareMapWithIgnoreEquivalent(t *testing.T) {
+	tests := []struct {
+		name   string
+		map1   map[string]interface{}
+		map2   map[string]interface{}
+		ignore []string
+		expect bool
+	}{
+		{
+			name:   "EqualMapsNoIgnore",
+			map1:   map[string]interface{}{"a": 1, "b": "test"},
+			map2:   map[string]interface{}{"a": 1, "b": "test"},
+			ignore: []string{},
+			expect: true,
+		},
+		{
+			name:   "EqualMapsWithIgnore",
+			map1:   map[string]interface{}{"a": 1, "b": "test", "c": true},
+			map2:   map[string]interface{}{"a": 1, "b": "test", "c": false},
+			ignore: []string{"c"},
+			expect: true,
+		},
+		{
+			name:   "DifferentMapsIgnoreNotApplied",
+			map1:   map[string]interface{}{"a": 1, "b": "test"},
+			map2:   map[string]interface{}{"a": 1, "b": "different"},
+			ignore: []string{},
+			expect: false,
+		},
+		{
+			name:   "DifferentLengthMaps",
+			map1:   map[string]interface{}{"a": 1, "b": "test", "c": true},
+			map2:   map[string]interface{}{"a": 1, "b": "test"},
+			ignore: []string{"c"},
+			expect: false,
+		},
+		{
+			name:   "IgnoreKeyMissingInOneMap",
+			map1:   map[string]interface{}{"a": 1, "b": "test", "c": true},
+			map2:   map[string]interface{}{"a": 1, "b": "test"},
+			ignore: []string{"c"},
+			expect: false, // 长度不同
+		},
+		{
+			name:   "IgnoreMultipleKeys",
+			map1:   map[string]interface{}{"a": 1, "b": "test", "c": true, "d": 3.14},
+			map2:   map[string]interface{}{"a": 1, "b": "test", "c": false, "d": 6.28},
+			ignore: []string{"c", "d"},
+			expect: true,
+		},
+		{
+			name:   "DifferentValueNonIgnoredKey",
+			map1:   map[string]interface{}{"a": 1, "b": "test", "c": true},
+			map2:   map[string]interface{}{"a": 2, "b": "test", "c": true},
+			ignore: []string{"c"},
+			expect: false,
+		},
+		{
+			name:   "NestedMapsIgnored",
+			map1:   map[string]interface{}{"a": 1, "config": map[string]interface{}{"key": "value"}},
+			map2:   map[string]interface{}{"a": 1, "config": map[string]interface{}{"key": "different"}},
+			ignore: []string{"config"},
+			expect: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := compareMapWithIgnoreEquivalent(tt.map1, tt.map2, tt.ignore)
+			if result != tt.expect {
+				t.Errorf(
+					"compareMapWithIgnoreEquivalent() = %v, want %v\nMap1: %#v\nMap2: %#v\nIgnore: %v",
+					result, tt.expect, tt.map1, tt.map2, tt.ignore,
+				)
+			}
+		})
+	}
+}
+
+func TestUnitCommonIsEmpty(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected bool
+	}{
+		{"Nil", nil, true},
+		{"EmptyString", "", true},
+		{"NonEmptyString", "test", false},
+		{"ZeroInt", 0, true},
+		{"PositiveInt", 42, false},
+		{"NegativeInt", -5, true},
+		{"ZeroInt8", int8(0), true},
+		{"PositiveInt8", int8(1), false},
+		{"ZeroInt16", int16(0), true},
+		{"PositiveInt16", int16(10), false},
+		{"ZeroInt32", int32(0), true},
+		{"PositiveInt32", int32(20), false},
+		{"ZeroInt64", int64(0), true},
+		{"PositiveInt64", int64(30), false},
+		{"ZeroFloat32", float32(0), true},
+		{"PositiveFloat32", float32(3.14), false},
+		{"ZeroFloat64", 0.0, true},
+		{"PositiveFloat64", 6.28, false},
+		{"EmptyMap", map[string]interface{}{}, true},
+		{"NonEmptyMap", map[string]interface{}{"key": "value"}, false},
+		{"NilPointer", (*int)(nil), true},
+		{"ValidPointer", new(int), false},
+		{"BoolFalse", false, false}, // 注意：布尔值false不被视为empty
+		{"BoolTrue", true, false},
+		{"Slice", []int{}, false}, // 注意：切片类型不在IsEmpty处理范围内
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsEmpty(tt.input)
+			if result != tt.expected {
+				t.Errorf("IsEmpty(%#v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonIsNil(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected bool
+	}{
+		{"Nil", nil, true},
+		{"EmptyString", "", true},
+		{"NonEmptyString", "test", false},
+		{"EmptySlice", []interface{}{}, true},
+		{"NonEmptySlice", []interface{}{1}, false},
+		{"EmptyMap", map[string]interface{}{}, true},
+		{"NonEmptyMap", map[string]interface{}{"key": "value"}, false},
+		{"NilPointer", (*int)(nil), true},
+		{"ValidPointer", new(int), false},
+		{"Integer", 42, false}, // 整数类型不为nil
+		{"Float", 3.14, false},
+		{"Bool", true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsNil(tt.input)
+			if result != tt.expected {
+				t.Errorf("IsNil(%#v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonGetDaysBetween2Date(t *testing.T) {
+	format := "2006-01-02"
+	tests := []struct {
+		name     string
+		date1    string
+		date2    string
+		expected int
+		wantErr  bool
+	}{
+		{"SameDate", "2023-01-01", "2023-01-01", 0, false},
+		{"OneDayDifference", "2023-01-01", "2023-01-02", 1, false},
+		{"ReverseOrder", "2023-01-02", "2023-01-01", -1, false},
+		{"OneMonthDifference", "2023-01-01", "2023-02-01", 31, false},
+		{"LeapYear", "2020-02-28", "2020-03-01", 2, false},
+		{"NonLeapYear", "2021-02-28", "2021-03-01", 1, false},
+		{"CrossYear", "2022-12-31", "2023-01-01", 1, false},
+		{"InvalidDate1", "invalid", "2023-01-01", 0, true},
+		{"InvalidDate2", "2023-01-01", "invalid", 0, true},
+		{"DifferentFormat", "01 Jan 23", "02 Jan 23", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetDaysBetween2Date(format, tt.date1, tt.date2)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetDaysBetween2Date() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && result != tt.expected {
+				t.Errorf("GetDaysBetween2Date() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
 }
