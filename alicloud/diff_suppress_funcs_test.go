@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 
@@ -144,4 +145,152 @@ func mapToStr(condition bool, trueVal, falseVal FlagType) string {
 		return string(trueVal)
 	}
 	return string(falseVal)
+}
+
+func TestUnitCommonHttpDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name     string
+		protocol string
+		expected bool
+	}{
+		{"HTTP_Protocol", "http", false},
+		{"HTTPS_Protocol", "https", true},
+		{"TCP_Protocol", "tcp", true},
+		{"UDP_Protocol", "udp", true},
+		{"Empty_Protocol", "", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol": tc.protocol,
+			})
+
+			result := httpDiffSuppressFunc("any_key", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result, "Unexpected result for protocol: "+tc.protocol)
+		})
+	}
+}
+
+func TestUnitCommonForwardPortDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name            string
+		protocol        string
+		listenerForward string
+		expected        bool
+	}{
+		{"HTTP_With_Forward", "http", "on", false},
+		{"HTTP_Without_Forward", "http", "off", true},
+		{"HTTPS_With_Forward", "https", "on", true},
+		{"TCP_With_Forward", "tcp", "on", true},
+		{"Empty_Protocol_With_Forward", "", "on", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol":         {Type: schema.TypeString},
+				"listener_forward": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol":         tc.protocol,
+				"listener_forward": tc.listenerForward,
+			})
+
+			result := forwardPortDiffSuppressFunc("any_key", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestUnitCommonHttpsDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name     string
+		protocol string
+		expected bool
+	}{
+		{"HTTPS_Protocol", "https", false},
+		{"HTTP_Protocol", "http", true},
+		{"TCP_Protocol", "tcp", true},
+		{"UDP_Protocol", "udp", true},
+		{"Empty_Protocol", "", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol": tc.protocol,
+			})
+
+			result := httpsDiffSuppressFunc("any_key", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestUnitCommonStickySessionTypeDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name          string
+		protocol      string
+		stickySession string
+		expected      bool
+	}{
+		{"HTTP_With_StickySession", "http", "on", false},
+		{"HTTP_Without_StickySession", "http", "off", true},
+		{"HTTPS_With_StickySession", "https", "on", false},
+		{"HTTPS_Without_StickySession", "https", "off", true},
+		{"TCP_With_StickySession", "tcp", "on", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol":       {Type: schema.TypeString},
+				"sticky_session": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol":       tc.protocol,
+				"sticky_session": tc.stickySession,
+			})
+
+			result := stickySessionTypeDiffSuppressFunc("any_key", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestUnitCommonCookieTimeoutDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name              string
+		protocol          string
+		stickySession     string
+		stickySessionType string
+		expected          bool
+	}{
+		{"HTTP_Insert_StickySession", "http", "on", "insert", false},
+		{"HTTP_Server_StickySession", "http", "on", "server", true},
+		{"HTTPS_Insert_StickySession", "https", "on", "insert", false},
+		{"HTTPS_Server_StickySession", "https", "on", "server", true},
+		{"TCP_Insert_StickySession", "tcp", "on", "insert", true},
+		{"HTTP_No_StickySession", "http", "off", "insert", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol":            {Type: schema.TypeString},
+				"sticky_session":      {Type: schema.TypeString},
+				"sticky_session_type": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol":            tc.protocol,
+				"sticky_session":      tc.stickySession,
+				"sticky_session_type": tc.stickySessionType,
+			})
+
+			result := cookieTimeoutDiffSuppressFunc("any_key", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
