@@ -49,6 +49,7 @@ Please use resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluste
   </a>
 </div></div>
 
+ACK cluster
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -77,12 +78,6 @@ variable "vswitch_cidrs" {
   description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
   type        = list(string)
   default     = ["10.1.0.0/16", "10.2.0.0/16"]
-}
-
-# options: between 24-28
-variable "node_cidr_mask" {
-  description = "The node cidr block to specific how many pods can run on single node."
-  default     = 24
 }
 
 # options: ipvs|iptables
@@ -140,7 +135,6 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   vswitch_ids                    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   pod_vswitch_ids                = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
   new_nat_gateway                = true
-  node_cidr_mask                 = var.node_cidr_mask
   proxy_mode                     = var.proxy_mode
   service_cidr                   = var.service_cidr
   skip_set_certificate_authority = true
@@ -180,6 +174,162 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 }
 ```
 
+ACK Cluster with Auto Mode
+```terraform
+variable "name" {
+  default = "auto-mode"
+}
+
+variable "proxy_mode" {
+  description = "Proxy mode is option of kube-proxy."
+  default     = "ipvs"
+}
+
+variable "service_cidr" {
+  description = "The kubernetes service cidr block."
+  default     = "192.168.0.0/16"
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
+
+resource "alicloud_cs_managed_kubernetes" "auto-mode" {
+  name                           = var.name
+  cluster_spec                   = "ack.pro.small"
+  zone_ids                       = [data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id]
+  new_nat_gateway                = true
+  is_enterprise_security_group   = true
+  slb_internet_enabled           = false
+  skip_set_certificate_authority = true
+  proxy_mode                     = var.proxy_mode
+  service_cidr                   = var.service_cidr
+  ip_stack                       = "ipv4"
+
+  auto_mode {
+    enabled = true
+  }
+
+  maintenance_window {
+    duration         = "3h"
+    weekly_period    = "Monday"
+    enable           = true
+    maintenance_time = "2025-07-07T00:00:00.000+08:00"
+  }
+
+  operation_policy {
+    cluster_auto_upgrade {
+      channel = "stable"
+      enabled = true
+    }
+  }
+
+  control_plane_log_components = [
+    "apiserver",
+    "kcm",
+    "scheduler",
+    "ccm",
+    "controlplane-events",
+    "alb",
+    "ack-goatscaler",
+    "coredns"
+  ]
+  control_plane_log_ttl = "30"
+
+  audit_log_config {
+    enabled = true
+  }
+
+  addons {
+    name = "managed-metrics-server"
+  }
+
+  addons {
+    name = "managed-coredns"
+  }
+
+  addons {
+    name = "managed-security-inspector"
+  }
+
+  addons {
+    name = "ack-cost-exporter"
+  }
+
+  addons {
+    name = "terway-controlplane"
+    config = jsonencode({
+      ENITrunking = "true"
+    })
+  }
+
+  addons {
+    name = "terway-eniip"
+    config = jsonencode({
+      NetworkPolicy = "false"
+      ENITrunking   = "true"
+      IPVlan        = "false"
+    })
+  }
+
+  addons {
+    name = "csi-plugin"
+  }
+
+  addons {
+    name = "managed-csiprovisioner"
+  }
+
+  addons {
+    name = "storage-operator"
+    config = jsonencode({
+      CnfsOssEnable = "false"
+      CnfsNasEnable = "false"
+    })
+  }
+
+  addons {
+    name = "loongcollector"
+    config = jsonencode({
+      IngressDashboardEnabled = "true"
+    })
+  }
+
+  addons {
+    name = "ack-node-problem-detector"
+    config = jsonencode({
+      sls_project_name = ""
+    })
+  }
+
+  addons {
+    name     = "nginx-ingress-controller"
+    disabled = true
+  }
+
+  addons {
+    name = "alb-ingress-controller"
+    config = jsonencode({
+      albIngress = {
+        CreateDefaultALBConfig = false
+      }
+    })
+  }
+
+  addons {
+    name = "arms-prometheus"
+    config = jsonencode({
+      prometheusMode = "default"
+    })
+  }
+
+  addons {
+    name = "alicloud-monitor-controller"
+  }
+
+  addons {
+    name = "managed-aliyun-acr-credential-helper"
+  }
+}
+```
 ## Argument Reference
 
 The following arguments are supported:
@@ -228,13 +378,14 @@ The following arguments are supported:
  * `Serverless`: ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
  * `Acs`: ACS cluster.
 * `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
-* `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
-* `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
+* `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
+* `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy, only works when `maintenance_window` is enabled. See [`operation_policy`](#operation_policy) below.
 * `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
 * `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
 * `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `audit_log_config` - (Optional, Available since v1.250.0) Audit log configuration. See [`audit_log_config`](#audit_log_config) below.
+* `auto_mode` - (Optional, ForceNew, Available since v1.254.0) Auto mode cluster configuration. See [`auto_mode`](#auto_mode) below.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.223.2) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
@@ -346,6 +497,10 @@ Audit log config. If `enabled` is set to `true`, a Logstore is created in the sp
 * `enabled` - (Optional) Whether to enable audit logging. Valid values: `true`, `false`.
 * `sls_project_name` - (Optional) The SLS project to which the Logstore storing the cluster audit logs belongs.
 
+### `auto_mode`
+Auto mode cluster config.  
+
+* `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
 
 ### `addons`
 
