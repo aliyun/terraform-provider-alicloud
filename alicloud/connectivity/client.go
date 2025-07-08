@@ -291,6 +291,22 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 	})
 	ecs.SetEndpointDataToClient(ecsconn)
 
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				ecsconn.SetHttpsProxy(proxy.String())
+			} else {
+				ecsconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	ecsconn.SourceIp = client.config.SourceIp
@@ -315,6 +331,23 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				csconn.SetHttpsProxy(proxy.String())
+			} else {
+				csconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	csconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	csconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	csconn.SourceIp = client.config.SourceIp
@@ -338,8 +371,24 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 	polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
-
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				polarDBconn.SetHttpsProxy(proxy.String())
+			} else {
+				polarDBconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	polarDBconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	polarDBconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	polarDBconn.SourceIp = client.config.SourceIp
@@ -364,6 +413,23 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				slbconn.SetHttpsProxy(proxy.String())
+			} else {
+				slbconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	slbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	slbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	slbconn.SourceIp = client.config.SourceIp
@@ -388,6 +454,23 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				vpcconn.SetHttpsProxy(proxy.String())
+			} else {
+				vpcconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	vpcconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	vpcconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	vpcconn.SourceIp = client.config.SourceIp
@@ -412,6 +495,23 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				essconn.SetHttpsProxy(proxy.String())
+			} else {
+				essconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	essconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	essconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	essconn.SourceIp = client.config.SourceIp
@@ -504,6 +604,23 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				dnsconn.SetHttpsProxy(proxy.String())
+			} else {
+				dnsconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	dnsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	dnsconn.SourceIp = client.config.SourceIp
@@ -528,6 +645,23 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				ramconn.SetHttpsProxy(proxy.String())
+			} else {
+				ramconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	ramconn.SourceIp = client.config.SourceIp
@@ -554,6 +688,7 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 	} else {
 		accessKey, secretKey, stsToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	}
+
 	csconn := cs.NewClientForAussumeRole(accessKey, secretKey, stsToken)
 	csconn.SetUserAgent(client.config.getUserAgent())
 	csconn.SetEndpoint(endpoint)
@@ -616,6 +751,23 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				crconn.SetHttpsProxy(proxy.String())
+			} else {
+				crconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	crconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	crconn.SourceIp = client.config.SourceIp
@@ -641,6 +793,23 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				creeconn.SetHttpsProxy(proxy.String())
+			} else {
+				creeconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	creeconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	creeconn.SourceIp = client.config.SourceIp
@@ -688,6 +857,23 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				cdnconn.SetHttpsProxy(proxy.String())
+			} else {
+				cdnconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	cdnconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	cdnconn.SourceIp = client.config.SourceIp
@@ -713,6 +899,22 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 	otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
+	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				otsconn.SetHttpsProxy(proxy.String())
+			} else {
+				otsconn.SetHttpProxy(proxy.String())
+			}
+		}
 	}
 
 	otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -772,6 +974,23 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				cmsconn.SetHttpsProxy(proxy.String())
+			} else {
+				cmsconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	cmsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	cmsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	cmsconn.SourceIp = client.config.SourceIp
@@ -795,6 +1014,23 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				logpopconn.SetHttpsProxy(proxy.String())
+			} else {
+				logpopconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	logpopconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	logpopconn.SourceIp = client.config.SourceIp
@@ -849,8 +1085,24 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 	drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
-
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				drdsconn.SetHttpsProxy(proxy.String())
+			} else {
+				drdsconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	drdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	drdsconn.SourceIp = client.config.SourceIp
@@ -876,6 +1128,23 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				ddsconn.SetHttpsProxy(proxy.String())
+			} else {
+				ddsconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	ddsconn.SourceIp = client.config.SourceIp
@@ -902,6 +1171,23 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				gpdbconn.SetHttpsProxy(proxy.String())
+			} else {
+				gpdbconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	gpdbconn.SourceIp = client.config.SourceIp
@@ -961,6 +1247,23 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				cloudapiconn.SetHttpsProxy(proxy.String())
+			} else {
+				cloudapiconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	cloudapiconn.SourceIp = client.config.SourceIp
@@ -1057,6 +1360,23 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				elasticsearchconn.SetHttpsProxy(proxy.String())
+			} else {
+				elasticsearchconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	elasticsearchconn.SourceIp = client.config.SourceIp
@@ -1444,6 +1764,23 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				ddosbgpconn.SetHttpsProxy(proxy.String())
+			} else {
+				ddosbgpconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	ddosbgpconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	ddosbgpconn.SourceIp = client.config.SourceIp
@@ -1468,6 +1805,23 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				alikafkaconn.SetHttpsProxy(proxy.String())
+			} else {
+				alikafkaconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	alikafkaconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	alikafkaconn.SourceIp = client.config.SourceIp
@@ -1493,6 +1847,23 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				emrConn.SetHttpsProxy(proxy.String())
+			} else {
+				emrConn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	emrConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	emrConn.SourceIp = client.config.SourceIp
@@ -1518,6 +1889,23 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				sagconn.SetHttpsProxy(proxy.String())
+			} else {
+				sagconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	sagconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	sagconn.SourceIp = client.config.SourceIp
@@ -1542,6 +1930,22 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 	dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
+	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				dbauditconn.SetHttpsProxy(proxy.String())
+			} else {
+				dbauditconn.SetHttpProxy(proxy.String())
+			}
+		}
 	}
 
 	dbauditconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1569,6 +1973,22 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
 	}
 
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				marketconn.SetHttpsProxy(proxy.String())
+			} else {
+				marketconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	marketconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	marketconn.SourceIp = client.config.SourceIp
@@ -1594,6 +2014,23 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				hbaseconn.SetHttpsProxy(proxy.String())
+			} else {
+				hbaseconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	hbaseconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	hbaseconn.SourceIp = client.config.SourceIp
@@ -1621,6 +2058,23 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 		return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
 
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				adbconn.SetHttpsProxy(proxy.String())
+			} else {
+				adbconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	adbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	adbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	adbconn.SourceIp = client.config.SourceIp
@@ -1644,6 +2098,22 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 	cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
+	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				cbnConn.SetHttpsProxy(proxy.String())
+			} else {
+				cbnConn.SetHttpProxy(proxy.String())
+			}
+		}
 	}
 
 	cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1671,6 +2141,23 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				edasconn.SetHttpsProxy(proxy.String())
+			} else {
+				edasconn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	edasconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	edasconn.SourceIp = client.config.SourceIp
@@ -1698,6 +2185,23 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				alidnsConn.SetHttpsProxy(proxy.String())
+			} else {
+				alidnsConn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	alidnsConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	alidnsConn.SourceIp = client.config.SourceIp
@@ -1722,6 +2226,23 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				cassandraConn.SetHttpsProxy(proxy.String())
+			} else {
+				cassandraConn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	cassandraConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	cassandraConn.SourceIp = client.config.SourceIp
@@ -1748,6 +2269,23 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
 	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				eciConn.SetHttpsProxy(proxy.String())
+			} else {
+				eciConn.SetHttpProxy(proxy.String())
+			}
+		}
+	}
+
 	eciConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	eciConn.SourceIp = client.config.SourceIp
@@ -1770,6 +2308,22 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 	r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
+	}
+
+	proxy, err := client.getHttpProxy()
+	if proxy != nil {
+		skip, err := client.skipProxy(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if !skip {
+			if client.config.Protocol == "HTTPS" {
+				r_kvstoreConn.SetHttpsProxy(proxy.String())
+			} else {
+				r_kvstoreConn.SetHttpProxy(proxy.String())
+			}
+		}
 	}
 
 	r_kvstoreConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
