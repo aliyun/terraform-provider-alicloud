@@ -654,6 +654,8 @@ The following arguments are supported:
   - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
   - SpecifyTime: The minor engine version is updated at the point in time you specify.
 * `switch_time` - (Optional, Available since v1.126.0) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `target_minor_version` is changed. The time must be in UTC.
+* `template_id_list` - (Optional, Available since v1.126.0)  Whitelist Template ID List.
+* `templates` - (Computed, Available since v1.126.0) Whitelist Template Details.
 
 -> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
 * `target_minor_version` - (Optional, Available since v1.126.0) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. You must specify the minor engine version in one of the following formats:
