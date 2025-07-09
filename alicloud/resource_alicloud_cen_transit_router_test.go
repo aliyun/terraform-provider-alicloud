@@ -20,142 +20,96 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCenTransitRouter_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouter_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%scentransitrouter%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":                     "${alicloud_cen_instance.default.id}",
-					"transit_router_name":        "${var.name}",
-					"transit_router_description": "tf",
+					"cen_id": "${alicloud_cen_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cen_id":                     CHECKSET,
-						"transit_router_name":        name,
-						"transit_router_description": "tf",
+						"cen_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_description": "deds",
+					"transit_router_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_description": "deds",
+						"transit_router_name": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_name": name + "update",
+					"transit_router_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"transit_router_description": "desd",
-					"transit_router_name":        "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"transit_router_description": "desd",
-						"transit_router_name":        name,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudCenTransitRouter_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCenTransitRouter")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scentransitrouter%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cen_id":                     "${alicloud_cen_instance.default.id}",
-					"transit_router_name":        "${var.name}",
-					"transit_router_description": "tf",
-					"support_multicast":          "true",
-					"dry_run":                    "false",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "TransitRouter",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cen_id":                     CHECKSET,
-						"transit_router_name":        name,
-						"transit_router_description": "tf",
-						"support_multicast":          "true",
-						"dry_run":                    "false",
-						"tags.%":                     "2",
-						"tags.Created":               "TF",
-						"tags.For":                   "TransitRouter",
+						"transit_router_description": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"Created": "TF_Update",
-						"For":     "TransitRouter_Update",
+						"Created": "TF",
+						"For":     "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
-						"tags.Created": "TF_Update",
-						"tags.For":     "TransitRouter_Update",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -169,15 +123,70 @@ func TestAccAliCloudCenTransitRouter_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap = map[string]string{
-	"cen_id":                     CHECKSET,
-	"dry_run":                    NOSET,
-	"status":                     CHECKSET,
-	"transit_router_description": CHECKSET,
-	"transit_router_name":        CHECKSET,
+func TestAccAliCloudCenTransitRouter_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router.default"
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouter")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentransitrouter%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":                     "${alicloud_cen_instance.default.id}",
+					"support_multicast":          "true",
+					"transit_router_name":        name,
+					"transit_router_description": name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"dry_run": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cen_id":                     CHECKSET,
+						"support_multicast":          "true",
+						"transit_router_name":        name,
+						"transit_router_description": name,
+						"tags.%":                     "2",
+						"tags.Created":               "TF",
+						"tags.For":                   "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
 }
 
-func AlicloudCenTransitRouterBasicDependence(name string) string {
+var AliCloudCenTransitRouterMap0 = map[string]string{
+	"create_time":       CHECKSET,
+	"region_id":         CHECKSET,
+	"status":            CHECKSET,
+	"transit_router_id": CHECKSET,
+	"type":              CHECKSET,
+}
+
+func AliCloudCenTransitRouterBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
@@ -189,7 +198,7 @@ func AlicloudCenTransitRouterBasicDependence(name string) string {
 	`, name)
 }
 
-func TestUnitAlicloudCenTransitRouter(t *testing.T) {
+func TestUnitAliCloudCenTransitRouter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router"].Schema).Data(nil, nil)
@@ -526,7 +535,7 @@ func TestUnitAlicloudCenTransitRouter(t *testing.T) {
 func TestAccAliCloudCenTransitRouter_basic8808(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap8808)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap8808)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -534,7 +543,7 @@ func TestAccAliCloudCenTransitRouter_basic8808(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence8808)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence8808)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -636,7 +645,7 @@ func TestAccAliCloudCenTransitRouter_basic8808(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap8808 = map[string]string{
+var AliCloudCenTransitRouterMap8808 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -644,7 +653,7 @@ var AlicloudCenTransitRouterMap8808 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence8808(name string) string {
+func AliCloudCenTransitRouterBasicDependence8808(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -662,7 +671,7 @@ resource "alicloud_cen_instance" "defaultJ5klsx" {
 func TestAccAliCloudCenTransitRouter_basic7503(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap7503)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap7503)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -670,7 +679,7 @@ func TestAccAliCloudCenTransitRouter_basic7503(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence7503)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence7503)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -772,7 +781,7 @@ func TestAccAliCloudCenTransitRouter_basic7503(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap7503 = map[string]string{
+var AliCloudCenTransitRouterMap7503 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -780,7 +789,7 @@ var AlicloudCenTransitRouterMap7503 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence7503(name string) string {
+func AliCloudCenTransitRouterBasicDependence7503(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -798,7 +807,7 @@ resource "alicloud_cen_instance" "defaultJ5klsx" {
 func TestAccAliCloudCenTransitRouter_basic7166(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap7166)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap7166)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -806,7 +815,7 @@ func TestAccAliCloudCenTransitRouter_basic7166(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence7166)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence7166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -908,7 +917,7 @@ func TestAccAliCloudCenTransitRouter_basic7166(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap7166 = map[string]string{
+var AliCloudCenTransitRouterMap7166 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -916,7 +925,7 @@ var AlicloudCenTransitRouterMap7166 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence7166(name string) string {
+func AliCloudCenTransitRouterBasicDependence7166(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -934,7 +943,7 @@ resource "alicloud_cen_instance" "defaultJ5klsx" {
 func TestAccAliCloudCenTransitRouter_basic4512(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap4512)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap4512)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -942,7 +951,7 @@ func TestAccAliCloudCenTransitRouter_basic4512(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence4512)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence4512)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -1044,7 +1053,7 @@ func TestAccAliCloudCenTransitRouter_basic4512(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap4512 = map[string]string{
+var AliCloudCenTransitRouterMap4512 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -1052,7 +1061,7 @@ var AlicloudCenTransitRouterMap4512 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence4512(name string) string {
+func AliCloudCenTransitRouterBasicDependence4512(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1070,7 +1079,7 @@ resource "alicloud_cen_instance" "defaultJ5klsx" {
 func TestAccAliCloudCenTransitRouter_basic3516(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap3516)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap3516)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -1078,7 +1087,7 @@ func TestAccAliCloudCenTransitRouter_basic3516(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence3516)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence3516)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -1152,7 +1161,7 @@ func TestAccAliCloudCenTransitRouter_basic3516(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap3516 = map[string]string{
+var AliCloudCenTransitRouterMap3516 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -1160,7 +1169,7 @@ var AlicloudCenTransitRouterMap3516 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence3516(name string) string {
+func AliCloudCenTransitRouterBasicDependence3516(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1178,7 +1187,7 @@ resource "alicloud_cen_instance" "defaultqcUYl3" {
 func TestAccAliCloudCenTransitRouter_basic3483(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap3483)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMap3483)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -1186,7 +1195,7 @@ func TestAccAliCloudCenTransitRouter_basic3483(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccen%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence3483)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterBasicDependence3483)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -1288,7 +1297,7 @@ func TestAccAliCloudCenTransitRouter_basic3483(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap3483 = map[string]string{
+var AliCloudCenTransitRouterMap3483 = map[string]string{
 	"status":            CHECKSET,
 	"create_time":       CHECKSET,
 	"type":              CHECKSET,
@@ -1296,7 +1305,7 @@ var AlicloudCenTransitRouterMap3483 = map[string]string{
 	"transit_router_id": CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence3483(name string) string {
+func AliCloudCenTransitRouterBasicDependence3483(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"

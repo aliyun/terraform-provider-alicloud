@@ -1014,6 +1014,9 @@ func (s *CenServiceV2) DescribeCenTransitRouter(id string) (object map[string]in
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(NotFoundErr("TransitRouter", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
