@@ -107,7 +107,7 @@ func resourceAliCloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -198,7 +198,7 @@ func resourceAliCloudCenTransitRouterUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -252,7 +252,7 @@ func resourceAliCloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "IncorrectStatus.CenInstance", "InvalidOperation.AttachedChildInstanceExist"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.CenInstance", "InvalidOperation.AttachedChildInstanceExist", "IncorrectStatus.TransitRouterInstance"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -263,7 +263,7 @@ func resourceAliCloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"ParameterInstanceId"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
