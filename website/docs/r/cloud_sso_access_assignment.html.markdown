@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud SSO Access Assignment resource.
 
-For information about Cloud SSO Access Assignment and how to use it, see [What is Access Assignment](https://www.alibabacloud.com/help/en/doc-detail/265996.htm).
+For information about Cloud SSO Access Assignment and how to use it, see [What is Access Assignment](https://www.alibabacloud.com/help/en/cloudsso/developer-reference/api-cloudsso-2021-05-15-createaccessassignment).
 
 -> **NOTE:** When you configure access assignment for the first time, access configuration will be automatically deployed.
 
@@ -31,26 +31,27 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
-data "alicloud_cloud_sso_directories" "default" {}
-data "alicloud_resource_manager_resource_directories" "default" {}
 
-resource "alicloud_cloud_sso_directory" "default" {
-  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name = var.name
+data "alicloud_cloud_sso_directories" "default" {
 }
 
-locals {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+data "alicloud_resource_manager_resource_directories" "default" {
 }
 
 resource "random_integer" "default" {
   min = 10000
   max = 99999
+}
+
+resource "alicloud_cloud_sso_directory" "default" {
+  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  directory_name = var.name
 }
 
 resource "alicloud_cloud_sso_user" "default" {
@@ -59,19 +60,12 @@ resource "alicloud_cloud_sso_user" "default" {
 }
 
 resource "alicloud_cloud_sso_access_configuration" "default" {
-  access_configuration_name = "${var.name}-${random_integer.default.result}"
   directory_id              = local.directory_id
-}
-
-resource "alicloud_cloud_sso_access_configuration_provisioning" "default" {
-  directory_id            = local.directory_id
-  access_configuration_id = alicloud_cloud_sso_access_configuration.default.access_configuration_id
-  target_type             = "RD-Account"
-  target_id               = data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id
+  access_configuration_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cloud_sso_access_assignment" "default" {
-  directory_id            = alicloud_cloud_sso_access_configuration_provisioning.default.directory_id
+  directory_id            = local.directory_id
   access_configuration_id = alicloud_cloud_sso_access_configuration.default.access_configuration_id
   target_type             = "RD-Account"
   target_id               = data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id
@@ -79,32 +73,35 @@ resource "alicloud_cloud_sso_access_assignment" "default" {
   principal_id            = alicloud_cloud_sso_user.default.user_id
   deprovision_strategy    = "DeprovisionForLastAccessAssignmentOnAccount"
 }
+
+locals {
+  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `access_configuration_id` - (Required, ForceNew) The Access configuration ID.
-* `deprovision_strategy` - (Optional) The deprovision strategy. Valid values: `DeprovisionForLastAccessAssignmentOnAccount` and `None`. Default Value: `DeprovisionForLastAccessAssignmentOnAccount`. **NOTE:** When `deprovision_strategy` is `DeprovisionForLastAccessAssignmentOnAccount`, and the access assignment to be deleted is the last access assignment for the same account and the same AC, this option is used for the undeployment operation。
+* `access_configuration_id` - (Required, ForceNew) The ID of the access configuration.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `principal_id` - (Required, ForceNew)The ID of the access assignment.
-* `principal_type` - (Required, ForceNew) The identity type of the access assignment, which can be a user or a user group. Valid values: `Group`, `User`.
-* `target_id` - (Required, ForceNew) The ID of the target to create the resource range.
-* `target_type` - (Required, ForceNew) The type of the resource range target to be accessed. Valid values: `RD-Account`.
+* `principal_id` - (Required, ForceNew) The ID of the CloudSSO identity.
+* `principal_type` - (Required, ForceNew) The type of the CloudSSO identity. Valid values: `User`, `Group`.
+* `target_id` - (Required, ForceNew) The ID of the task object.
+* `target_type` - (Required, ForceNew) The type of the task object. Valid values: `RD-Account`.
+* `deprovision_strategy` - (Optional) Specifies whether to de-provision the access configuration when you remove the access permissions from the CloudSSO identity. Valid values: `DeprovisionForLastAccessAssignmentOnAccount` and `None`. Default Value: `DeprovisionForLastAccessAssignmentOnAccount`. **NOTE:** When `deprovision_strategy` is `DeprovisionForLastAccessAssignmentOnAccount`, and the access assignment to be deleted is the last access assignment for the same account and the same AC, this option is used for the undeployment operation.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Access Assignment. The value formats as `<directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>`. 
+* `id` - The resource ID of Access Assignment. It formats as `<directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>`. 
+* `create_time` - (Available since v1.254.0) The time when the access permissions were assigned.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when create the Cloud SSO Access Assignment.
-* `delete` - (Defaults to 5 mins) Used when delete the Cloud SSO Access Assignment.
+* `create` - (Defaults to 5 mins) Used when create the Access Assignment.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Assignment.
 
 ## Import
 
@@ -113,4 +110,3 @@ Cloud SSO Access Assignment can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cloud_sso_access_assignment.example <directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>
 ```
-

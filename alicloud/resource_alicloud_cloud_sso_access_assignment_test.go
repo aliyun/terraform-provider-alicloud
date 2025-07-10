@@ -22,10 +22,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func testSweepCloudSsoDirectoryAccessAssignment(region, directoryId string) error {
+func testSweepCloudSSODirectoryAccessAssignment(region, directoryId string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -72,7 +72,7 @@ func testSweepCloudSsoDirectoryAccessAssignment(region, directoryId string) erro
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping Cloud Sso AccessConfigurationName: %s", item["AccessConfigurationName"].(string))
+			log.Printf("[INFO] Skipping Cloud SSO AccessConfigurationName: %s", item["AccessConfigurationName"].(string))
 			continue
 		}
 		action := "DeleteAccessAssignment"
@@ -86,91 +86,14 @@ func testSweepCloudSsoDirectoryAccessAssignment(region, directoryId string) erro
 		}
 		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Cloud Sso AccessAssignment (%s): %s", item["AccessConfigurationName"].(string), err)
+			log.Printf("[ERROR] Failed to delete Cloud SSO AccessAssignment (%s): %s", item["AccessConfigurationName"].(string), err)
 		}
-		log.Printf("[INFO] Delete Cloud Sso AccessAssignment success: %s ", item["AccessConfigurationName"].(string))
+		log.Printf("[INFO] Delete Cloud SSO AccessAssignment success: %s ", item["AccessConfigurationName"].(string))
 	}
 	return nil
 }
 
-func TestAccAlicloudCloudSSOAccessAssignment_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cloud_sso_access_assignment.default"
-	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudCloudSSOAccessAssignmentMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudssoService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudSsoAccessAssignment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testaccconfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudSSOAccessAssignmentBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"directory_id":            "${local.directory_id}",
-					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
-					"target_type":             "RD-Account",
-					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
-					"principal_type":          "User",
-					"principal_id":            "${alicloud_cloud_sso_user.default.user_id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"directory_id":            CHECKSET,
-						"access_configuration_id": CHECKSET,
-						"target_type":             "RD-Account",
-						"target_id":               CHECKSET,
-						"principal_type":          "User",
-						"principal_id":            CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"deprovision_strategy"},
-			},
-		},
-	})
-}
-
-var AlicloudCloudSSOAccessAssignmentMap0 = map[string]string{}
-
-func AlicloudCloudSSOAccessAssignmentBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_cloud_sso_directories" "default" {}
-data "alicloud_resource_manager_resource_directories" "default" {}
-resource "alicloud_cloud_sso_directory" "default" {
-  count             = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name    = var.name
-}
-locals{
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
-}
-resource "alicloud_cloud_sso_access_configuration" "default" {
-  access_configuration_name = var.name
-  directory_id = local.directory_id
-}
-resource "alicloud_cloud_sso_user" "default" {
-  directory_id = local.directory_id
-  user_name = var.name
-}
-`, name)
-}
-
-func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
+func TestUnitAliCloudCloudSSOAccessAssignment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_access_assignment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_access_assignment"].Schema).Data(nil, nil)
@@ -253,7 +176,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoAccessAssignmentCreate(dInit, rawClient)
+		err := resourceAliCloudCloudSSOAccessAssignmentCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{
@@ -281,7 +204,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoAccessAssignmentCreate(dInit, rawClient)
+			err := resourceAliCloudCloudSSOAccessAssignmentCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -310,7 +233,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoAccessAssignmentUpdate(dExisted, rawClient)
+		err := resourceAliCloudCloudSSOAccessAssignmentUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -343,7 +266,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoAccessAssignmentRead(dExisted, rawClient)
+			err := resourceAliCloudCloudSSOAccessAssignmentRead(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -364,7 +287,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoAccessAssignmentDelete(dExisted, rawClient)
+		err := resourceAliCloudCloudSSOAccessAssignmentDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		attributesDiff := map[string]interface{}{}
@@ -399,7 +322,7 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoAccessAssignmentDelete(dExisted, rawClient)
+			err := resourceAliCloudCloudSSOAccessAssignmentDelete(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -411,3 +334,258 @@ func TestUnitAlicloudCloudSSOAccessAssignment(t *testing.T) {
 		}
 	})
 }
+
+// Test CloudSSO AccessAssignment. >>> Resource test cases, automatically generated.
+// Case AccessAssignment 10051
+func TestAccAliCloudCloudSSOAccessAssignment_basic10051(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_access_assignment.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOAccessAssignmentMap10051)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSSOAccessAssignment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOAccessAssignmentBasicDependence10051)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":            "${local.directory_id}",
+					"principal_id":            "${alicloud_cloud_sso_user.default.user_id}",
+					"target_type":             "RD-Account",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"principal_type":          "User",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":            CHECKSET,
+						"access_configuration_id": CHECKSET,
+						"target_type":             "RD-Account",
+						"target_id":               CHECKSET,
+						"principal_type":          "User",
+						"principal_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deprovision_strategy"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudSSOAccessAssignment_basic10051_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_access_assignment.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOAccessAssignmentMap10051)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSSOAccessAssignment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOAccessAssignmentBasicDependence10051)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":            "${local.directory_id}",
+					"principal_id":            "${alicloud_cloud_sso_user.default.user_id}",
+					"target_type":             "RD-Account",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"principal_type":          "User",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+					"deprovision_strategy":    "DeprovisionForLastAccessAssignmentOnAccount",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":            CHECKSET,
+						"access_configuration_id": CHECKSET,
+						"target_type":             "RD-Account",
+						"target_id":               CHECKSET,
+						"principal_type":          "User",
+						"principal_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deprovision_strategy"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudSSOAccessAssignmentMap10051 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AliCloudCloudSSOAccessAssignmentBasicDependence10051(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_directories" "default" {
+	}
+
+	data "alicloud_cloud_sso_directories" "default" {
+	}
+
+	resource "alicloud_cloud_sso_directory" "default" {
+  		count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  		directory_name = var.name
+	}
+
+	resource "alicloud_cloud_sso_group" "default" {
+  		directory_id = local.directory_id
+  		group_name   = var.name
+  		description  = var.name
+	}
+
+	resource "alicloud_cloud_sso_user" "default" {
+  		directory_id = local.directory_id
+  		user_name    = var.name
+	}
+
+	resource "alicloud_cloud_sso_access_configuration" "default" {
+  		directory_id              = local.directory_id
+  		access_configuration_name = var.name
+	}
+
+	locals {
+  		directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+	}
+`, name)
+}
+
+// Case AccessAssignment_online 10355
+
+func TestAccAliCloudCloudSSOAccessAssignment_basic10355(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_access_assignment.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOAccessAssignmentMap10051)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSSOAccessAssignment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOAccessAssignmentBasicDependence10051)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":            "${local.directory_id}",
+					"principal_id":            "${alicloud_cloud_sso_group.default.group_id}",
+					"target_type":             "RD-Account",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"principal_type":          "Group",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":            CHECKSET,
+						"access_configuration_id": CHECKSET,
+						"target_type":             "RD-Account",
+						"target_id":               CHECKSET,
+						"principal_type":          "Group",
+						"principal_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deprovision_strategy"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudSSOAccessAssignment_basic10355_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_access_assignment.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSSOAccessAssignmentMap10051)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSSOAccessAssignment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSSOAccessAssignmentBasicDependence10051)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":            "${local.directory_id}",
+					"principal_id":            "${alicloud_cloud_sso_group.default.group_id}",
+					"target_type":             "RD-Account",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"principal_type":          "Group",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+					"deprovision_strategy":    "DeprovisionForLastAccessAssignmentOnAccount",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":            CHECKSET,
+						"access_configuration_id": CHECKSET,
+						"target_type":             "RD-Account",
+						"target_id":               CHECKSET,
+						"principal_type":          "Group",
+						"principal_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deprovision_strategy"},
+			},
+		},
+	})
+}
+
+// Test CloudSSO AccessAssignment. <<< Resource test cases, automatically generated.

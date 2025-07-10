@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"strings"
 	"time"
 
@@ -522,3 +523,163 @@ func (s *CloudSSOServiceV2) CloudSSOUserAttachmentStateRefreshFunc(id string, fi
 }
 
 // DescribeCloudSSOUserAttachment >>> Encapsulated.
+
+// DescribeCloudSSOAccessAssignment <<< Encapsulated get interface for CloudSSO AccessAssignment.
+
+func (s *CloudSSOServiceV2) DescribeCloudSSOAccessAssignment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 6 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 6, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccessConfigurationId"] = parts[1]
+	request["DirectoryId"] = parts[0]
+	request["PrincipalId"] = parts[5]
+	request["PrincipalType"] = parts[4]
+	request["TargetId"] = parts[3]
+	request["TargetType"] = parts[2]
+
+	action := "ListAccessAssignments"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.AccessAssignments[*]", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("AccessAssignment", id), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("AccessAssignment", id), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["AccessConfigurationId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("AccessAssignment", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *CloudSSOServiceV2) CloudSSOAccessAssignmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCloudSSOAccessAssignment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *CloudSSOServiceV2) DescribeAsyncCloudSSOAccessAssignmentStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAsyncGetTaskStatus(d, res)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCloudSSOAccessAssignment >>> Encapsulated.
+
+// DescribeAsyncGetTaskStatus <<< Encapsulated for CloudSSO.
+func (s *CloudSSOServiceV2) DescribeAsyncGetTaskStatus(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 6 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 6, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["TaskId"], err = jsonpath.Get("$.Task.TaskId", res)
+	request["DirectoryId"] = parts[0]
+
+	action := "GetTaskStatus"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeAsyncGetTaskStatus >>> Encapsulated.
