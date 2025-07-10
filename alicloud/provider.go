@@ -1675,7 +1675,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_traffic_mirror_filter_ingress_rule":                resourceAliCloudVpcTrafficMirrorFilterIngressRule(),
 			"alicloud_ecd_nas_file_system":                                   resourceAlicloudEcdNasFileSystem(),
 			"alicloud_cloud_sso_user_attachment":                             resourceAliCloudCloudSSOUserAttachment(),
-			"alicloud_cloud_sso_access_assignment":                           resourceAlicloudCloudSsoAccessAssignment(),
+			"alicloud_cloud_sso_access_assignment":                           resourceAliCloudCloudSSOAccessAssignment(),
 			"alicloud_msc_sub_webhook":                                       resourceAlicloudMscSubWebhook(),
 			"alicloud_waf_protection_module":                                 resourceAlicloudWafProtectionModule(),
 			"alicloud_ecd_user":                                              resourceAlicloudEcdUser(),
