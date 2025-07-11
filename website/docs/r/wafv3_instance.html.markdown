@@ -26,13 +26,16 @@ Basic Usage
 </div></div>
 
 ```terraform
-resource "alicloud_wafv3_instance" "default" {
+provider "alicloud" {
+  alias = "singapore"
+  # when you want to create in specific region, you can set the region here.
+  region = "ap-southeast-1"
+}
+
+resource "alicloud_wafv3_instance" "example" {
+  provider = alicloud.singapore
 }
 ```
-
-## Argument Reference
-
-The following arguments are supported:
 
 
 ## Attributes Reference
