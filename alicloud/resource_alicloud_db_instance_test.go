@@ -3873,6 +3873,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "general_essd",
+					"cold_data_enabled":        "true",
 					"bursting_enabled":         "true",
 					"optimized_writes":         "optimized",
 				}),
@@ -3886,8 +3887,29 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 						"instance_name":            name,
 						"db_instance_storage_type": "general_essd",
 						"monitoring_period":        CHECKSET,
+						"cold_data_enabled":        CHECKSET,
 						"bursting_enabled":         CHECKSET,
 						"optimized_writes":         "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cold_data_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cold_data_enabled": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cold_data_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cold_data_enabled": CHECKSET,
 					}),
 				),
 			},

@@ -569,6 +569,11 @@ The following arguments are supported:
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
   - general_essd: general essd.
 
+* `cold_data_enabled` - (Optional, Available since 1.254.0) High performance cloud disk data archiving function switch.Example value:
+  - true: Enable high-performance cloud disk data archiving function.
+  - false: Disable high-performance cloud disk data archiving function.
+
+
 * `db_time_zone` - (Optional, ForceNew, Available since v1.136.0) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
   - If you set the `Engine` parameter to MySQL.
     - This time zone of the instance is in UTC. Valid values: -12:59 to +13:00.
@@ -718,7 +723,6 @@ The following arguments are supported:
   - simple: Enable Simple Recovery.
 -> **NOTE:** If you set this parameter to Manual, you must specify the ManualHATime parameter.
 * `manual_ha_time` - (Optional, Available since v1.128.0) The time after when you want to enable automatic primary/secondary switchover. At most, you can set this parameter to 23:59:59 seven days later. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
-
 -> **NOTE:** This parameter only takes effect when the HAConfig parameter is set to Manual.
 * `released_keep_policy` - (Optional, Available since v1.136.0) The policy based on which ApsaraDB RDS retains archived backup files after the instance is released. Valid values:
   - None: No archived backup files are retained.

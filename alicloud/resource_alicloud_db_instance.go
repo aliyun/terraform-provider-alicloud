@@ -663,6 +663,10 @@ func resourceAliCloudDBInstance() *schema.Resource {
 					return false
 				},
 			},
+			"cold_data_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -1528,6 +1532,13 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 
+	if d.HasChange("cold_data_enabled") {
+		if v, ok := d.GetOkExists("cold_data_enabled"); ok {
+			request["ColdDataEnabled"] = v
+			update = true
+		}
+	}
+
 	if update {
 		// wait instance status is running before modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -1841,6 +1852,9 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
 	d.Set("optimized_writes", instance["OptimizedWritesInfo"])
+	if val, exists := instance["ColdDataEnabled"]; exists && val != nil {
+		d.Set("cold_data_enabled", val)
+	}
 
 	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
 	payType := instance["PayType"]
@@ -2102,6 +2116,12 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		}
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
+		}
+	}
+
+	if request["Engine"] == "MySQL" {
+		if v, ok := d.GetOkExists("cold_data_enabled"); ok {
+			request["ColdDataEnabled"] = v
 		}
 	}
 
