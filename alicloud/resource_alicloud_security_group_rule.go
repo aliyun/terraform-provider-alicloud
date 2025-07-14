@@ -297,19 +297,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	sgId := parts[0]
 	direction := parts[1]
 
-	// wait the rule exist
-	var object ecs.Permission
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-		obj, err := ecsService.DescribeSecurityGroupRule(d.Id())
-		if err != nil && d.IsNewResource() {
-			wait()
-			return resource.RetryableError(err)
-		} else {
-			object = obj
-			return resource.NonRetryableError(err)
-		}
-	})
+	object, err := ecsService.DescribeSecurityGroupRule(d.Id())
 	if err != nil {
 		if NotFoundError(err) && !d.IsNewResource() {
 			log.Printf("[DEBUG] Resource alicloud_security_group_rule ecsService.DescribeSecurityGroupRule Failed!!! %s", err)
@@ -326,12 +314,14 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("port_range", object.PortRange)
 	d.Set("description", object.Description)
 	d.Set("security_group_rule_id", object.SecurityGroupRuleId)
+
 	if pri, err := strconv.Atoi(object.Priority); err != nil {
 		return WrapError(err)
 	} else {
 		d.Set("priority", pri)
 	}
 	d.Set("security_group_id", sgId)
+
 	//support source and desc by type
 	if direction == string(DirectionIngress) {
 		d.Set("cidr_ip", object.SourceCidrIp)
