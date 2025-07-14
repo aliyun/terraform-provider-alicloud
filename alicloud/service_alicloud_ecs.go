@@ -334,6 +334,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 	if err != nil {
 		return rule, WrapError(err)
 	}
+
 	groupId, direction, ipProtocol, portRange, nicType, cidrIp, policy := parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]
 	cidrIp, err = compressIPv6OrCIDR(strings.Replace(cidrIp, "_", ":", -1))
 	if err != nil {
@@ -344,22 +345,39 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 	if err != nil {
 		return rule, WrapError(err)
 	}
+
 	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.SecurityGroupId = groupId
 	request.Direction = direction
 	request.NicType = nicType
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(request)
+
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeSecurityGroupAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
-			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return rule, WrapErrorf(NotFoundErr("SecurityGroup:Rule", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
-		return
+		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+
 	if response == nil {
 		return rule, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", groupId))
 	}
