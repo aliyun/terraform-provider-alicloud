@@ -2,7 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"regexp"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudEcsSnapshots() *schema.Resource {
+func dataSourceAliCloudEcsSnapshots() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEcsSnapshotsRead,
 		Schema: map[string]*schema.Schema{
@@ -18,7 +20,7 @@ func dataSourceAlicloudEcsSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"flash", "standard"}, false),
+				ValidateFunc: StringInSlice([]string{"flash", "standard"}, false),
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -72,7 +74,7 @@ func dataSourceAlicloudEcsSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"auto", "user", "all"}, false),
+				ValidateFunc: StringInSlice([]string{"auto", "user", "all"}, false),
 				Default:      "all",
 			},
 			"type": {
@@ -84,20 +86,20 @@ func dataSourceAlicloudEcsSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"System", "Data"}, false),
+				ValidateFunc: StringInSlice([]string{"System", "Data"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"accomplished", "failed", "progressing", "all"}, false),
+				ValidateFunc: StringInSlice([]string{"accomplished", "failed", "progressing", "all"}, false),
 			},
 			"tags": tagsSchema(),
 			"usage": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"image", "disk", "image_disk", "none"}, false),
+				ValidateFunc: StringInSlice([]string{"image", "disk", "image_disk", "none"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -294,19 +296,34 @@ func dataSourceAlicloudEcsSnapshotsRead(d *schema.ResourceData, meta interface{}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+
 	var response map[string]interface{}
 	var err error
+
 	for {
-		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_snapshots", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Snapshots.Snapshot", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Snapshots.Snapshot", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -322,9 +339,11 @@ func dataSourceAlicloudEcsSnapshotsRead(d *schema.ResourceData, meta interface{}
 			}
 			objects = append(objects, item)
 		}
+
 		if len(result) < PageSizeLarge {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken

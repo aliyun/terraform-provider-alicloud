@@ -7,24 +7,105 @@ description: |-
   Provides a list of Ecs Snapshots to the user.
 ---
 
-# alicloud\_ecs\_snapshots
+# alicloud_ecs_snapshots
 
 This data source provides the Ecs Snapshots of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_ecs_snapshots" "example" {
-  ids        = ["s-bp1fvuxxxxxxxx"]
-  name_regex = "tf-test"
+variable "name" {
+  default = "terraform-example"
 }
 
-output "first_ecs_snapshot_id" {
-  value = data.alicloud_ecs_snapshots.example.snapshots.0.id
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_essd"
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_images" "default" {
+  most_recent = true
+  owners      = "system"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  image_id             = data.alicloud_images.default.images.0.id
+  system_disk_category = "cloud_essd"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_instance" "default" {
+  image_id                   = data.alicloud_images.default.images.0.id
+  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups            = alicloud_security_group.default.*.id
+  internet_charge_type       = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  instance_charge_type       = "PostPaid"
+  system_disk_category       = "cloud_essd"
+  vswitch_id                 = alicloud_vswitch.default.id
+  instance_name              = var.name
+  data_disks {
+    category = "cloud_essd"
+    size     = 20
+  }
+}
+
+resource "alicloud_ecs_disk" "default" {
+  disk_name = var.name
+  zone_id   = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  category  = "cloud_essd"
+  size      = 500
+}
+
+resource "alicloud_ecs_disk_attachment" "default" {
+  disk_id     = alicloud_ecs_disk.default.id
+  instance_id = alicloud_instance.default.id
+}
+
+resource "alicloud_ecs_snapshot" "default" {
+  disk_id        = alicloud_ecs_disk_attachment.default.disk_id
+  category       = "standard"
+  retention_days = 20
+  snapshot_name  = var.name
+  description    = var.name
+  tags = {
+    Created = "TF"
+    For     = "Snapshot"
+  }
+}
+
+data "alicloud_ecs_snapshots" "ids" {
+  ids = [alicloud_ecs_snapshot.default.id]
+}
+
+output "ecs_snapshots_id_0" {
+  value = data.alicloud_ecs_snapshots.ids.snapshots.0.id
 }
 ```
 
@@ -43,38 +124,41 @@ The following arguments are supported:
 * `snapshot_link_id` - (Optional, ForceNew) The snapshot link id.
 * `snapshot_name` - (Optional, ForceNew) The name of the snapshot.
 * `snapshot_type` - (Optional, ForceNew) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
+* `type` - (Optional, ForceNew) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
 * `source_disk_type` - (Optional, ForceNew) The type of the disk for which the snapshot was created. Valid Values: `System`, `Data`.
 * `status` - (Optional, ForceNew) The status of the snapshot. Valid Values: `accomplished`, `failed`, `progressing` and `all`.
 * `usage` - (Optional, ForceNew) A resource type that has a reference relationship. Valid Values: `image`, `disk`, `image_disk` and `none`.
 * `tags` - (Optional) A mapping of tags to assign to the snapshot.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot names.
 * `snapshots` - A list of Ecs Snapshots. Each element contains the following attributes:
-	* `category` - The category of the snapshot.
-	* `description` - The description of the snapshot.
-	* `disk_id` - The source disk id.
-	* `encrypted` - Whether the snapshot is encrypted.
-	* `id` - The ID of the Snapshot.
-	* `instant_access` - Whether snapshot speed availability is enabled.
-	* `instant_access_retention_days` - Specifies the retention period of the instant access feature. After the retention period ends, the snapshot is automatically released.
-	* `product_code` - The product number inherited from the mirror market.
-	* `progress` - Snapshot creation progress, in percentage.
-	* `remain_time` - Remaining completion time for the snapshot being created.
-	* `resource_group_id` - The resource group id.
-	* `retention_days` - Automatic snapshot retention days.
-	* `snapshot_id` - The snapshot id.
-	* `snapshot_name` - Snapshot Display Name.
-	* `snapshot_type` - Snapshot creation type.
-	* `snapshot_sn` - The serial number of the snapshot.
-	* `source_disk_size` - Source disk capacity.
-	* `source_disk_type` - Source disk attributes.
-	* `source_storage_type` - Original disk type.
-	* `status` - The status of the snapshot.
-	* `tags` - The tags.
-		* `tag_key` - The tag key.
-		* `tag_value` - The tag value.
-	* `usage` - A resource type that has a reference relationship.
+  * `category` - The category of the snapshot.
+  * `description` - The description of the snapshot.
+  * `disk_id` - The ID of the source disk.
+  * `encrypted` - Indicates whether the snapshot was encrypted.
+  * `id` - The ID of the Snapshot.
+  * `instant_access` - Indicates whether the instant access feature is enabled.
+  * `instant_access_retention_days` - Indicates the validity period of the instant access feature.
+  * `product_code` - The product code of the Alibaba Cloud Marketplace image.
+  * `progress` - The progress of the snapshot creation task.
+  * `remain_time` - The amount of remaining time required to create the snapshot.
+  * `resource_group_id` - The ID of the resource group to which the snapshot belongs.
+  * `retention_days` - The retention period of the automatic snapshot.
+  * `snapshot_id` - The ID of the snapshot.
+  * `snapshot_name` - The name of the snapshot.
+  * `snapshot_type` - The type of the snapshot.
+  * `snapshot_sn` - The serial number of the snapshot.
+  * `source_disk_size` - The capacity of the source disk.
+  * `source_disk_type` - The type of the source disk.
+  * `source_storage_type` - The category of the source disk.
+  * `status` - The status of the snapshot.
+  * `tags` - The tags of the snapshot.
+  * `usage` - Indicates whether the snapshot was used to create images or cloud disks.
+  * `name` - The name of the snapshot.
+  * `creation_time` - The time when the snapshot was created.
+  * `type` - The type of the snapshot.
+  * `source_disk_id` - The ID of the source disk.
