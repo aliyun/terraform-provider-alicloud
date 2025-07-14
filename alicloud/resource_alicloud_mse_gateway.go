@@ -28,7 +28,6 @@ func resourceAlicloudMseGateway() *schema.Resource {
 			"backup_vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"enterprise_security_group": {
 				Type:     schema.TypeBool,
