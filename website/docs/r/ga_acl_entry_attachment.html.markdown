@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ga_acl_entry_attachment"
 sidebar_current: "docs-alicloud-resource-ga-acl-entry-attachment"
 description: |-
-  Provides a Alicloud Global Accelerator (GA) Acl entry attachment resource.
+  Provides a Alicloud Global Accelerator (GA) Acl Entry Attachment resource.
 ---
 
 # alicloud_ga_acl_entry_attachment
 
-Provides a Global Accelerator (GA) Acl entry attachment resource.
+Provides a Global Accelerator (GA) Acl Entry Attachment resource.
 
-For information about Global Accelerator (GA) Acl entry attachment and how to use it, see [What is Acl entry attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-addentriestoacl).
+For information about Global Accelerator (GA) Acl Entry Attachment and how to use it, see [What is Acl Entry Attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-addentriestoacl).
 
 -> **NOTE:** Available since v1.190.0.
 
@@ -26,15 +26,19 @@ Basic Usage
 </div></div>
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 resource "alicloud_ga_acl" "default" {
-  acl_name           = "tf-example-value"
   address_ip_version = "IPv4"
+  acl_name           = var.name
 }
 
 resource "alicloud_ga_acl_entry_attachment" "default" {
   acl_id            = alicloud_ga_acl.default.id
   entry             = "192.168.1.1/32"
-  entry_description = "tf-example-value"
+  entry_description = var.name
 }
 ```
 
@@ -42,28 +46,28 @@ resource "alicloud_ga_acl_entry_attachment" "default" {
 
 The following arguments are supported:
 
-* `acl_id` - (Required, ForceNew) The ID of the global acceleration instance.
-* `entry` - (Required, ForceNew) The IP address(192.168.XX.XX) or CIDR(10.0.XX.XX/24) block that you want to add to the network ACL.
-* `entry_description` - (Optional, ForceNew) The description of the entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `acl_id` - (Required, ForceNew) The ID of the Acl.
+* `entry` - (Required, ForceNew) The entry (IP address or CIDR block) that you want to add.
+* `entry_description` - (Optional, ForceNew) The description of the entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Acl entry attachment. The value formats as `<acl_id>:<entry>`.
-* `status` - The status of the network ACL.
+* `id` - The resource ID in terraform of Acl Entry Attachment. It formats as `<acl_id>:<entry>`.
+* `status` - The status of the Acl Entry Attachment.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when create the Acl entry attachment.
-* `delete` - (Defaults to 5 mins) Used when delete the Acl entry attachment.
+* `create` - (Defaults to 5 mins) Used when create the Acl Entry Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Acl Entry Attachment.
 
 ## Import
 
-Global Accelerator (GA) Acl entry attachment can be imported using the id.Format to `<acl_id>:<entry>`, e.g.
+Global Accelerator (GA) Acl Entry Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_acl_entry_attachment.example your_acl_id:your_entry
+$ terraform import alicloud_ga_acl_entry_attachment.example <acl_id>:<entry>
 ```

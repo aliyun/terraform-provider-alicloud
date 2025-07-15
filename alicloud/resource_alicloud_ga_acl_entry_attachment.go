@@ -2,19 +2,19 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudGaAclEntryAttachment() *schema.Resource {
+func resourceAliCloudGaAclEntryAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaAclEntryAttachmentCreate,
-		Read:   resourceAlicloudGaAclEntryAttachmentRead,
-		Delete: resourceAlicloudGaAclEntryAttachmentDelete,
+		Create: resourceAliCloudGaAclEntryAttachmentCreate,
+		Read:   resourceAliCloudGaAclEntryAttachmentRead,
+		Delete: resourceAliCloudGaAclEntryAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -37,7 +37,7 @@ func resourceAlicloudGaAclEntryAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(1, 256),
+				ValidateFunc: StringLenBetween(1, 256),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -47,25 +47,33 @@ func resourceAlicloudGaAclEntryAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaAclEntryAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclEntryAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
 	action := "AddEntriesToAcl"
 	request := make(map[string]interface{})
+	var entry string
 	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("AddEntriesToAcl")
 	request["AclId"] = d.Get("acl_id")
+	entry = d.Get("entry").(string)
 
 	aclEntriesMaps := make([]map[string]interface{}, 0)
 	aclEntriesMap := map[string]interface{}{}
-	aclEntriesMap["Entry"] = d.Get("entry")
+	aclEntriesMap["Entry"] = entry
+
+	if strings.Contains(entry, ":") {
+		entry = strings.Replace(entry, ":", "_", -1)
+	}
+
 	if v, ok := d.GetOk("entry_description"); ok {
 		aclEntriesMap["EntryDescription"] = v
 
 	}
+
 	aclEntriesMaps = append(aclEntriesMaps, aclEntriesMap)
 	request["AclEntries"] = aclEntriesMaps
 
@@ -87,28 +95,23 @@ func resourceAlicloudGaAclEntryAttachmentCreate(d *schema.ResourceData, meta int
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_acl_entry_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", request["AclId"], aclEntriesMap["Entry"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["AclId"], entry))
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaAclStateRefreshFunc(parts[0], []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaAclStateRefreshFunc(fmt.Sprint(request["AclId"]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAclEntryAttachmentRead(d, meta)
+	return resourceAliCloudGaAclEntryAttachmentRead(d, meta)
 }
 
-func resourceAlicloudGaAclEntryAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclEntryAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
 	object, err := gaService.DescribeGaAclEntryAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -121,7 +124,7 @@ func resourceAlicloudGaAclEntryAttachmentRead(d *schema.ResourceData, meta inter
 	}
 
 	d.Set("acl_id", parts[0])
-	d.Set("entry", parts[1])
+	d.Set("entry", object["Entry"])
 	d.Set("entry_description", object["EntryDescription"])
 
 	describeGaAclObject, err := gaService.DescribeGaAcl(parts[0])
@@ -134,7 +137,7 @@ func resourceAlicloudGaAclEntryAttachmentRead(d *schema.ResourceData, meta inter
 	return nil
 }
 
-func resourceAlicloudGaAclEntryAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclEntryAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveEntriesFromAcl"
 	var response map[string]interface{}
@@ -153,6 +156,11 @@ func resourceAlicloudGaAclEntryAttachmentDelete(d *schema.ResourceData, meta int
 
 	aclEntriesMaps := make([]map[string]interface{}, 0)
 	aclEntriesMap := map[string]interface{}{}
+
+	if strings.Contains(fmt.Sprint(parts[1]), "_") {
+		parts[1] = strings.Replace(fmt.Sprint(parts[1]), "_", ":", -1)
+	}
+
 	aclEntriesMap["Entry"] = parts[1]
 	aclEntriesMaps = append(aclEntriesMaps, aclEntriesMap)
 	request["AclEntries"] = aclEntriesMaps

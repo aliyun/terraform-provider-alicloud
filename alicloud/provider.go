@@ -1856,7 +1856,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pool_cidr_block":                 resourceAliCloudVpcPublicIpAddressPoolCidrBlock(),
 			"alicloud_gpdb_db_instance_plan":                                 resourceAliCloudGpdbDbInstancePlan(),
 			"alicloud_adb_db_cluster_lake_version":                           resourceAliCloudAdbDbClusterLakeVersion(),
-			"alicloud_ga_acl_entry_attachment":                               resourceAlicloudGaAclEntryAttachment(),
+			"alicloud_ga_acl_entry_attachment":                               resourceAliCloudGaAclEntryAttachment(),
 			"alicloud_nlb_load_balancer":                                     resourceAliCloudNlbLoadBalancer(),
 			"alicloud_service_mesh_extension_provider":                       resourceAlicloudServiceMeshExtensionProvider(),
 			"alicloud_nlb_listener":                                          resourceAliCloudNlbListener(),
