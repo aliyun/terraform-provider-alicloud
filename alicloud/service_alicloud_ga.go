@@ -546,6 +546,7 @@ func (s *GaService) GaAclStateRefreshFunc(id string, failStates []string) resour
 				return object, fmt.Sprint(object["AclStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AclStatus"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["AclStatus"]), nil
 	}
 }
@@ -883,15 +884,21 @@ func (s *GaService) GaAccessLogStateRefreshFunc(id string, failStates []string) 
 
 func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	client := s.client
+	action := "GetAcl"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
 	}
-	client := s.client
-	action := "GetAcl"
+
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"AclId":    parts[0],
+	}
+
+	if strings.Contains(fmt.Sprint(parts[1]), "_") {
+		parts[1] = strings.Replace(fmt.Sprint(parts[1]), "_", ":", -1)
 	}
 
 	idExist := false
@@ -908,16 +915,19 @@ func (s *GaService) DescribeGaAclEntryAttachment(id string) (object map[string]i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Acl"}) {
 			return object, WrapErrorf(NotFoundErr("Ga:AclEntryAttachment", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	resp, err := jsonpath.Get("$.AclEntries", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 	}
+
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
 		return object, WrapErrorf(NotFoundErr("Ga:AclEntryAttachment", id), NotFoundWithResponse, response)
 	}

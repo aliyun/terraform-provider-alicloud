@@ -20,11 +20,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaAclEntryAttachment_basic0(t *testing.T) {
+func TestAccAliCloudGaAclEntryAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_acl_entry_attachment.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaAclEntryAttachmentMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaAclEntryAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaAclEntryAttachment")
@@ -32,7 +32,7 @@ func TestAccAlicloudGaAclEntryAttachment_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaAclEntryAttachment-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaAclEntryAttachmentBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAclEntryAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,7 +43,49 @@ func TestAccAlicloudGaAclEntryAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"acl_id":            "${alicloud_ga_acl.default.id}",
+					"acl_id": "${alicloud_ga_acl.ipv4.id}",
+					"entry":  "192.168.1.1/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_id": CHECKSET,
+						"entry":  "192.168.1.1/32",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaAclEntryAttachment_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_acl_entry_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaAclEntryAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAclEntryAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGaAclEntryAttachment-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAclEntryAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_id":            "${alicloud_ga_acl.ipv4.id}",
 					"entry":             "192.168.1.1/32",
 					"entry_description": name,
 				}),
@@ -64,24 +106,115 @@ func TestAccAlicloudGaAclEntryAttachment_basic0(t *testing.T) {
 	})
 }
 
-var resourceAlicloudGaAclEntryAttachmentMap = map[string]string{
+func TestAccAliCloudGaAclEntryAttachment_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_acl_entry_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaAclEntryAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAclEntryAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGaAclEntryAttachment-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAclEntryAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_id": "${alicloud_ga_acl.ipv6.id}",
+					"entry":  "12ab:0:0:cd60::/60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_id": CHECKSET,
+						"entry":  "12ab:0:0:cd60::/60",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaAclEntryAttachment_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_acl_entry_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaAclEntryAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAclEntryAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGaAclEntryAttachment-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAclEntryAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_id":            "${alicloud_ga_acl.ipv6.id}",
+					"entry":             "12ab:0:0:cd60::/60",
+					"entry_description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_id":            CHECKSET,
+						"entry":             "12ab:0:0:cd60::/60",
+						"entry_description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudGaAclEntryAttachmentMap0 = map[string]string{
 	"status": CHECKSET,
 }
 
-func resourceAlicloudGaAclEntryAttachmentBasicDependence(name string) string {
+func AliCloudGaAclEntryAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
 
-	resource "alicloud_ga_acl" "default" {
-		acl_name           = var.name
+	resource "alicloud_ga_acl" "ipv4" {
 		address_ip_version = "IPv4"
+		acl_name           = var.name
+	}
+
+	resource "alicloud_ga_acl" "ipv6" {
+		address_ip_version = "IPv6"
+		acl_name           = var.name
 	}
 `, name)
 }
 
-func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
+func TestUnitAliCloudGaAclEntryAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_acl_entry_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_acl_entry_attachment"].Schema).Data(nil, nil)
@@ -145,7 +278,7 @@ func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaAclEntryAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudGaAclEntryAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -168,7 +301,7 @@ func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaAclEntryAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudGaAclEntryAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -213,7 +346,7 @@ func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaAclEntryAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudGaAclEntryAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -233,7 +366,7 @@ func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
 		}
 	})
 	dExisted, _ = schema.InternalMap(p["alicloud_ga_acl_entry_attachment"].Schema).Data(dInit.State(), diff)
-	err = resourceAlicloudGaAclEntryAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudGaAclEntryAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -255,7 +388,7 @@ func TestUnitAlicloudGaAclEntryAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaAclEntryAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudGaAclEntryAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
