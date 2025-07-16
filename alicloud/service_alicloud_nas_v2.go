@@ -597,11 +597,12 @@ func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]inte
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeAccessPoint"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccessPointId"] = parts[1]
-	query["FileSystemId"] = parts[0]
+	request["AccessPointId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+
+	action := "DescribeAccessPoint"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -614,14 +615,13 @@ func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("AccessPoint", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
