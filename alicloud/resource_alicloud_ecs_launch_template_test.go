@@ -549,6 +549,21 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"image_options": []map[string]string{
+						{
+							"login_as_non_root": "true",
+						},
+					}}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_options.#":        "1",
+						"default_version_number": "27",
+						"latest_version_number":  "27",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name":                          name,
 					"description":                   name,
 					"host_name":                     name,
@@ -646,8 +661,8 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 						"system_disk.#":                 "1",
 						"network_interfaces.#":          "1",
 						"data_disks.#":                  "2",
-						"latest_version_number":         "27",
-						"default_version_number":        "27",
+						"latest_version_number":         "28",
+						"default_version_number":        "28",
 					}),
 				),
 			},
@@ -761,6 +776,11 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 							"size":                 "20",
 						},
 					},
+					"image_options": []map[string]string{
+						{
+							"login_as_non_root": "true",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -781,6 +801,7 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 						"network_interfaces.#":   "1",
 						"latest_version_number":  "1",
 						"default_version_number": "1",
+						"image_options.#":        "1",
 					}),
 				),
 			},
