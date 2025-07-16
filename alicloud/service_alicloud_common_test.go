@@ -32,6 +32,8 @@ const (
 	NOSET      = "#NOSET"       // be equivalent to method "TestCheckNoResourceAttrSet"
 	CHECKSET   = "#CHECKSET"    // "TestCheckResourceAttrSet"
 	REMOVEKEY  = "#REMOVEKEY"   // remove checkMap key
+	CLEARLIST  = "#CLEARLIST"   // clear checkMap key and set empty list
+	CLEARMAP   = "#CLEARMAP"    // clear checkMap key and set empty map
 	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
 	ForceSleep = "force_sleep"
 )
@@ -447,8 +449,13 @@ func (b *resourceConfig) configUpdate(changeMap map[string]interface{}) {
 	if changeMap != nil && len(changeMap) > 0 {
 		for rk, rv := range changeMap {
 			_, ok := b.attributeMap[rk]
-			if strValue, isCost := rv.(string); ok && isCost && strValue == REMOVEKEY {
+			if strValue, isCost := rv.(string); ok && isCost && (strValue == REMOVEKEY || strValue == CLEARMAP || strValue == CLEARLIST) {
 				delete(b.attributeMap, rk)
+				if strValue == CLEARMAP {
+					b.attributeMap[rk] = make(map[string]interface{})
+				} else if strValue == CLEARLIST {
+					b.attributeMap[rk] = make([]interface{}, 0)
+				}
 			} else if ok {
 				delete(b.attributeMap, rk)
 				b.attributeMap[rk] = rv
