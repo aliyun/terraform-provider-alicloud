@@ -3,12 +3,14 @@ subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_access_point"
 description: |-
-  Provides a Alicloud NAS Access Point resource.
+  Provides a Alicloud File Storage (NAS) Access Point resource.
 ---
 
 # alicloud_nas_access_point
 
-Provides a NAS Access Point resource. 
+Provides a File Storage (NAS) Access Point resource.
+
+
 
 For information about NAS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/zh/nas/developer-reference/api-nas-2017-06-26-createaccesspoint).
 
@@ -33,16 +35,17 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-variable "region_id" {
-  default = "cn-hangzhou"
-}
-
 variable "azone" {
   default = "cn-hangzhou-g"
 }
 
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_vpc" "defaultkyVC70" {
@@ -54,11 +57,6 @@ resource "alicloud_vswitch" "defaultoZAPmO" {
   vpc_id     = alicloud_vpc.defaultkyVC70.id
   zone_id    = data.alicloud_zones.default.zones.0.id
   cidr_block = "172.16.0.0/24"
-}
-
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
 }
 
 resource "alicloud_nas_access_group" "defaultBbc7ev" {
@@ -75,7 +73,6 @@ resource "alicloud_nas_file_system" "defaultVtUpDh" {
   file_system_type = "standard"
   description      = "AccessPointnoRootDirectory"
 }
-
 
 resource "alicloud_nas_access_point" "default" {
   vpc_id            = alicloud_vpc.defaultkyVC70.id
@@ -98,38 +95,41 @@ resource "alicloud_nas_access_point" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_group` - (Required) The permission group name.
-* `access_point_name` - (Optional) The Access Point Name.
-* `enabled_ram` - (Optional) Whether to enable the RAM policy.
+* `access_group` - (Required) The name of the permission group.
+* `access_point_name` - (Optional) The name of the access point.
+* `enabled_ram` - (Optional, Bool) Specifies whether to enable the RAM policy. Default value: `false`. Valid values:
+  - `true`: The RAM policy is enabled.
+  - `false`: The RAM policy is disabled.
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
-* `posix_user` - (Optional, ForceNew) The Posix user. See [`posix_user`](#posix_user) below.
-* `root_path` - (Optional, ForceNew) The root directory.
-* `root_path_permission` - (Optional, ForceNew) Root permissions. See [`root_path_permission`](#root_path_permission) below.
+* `posix_user` - (Optional, ForceNew, Set) The Posix user. See [`posix_user`](#posix_user) below.
+* `root_path` - (Optional, ForceNew) The root directory of the access point.
+* `root_path_permission` - (Optional, ForceNew, Set) Root permissions. See [`root_path_permission`](#root_path_permission) below.
 * `vswitch_id` - (Required, ForceNew) The vSwitch ID.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 
 ### `posix_user`
 
 The posix_user supports the following:
-* `posix_group_id` - (Optional, ForceNew) The ID of the Posix user group.
-* `posix_user_id` - (Optional, ForceNew) The Posix user ID.
+* `posix_group_id` - (Optional, ForceNew, Int) The ID of the Posix user group.
+* `posix_user_id` - (Optional, ForceNew, Int) The Posix user ID.
 
 ### `root_path_permission`
 
 The root_path_permission supports the following:
-* `owner_group_id` - (Optional, ForceNew) The ID of the primary user group.
-* `owner_user_id` - (Optional, ForceNew) The owner user ID.
-* `permission` - (Optional, ForceNew) POSIX permission.
+* `owner_group_id` - (Optional, ForceNew, Int) The ID of the primary user group.
+* `owner_user_id` - (Optional, ForceNew, Int) The owner user ID.
+* `permission` - (Optional, ForceNew) The Portable Operating System Interface for UNIX (POSIX) permission.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<access_point_id>`.
-* `access_point_id` - Access point ID.
-* `create_time` - Creation time.
+* `access_point_id` - The ID of the access point.
+* `create_time` - The time when the access point was created.
 * `posix_user` - The Posix user.
   * `posix_secondary_group_ids` - The ID of the second user group.
-* `status` - Current access point state.
+* `region_id` - (Available since v1.254.0) The region ID.
+* `status` - The status of the access point.
 
 ## Timeouts
 
@@ -140,7 +140,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-NAS Access Point can be imported using the id, e.g.
+File Storage (NAS) Access Point can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_access_point.example <file_system_id>:<access_point_id>

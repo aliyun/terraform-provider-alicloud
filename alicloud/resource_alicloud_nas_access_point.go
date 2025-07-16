@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -82,6 +81,10 @@ func resourceAliCloudNasAccessPoint() *schema.Resource {
 					},
 				},
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"root_path": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -144,7 +147,7 @@ func resourceAliCloudNasAccessPointCreate(d *schema.ResourceData, meta interface
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["FileSystemId"] = d.Get("file_system_id")
+	request["FileSystemId"] = d.Get("file_system_id")
 
 	request["AccessGroup"] = d.Get("access_group")
 	request["VpcId"] = d.Get("vpc_id")
@@ -188,12 +191,6 @@ func resourceAliCloudNasAccessPointCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("root_path"); ok {
 		request["RootDirectory"] = v
 	}
-	if v, ok := d.GetOk("posix_user"); ok {
-		jsonPathResult11, err := jsonpath.Get("$[0].posix_secondary_group_ids", v)
-		if err == nil && jsonPathResult11 != "" {
-			request["PosixSecondaryGroupIds"] = jsonPathResult11
-		}
-	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
@@ -204,16 +201,16 @@ func resourceAliCloudNasAccessPointCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_point", action, AlibabaCloudSdkGoERROR)
 	}
 
-	AccessPointAccessPointId, _ := jsonpath.Get("$.AccessPoint.AccessPointId", response)
-	d.SetId(fmt.Sprintf("%v:%v", query["FileSystemId"], AccessPointAccessPointId))
+	AccessPointAccessPointIdVar, _ := jsonpath.Get("$.AccessPoint.AccessPointId", response)
+	d.SetId(fmt.Sprintf("%v:%v", request["FileSystemId"], AccessPointAccessPointIdVar))
 
 	nasServiceV2 := NasServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nasServiceV2.NasAccessPointStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -242,6 +239,7 @@ func resourceAliCloudNasAccessPointRead(d *schema.ResourceData, meta interface{}
 	d.Set("access_point_name", objectRaw["AccessPointName"])
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("enabled_ram", objectRaw["EnabledRam"])
+	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("root_path", objectRaw["RootPath"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("vswitch_id", objectRaw["VSwitchId"])
@@ -251,41 +249,41 @@ func resourceAliCloudNasAccessPointRead(d *schema.ResourceData, meta interface{}
 
 	posixUserMaps := make([]map[string]interface{}, 0)
 	posixUserMap := make(map[string]interface{})
-	posixUser1Raw := make(map[string]interface{})
+	posixUserRaw := make(map[string]interface{})
 	if objectRaw["PosixUser"] != nil {
-		posixUser1Raw = objectRaw["PosixUser"].(map[string]interface{})
+		posixUserRaw = objectRaw["PosixUser"].(map[string]interface{})
 	}
-	if len(posixUser1Raw) > 0 {
-		posixUserMap["posix_group_id"] = posixUser1Raw["PosixGroupId"]
-		posixUserMap["posix_user_id"] = posixUser1Raw["PosixUserId"]
+	if len(posixUserRaw) > 0 {
+		posixUserMap["posix_group_id"] = posixUserRaw["PosixGroupId"]
+		posixUserMap["posix_user_id"] = posixUserRaw["PosixUserId"]
 
-		posixSecondaryGroupIds1Raw := make([]interface{}, 0)
-		if posixUser1Raw["PosixSecondaryGroupIds"] != nil {
-			posixSecondaryGroupIds1Raw = posixUser1Raw["PosixSecondaryGroupIds"].([]interface{})
+		posixSecondaryGroupIdsRaw := make([]interface{}, 0)
+		if posixUserRaw["PosixSecondaryGroupIds"] != nil {
+			posixSecondaryGroupIdsRaw = posixUserRaw["PosixSecondaryGroupIds"].([]interface{})
 		}
 
-		posixUserMap["posix_secondary_group_ids"] = posixSecondaryGroupIds1Raw
+		posixUserMap["posix_secondary_group_ids"] = posixSecondaryGroupIdsRaw
 		posixUserMaps = append(posixUserMaps, posixUserMap)
 	}
-	d.Set("posix_user", posixUserMaps)
+	if err := d.Set("posix_user", posixUserMaps); err != nil {
+		return err
+	}
 	rootPathPermissionMaps := make([]map[string]interface{}, 0)
 	rootPathPermissionMap := make(map[string]interface{})
-	rootPathPermission1Raw := make(map[string]interface{})
+	rootPathPermissionRaw := make(map[string]interface{})
 	if objectRaw["RootPathPermission"] != nil {
-		rootPathPermission1Raw = objectRaw["RootPathPermission"].(map[string]interface{})
+		rootPathPermissionRaw = objectRaw["RootPathPermission"].(map[string]interface{})
 	}
-	if len(rootPathPermission1Raw) > 0 {
-		rootPathPermissionMap["owner_group_id"] = rootPathPermission1Raw["OwnerGroupId"]
-		rootPathPermissionMap["owner_user_id"] = rootPathPermission1Raw["OwnerUserId"]
-		rootPathPermissionMap["permission"] = rootPathPermission1Raw["Permission"]
+	if len(rootPathPermissionRaw) > 0 {
+		rootPathPermissionMap["owner_group_id"] = rootPathPermissionRaw["OwnerGroupId"]
+		rootPathPermissionMap["owner_user_id"] = rootPathPermissionRaw["OwnerUserId"]
+		rootPathPermissionMap["permission"] = rootPathPermissionRaw["Permission"]
 
 		rootPathPermissionMaps = append(rootPathPermissionMaps, rootPathPermissionMap)
 	}
-	d.Set("root_path_permission", rootPathPermissionMaps)
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("file_system_id", parts[0])
-	d.Set("access_point_id", parts[1])
+	if err := d.Set("root_path_permission", rootPathPermissionMaps); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -296,13 +294,15 @@ func resourceAliCloudNasAccessPointUpdate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyAccessPoint"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FileSystemId"] = parts[0]
-	query["AccessPointId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+	request["AccessPointId"] = parts[1]
+
 	if d.HasChange("access_point_name") {
 		update = true
 		request["AccessPointName"] = d.Get("access_point_name")
@@ -314,7 +314,10 @@ func resourceAliCloudNasAccessPointUpdate(d *schema.ResourceData, meta interface
 	request["AccessGroup"] = d.Get("access_group")
 	if d.HasChange("enabled_ram") {
 		update = true
-		request["EnabledRam"] = d.Get("enabled_ram")
+
+		if v, ok := d.GetOkExists("enabled_ram"); ok {
+			request["EnabledRam"] = v
+		}
 	}
 
 	if update {
@@ -328,9 +331,9 @@ func resourceAliCloudNasAccessPointUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -349,11 +352,9 @@ func resourceAliCloudNasAccessPointDelete(d *schema.ResourceData, meta interface
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["FileSystemId"] = parts[0]
-	query["AccessPointId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+	request["AccessPointId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
@@ -365,11 +366,14 @@ func resourceAliCloudNasAccessPointDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -378,5 +382,6 @@ func resourceAliCloudNasAccessPointDelete(d *schema.ResourceData, meta interface
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
