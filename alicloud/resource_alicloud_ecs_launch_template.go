@@ -406,6 +406,20 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"image_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"login_as_non_root": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"system_disk_category": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -735,6 +749,19 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 		request["HttpPutResponseHopLimit"] = v
 	}
 
+	if v, ok := d.GetOk("image_options"); ok {
+		imageOptionsMap := make(map[string]interface{})
+		for _, imageOptions := range v.([]interface{}) {
+			imageOptionsArg := imageOptions.(map[string]interface{})
+
+			if loginAsNonRoot, ok := imageOptionsArg["login_as_non_root"]; ok {
+				imageOptionsMap["LoginAsNonRoot"] = loginAsNonRoot
+			}
+		}
+
+		request["ImageOptions"] = imageOptionsMap
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -891,6 +918,17 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	d.Set("http_endpoint", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpEndpoint"])
 	d.Set("http_tokens", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpTokens"])
 	d.Set("http_put_response_hop_limit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpPutResponseHopLimit"])
+
+	if imageOptions, ok := describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["ImageOptions"]; ok {
+		imageOptionsMaps := make([]map[string]interface{}, 0)
+		imageOptionsMap := map[string]interface{}{}
+		imageOptionsArg := imageOptions.(map[string]interface{})
+		imageOptionsMap["login_as_non_root"] = imageOptionsArg["LoginAsNonRoot"]
+		imageOptionsMaps = append(imageOptionsMaps, imageOptionsMap)
+
+		d.Set("image_options", imageOptionsMaps)
+	}
+
 	return nil
 }
 
@@ -1267,6 +1305,23 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+
+	if d.HasChange("image_options") {
+		update = true
+	}
+	if v, ok := d.GetOk("image_options"); ok {
+		imageOptionsMap := make(map[string]interface{})
+		for _, imageOptions := range v.([]interface{}) {
+			imageOptionsArg := imageOptions.(map[string]interface{})
+
+			if loginAsNonRoot, ok := imageOptionsArg["login_as_non_root"]; ok {
+				imageOptionsMap["LoginAsNonRoot"] = loginAsNonRoot
+			}
+		}
+
+		request["ImageOptions"] = imageOptionsMap
+	}
+
 	if update {
 		action := "CreateLaunchTemplateVersion"
 		wait := incrementalWait(3*time.Second, 3*time.Second)

@@ -184,6 +184,7 @@ The following arguments are supported:
 * `template_tags` - (Optional) A mapping of tags to assign to the launch template. 
 * `default_version_number` - (Optional, Int, Computed, Available since v1.241.0) The version number of the default launch template version. Default to 1. It is conflict with `update_default_version_number`.
 * `update_default_version_number` - (Optional, Bool, Available since v1.241.0) Whether to update the default version of the launch template to the latest version automatically. It is conflict with `default_version_number`.
+* `image_options` - (Optional, Set, Available since v1.254.0) The options of images. See [`image_options`](#image_options) below.
 * `name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `launch_template_name` instead.
 * `userdata` - (Deprecated) It has been deprecated from version 1.120.0, and use field `user_data` instead.
 * `system_disk_name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
@@ -230,6 +231,12 @@ The data_disks supports the following:
 * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
 * `device` - (Optional, Available since v1.230.1) The mount point of the data disk.
 * `kms_key_id` - (Optional, Available since v1.252.0) The ID of the KMS key used for the data disk.
+
+### `image_options`
+
+The image_options supports the following:
+
+* `login_as_non_root` - (Optional) Specifies whether the instance that uses the image supports logons of the ecs-user user. Default value: `false`. Valid values: `true`,`false`.
 
 ## Attributes Reference
 
