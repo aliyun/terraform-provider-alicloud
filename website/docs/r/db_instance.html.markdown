@@ -569,6 +569,10 @@ The following arguments are supported:
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
   - general_essd: general essd.
 
+* `cold_data_enabled` - (Optional, Available since 1.254.0) High performance cloud disk data archiving function switch.Example value:
+  - true: Enable high-performance cloud disk data archiving function.
+  - false: Disable high-performance cloud disk data archiving function.
+
 * `db_time_zone` - (Optional, ForceNew, Available since v1.136.0) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
   - If you set the `Engine` parameter to MySQL.
     - This time zone of the instance is in UTC. Valid values: -12:59 to +13:00.

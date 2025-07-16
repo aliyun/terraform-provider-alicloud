@@ -303,16 +303,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Open",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_action": "Open",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "delayed_insert_timeout",
@@ -419,7 +409,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "cloud_essd",
-					"ssl_action":                 "Close",
 					"instance_name":              "${var.name}",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
@@ -442,7 +431,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
 						"db_instance_storage_type":   "cloud_essd",
-						"ssl_action":                 "Close",
 						"instance_name":              name,
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,
@@ -3893,6 +3881,26 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"cold_data_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cold_data_enabled": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cold_data_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cold_data_enabled": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"optimized_writes": "none",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -3928,6 +3936,65 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bursting_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRdsDBInstanceMysql_general_essd_supplement(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceDBGeneralEssd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "mysql.x4.medium.2c",
+					"instance_storage":         "100",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"cold_data_enabled":        "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+						"monitoring_period":        CHECKSET,
+						"cold_data_enabled":        CHECKSET,
 					}),
 				),
 			},
