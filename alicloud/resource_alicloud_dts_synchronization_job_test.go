@@ -320,7 +320,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		engine_version           = "8.0"
   		instance_charge_type     = "PostPaid"
   		category                 = "HighAvailability"
-  		db_instance_storage_type = "local_ssd"
+  		db_instance_storage_type = "cloud_essd"
 	}
 
 	data "alicloud_vpcs" "default" {
@@ -337,7 +337,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		category                 = "HighAvailability"
-  		db_instance_storage_type = "local_ssd"
+  		db_instance_storage_type = "cloud_essd"
   		instance_charge_type     = "PostPaid"
 	}
 
@@ -392,7 +392,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		source_endpoint_region           = var.region_id
   		destination_endpoint_engine_name = "MySQL"
   		destination_endpoint_region      = var.region_id
-  		instance_class                   = "small"
+  		instance_class                   = "4xlarge"
   		sync_architecture                = "oneway"
 	}
 `, name, defaultRegionToTest)
@@ -413,7 +413,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		engine_version           = "8.0"
   		instance_charge_type     = "PostPaid"
   		category                 = "HighAvailability"
-  		db_instance_storage_type = "local_ssd"
+  		db_instance_storage_type = "cloud_essd"
 	}
 
 	data "alicloud_vpcs" "default" {
@@ -430,13 +430,13 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		category                 = "HighAvailability"
-  		db_instance_storage_type = "local_ssd"
+  		db_instance_storage_type = "cloud_essd"
   		instance_charge_type     = "PostPaid"
 	}
 
 	data "alicloud_polardb_node_classes" "default" {
   		db_type    = "MySQL"
-  		db_version = "5.6"
+  		db_version = "8.0"
   		pay_type   = "PostPaid"
   		zone_id    = data.alicloud_db_zones.default.zones.0.id
 	}
@@ -444,11 +444,13 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	## PolarDB PolarDB Source
 	resource "alicloud_polardb_cluster" "source" {
   		db_type       = "MySQL"
-  		db_version    = "5.6"
+  		db_version    = "8.0"
   		pay_type      = "PostPaid"
   		db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   		vswitch_id    = data.alicloud_vswitches.default.ids.0
   		description   = "polardb_cluster_description"
+		storage_space = 20
+		storage_type  = "ESSDPL0"
 	}
 
 	resource "alicloud_polardb_database" "source_db" {
@@ -492,7 +494,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		source_endpoint_region           = var.region_id
   		destination_endpoint_engine_name = "MySQL"
   		destination_endpoint_region      = var.region_id
-  		instance_class                   = "small"
+  		instance_class                   = "4xlarge"
   		sync_architecture                = "oneway"
 	}
 `, name, defaultRegionToTest)
