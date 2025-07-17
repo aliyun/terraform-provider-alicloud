@@ -569,6 +569,8 @@ The following arguments are supported:
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
   - general_essd: general essd.
 
+* `template_id_list` - (Optional, Available since v1.254.0)  Whitelist Template ID List.
+
 * `cold_data_enabled` - (Optional, Available since 1.254.0) High performance cloud disk data archiving function switch.Example value:
   - true: Enable high-performance cloud disk data archiving function.
   - false: Disable high-performance cloud disk data archiving function.
@@ -864,6 +866,7 @@ The following attributes are exported:
 * `db_instance_type` - (Available since v1.197.0) The type of db instance.
 * `status` - (Available since v1.204.1) The status of db instance.
 * `create_time` - (Available since v1.204.1) The creation time of db instance.
+* `templates` - (Computed, Available since v1.254.0) Whitelist Template Details.
 
 ## Timeouts
 

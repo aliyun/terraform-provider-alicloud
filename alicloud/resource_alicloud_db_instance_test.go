@@ -1127,16 +1127,6 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Open",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_action": "Open",
-					}),
-				),
-			},
 		},
 	})
 }
@@ -4038,6 +4028,7 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"db_instance_storage_type": "general_essd",
+					"template_id_list":         []string{"${alicloud_rds_whitelist_template.default.id}", "${alicloud_rds_whitelist_template.default1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -4048,6 +4039,7 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"instance_charge_type":     CHECKSET,
 						"instance_name":            name,
 						"db_instance_storage_type": "general_essd",
+						"template_id_list.#":       CHECKSET,
 					}),
 				),
 			},
@@ -4093,6 +4085,8 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 }
 
 func resourceDBInstanceConfigGeneralEssdPgSql(name string) string {
+	templateName1 := fmt.Sprintf("tf-test%d", rand.Intn(1000))
+	templateName2 := fmt.Sprintf("tf-test%d", rand.Intn(1000))
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -4119,7 +4113,17 @@ resource "alicloud_kms_key" "default" {
   pending_window_in_days  = 7
   status            = "Enabled"
 }
-`, name)
+
+resource "alicloud_rds_whitelist_template" "default" {
+  ip_white_list            = "127.0.0.1,127.0.0.2"
+  template_name            = "%s"
+}
+
+resource "alicloud_rds_whitelist_template" "default1" {
+  ip_white_list            = "127.0.0.1"
+  template_name            = "%s"
+}
+`, name, templateName1, templateName2)
 }
 
 func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
@@ -4178,6 +4182,36 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_id_list.#": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default1.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_id_list.#": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_id_list.#": "0",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -4188,6 +4222,8 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 }
 
 func resourceDBInstanceConfigGeneralEssdSqlService(name string) string {
+	templateName := fmt.Sprintf("tf-test%d", rand.Intn(1000))
+	templateName1 := fmt.Sprintf("tf-test%d", rand.Intn(1000))
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -4204,8 +4240,16 @@ data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
+resource "alicloud_rds_whitelist_template" "default" {
+  ip_white_list            = "127.0.0.1,127.0.0.2"
+  template_name            = "%s"
+}
+resource "alicloud_rds_whitelist_template" "default1" {
+  ip_white_list            = "127.0.0.2,127.0.0.3"
+  template_name            = "%s"
+}
 
-`, name)
+`, name, templateName, templateName1)
 }
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

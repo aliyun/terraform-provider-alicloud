@@ -663,6 +663,16 @@ func resourceAliCloudDBInstance() *schema.Resource {
 					return false
 				},
 			},
+			"template_id_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
+			"templates": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeMap},
+			},
 			"cold_data_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -864,6 +874,65 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("security_group_ids")
 		d.SetPartial("security_group_id")
+	}
+
+	if d.HasChange("template_id_list") {
+		oldIDs, newIDs := d.GetChange("template_id_list")
+		oldIDSet := convertInterfaceListToSet(oldIDs.([]interface{}))
+		newIDSet := convertInterfaceListToSet(newIDs.([]interface{}))
+
+		addedIDs := getDifference(newIDSet, oldIDSet)
+		removedIDs := getDifference(oldIDSet, newIDSet)
+
+		for _, id := range addedIDs {
+			action := "AttachWhitelistTemplateToInstance"
+			request := map[string]interface{}{
+				"RegionId":   client.RegionId,
+				"InsName":    d.Id(),
+				"TemplateId": id,
+			}
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+
+			stateConf := BuildStateConf(
+				[]string{},
+				[]string{"Running"},
+				d.Timeout(schema.TimeoutUpdate),
+				5*time.Second,
+				rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}),
+			)
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
+		for _, id := range removedIDs {
+			action := "DetachWhitelistTemplateToInstance"
+			request := map[string]interface{}{
+				"RegionId":   client.RegionId,
+				"InsName":    d.Id(),
+				"TemplateId": id,
+			}
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+
+			stateConf := BuildStateConf(
+				[]string{},
+				[]string{"Running"},
+				d.Timeout(schema.TimeoutUpdate),
+				5*time.Second,
+				rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}),
+			)
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
 	}
 
 	if d.HasChange("monitoring_period") {
@@ -2025,6 +2094,29 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("db_param_group_id", dbParamGroupInfo["ParamGroupId"].(string))
 
+	WhitelistTemplate, err := rdsService.DescribeInstanceLinkedWhitelistTemplate(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	if templateIds, ok := WhitelistTemplate["TemplateIds"].([]int); ok {
+		d.Set("template_id_list", templateIds)
+	}
+
+	if templates, ok := WhitelistTemplate["Templates"].([]interface{}); ok {
+		var terraformTemplates []interface{}
+		for _, item := range templates {
+			if templateMap, ok := item.(map[string]interface{}); ok {
+				terraformTemplates = append(terraformTemplates, templateMap)
+			}
+		}
+		d.Set("templates", terraformTemplates)
+	} else {
+		d.Set("templates", []interface{}{})
+	}
 	return nil
 }
 
@@ -2316,4 +2408,22 @@ func convertRdsInstanceSslActionResponse(sslEnable, sslActionRead interface{}) s
 		return "Close"
 	}
 	return fmt.Sprint(sslActionRead)
+}
+func convertInterfaceListToSet(list []interface{}) map[int]struct{} {
+	set := make(map[int]struct{})
+	for _, v := range list {
+		if val, ok := v.(int); ok {
+			set[val] = struct{}{}
+		}
+	}
+	return set
+}
+func getDifference(a, b map[int]struct{}) []int {
+	var result []int
+	for key := range a {
+		if _, exists := b[key]; !exists {
+			result = append(result, key)
+		}
+	}
+	return result
 }

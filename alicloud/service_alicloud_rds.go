@@ -218,6 +218,65 @@ func (s *RdsService) DescribeParameters(id string) (object map[string]interface{
 	return response, err
 }
 
+func (s *RdsService) DescribeInstanceLinkedWhitelistTemplate(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := "DescribeInstanceLinkedWhitelistTemplate"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"InsName":  id,
+	}
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+
+	object = make(map[string]interface{})
+
+	v, err := jsonpath.Get("$.Data.Templates", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Templates", response)
+	}
+
+	templates, ok := v.([]interface{})
+	if !ok {
+		return nil, WrapErrorf(Error("Failed to parse Templates as array"), FailedGetAttributeMsg, action, "$.Data.Templates", response)
+	}
+
+	var templateIds []int
+	for _, item := range templates {
+		templateMap, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if templateId, ok := templateMap["TemplateId"].(json.Number); ok {
+			if id, err := strconv.Atoi(templateId.String()); err == nil {
+				templateIds = append(templateIds, id)
+			} else {
+				log.Printf("[WARN] Failed to convert json.Number TemplateId to int: %s", templateId.String())
+			}
+		} else if templateIdStr, ok := templateMap["TemplateId"].(string); ok {
+			if id, err := strconv.Atoi(templateIdStr); err == nil {
+				templateIds = append(templateIds, id)
+			} else {
+				log.Printf("[WARN] Failed to convert string TemplateId to int: %s", templateIdStr)
+			}
+		} else {
+			log.Printf("[WARN] Invalid TemplateId type in response: %T", templateMap["TemplateId"])
+		}
+	}
+	log.Printf("[DEBUG] Generated TemplateIds: %v", templateIds)
+
+	object["Templates"] = templates
+	object["TemplateIds"] = templateIds
+
+	return object, nil
+}
+
 func (s *RdsService) SetTimeZone(d *schema.ResourceData) error {
 	targetParameterName := ""
 	engine := d.Get("engine")
