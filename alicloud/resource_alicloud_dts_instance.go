@@ -74,7 +74,7 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small", "micro"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
 			},
 			"instance_name": {
 				Computed: true,

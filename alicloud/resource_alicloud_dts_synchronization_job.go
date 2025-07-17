@@ -52,7 +52,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small"}, false),
+				ValidateFunc: StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
