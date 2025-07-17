@@ -2693,3 +2693,84 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 	}
 	return object, nil
 }
+
+func (s *RdsService) DescribeAllWhitelistTemplate(name string) (object map[string]interface{}, err error) {
+	action := "DescribeAllWhitelistTemplate"
+	request := map[string]interface{}{
+		"RegionId":          s.client.RegionId,
+		"MaxRecordsPerPage": 1000,
+		"PageNumbers":       1,
+	}
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	object = make(map[string]interface{})
+	v, err := jsonpath.Get("$.Data.Templates", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Templates", response)
+	}
+	if templatesList, ok := v.([]interface{}); ok {
+		for _, item := range templatesList {
+			if itemMap, ok := item.(map[string]interface{}); ok {
+				templateName, ok := itemMap["TemplateName"].(string)
+				if !ok {
+					continue
+				}
+
+				if templateName == name {
+					object["UserId"] = itemMap["UserId"]
+					object["TemplateName"] = itemMap["TemplateName"]
+					object["Id"] = itemMap["Id"]
+					object["Ips"] = itemMap["Ips"]
+					object["TemplateId"] = itemMap["TemplateId"]
+					return object, nil
+				}
+			} else {
+				log.Printf("[WARN] Unexpected template item type: %T", item)
+			}
+		}
+	} else {
+		log.Printf("[WARN] Templates is not an array: %T", v)
+	}
+	return nil, WrapErrorf(NotFoundErr("TemplateName", "test02"), NotFoundMsg, ProviderERROR)
+}
+
+func (s *RdsService) DescribeWhitelistTemplate(name string) (object map[string]interface{}, err error) {
+	action := "DescribeWhitelistTemplate"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"TemplateId": name,
+	}
+	client := s.client
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	object = make(map[string]interface{})
+	v, err := jsonpath.Get("$.Data.Template", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Template", response)
+	}
+	templateMap, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(Error("Failed to parse Template as map"), FailedGetAttributeMsg, action, "$.Data.Template", response)
+	}
+
+	object["UserId"] = templateMap["UserId"]
+	object["TemplateName"] = templateMap["TemplateName"]
+	object["Id"] = templateMap["Id"]
+	object["Ips"] = templateMap["Ips"]
+	object["TemplateId"] = templateMap["TemplateId"]
+
+	return object, nil
+}
