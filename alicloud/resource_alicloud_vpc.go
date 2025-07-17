@@ -579,7 +579,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["RouteTableName"] = d.Get("system_route_table_name")
 	}
 
-	if v, ok := d.GetOkExists("system_route_table_route_propagation_enable"); (d.IsNewResource() && ok && !v.(bool)) || d.HasChange("system_route_table_route_propagation_enable") {
+	if v, ok := d.GetOkExists("system_route_table_route_propagation_enable"); (d.IsNewResource() && ok && !v.(bool)) || (!d.IsNewResource() && d.HasChange("system_route_table_route_propagation_enable")) {
 		update = true
 		request["RoutePropagationEnable"] = d.Get("system_route_table_route_propagation_enable")
 	}

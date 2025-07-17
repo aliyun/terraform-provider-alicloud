@@ -1165,6 +1165,7 @@ func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
 					"vpc_name":            name,
 					"dns_hostname_status": "ENABLED",
 					"force_delete":        "true",
+					"system_route_table_route_propagation_enable": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
