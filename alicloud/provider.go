@@ -1204,6 +1204,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_connection":                                        resourceAlicloudDBConnection(),
 			"alicloud_db_read_write_splitting_connection":                   resourceAlicloudDBReadWriteSplittingConnection(),
 			"alicloud_db_instance":                                          resourceAliCloudDBInstance(),
+			"alicloud_rds_whitelist_template":                               resourceAliCloudRdsWhitelistTemplate(),
 			"alicloud_rds_backup":                                           resourceAlicloudRdsBackup(),
 			"alicloud_rds_db_proxy":                                         resourceAlicloudRdsDBProxy(),
 			"alicloud_rds_db_proxy_public":                                  resourceAliCloudRdsDBProxyPublic(),
