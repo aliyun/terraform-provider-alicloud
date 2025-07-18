@@ -18,7 +18,7 @@ For information about Resource AliCloudWhitelistTemplate and how to use it, see 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_whitelist_template&exampleId=dd8413b6-00fe-a3e4-66f6-5c0ac2abc03335013f07&activeTab=example&spm=docs.r.rds_db_proxy_public.0.dd8413b600&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_whitelist_template&exampleId=993979d4-e07e-50c6-b17b-c8ee842dd39d0e4dc7a9&activeTab=example&spm=docs.r.rds_whitelist_template.0.993979d4e0&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

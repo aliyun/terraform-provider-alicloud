@@ -21,7 +21,7 @@ For information about NAS Access Point and how to use it, see [What is Access Po
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_access_point&exampleId=1b819cd0-58c8-ea04-c8f2-4408a7538987a0b2b99c&activeTab=example&spm=docs.r.nas_access_point.0.1b819cd058&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_access_point&exampleId=f6698004-1118-7c1b-fea3-020deb3be985b4cb4417&activeTab=example&spm=docs.r.nas_access_point.0.f669800411&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

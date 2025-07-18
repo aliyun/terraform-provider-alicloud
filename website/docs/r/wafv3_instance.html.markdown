@@ -20,7 +20,7 @@ For information about Wafv3 Instance and how to use it, see [What is Instance](h
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_instance&exampleId=68c7e1d5-968d-4a2d-19dd-3448f9b9e8fe6de0327f&activeTab=example&spm=docs.r.wafv3_instance.0.68c7e1d596&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_instance&exampleId=634b4bc3-5bec-f3c1-d5d0-e4cb4c5a71d4f0ec29f8&activeTab=example&spm=docs.r.wafv3_instance.0.634b4bc35b&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

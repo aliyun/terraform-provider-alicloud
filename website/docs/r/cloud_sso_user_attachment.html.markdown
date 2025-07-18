@@ -21,7 +21,7 @@ For information about Cloud SSO User Attachment and how to use it, see [What is 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_sso_user_attachment&exampleId=de06f8bc-37a5-217b-cebb-1972aa4418995f378215&activeTab=example&spm=docs.r.cloud_sso_user_attachment.0.de06f8bc37&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_sso_user_attachment&exampleId=abe154a6-161a-2d40-f0ad-0bd2d5ea1df491ef42e8&activeTab=example&spm=docs.r.cloud_sso_user_attachment.0.abe154a616&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

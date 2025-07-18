@@ -1,28 +1,32 @@
-## 1.254.0 (Unreleased)
+## 1.255.0 (Unreleased)
+## 1.254.0 (July 18, 2025)
 
-- **New Resource:** `alicloud_rds_whitelist_template` [GH-8820]
+- **New Resource:** `alicloud_rds_whitelist_template` ([#8820](https://github.com/aliyun/terraform-provider-alicloud/issues/8820))
 
 ENHANCEMENTS:
 
-- client: Supported proxy for old clients. [GH-8823]
-- resource/alicloud_cloud_sso_user_attachment: Refactored the resource alicloud_cloud_sso_user_attachment. [GH-8819]
-- resource/alicloud_cen_transit_router: Added retry strategy for error code; Improved alicloud_cen_transit_router testcase and document. [GH-8824]
-- resource/alicloud_cloud_sso_access_assignment: Refactored the resource alicloud_cloud_sso_access_assignment; Added the field create_time. [GH-8826]
-- resource/alicloud_security_group_rule: Added retry strategy. [GH-8830]
-- resource/alicloud_nas_access_point: Refactored the resource alicloud_nas_access_point; Added the field region_id. [GH-8833]
-- resource/alicloud_ecs_launch_template: Added the field image_options. [GH-8834]
-- data-source/alicloud_ecs_snapshots: Added retry strategy. [GH-8831]
-- docs: Imporves description for wafv3_instance. [GH-8829]
-- testcase: Improves test for common utils. [GH-8816]
-- testcase: Improves test for common utils. [GH-8821]
-- testcase: Improved alicloud_ga_acl testcase. [GH-8825]
+- client: Supported proxy for old clients. ([#8823](https://github.com/aliyun/terraform-provider-alicloud/issues/8823))
+- resource/alicloud_cloud_sso_user_attachment: Refactored the resource alicloud_cloud_sso_user_attachment. ([#8819](https://github.com/aliyun/terraform-provider-alicloud/issues/8819))
+- resource/alicloud_cen_transit_router: Added retry strategy for error code; Improved alicloud_cen_transit_router testcase and document. ([#8824](https://github.com/aliyun/terraform-provider-alicloud/issues/8824))
+- resource/alicloud_cloud_sso_access_assignment: Refactored the resource alicloud_cloud_sso_access_assignment; Added the field create_time. ([#8826](https://github.com/aliyun/terraform-provider-alicloud/issues/8826))
+- resource/alicloud_db_instance: support cold_data_enabled. ([#8827](https://github.com/aliyun/terraform-provider-alicloud/issues/8827))
+- resource/alicloud_security_group_rule: Added retry strategy. ([#8830](https://github.com/aliyun/terraform-provider-alicloud/issues/8830))
+- resource/alicloud_nas_access_point: Refactored the resource alicloud_nas_access_point; Added the field region_id. ([#8833](https://github.com/aliyun/terraform-provider-alicloud/issues/8833))
+- resource/alicloud_ecs_launch_template: Added the field image_options. ([#8834](https://github.com/aliyun/terraform-provider-alicloud/issues/8834))
+- data-source/alicloud_ecs_snapshots: Added retry strategy. ([#8831](https://github.com/aliyun/terraform-provider-alicloud/issues/8831))
+- resource/alicloud_db_instance: support template_id_list. ([#8835](https://github.com/aliyun/terraform-provider-alicloud/issues/8835))
+- resource/alicloud_dts_synchronization_instance: support more values for instance_class enum. ([#8839](https://github.com/aliyun/terraform-provider-alicloud/issues/8839))
+- docs: Imporves description for wafv3_instance. ([#8829](https://github.com/aliyun/terraform-provider-alicloud/issues/8829))
+- testcase: Improves test for common utils. ([#8816](https://github.com/aliyun/terraform-provider-alicloud/issues/8816))
+- testcase: Improves test for common utils. ([#8821](https://github.com/aliyun/terraform-provider-alicloud/issues/8821))
+- testcase: Improved alicloud_ga_acl testcase. ([#8825](https://github.com/aliyun/terraform-provider-alicloud/issues/8825))
 
 BUG FIXES:
 
-- resource/alicloud_instance: Fixed the diff error caused by field deletion_protection. [GH-8817]
-- resource/alicloud_cs_kubernetes: ignore system tags, fix panic when updating name. [GH-8818]
-- resource/alicloud_ga_acl_entry_attachment: Fixed the parse error caused by entry. [GH-8832]
-- resource/alicloud_vpc: fix bug while create vpc with system_route_table_route_propagation_enable valued true. [GH-8836]
+- resource/alicloud_instance: Fixed the diff error caused by field deletion_protection. ([#8817](https://github.com/aliyun/terraform-provider-alicloud/issues/8817))
+- resource/alicloud_cs_kubernetes: ignore system tags, fix panic when updating name. ([#8818](https://github.com/aliyun/terraform-provider-alicloud/issues/8818))
+- resource/alicloud_ga_acl_entry_attachment: Fixed the parse error caused by entry. ([#8832](https://github.com/aliyun/terraform-provider-alicloud/issues/8832))
+- resource/alicloud_vpc: fix bug while create vpc with system_route_table_route_propagation_enable valued true. ([#8836](https://github.com/aliyun/terraform-provider-alicloud/issues/8836))
 
 ## 1.253.0 (July 4, 2025)
 
