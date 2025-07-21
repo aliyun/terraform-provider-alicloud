@@ -471,6 +471,7 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 
 			}
 		}
+
 		paymentType := "PayAsYouGo"
 		if instanceChargeType == string(PrePaid) {
 			paymentType = "Subscription"
@@ -480,6 +481,7 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
+
 		for i := 0; i < len(instanceTypes); i++ {
 			instanceTypes[i].OriginalPrice = priceList[i]
 		}

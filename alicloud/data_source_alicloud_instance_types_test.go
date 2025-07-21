@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudECSInstanceTypesDataSource_basic(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -14,7 +14,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_basic(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceBasicConfig,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c4g8"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.id"),
@@ -75,11 +75,42 @@ func TestAccAlicloudECSInstanceTypesDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.nvme_support"),
 				),
 			},
+			{
+				Config: testAccCheckAliCloudInstanceTypesDataSourceBasicConfigSortedByPriceWithZone,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.cpu_core_count"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.memory_size"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.family"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.eni_amount"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.eni_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.primary_eni_queue_number"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.secondary_eni_queue_number"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.eni_ipv6_address_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.maximum_queue_number_per_eni"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.total_eni_queue_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.eni_private_ip_address_quantity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.availability_zones.#"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.zone", "instance_types.0.gpu.%", "2"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.gpu.amount"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.zone", "instance_types.0.gpu.category", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.zone", "instance_types.0.burstable_instance.%", "2"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.burstable_instance.initial_credit"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.burstable_instance.baseline_credit"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.zone", "instance_types.0.local_storage.%", "3"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.local_storage.capacity"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.local_storage.amount"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.zone", "instance_types.0.local_storage.category", ""),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "ids.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.zone", "instance_types.0.nvme_support"),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudECSInstanceTypesDataSource_gpu(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_gpu(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -87,7 +118,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_gpu(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceGpu,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceGpu,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.id"),
@@ -111,7 +142,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_gpu(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceGpuK8SMaster,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceGpuK8SMaster,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.#", "0"),
@@ -127,7 +158,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_gpu(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceGpuK8SWorker,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceGpuK8SWorker,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.id"),
@@ -154,7 +185,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_gpu(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceTypesDataSource_empty(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -162,7 +193,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_empty(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceEmpty,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceEmpty,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.empty"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.empty", "instance_types.#", "0"),
@@ -182,7 +213,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_empty(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -190,7 +221,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceK8Sc1g2,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceK8Sc1g2,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c1g2"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c1g2", "instance_types.#", "0"),
@@ -207,7 +238,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceK8Sc2g4,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceK8Sc2g4,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c2g4"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c2g4", "instance_types.0.id"),
@@ -233,7 +264,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -241,7 +272,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceK8ST5,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceK8ST5,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.t5"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.t5", "instance_types.#", "0"),
@@ -261,7 +292,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
+func TestAccAliCloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -269,7 +300,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudInstanceTypesDataSourceImageId,
+				Config: testAccCheckAliCloudInstanceTypesDataSourceImageId,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c4g8"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.id"),
@@ -295,7 +326,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudInstanceTypesDataSourceBasicConfig = `
+const testAccCheckAliCloudInstanceTypesDataSourceBasicConfig = `
 data "alicloud_instance_types" "c4g8" {
   cpu_core_count = 4
   memory_size    = 8
@@ -310,7 +341,7 @@ data "alicloud_instance_types" "c4g8" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceGpu = `
+const testAccCheckAliCloudInstanceTypesDataSourceGpu = `
 provider "alicloud" {
   region = "cn-hangzhou"
 }
@@ -321,7 +352,7 @@ data "alicloud_instance_types" "gpu" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceGpuK8SMaster = `
+const testAccCheckAliCloudInstanceTypesDataSourceGpuK8SMaster = `
 provider "alicloud" {
   region = "cn-hangzhou"
 }
@@ -332,7 +363,7 @@ data "alicloud_instance_types" "gpu" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceGpuK8SWorker = `
+const testAccCheckAliCloudInstanceTypesDataSourceGpuK8SWorker = `
 provider "alicloud" {
   region = "cn-hangzhou"
 }
@@ -343,13 +374,13 @@ data "alicloud_instance_types" "gpu" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceEmpty = `
+const testAccCheckAliCloudInstanceTypesDataSourceEmpty = `
 data "alicloud_instance_types" "empty" {
   instance_type_family = "ecs.fake"
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceK8Sc1g2 = `
+const testAccCheckAliCloudInstanceTypesDataSourceK8Sc1g2 = `
 data "alicloud_instance_types" "c1g2" {
   cpu_core_count       = 1
   memory_size          = 2
@@ -357,7 +388,7 @@ data "alicloud_instance_types" "c1g2" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceK8Sc2g4 = `
+const testAccCheckAliCloudInstanceTypesDataSourceK8Sc2g4 = `
 data "alicloud_instance_types" "c2g4" {
   cpu_core_count       = 2
   memory_size          = 4
@@ -365,7 +396,7 @@ data "alicloud_instance_types" "c2g4" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceK8ST5 = `
+const testAccCheckAliCloudInstanceTypesDataSourceK8ST5 = `
 data "alicloud_instance_types" "t5" {
   cpu_core_count       = 2
   memory_size          = 4
@@ -374,7 +405,7 @@ data "alicloud_instance_types" "t5" {
 }
 `
 
-const testAccCheckAlicloudInstanceTypesDataSourceImageId = `
+const testAccCheckAliCloudInstanceTypesDataSourceImageId = `
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
@@ -385,5 +416,11 @@ data "alicloud_instance_types" "c4g8" {
   image_id       = data.alicloud_images.default.ids.0
   cpu_core_count = 4
   memory_size    = 8
+}
+`
+
+const testAccCheckAliCloudInstanceTypesDataSourceBasicConfigSortedByPriceWithZone = `
+data "alicloud_instance_types" "zone" {
+  sorted_by                         = "Price"
 }
 `
