@@ -328,6 +328,7 @@ func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCo
 	}
 	return v.([]interface{}), nil
 }
+
 func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, paymentType string, modules []map[string]interface{}) (object []float64, err error) {
 	client := s.client
 	var response map[string]interface{}
@@ -341,23 +342,30 @@ func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, payme
 		"ProductCode":      productCode,
 		"ProductType":      productType,
 	}
+
 	if paymentType == "Subscription" {
 		request["ServicePeriodQuantity"] = 1
 		request["ServicePeriodUnit"] = "Month"
 		request["Quantity"] = 1
 	}
+
 	if paymentType == "PayAsYouGo" {
 		action = "GetPayAsYouGoPrice"
 		request["SubscriptionType"] = "PayAsYouGo"
 	}
+
 	moduleLength := len(modules)
+
 	for {
 		if len(modules) < ModulesSizeLimit {
+			moduleLength = len(modules)
+
 			request["ModuleList"] = modules
 		} else {
 			tmp := modules[:ModulesSizeLimit]
 			modules = modules[ModulesSizeLimit:]
 			moduleLength = len(tmp)
+
 			request["ModuleList"] = &tmp
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
