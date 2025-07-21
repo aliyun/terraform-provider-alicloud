@@ -414,3 +414,48 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 	}
 	return object, nil
 }
+
+func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewMseClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "GetNacosConfig"
+	request := map[string]interface{}{
+		"InstanceId":  parts[0],
+		"NamespaceId": parts[1],
+		"Group":       parts[2],
+		"DataId":      parts[3],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if _, ok := response["Configuration"]; !ok {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:Nacos:Config", id)), NotFoundMsg, ProviderERROR)
+	}
+	object = response["Configuration"].(map[string]interface{})
+
+	return object, nil
+
+}
