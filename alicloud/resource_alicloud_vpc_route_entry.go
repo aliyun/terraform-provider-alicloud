@@ -197,7 +197,7 @@ func resourceAliCloudVpcRouteEntryCreate(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectRouteEntryStatus", "SystemBusy", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "IncorrectStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectVpcStatus", "IncorrectHaVipStatus", "OperationConflict", "TaskConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectVSwitchStatus"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectRouteEntryStatus", "SystemBusy", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "IncorrectStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectVpcStatus", "IncorrectHaVipStatus", "OperationConflict", "TaskConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectVSwitchStatus", "IncorrectStatus.RouterInterface", "IncorrectStatus.PrefixList"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
