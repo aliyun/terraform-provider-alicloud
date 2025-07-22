@@ -77,7 +77,7 @@ resource "alicloud_instance" "default" {
   instance_name              = var.name
 }
 
-resource "alicloud_route_entry" "foo" {
+resource "alicloud_route_entry" "default" {
   route_table_id        = alicloud_vpc.default.route_table_id
   destination_cidrblock = "172.11.1.1/32"
   nexthop_type          = "Instance"
@@ -120,7 +120,17 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Route Entry. It formats as `<route_table_id>:<router_id>:<destination_cidrblock>:<nexthop_type>:<nexthop_id>`.
 
+## Timeouts
+
+-> **NOTE:** Available since v1.255.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 10 mins) Used when create the Route Entry.
+* `delete` - (Defaults to 10 mins) Used when delete the Route Entry.
+
 ## Import
+
+Route Entry can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_route_entry.example <route_table_id>:<router_id>:<destination_cidrblock>:<nexthop_type>:<nexthop_id>
