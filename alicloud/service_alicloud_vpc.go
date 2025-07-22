@@ -248,11 +248,11 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 
 func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 	v := &vpc.RouteEntry{}
-	var raw interface{}
 	parts, err := ParseResourceId(id, 5)
 	if err != nil {
 		return v, WrapError(err)
 	}
+
 	rtId, cidr, nexthop_type, nexthop_id := parts[0], parts[2], parts[3], parts[4]
 
 	request := vpc.CreateDescribeRouteTablesRequest()
@@ -264,9 +264,10 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 	}
 
 	for {
+		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTables(request)
 			})
 			if err != nil {
@@ -276,10 +277,9 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 				}
 				return resource.NonRetryableError(err)
 			}
-			raw = response
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		if err != nil {
 			return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -289,6 +289,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 		if len(response.RouteTables.RouteTable) < 1 {
 			return v, WrapErrorf(NotFoundErr("RouteEntry", id), NotFoundWithResponse, response)
 		}
+
 		for _, table := range response.RouteTables.RouteTable {
 			for _, entry := range table.RouteEntrys.RouteEntry {
 				if entry.DestinationCidrBlock == cidr && entry.NextHopType == nexthop_type && entry.InstanceId == nexthop_id {
@@ -296,6 +297,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 				}
 			}
 		}
+
 		if len(response.RouteTables.RouteTable) < PageSizeLarge {
 			break
 		}
