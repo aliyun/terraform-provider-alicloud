@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -43,6 +44,34 @@ func resourceAliCloudThreatDetectionAntiBruteForceRule() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"protocol_type": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ssh": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+						},
+						"sql_server": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+						},
+						"rdp": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+						},
+					},
+				},
+			},
 			"span": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -66,6 +95,29 @@ func resourceAliCloudThreatDetectionAntiBruteForceRuleCreate(d *schema.ResourceD
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
+
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("protocol_type"); !IsNil(v) {
+		ssh1, _ := jsonpath.Get("$[0].ssh", v)
+		if ssh1 != nil && ssh1 != "" {
+			objectDataLocalMap["Ssh"] = ssh1
+		}
+		rdp1, _ := jsonpath.Get("$[0].rdp", v)
+		if rdp1 != nil && rdp1 != "" {
+			objectDataLocalMap["Rdp"] = rdp1
+		}
+		sqlServer1, _ := jsonpath.Get("$[0].sql_server", v)
+		if sqlServer1 != nil && sqlServer1 != "" {
+			objectDataLocalMap["SqlServer"] = sqlServer1
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["ProtocolType"] = string(objectDataLocalMapJson)
+	}
 
 	if v, ok := d.GetOkExists("default_rule"); ok {
 		request["DefaultRule"] = v
@@ -123,6 +175,23 @@ func resourceAliCloudThreatDetectionAntiBruteForceRuleRead(d *schema.ResourceDat
 	d.Set("forbidden_time", objectRaw["ForbiddenTime"])
 	d.Set("span", objectRaw["Span"])
 
+	protocolTypeMaps := make([]map[string]interface{}, 0)
+	protocolTypeMap := make(map[string]interface{})
+	protocolTypeRaw := make(map[string]interface{})
+	if objectRaw["ProtocolType"] != nil {
+		protocolTypeRaw = objectRaw["ProtocolType"].(map[string]interface{})
+	}
+	if len(protocolTypeRaw) > 0 {
+		protocolTypeMap["rdp"] = protocolTypeRaw["Rdp"]
+		protocolTypeMap["sql_server"] = protocolTypeRaw["SqlServer"]
+		protocolTypeMap["ssh"] = protocolTypeRaw["Ssh"]
+
+		protocolTypeMaps = append(protocolTypeMaps, protocolTypeMap)
+	}
+	if err := d.Set("protocol_type", protocolTypeMaps); err != nil {
+		return err
+	}
+
 	uuidListRaw := make([]interface{}, 0)
 	if objectRaw["UuidList"] != nil {
 		uuidListRaw = objectRaw["UuidList"].([]interface{})
@@ -148,6 +217,32 @@ func resourceAliCloudThreatDetectionAntiBruteForceRuleUpdate(d *schema.ResourceD
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Id"] = d.Id()
+
+	if d.HasChange("protocol_type") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+
+		if v := d.Get("protocol_type"); v != nil {
+			ssh1, _ := jsonpath.Get("$[0].ssh", v)
+			if ssh1 != nil && (d.HasChange("protocol_type.0.ssh") || ssh1 != "") {
+				objectDataLocalMap["Ssh"] = ssh1
+			}
+			rdp1, _ := jsonpath.Get("$[0].rdp", v)
+			if rdp1 != nil && (d.HasChange("protocol_type.0.rdp") || rdp1 != "") {
+				objectDataLocalMap["Rdp"] = rdp1
+			}
+			sqlServer1, _ := jsonpath.Get("$[0].sql_server", v)
+			if sqlServer1 != nil && (d.HasChange("protocol_type.0.sql_server") || sqlServer1 != "") {
+				objectDataLocalMap["SqlServer"] = sqlServer1
+			}
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["ProtocolType"] = string(objectDataLocalMapJson)
+		}
+	}
 
 	if d.HasChange("default_rule") {
 		update = true
@@ -234,11 +329,4 @@ func resourceAliCloudThreatDetectionAntiBruteForceRuleDelete(d *schema.ResourceD
 	}
 
 	return nil
-}
-
-func convertThreatDetectionAntiBruteForceRuleRulesIdResponse(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
-	}
-	return source
 }
