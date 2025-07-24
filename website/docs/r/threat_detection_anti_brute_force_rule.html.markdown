@@ -60,6 +60,7 @@ The following arguments are supported:
   - `1440`: 24 hours
   - `10080`: 7 days
   - `52560000`: permanent
+* `protocol_type` - (Optional, Set, Available since v1.255.0) The types of protocols supported for interception by the brute force attack rule creation. See [`protocol_type`](#protocol_type) below.
 * `span` - (Required, Int) The maximum period of time during which failed logon attempts from an account can occur. Unit: minutes. Valid values:
 
   -`1`
@@ -71,6 +72,13 @@ The following arguments are supported:
 -> **NOTE:**   To configure a defense rule, you must specify the Span, FailCount, and ForbiddenTime parameters. If the number of failed logon attempts from an account within the minutes specified by Span exceeds the value specified by FailCount, the account cannot be used for logons within the minutes specified by ForbiddenTime.
 
 * `uuid_list` - (Required, Set) The UUIDs of the servers to which you want to apply the defense rule.
+
+### `protocol_type`
+
+The protocol_type supports the following:
+* `rdp` - (Optional) Whether to enable RDP interception. Default value: `on`. Valid values: `on`, `off`.
+* `sql_server` - (Optional) Whether to enable the SqlServer interception method. Default value: `off`. Valid values: `on`, `off`.
+* `ssh` - (Optional) Whether to enable SSH interception. Default value: `on`. Valid values: `on`, `off`.
 
 ## Attributes Reference
 
