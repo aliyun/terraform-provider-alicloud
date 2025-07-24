@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_threat_detection_image_event_operation
 
-Provides a Threat Detection Image Event Operation resource. Image Event Operation.
+Provides a Threat Detection Image Event Operation resource.
+
+Image Event Operation.
 
 For information about Threat Detection Image Event Operation and how to use it, see [What is Image Event Operation](https://www.alibabacloud.com/help/zh/security-center/developer-reference/api-sas-2018-12-03-addimageeventoperation).
 
@@ -32,7 +34,6 @@ variable "name" {
 provider "alicloud" {
   region = "cn-hangzhou"
 }
-
 
 resource "alicloud_threat_detection_image_event_operation" "default" {
   event_type     = "maliciousFile"
@@ -60,12 +61,17 @@ EOF
 ## Argument Reference
 
 The following arguments are supported:
-* `conditions` - (Optional, ForceNew) Event Conditions.
-* `event_key` - (Optional, ForceNew) Image Event Key.
-* `event_name` - (Optional, ForceNew) Image Event Name.
-* `event_type` - (Optional, ForceNew, Computed) Image Event Type.
-* `operation_code` - (Optional, ForceNew) Event Operation Code.
-* `scenarios` - (Optional) Event Scenarios.
+* `conditions` - (Required) The rule conditions. The value is in the JSON format. For more information, see [How to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-addimageeventoperation). **NOTE:** From version 1.255.0, `conditions` can be modified.
+* `event_key` - (Optional, ForceNew) The keyword of the alert item.
+* `event_name` - (Optional, ForceNew) The name of the alert item.
+* `event_type` - (Required, ForceNew) The alert type.
+* `note` - (Optional, Available since v1.255.0) The remarks.
+* `operation_code` - (Required, ForceNew) The operation code.
+* `scenarios` - (Optional) The application scope of the rule.
+* `source` - (Optional, ForceNew, Available since v1.255.0) The source of the whitelist. Valid values:
+
+  - `default`: image.
+  - `agentless`: agentless detection.
 
 ## Attributes Reference
 
