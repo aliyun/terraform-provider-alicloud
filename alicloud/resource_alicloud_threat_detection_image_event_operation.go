@@ -29,8 +29,7 @@ func resourceAliCloudThreatDetectionImageEventOperation() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"conditions": {
 				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Required: true,
 			},
 			"event_key": {
 				Type:     schema.TypeString,
@@ -44,20 +43,31 @@ func resourceAliCloudThreatDetectionImageEventOperation() *schema.Resource {
 			},
 			"event_type": {
 				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
+				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"sensitiveFile", "maliciousFile"}, false),
+				ValidateFunc: StringInSlice([]string{"sensitiveFile", "maliciousFile", "buildRisk"}, false),
+			},
+			"note": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"operation_code": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"whitelist"}, false),
 			},
 			"scenarios": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+			},
+			"source": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"agentless", "default"}, false),
 			},
 		},
 	}
@@ -74,20 +84,20 @@ func resourceAliCloudThreatDetectionImageEventOperationCreate(d *schema.Resource
 	var err error
 	request = make(map[string]interface{})
 
-	if v, ok := d.GetOk("event_type"); ok {
-		request["EventType"] = v
+	if v, ok := d.GetOk("event_name"); ok {
+		request["EventName"] = v
 	}
 	if v, ok := d.GetOk("event_key"); ok {
 		request["EventKey"] = v
 	}
-	if v, ok := d.GetOk("event_name"); ok {
-		request["EventName"] = v
+	request["OperationCode"] = d.Get("operation_code")
+	request["EventType"] = d.Get("event_type")
+	if v, ok := d.GetOk("note"); ok {
+		request["Note"] = v
 	}
-	if v, ok := d.GetOk("operation_code"); ok {
-		request["OperationCode"] = v
-	}
-	if v, ok := d.GetOk("conditions"); ok {
-		request["Conditions"] = v
+	request["Conditions"] = d.Get("conditions")
+	if v, ok := d.GetOk("source"); ok {
+		request["Source"] = v
 	}
 	if v, ok := d.GetOk("scenarios"); ok {
 		request["Scenarios"] = v
@@ -95,7 +105,6 @@ func resourceAliCloudThreatDetectionImageEventOperationCreate(d *schema.Resource
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -103,9 +112,9 @@ func resourceAliCloudThreatDetectionImageEventOperationCreate(d *schema.Resource
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_image_event_operation", action, AlibabaCloudSdkGoERROR)
@@ -135,8 +144,10 @@ func resourceAliCloudThreatDetectionImageEventOperationRead(d *schema.ResourceDa
 	d.Set("event_key", objectRaw["EventKey"])
 	d.Set("event_name", objectRaw["EventName"])
 	d.Set("event_type", objectRaw["EventType"])
+	d.Set("note", objectRaw["Note"])
 	d.Set("operation_code", objectRaw["OperationCode"])
 	d.Set("scenarios", objectRaw["Scenarios"])
+	d.Set("source", objectRaw["Source"])
 
 	return nil
 }
@@ -147,21 +158,36 @@ func resourceAliCloudThreatDetectionImageEventOperationUpdate(d *schema.Resource
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdateImageEventOperation"
+
 	var err error
+	action := "UpdateImageEventOperation"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["Id"] = d.Id()
+	request["Id"] = d.Id()
+
+	if d.HasChange("note") {
+		update = true
+	}
+	if v, ok := d.GetOk("note"); ok {
+		request["Note"] = v
+	}
+
+	if d.HasChange("conditions") {
+		update = true
+	}
+	request["Conditions"] = d.Get("conditions")
+
 	if d.HasChange("scenarios") {
 		update = true
-		request["Scenarios"] = d.Get("scenarios")
+	}
+	if v, ok := d.GetOk("scenarios"); ok {
+		request["Scenarios"] = v
 	}
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -169,9 +195,9 @@ func resourceAliCloudThreatDetectionImageEventOperationUpdate(d *schema.Resource
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -189,7 +215,7 @@ func resourceAliCloudThreatDetectionImageEventOperationDelete(d *schema.Resource
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["Id"] = d.Id()
+	request["Id"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -202,11 +228,14 @@ func resourceAliCloudThreatDetectionImageEventOperationDelete(d *schema.Resource
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
