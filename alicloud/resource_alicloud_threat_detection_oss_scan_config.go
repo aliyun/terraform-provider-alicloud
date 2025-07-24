@@ -36,6 +36,19 @@ func resourceAliCloudThreatDetectionOssScanConfig() *schema.Resource {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"decompress_max_file_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"decompress_max_layer": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"decryption_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"enable": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -53,6 +66,10 @@ func resourceAliCloudThreatDetectionOssScanConfig() *schema.Resource {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"last_modified_start_time": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"oss_scan_config_name": {
 				Type:     schema.TypeString,
@@ -82,40 +99,52 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 	var err error
 	request = make(map[string]interface{})
 
-	request["Enable"] = d.Get("enable")
-	if v, ok := d.GetOk("scan_day_list"); ok {
-		scanDayListMaps := v.(*schema.Set).List()
-		request["ScanDayList"] = scanDayListMaps
+	if v, ok := d.GetOkExists("decompress_max_file_count"); ok {
+		request["DecompressMaxFileCount"] = v
 	}
-
-	if v, ok := d.GetOk("bucket_name_list"); ok {
-		bucketNameListMaps := v.(*schema.Set).List()
-		request["BucketNameList"] = bucketNameListMaps
-	}
-
 	if v, ok := d.GetOk("key_suffix_list"); ok {
-		keySuffixListMaps := v.(*schema.Set).List()
-		request["KeySuffixList"] = keySuffixListMaps
+		keySuffixListMapsArray := v.(*schema.Set).List()
+		request["KeySuffixList"] = keySuffixListMapsArray
 	}
 
 	request["StartTime"] = d.Get("start_time")
-	request["EndTime"] = d.Get("end_time")
+	if v, ok := d.GetOkExists("all_key_prefix"); ok {
+		request["AllKeyPrefix"] = v
+	}
+	if v, ok := d.GetOkExists("decompress_max_layer"); ok {
+		request["DecompressMaxLayer"] = v
+	}
 	if v, ok := d.GetOk("key_prefix_list"); ok {
-		keyPrefixListMaps := v.(*schema.Set).List()
-		request["KeyPrefixList"] = keyPrefixListMaps
+		keyPrefixListMapsArray := v.(*schema.Set).List()
+		request["KeyPrefixList"] = keyPrefixListMapsArray
+	}
+
+	request["Enable"] = d.Get("enable")
+	if v, ok := d.GetOkExists("last_modified_start_time"); ok {
+		request["LastModifiedStartTime"] = v
+	}
+	if v, ok := d.GetOk("decryption_list"); ok {
+		decryptionListMapsArray := v.([]interface{})
+		request["DecryptionList"] = decryptionListMapsArray
+	}
+
+	if v, ok := d.GetOk("scan_day_list"); ok {
+		scanDayListMapsArray := v.(*schema.Set).List()
+		request["ScanDayList"] = scanDayListMapsArray
 	}
 
 	if v, ok := d.GetOk("oss_scan_config_name"); ok {
 		request["Name"] = v
 	}
-	if v, ok := d.GetOkExists("all_key_prefix"); ok {
-		request["AllKeyPrefix"] = v
+	if v, ok := d.GetOk("bucket_name_list"); ok {
+		bucketNameListMapsArray := v.(*schema.Set).List()
+		request["BucketNameList"] = bucketNameListMapsArray
 	}
 
+	request["EndTime"] = d.Get("end_time")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,9 +152,9 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_oss_scan_config", action, AlibabaCloudSdkGoERROR)
@@ -151,35 +180,44 @@ func resourceAliCloudThreatDetectionOssScanConfigRead(d *schema.ResourceData, me
 	}
 
 	d.Set("all_key_prefix", objectRaw["AllKeyPrefix"])
+	d.Set("decompress_max_file_count", objectRaw["DecompressMaxFileCount"])
+	d.Set("decompress_max_layer", objectRaw["DecompressMaxLayer"])
 	d.Set("enable", objectRaw["Enable"])
 	d.Set("end_time", objectRaw["EndTime"])
+	d.Set("last_modified_start_time", objectRaw["LastModifiedStartTime"])
 	d.Set("oss_scan_config_name", objectRaw["Name"])
 	d.Set("start_time", objectRaw["StartTime"])
 
-	bucketNameList1Raw := make([]interface{}, 0)
+	bucketNameListRaw := make([]interface{}, 0)
 	if objectRaw["BucketNameList"] != nil {
-		bucketNameList1Raw = objectRaw["BucketNameList"].([]interface{})
+		bucketNameListRaw = objectRaw["BucketNameList"].([]interface{})
 	}
 
-	d.Set("bucket_name_list", bucketNameList1Raw)
-	keyPrefixList1Raw := make([]interface{}, 0)
+	d.Set("bucket_name_list", bucketNameListRaw)
+	decryptionListRaw := make([]interface{}, 0)
+	if objectRaw["DecryptionList"] != nil {
+		decryptionListRaw = objectRaw["DecryptionList"].([]interface{})
+	}
+
+	d.Set("decryption_list", decryptionListRaw)
+	keyPrefixListRaw := make([]interface{}, 0)
 	if objectRaw["KeyPrefixList"] != nil {
-		keyPrefixList1Raw = objectRaw["KeyPrefixList"].([]interface{})
+		keyPrefixListRaw = objectRaw["KeyPrefixList"].([]interface{})
 	}
 
-	d.Set("key_prefix_list", keyPrefixList1Raw)
-	keySuffixList1Raw := make([]interface{}, 0)
+	d.Set("key_prefix_list", keyPrefixListRaw)
+	keySuffixListRaw := make([]interface{}, 0)
 	if objectRaw["KeySuffixList"] != nil {
-		keySuffixList1Raw = objectRaw["KeySuffixList"].([]interface{})
+		keySuffixListRaw = objectRaw["KeySuffixList"].([]interface{})
 	}
 
-	d.Set("key_suffix_list", keySuffixList1Raw)
-	scanDayList1Raw := make([]interface{}, 0)
+	d.Set("key_suffix_list", keySuffixListRaw)
+	scanDayListRaw := make([]interface{}, 0)
 	if objectRaw["ScanDayList"] != nil {
-		scanDayList1Raw = objectRaw["ScanDayList"].([]interface{})
+		scanDayListRaw = objectRaw["ScanDayList"].([]interface{})
 	}
 
-	d.Set("scan_day_list", scanDayList1Raw)
+	d.Set("scan_day_list", scanDayListRaw)
 
 	return nil
 }
@@ -190,21 +228,89 @@ func resourceAliCloudThreatDetectionOssScanConfigUpdate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdateOssScanConfig"
+
 	var err error
+	action := "UpdateOssScanConfig"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["Id"] = d.Id()
+	request["Id"] = d.Id()
+
+	if d.HasChange("decompress_max_file_count") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("decompress_max_file_count"); ok {
+		request["DecompressMaxFileCount"] = v
+	}
+
+	if d.HasChange("key_suffix_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("key_suffix_list"); ok {
+		keySuffixListMapsArray := v.(*schema.Set).List()
+		request["KeySuffixList"] = keySuffixListMapsArray
+	}
+
+	if d.HasChange("start_time") {
+		update = true
+	}
+	request["StartTime"] = d.Get("start_time")
+
+	if d.HasChange("all_key_prefix") {
+		update = true
+
+		if v, ok := d.GetOkExists("all_key_prefix"); ok {
+			request["AllKeyPrefix"] = v
+		}
+	}
+
+	if d.HasChange("decompress_max_layer") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("decompress_max_layer"); ok {
+		request["DecompressMaxLayer"] = v
+	}
+
+	if d.HasChange("key_prefix_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("key_prefix_list"); ok {
+		keyPrefixListMaps := v.(*schema.Set).List()
+		request["KeyPrefixList"] = keyPrefixListMaps
+	}
+
 	if d.HasChange("enable") {
 		update = true
 	}
 	request["Enable"] = d.Get("enable")
+
+	if d.HasChange("last_modified_start_time") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("last_modified_start_time"); ok {
+		request["LastModifiedStartTime"] = v
+	}
+
+	if d.HasChange("decryption_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("decryption_list"); ok {
+		decryptionListMapsArray := v.([]interface{})
+		request["DecryptionList"] = decryptionListMapsArray
+	}
+
 	if d.HasChange("scan_day_list") {
 		update = true
 	}
 	if v, ok := d.GetOk("scan_day_list"); ok {
 		scanDayListMaps := v.(*schema.Set).List()
 		request["ScanDayList"] = scanDayListMaps
+	}
+
+	if d.HasChange("oss_scan_config_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_scan_config_name"); ok {
+		request["Name"] = v
 	}
 
 	if d.HasChange("bucket_name_list") {
@@ -215,45 +321,14 @@ func resourceAliCloudThreatDetectionOssScanConfigUpdate(d *schema.ResourceData, 
 		request["BucketNameList"] = bucketNameListMaps
 	}
 
-	if d.HasChange("key_suffix_list") {
-		update = true
-	}
-	if v, ok := d.GetOk("key_suffix_list"); ok {
-		keySuffixListMaps := v.(*schema.Set).List()
-		request["KeySuffixList"] = keySuffixListMaps
-	}
-
-	if d.HasChange("start_time") {
-		update = true
-	}
-	request["StartTime"] = d.Get("start_time")
 	if d.HasChange("end_time") {
 		update = true
 	}
 	request["EndTime"] = d.Get("end_time")
-	if d.HasChange("key_prefix_list") {
-		update = true
-	}
-	if v, ok := d.GetOk("key_prefix_list"); ok {
-		keyPrefixListMaps := v.(*schema.Set).List()
-		request["KeyPrefixList"] = keyPrefixListMaps
-	}
-
-	if d.HasChange("oss_scan_config_name") {
-		update = true
-	}
-	request["Name"] = d.Get("oss_scan_config_name")
-
-	if d.HasChange("all_key_prefix") {
-		update = true
-	}
-	request["AllKeyPrefix"] = d.Get("all_key_prefix")
-
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -261,9 +336,9 @@ func resourceAliCloudThreatDetectionOssScanConfigUpdate(d *schema.ResourceData, 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -281,7 +356,7 @@ func resourceAliCloudThreatDetectionOssScanConfigDelete(d *schema.ResourceData, 
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["Id"] = d.Id()
+	request["Id"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -294,11 +369,14 @@ func resourceAliCloudThreatDetectionOssScanConfigDelete(d *schema.ResourceData, 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
