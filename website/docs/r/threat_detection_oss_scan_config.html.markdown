@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_threat_detection_oss_scan_config
 
-Provides a Threat Detection Oss Scan Config resource. Oss detection configuration.
+Provides a Threat Detection Oss Scan Config resource.
+
+Oss detection configuration.
 
 For information about Threat Detection Oss Scan Config and how to use it, see [What is Oss Scan Config](https://www.alibabacloud.com/help/zh/security-center/developer-reference/api-sas-2018-12-03-createossscanconfig/).
 
@@ -91,15 +93,21 @@ resource "alicloud_threat_detection_oss_scan_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `all_key_prefix` - (Optional) Match all prefixes.
-* `bucket_name_list` - (Required) Bucket List.
-* `enable` - (Required) Enable configuration.
-* `end_time` - (Required) End time, hours, minutes and seconds.
-* `key_prefix_list` - (Optional) File prefix list.
-* `key_suffix_list` - (Required) File Suffix List.
-* `oss_scan_config_name` - (Optional) Configuration Name.
-* `scan_day_list` - (Required) Scan cycle.
-* `start_time` - (Required) Start time, hours, minutes and seconds.
+* `all_key_prefix` - (Optional, Computed) Indicates whether the prefixes of all objects are matched.
+* `bucket_name_list` - (Required, List) The names of the buckets.
+* `decompress_max_file_count` - (Optional, Int, Available since v1.255.0) The maximum number of objects that can be extracted during decompression. Valid values: 1 to 1000. If the maximum number of objects that can be extracted is reached, the decompression operation immediately ends and the detection of extracted objects is not affected.
+* `decompress_max_layer` - (Optional, Int, Available since v1.255.0) The maximum number of decompression levels when multi-level packages are decompressed. Valid values: 1 to 5. If the maximum number of decompression levels is reached, the decompression operation immediately ends and the detection of extracted objects is not affected.
+* `decryption_list` - (Optional, List, Available since v1.255.0) The decryption methods.
+* `enable` - (Required, Int) Indicates whether the check policy is enabled. Valid values:
+  - `1`: enabled.
+  - `0`: disabled.
+* `end_time` - (Required) The end time of the check. The time is in the HH:mm:ss format.
+* `key_prefix_list` - (Optional, List) The prefixes of the objects.
+* `key_suffix_list` - (Required, List) The suffixes of the objects that are checked.
+* `last_modified_start_time` - (Optional, Int, Available since v1.255.0) The timestamp when the object was last modified. The time must be later than the timestamp that you specify. Unit: milliseconds.
+* `oss_scan_config_name` - (Optional) The policy name.
+* `scan_day_list` - (Required, List) The days when the check is performed. The value indicates the days of the week.
+* `start_time` - (Required) The start time of the check. The time is in the HH:mm:ss format.
 
 ## Attributes Reference
 
