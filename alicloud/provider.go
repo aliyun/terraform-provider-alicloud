@@ -903,6 +903,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_actiontrail_advanced_query_template":                  resourceAliCloudActiontrailAdvancedQueryTemplate(),
+			"alicloud_eflo_node_group_attachment":                           resourceAliCloudEfloNodeGroupAttachment(),
 			"alicloud_message_service_event_rule":                           resourceAliCloudMessageServiceEventRule(),
 			"alicloud_esa_custom_scene_policy":                              resourceAliCloudEsaCustomScenePolicy(),
 			"alicloud_esa_version":                                          resourceAliCloudEsaVersion(),
