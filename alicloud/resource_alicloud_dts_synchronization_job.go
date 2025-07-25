@@ -89,14 +89,14 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, true),
+				ValidateFunc:     StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
 				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG"}, true),
+				ValidateFunc:     StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
 				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_instance_id": {
@@ -157,14 +157,14 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, true),
+				ValidateFunc:     StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
 				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG"}, true),
+				ValidateFunc:     StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
 				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_instance_id": {
