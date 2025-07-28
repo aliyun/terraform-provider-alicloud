@@ -43,13 +43,13 @@ Please use resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluste
 
 ## Example Usage
 
+ACK cluster
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=2b10288a-5d97-97e5-2d3d-c520b89b2684ba550ecf&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.2b10288a5d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=ce54405e-ae03-acf3-cb47-c70f1cf3301cfe60bc28&activeTab=example&spm=docs.r.cs_managed_kubernetes.0.ce54405eae&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
 
-ACK cluster
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -175,6 +175,12 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 ```
 
 ACK Cluster with Auto Mode
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_managed_kubernetes&exampleId=cb2eda1c-bda9-887b-b9d5-9a62ae72a41422673545&activeTab=example&spm=docs.r.cs_managed_kubernetes.1.cb2eda1cbd&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "auto-mode"
