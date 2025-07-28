@@ -1,4 +1,25 @@
 ## 1.255.0 (Unreleased)
+
+- **New Resource:** `alicloud_message_service_event_rule` [GH-8771]
+- **New Resource:** `alicloud_eflo_node_group_attachment` [GH-8848]
+- **New Resource:** `alicloud_actiontrail_advanced_query_template` [GH-8850]
+- **New Resource:** `alicloud_esa_origin_client_certificate` [GH-8851]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_managed_kubernetes: support auto_mode. [GH-8828]
+- resource/alicloud_route_entry: Improved retry strategy. [GH-8842]
+- resource/alicloud_vpc_route_entry: Added retry strategy for error code IncorrectStatus.RouterInterface, IncorrectStatus.PrefixList. [GH-8843]
+- resource/alicloud_threat_detection_anti_brute_force_rule: Added the field protocol_type; Improved alicloud_threat_detection_anti_brute_force_rule testcase. [GH-8844]
+- resource/alicloud_threat_detection_image_event_operation: Added the field note, source; Removed the ForceNew for field conditions; Improved alicloud_threat_detection_image_event_operation testcase. [GH-8846]
+- resource/alicloud_threat_detection_oss_scan_config: Added the field decompress_max_file_count, decompress_max_layer, decryption_list, last_modified_start_time; Improved alicloud_threat_detection_oss_scan_config testcase. [GH-8847]
+- resource/alicloud_dts_synchronization_job: improve ValidateFunc for source_endpoint_instance_type and destination_endpoint_instance_type. [GH-8849]
+
+BUG FIXES:
+
+- resource/alicloud_polardb_endpoint: fix for net_type field logic; resource/alicloud_polardb_cluster_endpoint: fix for net_type field logic; resource/alicloud_polardb_primary_endpoint: fix for net_type field logic; resource/alicloud_polardb_cluster: support steadyServerless for PostgreSQL/Oracle 14, support UpgradeFromPolarDB, fix unexpected diff caused by operation parameters. [GH-8762]
+- data-source/alicloud_instance_types: Fixed the endless loop error caused by setting sorted_by to Price. [GH-8841]
+
 ## 1.254.0 (July 18, 2025)
 
 - **New Resource:** `alicloud_rds_whitelist_template` ([#8820](https://github.com/aliyun/terraform-provider-alicloud/issues/8820))
