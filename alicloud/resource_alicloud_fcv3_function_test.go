@@ -450,6 +450,12 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 					"runtime":       "python3.9",
 					"timeout":       "6",
 					"handler":       "index.handler",
+					"invocation_restriction": []map[string]interface{}{
+						{
+							"disable": "true",
+							"reason":  "test",
+						},
+					},
 					"code": []map[string]interface{}{
 						{
 							"oss_bucket_name": "${alicloud_oss_bucket.default.bucket}",
@@ -540,6 +546,11 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 							"checksum":        "4270285996107335518",
 						},
 					},
+					"invocation_restriction": []map[string]interface{}{
+						{
+							"disable": "false",
+						},
+					},
 					"description": "update",
 					"environment_variables": map[string]interface{}{
 						"\"TestEnvKey\"": "TestEnvVal2",
@@ -607,6 +618,12 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"memory_size": "512",
 					"timeout":     "3",
+					"invocation_restriction": []map[string]interface{}{
+						{
+							"disable": "true",
+							"reason":  "test-change",
+						},
+					},
 					"instance_lifecycle_config": []map[string]interface{}{
 						{
 							"initializer": []map[string]interface{}{
@@ -765,7 +782,7 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 					"gpu_config": []map[string]interface{}{
 						{
 							"gpu_type":        "fc.gpu.tesla.1",
-							"gpu_memory_size": "2048",
+							"gpu_memory_size": "16384",
 						},
 					},
 					// there is a bug in api,
@@ -818,7 +835,7 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 					"gpu_config": []map[string]interface{}{
 						{
 							"gpu_type":        "fc.gpu.ampere.1",
-							"gpu_memory_size": "4096",
+							"gpu_memory_size": "24576",
 						},
 					},
 				}),

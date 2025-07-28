@@ -69,6 +69,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<version_id>`.
+* `version_id` - Function Version
 * `create_time` - The creation time of the resource
 * `last_modified_time` - (Available since v1.234.0) Update time
 
