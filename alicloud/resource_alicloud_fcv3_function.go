@@ -35,24 +35,20 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"zip_file": {
-							Type:      schema.TypeString,
-							Optional:  true,
-							Sensitive: true,
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"checksum": {
-							Type:      schema.TypeString,
-							Optional:  true,
-							Sensitive: true,
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"oss_object_name": {
-							Type:      schema.TypeString,
-							Optional:  true,
-							Sensitive: true,
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"oss_bucket_name": {
-							Type:      schema.TypeString,
-							Optional:  true,
-							Sensitive: true,
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -372,6 +368,27 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"invocation_restriction": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"last_modified_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"disable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"reason": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"last_modified_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -389,10 +406,9 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Computed: true,
 			},
 			"layers": {
-				Type:      schema.TypeList,
-				Optional:  true,
-				Sensitive: true,
-				Elem:      &schema.Schema{Type: schema.TypeString},
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"log_config": {
 				Type:     schema.TypeList,
@@ -1309,6 +1325,22 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 			return err
 		}
 	}
+	invocationRestrictionMaps := make([]map[string]interface{}, 0)
+	invocationRestrictionMap := make(map[string]interface{})
+	invocationRestrictionRaw := make(map[string]interface{})
+	if objectRaw["invocationRestriction"] != nil {
+		invocationRestrictionRaw = objectRaw["invocationRestriction"].(map[string]interface{})
+	}
+	if len(invocationRestrictionRaw) > 0 {
+		invocationRestrictionMap["disable"] = invocationRestrictionRaw["disable"]
+		invocationRestrictionMap["last_modified_time"] = invocationRestrictionRaw["lastModifiedTime"]
+		invocationRestrictionMap["reason"] = invocationRestrictionRaw["reason"]
+
+		invocationRestrictionMaps = append(invocationRestrictionMaps, invocationRestrictionMap)
+	}
+	if err := d.Set("invocation_restriction", invocationRestrictionMaps); err != nil {
+		return err
+	}
 
 	d.Set("function_name", d.Id())
 
@@ -1322,6 +1354,80 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
+	if d.HasChange("invocation_restriction.0.disable") {
+		var err error
+		fcv3ServiceV2 := Fcv3ServiceV2{client}
+		object, err := fcv3ServiceV2.DescribeFcv3Function(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("invocation_restriction.0.disable").(bool)
+		disable, _ := jsonpath.Get("$.invocationRestriction.disable", object)
+		if formatBool(disable) != target {
+			if target == true {
+				functionName := d.Id()
+				action := fmt.Sprintf("/2023-03-30/functions/%s/invoke/disable", functionName)
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["functionName"] = d.Id()
+
+				if v, ok := d.GetOk("invocation_restriction"); ok {
+					jsonPathResult, err := jsonpath.Get("$[0].reason", v)
+					if err == nil && jsonPathResult != "" {
+						request["reason"] = jsonPathResult
+					}
+				}
+				body = request
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+			if target == false {
+				functionName := d.Id()
+				action := fmt.Sprintf("/2023-03-30/functions/%s/invoke/enable", functionName)
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["functionName"] = d.Id()
+
+				body = request
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
 
 	functionName := d.Id()
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)

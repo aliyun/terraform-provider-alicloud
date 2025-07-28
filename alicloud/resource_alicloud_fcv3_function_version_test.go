@@ -55,6 +55,7 @@ func TestAccAliCloudFcv3FunctionVersion_basic7234(t *testing.T) {
 
 var AlicloudFcv3FunctionVersionMap7234 = map[string]string{
 	"create_time": CHECKSET,
+	"version_id":  CHECKSET,
 }
 
 func AlicloudFcv3FunctionVersionBasicDependence7234(name string) string {

@@ -43,6 +43,10 @@ func resourceAliCloudFcv3FunctionVersion() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"version_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
