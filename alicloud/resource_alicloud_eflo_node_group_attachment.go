@@ -64,7 +64,7 @@ func resourceAliCloudEfloNodeGroupAttachment() *schema.Resource {
 			},
 			"login_password": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"node_group_id": {
 				Type:     schema.TypeString,

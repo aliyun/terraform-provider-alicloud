@@ -54,7 +54,7 @@ The following arguments are supported:
 * `cluster_id` - (Optional, ForceNew, Computed) Cluster ID
 * `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
 * `hostname` - (Required, ForceNew) Node hostname
-* `login_password` - (Required) Node login password
+* `login_password` - (Optional) Node login password
 * `node_group_id` - (Optional, ForceNew, Computed) Node group ID
 * `node_id` - (Optional, ForceNew, Computed) Node ID
 * `user_data` - (Optional) User-defined data
