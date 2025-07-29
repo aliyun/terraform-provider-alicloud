@@ -30,8 +30,8 @@ func resourceAliCloudNasAccessGroup() *schema.Resource {
 			"access_group_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ExactlyOneOf: []string{"access_group_name", "name"},
+				Computed:     true,
 				ForceNew:     true,
 			},
 			"access_group_type": {
@@ -56,6 +56,10 @@ func resourceAliCloudNasAccessGroup() *schema.Resource {
 				ForceNew:     true,
 				Default:      "standard",
 				ValidateFunc: StringInSlice([]string{"standard", "extreme"}, true),
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"name": {
 				Type:       schema.TypeString,
@@ -105,7 +109,6 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -113,9 +116,9 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_group", action, AlibabaCloudSdkGoERROR)
@@ -143,12 +146,9 @@ func resourceAliCloudNasAccessGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("access_group_type", objectRaw["AccessGroupType"])
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
+	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("access_group_name", objectRaw["AccessGroupName"])
 	d.Set("file_system_type", objectRaw["FileSystemType"])
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("access_group_name", parts[0])
-	d.Set("file_system_type", parts[1])
 
 	d.Set("name", d.Get("access_group_name"))
 	d.Set("type", d.Get("access_group_type"))
@@ -177,7 +177,6 @@ func resourceAliCloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -185,9 +184,9 @@ func resourceAliCloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -214,17 +213,20 @@ func resourceAliCloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

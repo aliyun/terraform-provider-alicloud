@@ -37,7 +37,7 @@ func init() {
 func testSweepNasAccessGroup(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -100,15 +100,15 @@ func testSweepNasAccessGroup(region string) error {
 func TestAccAliCloudNASAccessGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroup0)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroup0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudNasAccessGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence0)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudNasAccessGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -162,15 +162,15 @@ func TestAccAliCloudNASAccessGroup_basic(t *testing.T) {
 func TestAccAliCloudNASAccessGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroup0)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroup0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudNasAccessGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence0)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudNasAccessGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -221,11 +221,13 @@ func TestAccAliCloudNASAccessGroup_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudNasAccessGroup0 = map[string]string{
+var AliCloudNasAccessGroup0 = map[string]string{
+	"create_time":      CHECKSET,
 	"file_system_type": CHECKSET,
+	"region_id":        CHECKSET,
 }
 
-func AlicloudNasAccessGroupBasicDependence0(name string) string {
+func AliCloudNasAccessGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -233,7 +235,7 @@ variable "name" {
 `, name)
 }
 
-func TestUnitAlicloudNASAccessGroup(t *testing.T) {
+func TestUnitAliCloudNASAccessGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)
@@ -640,7 +642,7 @@ func TestUnitAlicloudNASAccessGroup(t *testing.T) {
 func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap5750)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5750)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
@@ -648,7 +650,7 @@ func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence5750)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5750)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -715,12 +717,13 @@ func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 	})
 }
 
-var AlicloudNasAccessGroupMap5750 = map[string]string{
+var AliCloudNasAccessGroupMap5750 = map[string]string{
 	"create_time":      CHECKSET,
 	"file_system_type": CHECKSET,
+	"region_id":        CHECKSET,
 }
 
-func AlicloudNasAccessGroupBasicDependence5750(name string) string {
+func AliCloudNasAccessGroupBasicDependence5750(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -734,7 +737,7 @@ variable "name" {
 func TestAccAliCloudNasAccessGroup_basic5733(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap5733)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5733)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
@@ -742,7 +745,7 @@ func TestAccAliCloudNasAccessGroup_basic5733(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence5733)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5733)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -809,12 +812,13 @@ func TestAccAliCloudNasAccessGroup_basic5733(t *testing.T) {
 	})
 }
 
-var AlicloudNasAccessGroupMap5733 = map[string]string{
+var AliCloudNasAccessGroupMap5733 = map[string]string{
 	"create_time":      CHECKSET,
 	"file_system_type": CHECKSET,
+	"region_id":        CHECKSET,
 }
 
-func AlicloudNasAccessGroupBasicDependence5733(name string) string {
+func AliCloudNasAccessGroupBasicDependence5733(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -828,7 +832,7 @@ variable "name" {
 func TestAccAliCloudNasAccessGroup_basic5750_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap5750)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5750)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
@@ -836,7 +840,7 @@ func TestAccAliCloudNasAccessGroup_basic5750_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence5750)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5750)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -875,7 +879,7 @@ func TestAccAliCloudNasAccessGroup_basic5750_twin(t *testing.T) {
 func TestAccAliCloudNasAccessGroup_basic5733_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap5733)
+	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5733)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
@@ -883,7 +887,7 @@ func TestAccAliCloudNasAccessGroup_basic5733_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence5733)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5733)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
