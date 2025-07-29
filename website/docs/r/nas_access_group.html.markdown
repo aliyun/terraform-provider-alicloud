@@ -49,14 +49,15 @@ The following arguments are supported:
   - standard (default): Universal NAS
   - extreme: extreme NAS
 The following arguments will be discarded. Please use new fields as soon as possible:
-* `name` - (Deprecated since v1.218.0). Field 'name' has been deprecated from provider version 1.218.0. New field 'access_group_name' instead.
-* `type` - (Deprecated since v1.218.0). Field 'type' has been deprecated from provider version 1.218.0. New field 'access_group_type' instead.
+* `name` - (Deprecated since v1.218.0) Field 'name' has been deprecated from provider version 1.218.0. New field 'access_group_name' instead.
+* `type` - (Deprecated since v1.218.0) Field 'type' has been deprecated from provider version 1.218.0. New field 'access_group_type' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<access_group_name>:<file_system_type>`.
-* `create_time` - Creation time.
+* `create_time` - (Available since v1.218.0) Creation time.
+* `region_id` - (Available since v1.256.0) The region ID.
 
 ## Timeouts
 
