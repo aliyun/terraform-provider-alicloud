@@ -41,7 +41,7 @@ func testSweepActiontrailTrail(region string) error {
 	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -94,282 +94,7 @@ func testSweepActiontrailTrail(region string) error {
 	return nil
 }
 
-func TestAccAlicloudActiontrailTrail_basic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	var v map[string]interface{}
-	resourceId := "alicloud_actiontrail_trail.default"
-	ra := resourceAttrInit(resourceId, ActiontrailTrailMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeActiontrailTrail")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ActiontrailTrailBasicdependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"trail_name":         name,
-					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
-					"oss_bucket_name":    "${alicloud_oss_bucket.default.id}",
-					"status":             "Disable",
-					"depends_on": []string{
-						"alicloud_ram_role_policy_attachment.default",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"trail_name":         name,
-						"oss_write_role_arn": CHECKSET,
-						"oss_bucket_name":    name,
-						"status":             "Disable",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"oss_write_role_arn": "${data.alicloud_ram_roles.update.roles.0.arn}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"oss_write_role_arn": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"event_rw": "All",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"event_rw": "All",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"oss_bucket_name": "${alicloud_oss_bucket.default2.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"oss_bucket_name": name + "-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"trail_region": "cn-beijing",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"trail_region": "cn-beijing",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"oss_bucket_name":    "${alicloud_oss_bucket.default.id}",
-					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
-					"trail_region":       "All",
-					"event_rw":           "Write",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"oss_bucket_name":    name,
-						"oss_write_role_arn": CHECKSET,
-						"trail_region":       "All",
-						"event_rw":           "Write",
-					}),
-				),
-			},
-		},
-	})
-}
-
-var ActiontrailTrailMap = map[string]string{}
-
-func ActiontrailTrailBasicdependence(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "%s"
-	}
-
-	resource "alicloud_oss_bucket" "default" {
-		bucket  = "${var.name}"
-	}
-
-	resource "alicloud_oss_bucket" "default2" {
-		bucket  = "${var.name}-update"
-	}
-
-	data "alicloud_ram_roles" "default" {
-		name_regex = "${alicloud_ram_role.default.name}"
-	}
-
-	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}-trigger"
-	  document = <<EOF
-    {
-        "Statement": [
-        {
-            "Action": "sts:AssumeRole",
-            "Effect": "Allow",
-            "Principal": {
-            "Service": [
-                "actiontrail.aliyuncs.com"
-            ]
-            }
-        }
-        ],
-        "Version": "1"
-    }
-	  EOF
-	  description = "this is a test"
-	  force = true
-	}
-	
-	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}-trigger"
-	  document = <<EOF
-		{
-			"Version": "1",
-			"Statement": [
-				{
-					"Action": [
-						"oss:ListObjects",
-						"oss:PutObject",
-						"oss:GetBucketInfo",
-						"oss:GetBucketLifecycle",
-						"oss:GetBucketLocation",
-						"kms:ListKeys",
-						"kms:Listalias",
-						"kms:ListAliasesByKeyId",
-						"kms:DescribeKey",
-						"kms:GenerateDataKey",
-						"kms:Decrypt"
-					],
-					"Resource": "*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"log:GetProject",
-						"log:ListJobs"
-					],
-					"Resource": "*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"log:PostLogStoreLogs",
-						"log:CreateLogstore",
-						"log:GetLogstore",
-						"log:CreateIndex",
-						"log:UpdateIndex",
-						"log:GetIndex",
-						"log:GetLogStoreLogs"
-					],
-					"Resource": [
-						"acs:log:*:*:project/*/logstore/actiontrail_*",
-						"acs:log:*:*:project/*/logstore/innertrail_*",
-						"acs:log:*:*:project/*/logstore/insights_*"
-					],
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"log:CreateDashboard",
-						"log:UpdateDashboard"
-					],
-					"Resource": "acs:log:*:*:project/*/dashboard/*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"log:CreateSavedSearch",
-						"log:UpdateSavedSearch"
-					],
-					"Resource": [
-						"acs:log:*:*:project/*/savedsearch/actiontrail_*",
-						"acs:log:*:*:project/*/savedsearch/innertrail_*",
-						"acs:log:*:*:project/*/savedsearch/insights_*"
-					],
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"mns:PublishMessage"
-					],
-					"Resource": "*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"resourcemanager:GetResourceDirectory",
-						"resourcemanager:ListAccounts",
-						"resourcemanager:GetResourceDirectoryAccount"
-					],
-					"Resource": "*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": [
-						"cms:DescribeMetricList",
-						"cms:QueryMetricList"
-					],
-					"Resource": "*",
-					"Effect": "Allow"
-				},
-				{
-					"Action": "ram:DeleteServiceLinkedRole",
-					"Resource": "*",
-					"Effect": "Allow",
-					"Condition": {
-						"StringEquals": {
-							"ram:ServiceName": "actiontrail.aliyuncs.com"
-						}
-					}
-				},
-				{
-					"Effect": "Allow",
-					"Action": "odps:updateUsersToAdmin",
-					"Resource": "acs:odps:*:*:projectUsers/*"
-				}
-			]
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
-	}
-	
-	resource "alicloud_ram_role_policy_attachment" "default" {
-	  role_name = "${alicloud_ram_role.default.name}"
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  policy_type = "Custom"
-	}
-
-	data "alicloud_ram_roles" "update" {
-		name_regex = "AliyunServiceRoleForActionTrail"
-	}
-`, name)
-}
-
-func TestUnitAlicloudActiontrailTrail(t *testing.T) {
+func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
@@ -547,7 +272,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudActiontrailTrailCreate(d, rawClient)
+		err := resourceAliCloudActiontrailTrailCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -564,7 +289,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailCreate(d, rawClient)
+		err := resourceAliCloudActiontrailTrailCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -581,7 +306,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailCreate(dCreate, rawClient)
+		err := resourceAliCloudActiontrailTrailCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -599,7 +324,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudActiontrailTrailUpdate(d, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -634,7 +359,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -669,7 +394,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -707,7 +432,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStopLoggingNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
@@ -763,7 +488,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 				return object, "Disable", nil
 			}
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -803,7 +528,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStartLoggingNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
@@ -859,7 +584,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 				return object, "Enable", nil
 			}
 		})
-		err := resourceAlicloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -876,7 +601,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -893,7 +618,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -910,7 +635,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -927,7 +652,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -944,7 +669,7 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailRead(d, rawClient)
+		err := resourceAliCloudActiontrailTrailRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -960,8 +685,479 @@ func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudActiontrailTrailRead(d, rawClient)
+		err := resourceAliCloudActiontrailTrailRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Actiontrail Trail. >>> Resource test cases, automatically generated.
+// Case Trail投递MaxCompute用例 11012
+func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_actiontrail_trail.default"
+	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeActiontrailTrail")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tfaccactiontrail%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"trail_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"trail_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_rw": "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_rw": "Write",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_compute_project_arn": "acs:odps:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_maxcompute_project.default.project_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_compute_project_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_compute_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_compute_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_bucket_name": "${alicloud_oss_bucket.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_bucket_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_key_prefix": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_key_prefix": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sls_project_arn": "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_project_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sls_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Disable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Disable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"trail_region": defaultRegionToTest,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"trail_region": defaultRegionToTest,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_actiontrail_trail.default"
+	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeActiontrailTrail")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tfaccactiontrail%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"trail_name":                 name,
+					"event_rw":                   "Write",
+					"max_compute_project_arn":    "acs:odps:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_maxcompute_project.default.project_name}",
+					"max_compute_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"oss_bucket_name":            "${alicloud_oss_bucket.default.id}",
+					"oss_key_prefix":             name,
+					"oss_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"sls_project_arn":            "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
+					"sls_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"status":                     "Enable",
+					"trail_region":               defaultRegionToTest,
+					"is_organization_trail":      "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"trail_name":                 name,
+						"event_rw":                   "Write",
+						"max_compute_project_arn":    CHECKSET,
+						"max_compute_write_role_arn": CHECKSET,
+						"oss_bucket_name":            CHECKSET,
+						"oss_key_prefix":             name,
+						"oss_write_role_arn":         CHECKSET,
+						"sls_project_arn":            CHECKSET,
+						"sls_write_role_arn":         CHECKSET,
+						"status":                     "Enable",
+						"trail_region":               defaultRegionToTest,
+						"is_organization_trail":      "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudActiontrailTrailMap11012 = map[string]string{
+	"create_time":  CHECKSET,
+	"event_rw":     CHECKSET,
+	"region_id":    CHECKSET,
+	"trail_region": CHECKSET,
+}
+
+func AliCloudActiontrailTrailBasicDependence11012(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	
+	data "alicloud_account" "default" {
+	}
+	
+	data "alicloud_regions" "default" {
+  		current = true
+	}
+	
+	data "alicloud_ram_roles" "default" {
+		name_regex = "AliyunServiceRoleForActionTrail"
+	}
+	
+	resource "alicloud_oss_bucket" "default" {
+  		bucket = var.name
+	}
+	
+	resource "alicloud_log_project" "default" {
+  		name        = var.name
+  		description = var.name
+	}
+	
+	resource "alicloud_maxcompute_project" "default" {
+  		default_quota = "默认后付费Quota"
+  		project_name  = "actiontrail_${var.name}"
+  		comment       = "actiontrail"
+  		product_type  = "PayAsYouGo"
+	}
+`, name)
+}
+
+// Case 适配废弃字段name 11016
+func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_actiontrail_trail.default"
+	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeActiontrailTrail")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tfaccactiontrail%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_rw": "Write",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_rw": "Write",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_compute_project_arn": "acs:odps:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_maxcompute_project.default.project_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_compute_project_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_compute_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_compute_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_bucket_name": "${alicloud_oss_bucket.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_bucket_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_key_prefix": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_key_prefix": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sls_project_arn": "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_project_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sls_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_write_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Disable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Disable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"trail_region": defaultRegionToTest,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"trail_region": defaultRegionToTest,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_actiontrail_trail.default"
+	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeActiontrailTrail")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tfaccactiontrail%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                       name,
+					"event_rw":                   "Write",
+					"max_compute_project_arn":    "acs:odps:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_maxcompute_project.default.project_name}",
+					"max_compute_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"oss_bucket_name":            "${alicloud_oss_bucket.default.id}",
+					"oss_key_prefix":             name,
+					"oss_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"sls_project_arn":            "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
+					"sls_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"status":                     "Enable",
+					"trail_region":               defaultRegionToTest,
+					"is_organization_trail":      "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                       name,
+						"event_rw":                   "Write",
+						"max_compute_project_arn":    CHECKSET,
+						"max_compute_write_role_arn": CHECKSET,
+						"oss_bucket_name":            CHECKSET,
+						"oss_key_prefix":             name,
+						"oss_write_role_arn":         CHECKSET,
+						"sls_project_arn":            CHECKSET,
+						"sls_write_role_arn":         CHECKSET,
+						"status":                     "Enable",
+						"trail_region":               defaultRegionToTest,
+						"is_organization_trail":      "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// Test Actiontrail Trail. <<< Resource test cases, automatically generated.

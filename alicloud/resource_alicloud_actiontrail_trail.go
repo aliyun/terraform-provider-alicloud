@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -8,38 +9,46 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudActiontrailTrail() *schema.Resource {
+func resourceAliCloudActiontrailTrail() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudActiontrailTrailCreate,
-		Read:   resourceAlicloudActiontrailTrailRead,
-		Update: resourceAlicloudActiontrailTrailUpdate,
-		Delete: resourceAlicloudActiontrailTrailDelete,
+		Create: resourceAliCloudActiontrailTrailCreate,
+		Read:   resourceAliCloudActiontrailTrailRead,
+		Update: resourceAliCloudActiontrailTrailUpdate,
+		Delete: resourceAliCloudActiontrailTrailDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"event_rw": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"All", "Read", "Write"}, false),
-				Default:      "Write",
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Write", "Read", "All"}, false),
 			},
 			"is_organization_trail": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 			},
-			"mns_topic_arn": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'mns_topic_arn' has been deprecated from version 1.118.0",
+			"max_compute_project_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"max_compute_write_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"oss_bucket_name": {
 				Type:     schema.TypeString,
@@ -49,15 +58,13 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"role_name": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'role_name' has been deprecated from version 1.118.0",
-			},
 			"oss_write_role_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"sls_project_arn": {
 				Type:     schema.TypeString,
@@ -65,14 +72,14 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 			},
 			"sls_write_role_arn": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
 				Default:      "Enable",
+				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
 			},
 			"trail_name": {
 				Type:          schema.TypeString,
@@ -81,73 +88,85 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				ForceNew:      true,
 				ConflictsWith: []string{"name"},
 			},
-			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				Deprecated:    "Field 'name' has been deprecated from version 1.95.0. Use 'trail_name' instead.",
-				ConflictsWith: []string{"trail_name"},
-			},
 			"trail_region": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"trail_name"},
+				Deprecated:    "Field `name` has been deprecated from provider version 1.95.0. New field `trail_name` instead.",
+			},
+			"mns_topic_arn": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field `mns_topic_arn` has been deprecated from version 1.118.0",
+			},
+			"role_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field `role_name` has been deprecated from version 1.118.0",
+			},
 		},
 	}
 }
 
-func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudActiontrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	actiontrailService := ActiontrailService{client}
-	var response map[string]interface{}
+
 	action := "CreateTrail"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("event_rw"); ok {
-		request["EventRW"] = v
-	}
-
-	if v, ok := d.GetOkExists("is_organization_trail"); ok {
-		request["IsOrganizationTrail"] = v
-	}
-
-	if v, ok := d.GetOk("oss_bucket_name"); ok {
-		request["OssBucketName"] = v
-	}
-
-	if v, ok := d.GetOk("oss_key_prefix"); ok {
-		request["OssKeyPrefix"] = v
-	}
-
-	if v, ok := d.GetOk("oss_write_role_arn"); ok {
-		request["OssWriteRoleArn"] = v
-	}
-
-	if v, ok := d.GetOk("sls_project_arn"); ok {
-		request["SlsProjectArn"] = v
-	}
-
-	if v, ok := d.GetOk("sls_write_role_arn"); ok {
-		request["SlsWriteRoleArn"] = v
-	}
+	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("trail_name"); ok {
 		request["Name"] = v
 	} else if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "name" or "trail_name" must be set one!`))
+		return WrapError(Error(`[ERROR] Argument "trail_name" or "name" must be set one!`))
 	}
 
+	if v, ok := d.GetOk("sls_project_arn"); ok {
+		request["SlsProjectArn"] = v
+	}
+	if v, ok := d.GetOkExists("is_organization_trail"); ok {
+		request["IsOrganizationTrail"] = v
+	}
+	if v, ok := d.GetOk("max_compute_project_arn"); ok {
+		request["MaxComputeProjectArn"] = v
+	}
+	if v, ok := d.GetOk("event_rw"); ok {
+		request["EventRW"] = v
+	}
+	if v, ok := d.GetOk("oss_write_role_arn"); ok {
+		request["OssWriteRoleArn"] = v
+	}
+	if v, ok := d.GetOk("oss_bucket_name"); ok {
+		request["OssBucketName"] = v
+	}
+	if v, ok := d.GetOk("oss_key_prefix"); ok {
+		request["OssKeyPrefix"] = v
+	}
+	if v, ok := d.GetOk("sls_write_role_arn"); ok {
+		request["SlsWriteRoleArn"] = v
+	}
 	if v, ok := d.GetOk("trail_region"); ok {
 		request["TrailRegion"] = v
 	}
-
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	if v, ok := d.GetOk("max_compute_write_role_arn"); ok {
+		request["MaxComputeWriteRoleArn"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 				wait()
@@ -155,106 +174,209 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_trail", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Name"]))
-	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
+
+	actiontrailServiceV2 := ActiontrailServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudActiontrailTrailUpdate(d, meta)
+	return resourceAliCloudActiontrailTrailUpdate(d, meta)
 }
-func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudActiontrailTrailRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actiontrailService := ActiontrailService{client}
-	object, err := actiontrailService.DescribeActiontrailTrail(d.Id())
+	actiontrailServiceV2 := ActiontrailServiceV2{client}
+
+	objectRaw, err := actiontrailServiceV2.DescribeActiontrailTrail(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_actiontrail_trail actiontrailService.DescribeActiontrailTrail Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_actiontrail_trail DescribeActiontrailTrail Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("trail_name", d.Id())
-	d.Set("name", d.Id())
-	d.Set("event_rw", object["EventRW"])
-	d.Set("is_organization_trail", object["IsOrganizationTrail"])
-	d.Set("oss_bucket_name", object["OssBucketName"])
-	d.Set("oss_key_prefix", object["OssKeyPrefix"])
-	d.Set("oss_write_role_arn", object["OssWriteRoleArn"])
-	d.Set("sls_project_arn", object["SlsProjectArn"])
-	d.Set("sls_write_role_arn", object["SlsWriteRoleArn"])
-	d.Set("status", object["Status"])
-	d.Set("trail_region", object["TrailRegion"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("event_rw", objectRaw["EventRW"])
+	d.Set("is_organization_trail", objectRaw["IsOrganizationTrail"])
+	d.Set("max_compute_project_arn", objectRaw["MaxComputeProjectArn"])
+	d.Set("max_compute_write_role_arn", objectRaw["MaxComputeWriteRoleArn"])
+	d.Set("oss_bucket_name", objectRaw["OssBucketName"])
+	d.Set("oss_key_prefix", objectRaw["OssKeyPrefix"])
+	d.Set("oss_write_role_arn", objectRaw["OssWriteRoleArn"])
+	d.Set("region_id", objectRaw["HomeRegion"])
+	d.Set("sls_project_arn", objectRaw["SlsProjectArn"])
+	d.Set("sls_write_role_arn", objectRaw["SlsWriteRoleArn"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("trail_region", objectRaw["TrailRegion"])
+	d.Set("trail_name", objectRaw["Name"])
+	d.Set("name", objectRaw["Name"])
+
 	return nil
 }
-func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actiontrailService := ActiontrailService{client}
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
 	d.Partial(true)
 
-	update := false
-	request := map[string]interface{}{
-		"Name": d.Id(),
+	if d.HasChange("status") {
+		var err error
+		actiontrailServiceV2 := ActiontrailServiceV2{client}
+		object, err := actiontrailServiceV2.DescribeActiontrailTrail(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("status").(string)
+		if object["Status"].(string) != target {
+			if target == "Enable" {
+				action := "StartLogging"
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				request["Name"] = d.Id()
+
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+
+			if target == "Disable" {
+				action := "StopLogging"
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["Name"] = d.Id()
+
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcGet("Actiontrail", "2020-07-06", action, query, request)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+		}
 	}
+
+	var err error
+	action := "UpdateTrail"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Name"] = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("max_compute_project_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("max_compute_project_arn"); ok {
+		request["MaxComputeProjectArn"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("event_rw") {
 		update = true
-		request["EventRW"] = d.Get("event_rw")
 	}
-	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
-		update = true
-		request["OssBucketName"] = d.Get("oss_bucket_name")
+	if v, ok := d.GetOk("event_rw"); ok {
+		request["EventRW"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("oss_key_prefix") {
-		update = true
-		request["OssKeyPrefix"] = d.Get("oss_key_prefix")
-	}
+
 	if !d.IsNewResource() && d.HasChange("oss_write_role_arn") {
 		update = true
-		request["OssWriteRoleArn"] = d.Get("oss_write_role_arn")
 	}
-	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("oss_write_role_arn"); ok {
+		request["OssWriteRoleArn"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_bucket_name"); ok {
+		request["OssBucketName"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("oss_key_prefix") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_key_prefix"); ok {
+		request["OssKeyPrefix"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("sls_project_arn") {
 		update = true
-		request["SlsProjectArn"] = d.Get("sls_project_arn")
 	}
+	if v, ok := d.GetOk("sls_project_arn"); ok {
+		request["SlsProjectArn"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("sls_write_role_arn") {
 		update = true
-		request["SlsWriteRoleArn"] = d.Get("sls_write_role_arn")
 	}
+	if v, ok := d.GetOk("sls_write_role_arn"); ok {
+		request["SlsWriteRoleArn"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("trail_region") {
 		update = true
-		request["TrailRegion"] = d.Get("trail_region")
 	}
+	if v, ok := d.GetOk("trail_region"); ok {
+		request["TrailRegion"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("max_compute_write_role_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("max_compute_write_role_arn"); ok {
+		request["MaxComputeWriteRoleArn"] = v
+	}
+
 	if update {
-
-		if v, ok := d.GetOk("sls_project_arn"); ok {
-			request["SlsProjectArn"] = v
-		}
-		if v, ok := d.GetOk("sls_write_role_arn"); ok {
-			request["SlsWriteRoleArn"] = v
-		}
-		if v, ok := d.GetOk("oss_bucket_name"); ok {
-			request["OssBucketName"] = v
-		}
-		if v, ok := d.GetOk("oss_write_role_arn"); ok {
-			request["OssWriteRoleArn"] = v
-		}
-
-		action := "UpdateTrail"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
+			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 					wait()
@@ -262,97 +384,33 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("event_rw")
-		d.SetPartial("oss_bucket_name")
-		d.SetPartial("oss_key_prefix")
-		d.SetPartial("oss_write_role_arn")
-		d.SetPartial("sls_project_arn")
-		d.SetPartial("sls_write_role_arn")
-		d.SetPartial("trail_region")
-	}
-	if d.HasChange("status") {
-		object, err := actiontrailService.DescribeActiontrailTrail(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		target := d.Get("status").(string)
-		if object["Status"].(string) != target {
-			if target == "Disable" {
-				request := map[string]interface{}{
-					"Name": d.Id(),
-				}
-				action := "StopLogging"
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcGet("Actiontrail", "2020-07-06", action, request, nil)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			if target == "Enable" {
-				request := map[string]interface{}{
-					"Name": d.Id(),
-				}
-				action := "StartLogging"
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			d.SetPartial("status")
-		}
-	}
-	d.Partial(false)
-	return resourceAlicloudActiontrailTrailRead(d, meta)
-}
-func resourceAlicloudActiontrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteTrail"
-	var response map[string]interface{}
-	var err error
-	request := map[string]interface{}{
-		"Name": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	d.Partial(false)
+	return resourceAliCloudActiontrailTrailRead(d, meta)
+}
+
+func resourceAliCloudActiontrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteTrail"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Name"] = d.Id()
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, false)
+		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -360,14 +418,16 @@ func resourceAlicloudActiontrailTrailDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"TrailNotFoundException"}) {
+		if IsExpectedErrors(err, []string{"TrailNotFoundException"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
