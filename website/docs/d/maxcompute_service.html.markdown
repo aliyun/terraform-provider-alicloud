@@ -17,7 +17,7 @@ For information about Maxcompute and how to use it, see [What is Maxcompute](htt
 
 -> **NOTE:** Available in v1.117.0+
 
-~> **NOTE:** This datasource has been deprecated since provider version v1.228.0.
+~> **NOTE:** This datasource has been deprecated since provider version v1.228.0. Please use the resource `alicloud_max_compute_quota` instead.
 
 ## Example Usage
 
