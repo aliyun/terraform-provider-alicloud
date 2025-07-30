@@ -262,6 +262,7 @@ var productCodeToLocationCode = map[string]string{
 	"imp":                  "imp",             // IMP
 	"mhub":                 "emas",            // MHUB
 	"servicemesh":          "servicemesh",     // ServiceMesh
+	"starrocks":            "emrstarrocks",    // StarRocks
 	"eds_user":             "edsuser",         // ECD
 	"tag":                  "tag",             // Tag
 	"schedulerx2":          "edasschedulerx",  // Schedulerx
