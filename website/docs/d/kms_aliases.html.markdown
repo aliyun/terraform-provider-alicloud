@@ -7,23 +7,23 @@ description: |-
     Provides a list of available KMS Aliases.
 ---
 
-# alicloud\_kms\aliases
+# alicloud_kms_aliases
 
 This data source provides a list of KMS aliases in an Alibaba Cloud account according to the specified filters.
  
--> **NOTE:** Available in v1.79.0+.
+-> **NOTE:** Available since v1.79.0.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_kms_aliases" "kms_aliases" {
   ids        = ["d89e8a53-b708-41aa-8c67-6873axxx"]
-  name_regex = "alias/tf-testKmsAlias_123"
+  name_regex = "alias/tf-example"
 }
 
 output "first_key_id" {
-  value = "${data.alicloud_kms_keys.kms_keys_ds.keys.0.id}"
+  value = "${data.alicloud_kms_aliases.kms_aliases.aliases.0.id}"
 }
 ```
 
@@ -31,8 +31,8 @@ output "first_key_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of KMS aliases IDs. The value is same as KMS alias_name.
-* `name_regex` - (Optional) A regex string to filter the results by the KMS alias name.
+* `ids` - (Optional, ForceNew) A list of KMS aliases IDs. The value is same as KMS alias_name.
+* `name_regex` - (Optional, ForceNew) A regex string to filter the results by the KMS alias name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
