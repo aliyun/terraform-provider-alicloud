@@ -151,6 +151,7 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	if err != nil {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
