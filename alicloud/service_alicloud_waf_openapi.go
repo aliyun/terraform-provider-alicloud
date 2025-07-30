@@ -307,10 +307,14 @@ func (s *WafOpenapiService) DescribeWafv3Domain(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Waf.Instance.ValidFaild"}) {
+			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
