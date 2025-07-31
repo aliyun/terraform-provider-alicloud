@@ -1,4 +1,26 @@
-## 1.255.0 (Unreleased)
+## 1.256.0 (Unreleased)
+
+- **New Resource:** `alicloud_esa_site_origin_client_certificate` [GH-8862]
+- **New Resource:** `alicloud_star_rocks_instance` [GH-8863]
+- **New Resource:** `alicloud_esa_origin_ca_certificate` [GH-8864]
+- **New Resource:** `alicloud_esa_origin_protection` [GH-8867]
+- **New Data Source:** `alicloud_cloud_monitor_service_metric_alarm_rules` [GH-8870]
+
+ENHANCEMENTS:
+
+- resource/alicloud_actiontrail_trail: Refactored the resource alicloud_actiontrail_trail; Added the field max_compute_project_arn, max_compute_write_role_arn, create_time, region_id. [GH-8855]
+- resource/alicloud_nas_access_group: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. [GH-8857]
+- resource/alicloud_nas_access_rule: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. [GH-8871]
+- docs: Imporves description for maxcompute_service. [GH-8854]
+- docs: Improves example for alicloud_kms_aliases. [GH-8860]
+- docs: Improves description for cloud_storage_gateway_gateway. [GH-8861]
+- docs: Improves example for adb_account. [GH-8869]
+
+BUG FIXES:
+
+- resource/alicloud_eflo_node_group_attachment: fix attribute login_password. [GH-8856]
+
+## 1.255.0 (July 29, 2025)
 
 - **New Resource:** `alicloud_message_service_event_rule` ([#8771](https://github.com/aliyun/terraform-provider-alicloud/issues/8771))
 - **New Resource:** `alicloud_eflo_node_group_attachment` ([#8848](https://github.com/aliyun/terraform-provider-alicloud/issues/8848))
