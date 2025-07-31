@@ -44,9 +44,9 @@ func (s *NasServiceV2) DescribeNasAccessRule(id string) (object map[string]inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccessRule.NotFound"}) {
