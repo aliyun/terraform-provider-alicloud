@@ -70,7 +70,7 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `account_description` - (Optional) Account description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `account_type` - (Optional, ForceNew) The type of the database account. Default Value: `Super`. Valid values:
+* `account_type` - (Optional, ForceNew, Removed since provider version 1.81.0) The type of the database account. Default Value: `Super`. Valid values:
   - `Normal`: standard account. Up to 256 standard accounts can be created for a cluster.
   - `Super`: privileged account. Only a single privileged account can be created for a cluster.
 
