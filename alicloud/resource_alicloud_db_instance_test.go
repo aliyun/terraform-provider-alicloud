@@ -3443,7 +3443,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 						"instance_name":            name,
 						"db_instance_storage_type": "cloud_essd",
 						"monitoring_period":        CHECKSET,
-						"optimized_writes":         "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
+						"optimized_writes":         "optimized",
 					}),
 				),
 			},
@@ -3865,7 +3865,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 						"db_instance_storage_type": "general_essd",
 						"monitoring_period":        CHECKSET,
 						"bursting_enabled":         CHECKSET,
-						"optimized_writes":         "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
+						"optimized_writes":         "optimized",
 					}),
 				),
 			},
@@ -3895,7 +3895,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"optimized_writes": "{\"optimized_writes\":false,\"init_optimized_writes\":true}",
+						"optimized_writes": "none",
 					}),
 				),
 			},
@@ -3905,7 +3905,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"optimized_writes": "{\"optimized_writes\":true,\"init_optimized_writes\":true}",
+						"optimized_writes": "optimized",
 					}),
 				),
 			},
