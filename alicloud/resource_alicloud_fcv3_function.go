@@ -318,6 +318,10 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntBetween(0, 200),
 			},
+			"instance_isolation_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"instance_lifecycle_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -535,6 +539,14 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: StringInSlice([]string{"python3.10", "python3.9", "python3", "nodejs20", "nodejs18", "nodejs16", "nodejs14", "java11", "java8", "php7.2", "dotnetcore3.1", "go1", "custom.debian10", "custom", "custom-container"}, false),
+			},
+			"session_affinity": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"session_affinity_config": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"state": {
 				Type:     schema.TypeString,
@@ -771,6 +783,12 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("instance_concurrency"); ok && v.(int) > 0 {
 		request["instanceConcurrency"] = v
 	}
+	if v, ok := d.GetOk("session_affinity"); ok {
+		request["sessionAffinity"] = v
+	}
+	if v, ok := d.GetOk("instance_isolation_mode"); ok {
+		request["instanceIsolationMode"] = v
+	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
@@ -805,6 +823,9 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["instanceLifecycleConfig"] = objectDataLocalMap4
 	}
 
+	if v, ok := d.GetOk("session_affinity_config"); ok {
+		request["sessionAffinityConfig"] = v
+	}
 	if v, ok := d.GetOkExists("internet_access"); ok {
 		request["internetAccess"] = v
 	}
@@ -936,6 +957,9 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
+	d.Set("instance_isolation_mode", objectRaw["instanceIsolationMode"])
+	d.Set("session_affinity", objectRaw["sessionAffinity"])
+	d.Set("session_affinity_config", objectRaw["sessionAffinityConfig"])
 	if objectRaw["codeSize"] != nil {
 		d.Set("code_size", objectRaw["codeSize"])
 	}
@@ -1429,9 +1453,9 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	var err error
 	functionName := d.Id()
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -1526,6 +1550,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("instance_concurrency") {
 		update = true
 		request["instanceConcurrency"] = d.Get("instance_concurrency")
+	}
+
+	if !d.IsNewResource() && d.HasChange("instance_isolation_mode") {
+		update = true
+		request["instanceIsolationMode"] = d.Get("instance_isolation_mode")
 	}
 
 	if d.HasChange("custom_runtime_config") {
@@ -1794,6 +1823,16 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("timeout") {
 		update = true
 		request["timeout"] = d.Get("timeout")
+	}
+
+	if !d.IsNewResource() && d.HasChange("session_affinity") {
+		update = true
+		request["sessionAffinity"] = d.Get("session_affinity")
+	}
+
+	if !d.IsNewResource() && d.HasChange("session_affinity_config") {
+		update = true
+		request["sessionAffinityConfig"] = d.Get("session_affinity_config")
 	}
 
 	if !d.IsNewResource() && d.HasChange("cpu") {

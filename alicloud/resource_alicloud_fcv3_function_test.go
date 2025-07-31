@@ -1835,3 +1835,205 @@ func TestAccAliCloudFcv3Function_basic7025_raw(t *testing.T) {
 }
 
 // Test Fc3 Function. <<< Resource test cases, automatically generated.
+// Case TestNativeRuntimePython_Base_FC_Session_Feature 6895
+func TestAccAliCloudFcv3Function_basic6895(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_function.default"
+	ra := resourceAttrInit(resourceId, AlicloudFcv3FunctionMap6895)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 100)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3FunctionBasicDependence6895)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": name,
+					"memory_size":   "512",
+					"runtime":       "python3.9",
+					"timeout":       "3",
+					"handler":       "index.handler",
+					"code": []map[string]interface{}{
+						{
+							"zip_file": "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA=",
+						},
+					},
+					"description": "Create",
+					"environment_variables": map[string]interface{}{
+						"\"TestEnvKey\"": "TestEnvVal",
+					},
+					"instance_lifecycle_config": []map[string]interface{}{
+						{
+							"initializer": []map[string]interface{}{
+								{
+									"timeout": "3",
+									"handler": "index.init",
+								},
+							},
+							"pre_stop": []map[string]interface{}{
+								{
+									"timeout": "3",
+									"handler": "index.stop",
+								},
+							},
+						},
+					},
+					"cpu":                     "0.5",
+					"disk_size":               "512",
+					"session_affinity_config": "{\\\"sessionConcurrencyPerInstance\\\":20,\\\"sseEndpointPath\\\":\\\"sse\\\"}",
+					"instance_isolation_mode": "SHARE",
+					"session_affinity":        "MCP_SSE",
+					// there is a bug in api,
+					"log_config": []map[string]interface{}{
+						{
+							"log_begin_rule": "None",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name":           name,
+						"memory_size":             "512",
+						"runtime":                 "python3.9",
+						"timeout":                 "3",
+						"handler":                 "index.handler",
+						"description":             "Create",
+						"cpu":                     CHECKSET,
+						"disk_size":               "512",
+						"session_affinity_config": CHECKSET,
+						"instance_isolation_mode": "SHARE",
+						"session_affinity":        "MCP_SSE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"memory_size": "2048",
+					"runtime":     "python3.10",
+					"timeout":     "6",
+					"handler":     "index.HandlerX",
+					"code": []map[string]interface{}{
+						{
+							"zip_file": "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZJBEncQRhGJgbuHQvPelK0lKpCp3KjHoUz+KdvIJkZHTQhcv+/fiPXxlWVys0GqJ0W8zWrjZL4uIwajKwdl2U7vx8mlScy/CgIPF7JlhPiBIteo6vlNCStzkRit5snLZ13ROPlef4MkvV6FAHbeaBxB4DmY9cr+82tzebqreBS5dhZPITIQ4j04L9FczSWFSBn7An1uPH+5vLEKi9xIpGxejZyq3LgNMMStid91Qd2f0pK8oLoIrSapF/90Tp8tK5pbv3EphSQQcSu8ZPPZCBDobd6TgVqw/TF1W6f8S/tD0xK46aOOTLZyKbk+Ayxzr/DAAA//9QSwcIBlYFIgIBAACxAQAAUEsBAhQAFAAIAAgAAAAAAAZWBSICAQAAsQEAAAgAAAAAAAAAAAAAAAAAAAAAAGluZGV4LnB5UEsFBgAAAAABAAEANgAAADgBAAAAAA==",
+						},
+					},
+					"description": "update",
+					"environment_variables": map[string]interface{}{
+						"\"TestEnvKey\"": "TestEnvVal2",
+					},
+					"instance_lifecycle_config": []map[string]interface{}{
+						{
+							"initializer": []map[string]interface{}{
+								{
+									"timeout": "3",
+									"handler": "index.init2",
+								},
+							},
+							"pre_stop": []map[string]interface{}{
+								{
+									"timeout": "3",
+									"handler": "index.stop2",
+								},
+							},
+						},
+					},
+					"cpu":                     "2",
+					"session_affinity_config": "{\\\"sessionConcurrencyPerInstance\\\":1,\\\"sseEndpointPath\\\":\\\"sse\\\"}",
+					"instance_isolation_mode": "SESSION_EXCLUSIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"memory_size":             "2048",
+						"runtime":                 "python3.10",
+						"timeout":                 "6",
+						"handler":                 "index.HandlerX",
+						"description":             "update",
+						"cpu":                     "2",
+						"session_affinity_config": CHECKSET,
+						"instance_isolation_mode": "SESSION_EXCLUSIVE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"code"},
+			},
+		},
+	})
+}
+
+var AlicloudFcv3FunctionMap6895 = map[string]string{
+	"tracing_config.#":   CHECKSET,
+	"function_id":        CHECKSET,
+	"function_arn":       CHECKSET,
+	"create_time":        CHECKSET,
+	"code_size":          CHECKSET,
+	"last_modified_time": CHECKSET,
+}
+
+func AlicloudFcv3FunctionBasicDependence6895(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Fcv3 Function. <<< Resource test cases, automatically generated.
