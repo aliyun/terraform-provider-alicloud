@@ -53,6 +53,10 @@ func resourceAliCloudNasAccessRule() *schema.Resource {
 				Default:      1,
 				ValidateFunc: IntBetween(0, 100),
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"rw_access_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -108,17 +112,16 @@ func resourceAliCloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_rule", action, AlibabaCloudSdkGoERROR)
@@ -149,6 +152,7 @@ func resourceAliCloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("ipv6_source_cidr_ip", objectRaw["Ipv6SourceCidrIp"])
 	d.Set("priority", formatInt(objectRaw["Priority"]))
+	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("rw_access_type", objectRaw["RWAccess"])
 	d.Set("source_cidr_ip", objectRaw["SourceCidrIp"])
 	d.Set("user_access_type", objectRaw["UserAccess"])
@@ -212,17 +216,16 @@ func resourceAliCloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -252,17 +255,20 @@ func resourceAliCloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

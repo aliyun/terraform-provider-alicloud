@@ -53,7 +53,6 @@ resource "alicloud_nas_access_rule" "default" {
   priority            = "1"
   file_system_type    = "extreme"
 }
-
 ```
 
 ## Argument Reference
@@ -72,6 +71,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<access_group_name>:<file_system_type>:<access_rule_id>`.
 * `access_rule_id` - The first ID of the resource.
+* `region_id` - (Available since v1.256.0) The region ID.
 
 ## Timeouts
 
