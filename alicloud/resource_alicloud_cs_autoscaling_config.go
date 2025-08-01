@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -105,6 +106,13 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 			"scaler_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"priorities": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -250,6 +258,24 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("scaler_type"); ok {
 		updateAutoscalingConfigRequest.ScalerType = tea.String(v.(string))
 	}
+	if v, ok := d.GetOk("priorities"); ok {
+		prioritiesMap := make(map[string][]*string)
+		for key, value := range v.(map[string]interface{}) {
+			if stringValue, ok := value.(string); ok {
+				parts := strings.Split(stringValue, ",")
+				stringPtrs := make([]*string, len(parts))
+				for i, part := range parts {
+					trimmedPart := strings.TrimSpace(part)
+					if trimmedPart != "" {
+						stringPtrs[i] = tea.String(trimmedPart)
+					}
+				}
+				prioritiesMap[key] = stringPtrs
+			}
+		}
+		updateAutoscalingConfigRequest.Priorities = prioritiesMap
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)

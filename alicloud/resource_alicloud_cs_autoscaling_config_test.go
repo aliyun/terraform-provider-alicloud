@@ -111,6 +111,31 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"expander": "priority",
+					"priorities": map[string]string{
+						"10": "test-asg",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"expander":      CHECKSET,
+						"priorities.%":  "1",
+						"priorities.10": "test-asg",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expander": "least-waste",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"expander": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"scaler_type": "goatscaler",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -169,7 +194,7 @@ locals {
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                 = var.name
   cluster_spec         = "ack.pro.small"
-  worker_vswitch_ids   = [local.vswitch_id]
+  vswitch_ids   	   = [local.vswitch_id]
   new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
