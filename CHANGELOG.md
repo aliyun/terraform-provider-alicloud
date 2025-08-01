@@ -1,24 +1,29 @@
-## 1.256.0 (Unreleased)
+## 1.257.0 (Unreleased)
+## 1.256.0 (August 1, 2025)
 
-- **New Resource:** `alicloud_esa_site_origin_client_certificate` [GH-8862]
-- **New Resource:** `alicloud_star_rocks_instance` [GH-8863]
-- **New Resource:** `alicloud_esa_origin_ca_certificate` [GH-8864]
-- **New Resource:** `alicloud_esa_origin_protection` [GH-8867]
-- **New Data Source:** `alicloud_cloud_monitor_service_metric_alarm_rules` [GH-8870]
+- **New Resource:** `alicloud_esa_site_origin_client_certificate` ([#8862](https://github.com/aliyun/terraform-provider-alicloud/issues/8862))
+- **New Resource:** `alicloud_star_rocks_instance` ([#8863](https://github.com/aliyun/terraform-provider-alicloud/issues/8863))
+- **New Resource:** `alicloud_esa_origin_ca_certificate` ([#8864](https://github.com/aliyun/terraform-provider-alicloud/issues/8864))
+- **New Resource:** `alicloud_esa_origin_protection` ([#8867](https://github.com/aliyun/terraform-provider-alicloud/issues/8867))
+- **New Data Source:** `alicloud_cloud_monitor_service_metric_alarm_rules` ([#8870](https://github.com/aliyun/terraform-provider-alicloud/issues/8870))
 
 ENHANCEMENTS:
 
-- resource/alicloud_actiontrail_trail: Refactored the resource alicloud_actiontrail_trail; Added the field max_compute_project_arn, max_compute_write_role_arn, create_time, region_id. [GH-8855]
-- resource/alicloud_nas_access_group: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. [GH-8857]
-- resource/alicloud_nas_access_rule: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. [GH-8871]
-- docs: Imporves description for maxcompute_service. [GH-8854]
-- docs: Improves example for alicloud_kms_aliases. [GH-8860]
-- docs: Improves description for cloud_storage_gateway_gateway. [GH-8861]
-- docs: Improves example for adb_account. [GH-8869]
+- provider: supports to get CloudSSO credential from profile setting. ([#8878](https://github.com/aliyun/terraform-provider-alicloud/issues/8878))
+- resource/alicloud_actiontrail_trail: Refactored the resource alicloud_actiontrail_trail; Added the field max_compute_project_arn, max_compute_write_role_arn, create_time, region_id. ([#8855](https://github.com/aliyun/terraform-provider-alicloud/issues/8855))
+- resource/alicloud_nas_access_group: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. ([#8857](https://github.com/aliyun/terraform-provider-alicloud/issues/8857))
+- resource/alicloud_nas_access_rule: Added the field region_id; Added retry strategy for error code OperationDenied.InvalidState. ([#8871](https://github.com/aliyun/terraform-provider-alicloud/issues/8871))
+- resource/alicloud_fcv3_function: add new attribute instance_isolation_mode, session_affinity and session_affinity_config. ([#8872](https://github.com/aliyun/terraform-provider-alicloud/issues/8872))
+- resource/alicloud_instance: Fixes the InvalidParameter error when invoking DescribeInstanceAutoRenewAttribute after the instance is running. ([#8875](https://github.com/aliyun/terraform-provider-alicloud/issues/8875))
+- resource/alicloud_cen_instance_grant: improve cen_owner_id set. ([#8877](https://github.com/aliyun/terraform-provider-alicloud/issues/8877))
+- docs: Imporves description for maxcompute_service. ([#8854](https://github.com/aliyun/terraform-provider-alicloud/issues/8854))
+- docs: Improves example for alicloud_kms_aliases. ([#8860](https://github.com/aliyun/terraform-provider-alicloud/issues/8860))
+- docs: Improves description for cloud_storage_gateway_gateway. ([#8861](https://github.com/aliyun/terraform-provider-alicloud/issues/8861))
+- docs: Improves example for adb_account. ([#8869](https://github.com/aliyun/terraform-provider-alicloud/issues/8869))
 
 BUG FIXES:
 
-- resource/alicloud_eflo_node_group_attachment: fix attribute login_password. [GH-8856]
+- resource/alicloud_eflo_node_group_attachment: fix attribute login_password. ([#8856](https://github.com/aliyun/terraform-provider-alicloud/issues/8856))
 
 ## 1.255.0 (July 29, 2025)
 
