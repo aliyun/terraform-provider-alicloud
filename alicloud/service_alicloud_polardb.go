@@ -1731,6 +1731,9 @@ func convertPolarDBIpsSetToString(sourceIps string) []string {
 }
 
 func arrValueEqual(arr1, arr2 []string) bool {
+	if len(arr1) != len(arr2) {
+		return false
+	}
 	sort.Strings(arr2)
 	sort.Strings(arr1)
 	for i, v := range arr1 {
