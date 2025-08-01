@@ -1356,62 +1356,6 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if instance.InstanceChargeType == string(PrePaid) {
-		request := ecs.CreateDescribeInstanceAutoRenewAttributeRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = d.Id()
-
-		var raw interface{}
-		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceAutoRenewAttribute(request)
-			})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
-		periodUnit := d.Get("period_unit").(string)
-		if periodUnit == "" {
-			periodUnit = "Month"
-		}
-		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
-			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
-			d.Set("renewal_status", renew.RenewalStatus)
-			d.Set("auto_renew_period", renew.Duration)
-			if renew.RenewalStatus == "AutoRenewal" {
-				periodUnit = renew.PeriodUnit
-			}
-			if periodUnit == "Year" {
-				periodUnit = "Month"
-				d.Set("auto_renew_period", renew.Duration*12)
-			}
-		}
-		//period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
-		//if err != nil {
-		//	return WrapError(err)
-		//}
-		//thisPeriod := d.Get("period").(int)
-		//if thisPeriod != 0 && thisPeriod != period {
-		//	d.Set("period", thisPeriod)
-		//} else {
-		//	d.Set("period", period)
-		//}
-		d.Set("period_unit", periodUnit)
-	}
 	networkInterfaceId := ""
 	networkInterfaceMaps := make([]map[string]interface{}, 0)
 	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
@@ -1514,6 +1458,64 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Set("enable_jumbo_frame", instanceAttribute.EnableJumboFrame)
+
+	// move the DescribeInstanceAutoRenewAttributeRequest to final to void the unexpected error InvalidParameter
+	if instance.InstanceChargeType == string(PrePaid) {
+		request := ecs.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request.RegionId = client.RegionId
+		request.InstanceId = d.Id()
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstanceAutoRenewAttribute(request)
+			})
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
+		periodUnit := d.Get("period_unit").(string)
+		if periodUnit == "" {
+			periodUnit = "Month"
+		}
+		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
+			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
+			d.Set("renewal_status", renew.RenewalStatus)
+			d.Set("auto_renew_period", renew.Duration)
+			if renew.RenewalStatus == "AutoRenewal" {
+				periodUnit = renew.PeriodUnit
+			}
+			if periodUnit == "Year" {
+				periodUnit = "Month"
+				d.Set("auto_renew_period", renew.Duration*12)
+			}
+		}
+		//period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//thisPeriod := d.Get("period").(int)
+		//if thisPeriod != 0 && thisPeriod != period {
+		//	d.Set("period", thisPeriod)
+		//} else {
+		//	d.Set("period", period)
+		//}
+		d.Set("period_unit", periodUnit)
+	}
 
 	instanceAttachmentAttribute, err := ecsService.DescribeInstanceAttachmentAttribute(d.Id())
 	if err != nil {
