@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -102,7 +103,7 @@ func resourceAlicloudCenInstanceGrantRead(d *schema.ResourceData, meta interface
 	}
 
 	d.Set("cen_id", object.CenInstanceId)
-	d.Set("cen_owner_id", object.CenOwnerId)
+	d.Set("cen_owner_id", fmt.Sprintf("%d", object.CenOwnerId))
 	d.Set("child_instance_id", instanceId)
 
 	return nil
