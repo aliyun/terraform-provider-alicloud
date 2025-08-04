@@ -2,28 +2,23 @@
 subcategory: "Web Application Firewall(WAF)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_wafv3_domain"
-sidebar_current: "docs-alicloud-resource-wafv3-domain"
 description: |-
-  Provides a Alicloud Wafv3 Domain resource.
+  Provides a Alicloud WAFV3 Domain resource.
 ---
 
 # alicloud_wafv3_domain
 
-Provides a Wafv3 Domain resource.
+Provides a WAFV3 Domain resource.
 
-For information about Wafv3 Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-waf-openapi-2021-10-01-createdomain).
+
+
+For information about WAFV3 Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-waf-openapi-2021-10-01-createdomain).
 
 -> **NOTE:** Available since v1.200.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_domain&exampleId=6883cb3a-92e1-c272-f108-a9584d515b4ce2e50787&activeTab=example&spm=docs.r.wafv3_domain.0.6883cb3a92&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 data "alicloud_wafv3_instances" "default" {}
@@ -82,91 +77,132 @@ resource "alicloud_wafv3_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_type` - (Optional) The access type of the WAF instance. Value: **share** (default): CNAME access.
+* `access_type` - (Optional) The mode in which the domain name is added to WAF. Valid values:
+share: CNAME record mode. This is the default value.
 * `domain` - (Required, ForceNew) The name of the domain name to query.
-* `instance_id` - (Required, ForceNew) WAF instance ID
-* `listen` - (Required) Configure listening information. See [`listen`](#listen) below.
-* `redirect` - (Required) Configure forwarding information. See [`redirect`](#redirect) below.
+* `instance_id` - (Required, ForceNew) The ID of the Web Application Firewall (WAF) instance.
+* `listen` - (Required, List) Configure listening information. See [`listen`](#listen) below.
+* `redirect` - (Required, List) Configure forwarding information. See [`redirect`](#redirect) below.
+* `resource_manager_resource_group_id` - (Optional, ForceNew, Computed) The ID of the Alibaba Cloud resource group.
+* `tags` - (Optional, Map, Available since v1.257.0) The tags. You can specify up to 20 tags.
 
 ### `listen`
 
 The listen supports the following:
-* `cert_id` - (Optional) The ID of the certificate to be added. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol).
-* `cipher_suite` - (Optional) The type of encryption suite to add. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
-		- **1**: indicates that all encryption suites are added.
-		- **2**: indicates that a strong encryption package is added. You can select this value only if the value of **tls_version** is `tlsv1.2`.
-		- **99**: indicates that a custom encryption suite is added.
-* `custom_ciphers` - (Optional) The specific custom encryption suite to add.
-* `enable_tlsv3` - (Optional) Whether TSL1.3 version is supported. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
-		- **true**: indicates that TSL1.3 is supported.
-		- **false**: indicates that TSL1.3 is not supported.
-* `exclusive_ip` - (Optional) Whether to enable exclusive IP address. This parameter is used only when the value of **ipv6_enabled** is **false** (indicating that IPv6 is not enabled) and the value of **protection_resource** is **share** (indicating that a shared cluster is used). Value:
-		- **true**: indicates that the exclusive IP address is enabled.
-		- **false** (default): indicates that exclusive IP address is not enabled.
-* `focus_https` - (Optional) Whether to enable the forced jump of HTTPS. This parameter is used only when the value of `https_ports` is not empty (indicating that the domain name uses HTTPS protocol) and the value of httports is empty (indicating that the domain name does not use HTTP protocol). Value:
-		- **true**: indicates that HTTPS forced redirection is enabled.
-		- **false**: indicates that HTTPS forced redirection is not enabled.
-* `http2_enabled` - (Optional) Whether to turn on http2. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
-		- **true:** indicates that HTTP2 is enabled.
-		- **false** (default): indicates that HTTP2 is not enabled.
-* `http_ports` - (Optional) The listening port of the HTTP protocol.
-* `https_ports` - (Optional) The listening port of the HTTPS protocol.
-* `ipv6_enabled` - (Optional) Whether IPv6 is turned on. Value:
-		- **true**: indicates that IPv6 is enabled.
-		- **false** (default): indicates that IPv6 is not enabled.
-* `protection_resource` - (Optional) The type of protection resource to use. Value:
-		- **share** (default): indicates that a shared cluster is used.
-		- **gslb**: indicates that the shared cluster intelligent load balancing is used.
-* `tls_version` - (Optional) The version of TLS to add. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value: **tlsv1**, **tlsv1.1**, **tlsv1.2**.
-* `xff_header_mode` - (Optional) WAF obtains the real IP address of the client. Value:
-		- **0** (default): indicates that the client has not forwarded the traffic to WAF through other layer -7 agents.
-		- **1**: indicates that the first value of the X-Forwarded-For(XFF) field in the WAF read request header is used as the client IP address.
-		- **2**: indicates that the custom field value set by you in the WAF read request header is used as the client IP address.
-* `xff_headers` - (Optional) Set the list of custom fields used to obtain the client IP address.
+* `cert_id` - (Optional) The ID of the certificate to be added. This parameter is used only if the value of `HttpsPorts` is not empty (indicating that the domain name uses the HTTPS protocol).
+* `cipher_suite` - (Optional, Int) The type of the cipher suites that you want to add. This parameter is available only if you specify `HttpsPorts`. Valid values:
+
+  - `1`: all cipher suites.
+  - `2`: strong cipher suites. This value is available only if you set `TLSVersion` to **tlsv1.2**.
+  - `99`: custom cipher suites.
+* `custom_ciphers` - (Optional, List) The specific custom encryption suite to add.
+* `enable_tlsv3` - (Optional) Whether TSL1.3 version is supported. This parameter is used only if the value of `HttpsPorts` is not empty (indicating that the domain name uses the HTTPS protocol). Value:
+  - `true`: indicates that TSL1.3 is supported.
+  - `false`: indicates that TSL1.3 is not supported.
+* `exclusive_ip` - (Optional) Specifies whether to enable the exclusive IP address feature. This parameter is available only if you set `IPv6Enabled` to false and `ProtectionResource` to `share`. Valid values:
+
+  - `true`
+  - `false` (default)
+* `focus_https` - (Optional) Specifies whether to enable force redirect from HTTP to HTTPS for received requests. This parameter is available only if you specify `HttpsPorts` and leave `HttpPorts` empty. Valid values:
+
+  - `true`
+  - `false`
+* `http2_enabled` - (Optional) Specifies whether to enable HTTP/2. This parameter is available only if you specify `HttpsPorts`. Valid values:
+
+  - `true`
+  - `false` (default)
+* `http_ports` - (Optional, List) The HTTP listener ports. Specify the value in the \[**port1,port2,...**] format.
+* `https_ports` - (Optional, List) The HTTPS listener ports. Specify the value in the \[**port1,port2,...**] format.
+* `ipv6_enabled` - (Optional) Specifies whether to enable IPv6 protection. Valid values:
+
+  - `true`
+  - `false` (default)
+* `protection_resource` - (Optional) The type of the protection resource. Valid values:
+
+  - `share` (default): a shared cluster.
+  - `gslb`: shared cluster-based intelligent load balancing.
+* `sm2_access_only` - (Optional, Available since v1.257.0) Specifies whether to allow access only from SM certificate-based clients. This parameter is available only if you set SM2Enabled to true.
+
+  - true
+  - false
+* `sm2_cert_id` - (Optional, Available since v1.257.0) The ID of the SM certificate that you want to add. This parameter is available only if you set SM2Enabled to true.
+* `sm2_enabled` - (Optional, Computed, Available since v1.257.0) Specifies whether to add an SM certificate.
+* `tls_version` - (Optional) The version of TLS to add. This parameter is used only if the value of `HttpsPorts` is not empty (indicating that the domain name uses the HTTPS protocol). Value:
+  - `tlsv1`
+  - **tlsv1.1**
+  - **tlsv1.2**
+* `xff_header_mode` - (Optional, Int) The method that is used to obtain the originating IP address of a client. Valid values:
+
+  - `0` (default): Client traffic is not filtered by a Layer 7 proxy before the traffic reaches WAF.
+  - `1`: WAF reads the first value of the X-Forwarded-For (XFF) header field as the originating IP address of the client.
+  - `2`: WAF reads the value of a custom header field as the originating IP address of the client.
+* `xff_headers` - (Optional, List) The custom header fields that are used to obtain the originating IP address of a client. Specify the value in the **\["header1","header2",...]** format.
+
+-> **NOTE:**   This parameter is required only if you set `XffHeaderMode` to 2.
+
 
 ### `redirect`
 
-The Redirect supports the following:
-* `backends` - (Optional) The IP address of the origin server corresponding to the domain name or the back-to-origin domain name of the server.
-* `connect_timeout` - (Optional) Connection timeout. Unit: seconds, value range: 5~120.
-* `focus_http_backend` - (Optional) Whether to enable forced HTTP back-to-origin. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
-		- **true**: indicates that forced HTTP back-to-origin is enabled.
-		- **false**: indicates that forced HTTP back-to-origin is not enabled.
-* `keepalive` - (Optional) Open long connection, default true.
-* `keepalive_requests` - (Optional) Number of long connections,  default: `60`. range :60-1000.
-* `keepalive_timeout` - (Optional) Long connection over time, default: `15`. Range: 1-60.
-* `loadbalance` - (Required) The load balancing algorithm used when returning to the source. Value:
-		- **iphash**: indicates the IPHash algorithm.
-		- **roundRobin**: indicates the polling algorithm.
-		- **leastTime**: indicates the Least Time algorithm.
-		- This value can be selected only if the value of **protection_resource** is **gslb** (indicating that the protected resource type uses shared cluster intelligent load balancing).
-* `read_timeout` - (Optional) Read timeout duration. **Unit**: seconds, **Value range**: 5~1800.
-* `request_headers` - (Optional) The traffic tag field and value of the domain name which used to mark the traffic processed by WAF. 
-  It formats as `[{" k ":"_key_"," v ":"_value_"}]`. Where the `k` represents the specified custom request header field, 
-  and the `v` represents the value set for this field. By specifying the custom request header field and the corresponding value, 
-  when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value
-  to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the
-  custom header field already exists in the request, the system will overwrite the value of the custom field in the
-  request with the set traffic tag value. See [`request_headers`](#redirect-request_headers) below.
-* `retry` - (Optional) Back to Source Retry. default: true, retry 3 times by default.
-* `sni_enabled` - (Optional) Whether to enable back-to-source SNI. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
-		- **true**: indicates that the back-to-source SNI is enabled.
-		- **false** (default) indicates that the back-to-source SNI is not enabled.
-* `sni_host` - (Optional) Sets the value of the custom SNI extension field. If this parameter is not set, the value of the **Host** field in the request header is used as the value of the SNI extension field by default.In general, you do not need to customize SNI unless your business has special configuration requirements. You want WAF to use SNI that is inconsistent with the actual request Host in the back-to-origin request (that is, the custom SNI set here).> This parameter is required only when **sni_enalbed** is set to **true** (indicating that back-to-source SNI is enabled).
-* `write_timeout` - (Optional) Write timeout duration> **Unit**: seconds, **Value range**: 5~1800.
+The redirect supports the following:
+* `backends` - (Optional, List) The IP addresses or domain names of the origin server. You cannot specify both IP addresses and domain names. If you specify domain names, the domain names can be resolved only to IPv4 addresses.
+
+  - If you specify IP addresses, specify the value in the **\["ip1","ip2",...]** format. You can enter up to 20 IP addresses.
+  - If you specify domain names, specify the value in the **\["domain"]** format. You can enter up to 20 domain names.
+* `backup_backends` - (Optional, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
+* `connect_timeout` - (Optional, Int) Connection timeout duration. Unit: seconds.
+Value range: 1~3600.
+* `focus_http_backend` - (Optional) Specifies whether to enable force redirect from HTTPS to HTTP for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
+
+  - `true`
+  - `false`
+* `keepalive` - (Optional) Specifies whether to enable the persistent connection feature. Valid values:
+
+  - `true` (default)
+  - `false`
+* `keepalive_requests` - (Optional, Int) The number of reused persistent connections. Valid values: 60 to 1000.
+
+-> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
+
+* `keepalive_timeout` - (Optional, Int) Idle long connection timeout, value range: 1~60, default 15, unit: seconds.
+
+-> **NOTE:**  How long the multiplexed long connection is idle and then released.
+
+* `loadbalance` - (Required) The load balancing algorithm that you want to use to forward requests to the origin server. Valid values:
+
+  - `iphash`
+  - `roundRobin`
+  - `leastTime`: This value is available only if you set `ProtectionResource` to `gslb`.
+* `read_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600.
+* `request_headers` - (Optional, List) The traffic marking field and value of the domain name, which is used to mark the traffic processed by WAF.
+By specifying custom request header fields and corresponding values, when the access traffic of the domain name passes through WAF, WAF automatically adds the set custom field value to the request header as a traffic mark, which facilitates the statistics of back-end services. See [`request_headers`](#redirect-request_headers) below.
+* `retry` - (Optional) Specifies whether WAF retries if WAF fails to forward requests to the origin server. Valid values:
+
+  - `true` (default)
+  - `false`
+* `sni_enabled` - (Optional) Specifies whether to enable the Server Name Indication (SNI) feature for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
+
+  - `true`
+  - `false` (default)
+* `sni_host` - (Optional) The custom value of the SNI field. If you do not specify this parameter, the value of the `Host` header field is automatically used. In most cases, you do not need to specify a custom value for the SNI field. However, if you want WAF to use an SNI field whose value is different from the value of the Host header field in back-to-origin requests, you can specify a custom value for the SNI field.
+
+-> **NOTE:**   This parameter is required only if you set `SniEnabled` to true.
+
+* `write_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600.
+* `xff_proto` - (Optional, Available since v1.257.0) Specifies whether to use the X-Forward-For-Proto header field to pass the protocol used by WAF to forward requests to the origin server. Valid values:
+  - `true`  (default)
+  - `false`
 
 ### `redirect-request_headers`
 
-The request headers supports the following:
-* `key` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
-* `value` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
+The redirect-request_headers supports the following:
+* `key` - (Optional) Specified custom request header fields
+* `value` - (Optional) Customize the value of the request header field.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<domain>`.
-* `resource_manager_resource_group_id` - The ID of the resource group.
-* `status` - The status of the resource.
+* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<domain>`.
+* `status` - Domain Status
 
 ## Timeouts
 
@@ -177,7 +213,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Wafv3 Domain can be imported using the id, e.g.
+WAFV3 Domain can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_wafv3_domain.example <instance_id>:<domain>

@@ -1933,7 +1933,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_router_interface":                      resourceAlicloudExpressConnectRouterInterface(),
 			"alicloud_wafv3_instance":                                        resourceAlicloudWafv3Instance(),
 			"alicloud_alb_load_balancer_common_bandwidth_package_attachment": resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment(),
-			"alicloud_wafv3_domain":                                          resourceAlicloudWafv3Domain(),
+			"alicloud_wafv3_domain":                                          resourceAliCloudWafv3Domain(),
 			"alicloud_eflo_vpd":                                              resourceAlicloudEfloVpd(),
 			"alicloud_dcdn_waf_rule":                                         resourceAlicloudDcdnWafRule(),
 			"alicloud_dcdn_er":                                               resourceAlicloudDcdnEr(),
