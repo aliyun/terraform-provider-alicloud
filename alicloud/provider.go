@@ -904,6 +904,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_threat_detection_attack_path_sensitive_asset_config":  resourceAliCloudThreatDetectionAttackPathSensitiveAssetConfig(),
+			"alicloud_mongodb_global_security_ip_group":                     resourceAliCloudMongodbGlobalSecurityIPGroup(),
 			"alicloud_esa_origin_protection":                                resourceAliCloudEsaOriginProtection(),
 			"alicloud_esa_origin_ca_certificate":                            resourceAliCloudEsaOriginCaCertificate(),
 			"alicloud_esa_site_origin_client_certificate":                   resourceAliCloudEsaSiteOriginClientCertificate(),
