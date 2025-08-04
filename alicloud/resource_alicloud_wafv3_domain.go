@@ -1,11 +1,12 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,280 +14,420 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudWafv3Domain() *schema.Resource {
+func resourceAliCloudWafv3Domain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudWafv3DomainCreate,
-		Read:   resourceAlicloudWafv3DomainRead,
-		Update: resourceAlicloudWafv3DomainUpdate,
-		Delete: resourceAlicloudWafv3DomainDelete,
+		Create: resourceAliCloudWafv3DomainCreate,
+		Read:   resourceAliCloudWafv3DomainRead,
+		Update: resourceAliCloudWafv3DomainUpdate,
+		Delete: resourceAliCloudWafv3DomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_type": {
-				Optional:     true,
-				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"share"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"domain": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"instance_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"listen": {
+				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
-				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"cert_id": {
-							Optional: true,
+						"protection_resource": {
 							Type:     schema.TypeString,
-						},
-						"cipher_suite": {
-							Optional:     true,
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntInSlice([]int{1, 2, 99}),
-						},
-						"custom_ciphers": {
 							Optional: true,
-							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-						"enable_tlsv3": {
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"exclusive_ip": {
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"focus_https": {
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"http2_enabled": {
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"http_ports": {
-							Optional: true,
-							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeInt,
-							},
+							Computed: true,
 						},
 						"https_ports": {
-							Optional: true,
 							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeInt,
-							},
-						},
-						"ipv6_enabled": {
 							Optional: true,
-							Type:     schema.TypeBool,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
 						},
-						"protection_resource": {
+						"custom_ciphers": {
+							Type:     schema.TypeList,
 							Optional: true,
-							Type:     schema.TypeString,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"tls_version": {
-							Optional:     true,
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"tlsv1", "tlsv1.1", "tlsv1.2"}, false),
+							Type:     schema.TypeString,
+							Optional: true,
 						},
-						"xff_header_mode": {
-							Optional:     true,
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
+						"http2_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"cert_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cipher_suite": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"enable_tlsv3": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"ipv6_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"focus_https": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"sm2_access_only": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 						"xff_headers": {
-							Optional: true,
 							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"xff_header_mode": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"sm2_cert_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"exclusive_ip": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"sm2_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"http_ports": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
 						},
 					},
 				},
 			},
 			"redirect": {
+				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
-				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"backends": {
-							Optional: true,
-							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
 						"connect_timeout": {
-							Optional: true,
-							Type:     schema.TypeInt,
-						},
-						"focus_http_backend": {
-							Optional: true,
-							Type:     schema.TypeBool,
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 3600),
 						},
 						"keepalive": {
-							Optional: true,
 							Type:     schema.TypeBool,
-						},
-						"keepalive_requests": {
 							Optional: true,
-							Type:     schema.TypeInt,
 						},
-						"keepalive_timeout": {
+						"sni_enabled": {
+							Type:     schema.TypeBool,
 							Optional: true,
-							Type:     schema.TypeInt,
 						},
-						"loadbalance": {
-							Required:     true,
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"iphash", "roundRobin", "leastTime"}, false),
+						"backup_backends": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"read_timeout": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 3600),
+						},
+						"keepalive_timeout": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(0, 60),
+						},
+						"sni_host": {
+							Type:     schema.TypeString,
 							Optional: true,
-							Type:     schema.TypeInt,
+						},
+						"backends": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"focus_http_backend": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"write_timeout": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 3600),
+						},
+						"retry": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 						"request_headers": {
+							Type:     schema.TypeList,
 							Optional: true,
-							Type:     schema.TypeSet,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"key": {
-										Optional: true,
-										Type:     schema.TypeString,
-									},
 									"value": {
-										Optional: true,
 										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"key": {
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 								},
 							},
 						},
-						"retry": {
-							Optional: true,
-							Type:     schema.TypeBool,
+						"keepalive_requests": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(60, 1000),
 						},
-						"sni_enabled": {
-							Optional: true,
+						"xff_proto": {
 							Type:     schema.TypeBool,
-						},
-						"sni_host": {
 							Optional: true,
+						},
+						"loadbalance": {
 							Type:     schema.TypeString,
-						},
-						"write_timeout": {
-							Optional: true,
-							Type:     schema.TypeInt,
+							Required: true,
 						},
 					},
 				},
 			},
 			"resource_manager_resource_group_id": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"status": {
+				Type:     schema.TypeInt,
 				Computed: true,
-				Type:     schema.TypeString,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudWafv3DomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
 
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-	}
+	action := "CreateDomain"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-
-	if v, ok := d.GetOk("access_type"); ok {
-		request["AccessType"] = v
-	}
+	request = make(map[string]interface{})
 	if v, ok := d.GetOk("domain"); ok {
 		request["Domain"] = v
 	}
 	if v, ok := d.GetOk("instance_id"); ok {
 		request["InstanceId"] = v
 	}
+	request["RegionId"] = client.RegionId
 
-	listenMap := make(map[string]interface{}, 0)
-	for _, v := range d.Get("listen").([]interface{}) {
-		listenObj := v.(map[string]interface{})
-		listenMap["CertId"] = listenObj["cert_id"]
-		listenMap["CipherSuite"] = listenObj["cipher_suite"]
-		listenMap["CustomCiphers"] = listenObj["custom_ciphers"].([]interface{})
-		listenMap["EnableTLSv3"] = listenObj["enable_tlsv3"]
-		listenMap["ExclusiveIp"] = listenObj["exclusive_ip"]
-		listenMap["FocusHttps"] = listenObj["focus_https"]
-		listenMap["Http2Enabled"] = listenObj["http2_enabled"]
-		listenMap["HttpPorts"] = listenObj["http_ports"].([]interface{})
-		listenMap["HttpsPorts"] = listenObj["https_ports"].([]interface{})
-		listenMap["IPv6Enabled"] = listenObj["ipv6_enabled"]
-		listenMap["ProtectionResource"] = listenObj["protection_resource"]
-		listenMap["TLSVersion"] = listenObj["tls_version"]
-		listenMap["XffHeaderMode"] = listenObj["xff_header_mode"]
-		listenMap["XffHeaders"] = listenObj["xff_headers"]
-	}
-	request["Listen"], _ = convertMaptoJsonString(listenMap)
+	objectDataLocalMap := make(map[string]interface{})
 
-	redirectMap := make(map[string]interface{}, 0)
-	for _, v := range d.Get("redirect").([]interface{}) {
-		redirectObj := v.(map[string]interface{})
-
-		redirectMap["Backends"] = redirectObj["backends"].([]interface{})
-		redirectMap["ConnectTimeout"] = redirectObj["connect_timeout"]
-		redirectMap["FocusHttpBackend"] = redirectObj["focus_http_backend"]
-		redirectMap["Keepalive"] = redirectObj["keepalive"]
-		redirectMap["KeepaliveRequests"] = redirectObj["keepalive_requests"]
-		redirectMap["KeepaliveTimeout"] = redirectObj["keepalive_timeout"]
-		redirectMap["Retry"] = redirectObj["retry"]
-		redirectMap["SniEnabled"] = redirectObj["sni_enabled"]
-		redirectMap["SniHost"] = redirectObj["sni_host"]
-		redirectMap["Loadbalance"] = redirectObj["loadbalance"]
-		redirectMap["WriteTimeout"] = redirectObj["write_timeout"]
-		redirectMap["ReadTimeout"] = redirectObj["read_timeout"]
-
-		requestHeaderMap := make([]map[string]interface{}, 0)
-		if v, ok := redirectObj["request_headers"]; ok {
-			for _, requestHeader := range v.(*schema.Set).List() {
-				requestHeaderObj := requestHeader.(map[string]interface{})
-				requestHeaderMap = append(requestHeaderMap, map[string]interface{}{
-					"Key":   requestHeaderObj["key"],
-					"Value": requestHeaderObj["value"],
-				})
-			}
-			redirectMap["RequestHeaders"] = requestHeaderMap
+	if v := d.Get("listen"); v != nil {
+		cipherSuite1, _ := jsonpath.Get("$[0].cipher_suite", v)
+		if cipherSuite1 != nil && cipherSuite1 != "" {
+			objectDataLocalMap["CipherSuite"] = cipherSuite1
 		}
-	}
-	request["Redirect"], _ = convertMaptoJsonString(redirectMap)
+		httpPorts1, _ := jsonpath.Get("$[0].http_ports", v)
+		if httpPorts1 != nil && httpPorts1 != "" {
+			objectDataLocalMap["HttpPorts"] = httpPorts1
+		}
+		sm2Enabled, _ := jsonpath.Get("$[0].sm2_enabled", v)
+		if sm2Enabled != nil && sm2Enabled != "" {
+			objectDataLocalMap["SM2Enabled"] = sm2Enabled
+		}
+		focusHttps1, _ := jsonpath.Get("$[0].focus_https", v)
+		if focusHttps1 != nil && focusHttps1 != "" {
+			objectDataLocalMap["FocusHttps"] = focusHttps1
+		}
+		certId1, _ := jsonpath.Get("$[0].cert_id", v)
+		if certId1 != nil && certId1 != "" {
+			objectDataLocalMap["CertId"] = certId1
+		}
+		tLSVersion1, _ := jsonpath.Get("$[0].tls_version", v)
+		if tLSVersion1 != nil && tLSVersion1 != "" {
+			objectDataLocalMap["TLSVersion"] = tLSVersion1
+		}
+		customCiphers1, _ := jsonpath.Get("$[0].custom_ciphers", v)
+		if customCiphers1 != nil && customCiphers1 != "" {
+			objectDataLocalMap["CustomCiphers"] = customCiphers1
+		}
+		protectionResource1, _ := jsonpath.Get("$[0].protection_resource", v)
+		if protectionResource1 != nil && protectionResource1 != "" {
+			objectDataLocalMap["ProtectionResource"] = protectionResource1
+		}
+		sm2CertId, _ := jsonpath.Get("$[0].sm2_cert_id", v)
+		if sm2CertId != nil && sm2CertId != "" {
+			objectDataLocalMap["SM2CertId"] = sm2CertId
+		}
+		enableTLSv31, _ := jsonpath.Get("$[0].enable_tlsv3", v)
+		if enableTLSv31 != nil && enableTLSv31 != "" {
+			objectDataLocalMap["EnableTLSv3"] = enableTLSv31
+		}
+		exclusiveIp1, _ := jsonpath.Get("$[0].exclusive_ip", v)
+		if exclusiveIp1 != nil && exclusiveIp1 != "" {
+			objectDataLocalMap["ExclusiveIp"] = exclusiveIp1
+		}
+		xffHeaderMode1, _ := jsonpath.Get("$[0].xff_header_mode", v)
+		if xffHeaderMode1 != nil && xffHeaderMode1 != "" {
+			objectDataLocalMap["XffHeaderMode"] = xffHeaderMode1
+		}
+		http2Enabled1, _ := jsonpath.Get("$[0].http2_enabled", v)
+		if http2Enabled1 != nil && http2Enabled1 != "" {
+			objectDataLocalMap["Http2Enabled"] = http2Enabled1
+		}
+		xffHeaders1, _ := jsonpath.Get("$[0].xff_headers", v)
+		if xffHeaders1 != nil && xffHeaders1 != "" {
+			objectDataLocalMap["XffHeaders"] = xffHeaders1
+		}
+		iPv6Enabled1, _ := jsonpath.Get("$[0].ipv6_enabled", v)
+		if iPv6Enabled1 != nil && iPv6Enabled1 != "" {
+			objectDataLocalMap["IPv6Enabled"] = iPv6Enabled1
+		}
+		sm2AccessOnly, _ := jsonpath.Get("$[0].sm2_access_only", v)
+		if sm2AccessOnly != nil && sm2AccessOnly != "" {
+			objectDataLocalMap["SM2AccessOnly"] = sm2AccessOnly
+		}
+		httpsPorts1, _ := jsonpath.Get("$[0].https_ports", v)
+		if httpsPorts1 != nil && httpsPorts1 != "" {
+			objectDataLocalMap["HttpsPorts"] = httpsPorts1
+		}
 
-	var response map[string]interface{}
-	action := "CreateDomain"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Listen"] = string(objectDataLocalMapJson)
+	}
+
+	objectDataLocalMap1 := make(map[string]interface{})
+
+	if v := d.Get("redirect"); v != nil {
+		if v, ok := d.GetOk("redirect"); ok {
+			localData, err := jsonpath.Get("$[0].request_headers", v)
+			if err != nil {
+				localData = make([]interface{}, 0)
+			}
+			localMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData.([]interface{}) {
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Key"] = dataLoopTmp["key"]
+				dataLoopMap["Value"] = dataLoopTmp["value"]
+				localMaps = append(localMaps, dataLoopMap)
+			}
+			objectDataLocalMap1["RequestHeaders"] = localMaps
+		}
+
+		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
+		if sniHost1 != nil && sniHost1 != "" {
+			objectDataLocalMap1["SniHost"] = sniHost1
+		}
+		xffProto1, _ := jsonpath.Get("$[0].xff_proto", v)
+		if xffProto1 != nil && xffProto1 != "" {
+			objectDataLocalMap1["XffProto"] = xffProto1
+		}
+		retry1, _ := jsonpath.Get("$[0].retry", v)
+		if retry1 != nil && retry1 != "" {
+			objectDataLocalMap1["Retry"] = retry1
+		}
+		keepalive1, _ := jsonpath.Get("$[0].keepalive", v)
+		if keepalive1 != nil && keepalive1 != "" {
+			objectDataLocalMap1["Keepalive"] = keepalive1
+		}
+		focusHttpBackend1, _ := jsonpath.Get("$[0].focus_http_backend", v)
+		if focusHttpBackend1 != nil && focusHttpBackend1 != "" {
+			objectDataLocalMap1["FocusHttpBackend"] = focusHttpBackend1
+		}
+		loadbalance1, _ := jsonpath.Get("$[0].loadbalance", v)
+		if loadbalance1 != nil && loadbalance1 != "" {
+			objectDataLocalMap1["Loadbalance"] = loadbalance1
+		}
+		sniEnabled1, _ := jsonpath.Get("$[0].sni_enabled", v)
+		if sniEnabled1 != nil && sniEnabled1 != "" {
+			objectDataLocalMap1["SniEnabled"] = sniEnabled1
+		}
+		keepaliveRequests1, _ := jsonpath.Get("$[0].keepalive_requests", v)
+		if keepaliveRequests1 != nil && keepaliveRequests1 != "" && keepaliveRequests1.(int) > 0 {
+			objectDataLocalMap1["KeepaliveRequests"] = keepaliveRequests1
+		}
+		connectTimeout1, _ := jsonpath.Get("$[0].connect_timeout", v)
+		if connectTimeout1 != nil && connectTimeout1 != "" && connectTimeout1.(int) > 0 {
+			objectDataLocalMap1["ConnectTimeout"] = connectTimeout1
+		}
+		writeTimeout1, _ := jsonpath.Get("$[0].write_timeout", v)
+		if writeTimeout1 != nil && writeTimeout1 != "" && writeTimeout1.(int) > 0 {
+			objectDataLocalMap1["WriteTimeout"] = writeTimeout1
+		}
+		backends1, _ := jsonpath.Get("$[0].backends", v)
+		if backends1 != nil && backends1 != "" {
+			objectDataLocalMap1["Backends"] = backends1
+		}
+		keepaliveTimeout1, _ := jsonpath.Get("$[0].keepalive_timeout", v)
+		if keepaliveTimeout1 != nil && keepaliveTimeout1 != "" && keepaliveTimeout1.(int) > 0 {
+			objectDataLocalMap1["KeepaliveTimeout"] = keepaliveTimeout1
+		}
+		backupBackends1, _ := jsonpath.Get("$[0].backup_backends", v)
+		if backupBackends1 != nil && backupBackends1 != "" {
+			objectDataLocalMap1["BackupBackends"] = backupBackends1
+		}
+		readTimeout1, _ := jsonpath.Get("$[0].read_timeout", v)
+		if readTimeout1 != nil && readTimeout1 != "" && readTimeout1.(int) > 0 {
+			objectDataLocalMap1["ReadTimeout"] = readTimeout1
+		}
+
+		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Redirect"] = string(objectDataLocalMap1Json)
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
+		request["ResourceManagerResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("access_type"); ok {
+		request["AccessType"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -294,224 +435,403 @@ func resourceAlicloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_wafv3_domain", action, AlibabaCloudSdkGoERROR)
 	}
-	domainValue, err := jsonpath.Get("$.DomainInfo.Domain", response)
-	if err != nil || domainValue == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_wafv3_domain")
-	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", domainValue))
+	DomainInfoDomainVar, _ := jsonpath.Get("$.DomainInfo.Domain", response)
+	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], DomainInfoDomainVar))
 
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafOpenapiService.Wafv3DomainStateRefreshFunc(d.Id(), []string{}))
+	wafv3ServiceV2 := Wafv3ServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudWafv3DomainRead(d, meta)
+	return resourceAliCloudWafv3DomainUpdate(d, meta)
 }
 
-func resourceAlicloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
+	wafv3ServiceV2 := Wafv3ServiceV2{client}
 
-	object, err := wafOpenapiService.DescribeWafv3Domain(d.Id())
+	objectRaw, err := wafv3ServiceV2.DescribeWafv3Domain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_wafv3_domain wafOpenapiService.DescribeWafv3Domain Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_wafv3_domain DescribeWafv3Domain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+
+	d.Set("resource_manager_resource_group_id", objectRaw["ResourceManagerResourceGroupId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("domain", objectRaw["Domain"])
+
+	listenMaps := make([]map[string]interface{}, 0)
+	listenMap := make(map[string]interface{})
+	listenRaw := make(map[string]interface{})
+	if objectRaw["Listen"] != nil {
+		listenRaw = objectRaw["Listen"].(map[string]interface{})
 	}
-	d.Set("instance_id", parts[0])
-	d.Set("domain", parts[1])
-	listen19Maps := make([]map[string]interface{}, 0)
-	listen19Map := make(map[string]interface{})
-	listen19Raw := object["Listen"].(map[string]interface{})
-	listen19Map["cert_id"] = listen19Raw["CertId"]
-	listen19Map["cipher_suite"] = listen19Raw["CipherSuite"]
-	if v, ok := listen19Raw["CustomCiphers"]; ok {
-		listen19Map["custom_ciphers"] = v.([]interface{})
+	if len(listenRaw) > 0 {
+		listenMap["cert_id"] = listenRaw["CertId"]
+		listenMap["cipher_suite"] = listenRaw["CipherSuite"]
+		listenMap["enable_tlsv3"] = listenRaw["EnableTLSv3"]
+		listenMap["exclusive_ip"] = listenRaw["ExclusiveIp"]
+		listenMap["focus_https"] = listenRaw["FocusHttps"]
+		listenMap["http2_enabled"] = listenRaw["Http2Enabled"]
+		listenMap["ipv6_enabled"] = listenRaw["IPv6Enabled"]
+		listenMap["protection_resource"] = listenRaw["ProtectionResource"]
+		listenMap["sm2_access_only"] = listenRaw["SM2AccessOnly"]
+		listenMap["sm2_cert_id"] = listenRaw["SM2CertId"]
+		listenMap["sm2_enabled"] = listenRaw["SM2Enabled"]
+		listenMap["tls_version"] = listenRaw["TLSVersion"]
+		listenMap["xff_header_mode"] = listenRaw["XffHeaderMode"]
+
+		customCiphersRaw := make([]interface{}, 0)
+		if listenRaw["CustomCiphers"] != nil {
+			customCiphersRaw = listenRaw["CustomCiphers"].([]interface{})
+		}
+
+		listenMap["custom_ciphers"] = customCiphersRaw
+		httpPortsRaw := make([]interface{}, 0)
+		if listenRaw["HttpPorts"] != nil {
+			httpPortsRaw = listenRaw["HttpPorts"].([]interface{})
+		}
+
+		listenMap["http_ports"] = httpPortsRaw
+		httpsPortsRaw := make([]interface{}, 0)
+		if listenRaw["HttpsPorts"] != nil {
+			httpsPortsRaw = listenRaw["HttpsPorts"].([]interface{})
+		}
+
+		listenMap["https_ports"] = httpsPortsRaw
+		xffHeadersRaw := make([]interface{}, 0)
+		if listenRaw["XffHeaders"] != nil {
+			xffHeadersRaw = listenRaw["XffHeaders"].([]interface{})
+		}
+
+		listenMap["xff_headers"] = xffHeadersRaw
+		listenMaps = append(listenMaps, listenMap)
 	}
-	listen19Map["enable_tlsv3"] = listen19Raw["EnableTLSv3"]
-	listen19Map["exclusive_ip"] = listen19Raw["ExclusiveIp"]
-	listen19Map["focus_https"] = listen19Raw["FocusHttps"]
-	listen19Map["http2_enabled"] = listen19Raw["Http2Enabled"]
-	if v, ok := listen19Raw["HttpPorts"]; ok {
-		listen19Map["http_ports"] = v.([]interface{})
+	if err := d.Set("listen", listenMaps); err != nil {
+		return err
 	}
-	if v, ok := listen19Raw["HttpsPorts"]; ok {
-		listen19Map["https_ports"] = v.([]interface{})
+	redirectMaps := make([]map[string]interface{}, 0)
+	redirectMap := make(map[string]interface{})
+	redirectRaw := make(map[string]interface{})
+	if objectRaw["Redirect"] != nil {
+		redirectRaw = objectRaw["Redirect"].(map[string]interface{})
 	}
-	listen19Map["ipv6_enabled"] = listen19Raw["IPv6Enabled"]
-	listen19Map["protection_resource"] = listen19Raw["ProtectionResource"]
-	listen19Map["tls_version"] = listen19Raw["TLSVersion"]
-	listen19Map["xff_header_mode"] = listen19Raw["XffHeaderMode"]
-	if v, ok := listen19Raw["XffHeaders"]; ok {
-		listen19Map["xff_headers"] = v.([]interface{})
+	if len(redirectRaw) > 0 {
+		redirectMap["connect_timeout"] = redirectRaw["ConnectTimeout"]
+		redirectMap["focus_http_backend"] = redirectRaw["FocusHttpBackend"]
+		redirectMap["keepalive"] = redirectRaw["Keepalive"]
+		redirectMap["keepalive_requests"] = redirectRaw["KeepaliveRequests"]
+		redirectMap["keepalive_timeout"] = redirectRaw["KeepaliveTimeout"]
+		redirectMap["loadbalance"] = redirectRaw["Loadbalance"]
+		redirectMap["read_timeout"] = redirectRaw["ReadTimeout"]
+		redirectMap["retry"] = redirectRaw["Retry"]
+		redirectMap["sni_enabled"] = redirectRaw["SniEnabled"]
+		redirectMap["sni_host"] = redirectRaw["SniHost"]
+		redirectMap["write_timeout"] = redirectRaw["WriteTimeout"]
+		redirectMap["xff_proto"] = redirectRaw["XffProto"]
+
+		backendsRaw := redirectRaw["AllBackends"]
+		if backendsRaw != nil {
+			redirectMap["backends"] = backendsRaw
+		}
+
+		requestHeadersRaw := redirectRaw["RequestHeaders"]
+		requestHeadersMaps := make([]map[string]interface{}, 0)
+		if requestHeadersRaw != nil {
+			for _, requestHeadersChildRaw := range requestHeadersRaw.([]interface{}) {
+				requestHeadersMap := make(map[string]interface{})
+				requestHeadersChildRaw := requestHeadersChildRaw.(map[string]interface{})
+				requestHeadersMap["key"] = requestHeadersChildRaw["Key"]
+				requestHeadersMap["value"] = requestHeadersChildRaw["Value"]
+
+				requestHeadersMaps = append(requestHeadersMaps, requestHeadersMap)
+			}
+		}
+		redirectMap["request_headers"] = requestHeadersMaps
+		redirectMaps = append(redirectMaps, redirectMap)
 	}
-	listen19Maps = append(listen19Maps, listen19Map)
-	d.Set("listen", listen19Maps)
-	redirect81Maps := make([]map[string]interface{}, 0)
-	redirect81Map := make(map[string]interface{})
-	redirect81Raw := object["Redirect"].(map[string]interface{})
-	if v, ok := redirect81Raw["AllBackends"]; ok {
-		redirect81Map["backends"] = v.([]interface{})
+	if err := d.Set("redirect", redirectMaps); err != nil {
+		return err
 	}
 
-	redirect81Map["connect_timeout"] = redirect81Raw["ConnectTimeout"]
-	redirect81Map["focus_http_backend"] = redirect81Raw["FocusHttpBackend"]
-	redirect81Map["keepalive"] = redirect81Raw["Keepalive"]
-	redirect81Map["keepalive_requests"] = redirect81Raw["KeepaliveRequests"]
-	redirect81Map["keepalive_timeout"] = redirect81Raw["KeepaliveTimeout"]
-	redirect81Map["loadbalance"] = redirect81Raw["Loadbalance"]
-	redirect81Map["read_timeout"] = redirect81Raw["ReadTimeout"]
-	requestHeaders81Maps := make([]map[string]interface{}, 0)
-	if v, ok := redirect81Raw["RequestHeaders"]; ok && v != nil {
-		for _, value1 := range v.([]interface{}) {
-			requestHeaders81 := value1.(map[string]interface{})
-			requestHeaders81Map := make(map[string]interface{})
-			requestHeaders81Map["key"] = requestHeaders81["Key"]
-			requestHeaders81Map["value"] = requestHeaders81["Value"]
-			requestHeaders81Maps = append(requestHeaders81Maps, requestHeaders81Map)
-		}
+	objectRaw, err = wafv3ServiceV2.DescribeDomainListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
 	}
-	redirect81Map["request_headers"] = requestHeaders81Maps
-	redirect81Map["retry"] = redirect81Raw["Retry"]
-	redirect81Map["sni_enabled"] = redirect81Raw["SniEnabled"]
-	redirect81Map["sni_host"] = redirect81Raw["SniHost"]
-	redirect81Map["write_timeout"] = redirect81Raw["WriteTimeout"]
-	redirect81Maps = append(redirect81Maps, redirect81Map)
-	d.Set("redirect", redirect81Maps)
-	resourceManagerResourceGroupId52 := object["ResourceManagerResourceGroupId"]
-	d.Set("resource_manager_resource_group_id", resourceManagerResourceGroupId52)
-	d.Set("status", fmt.Sprint(object["Status"]))
+
+	tagsMaps := objectRaw["TagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("instance_id", parts[0])
 
 	return nil
 }
 
-func resourceAlicloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
 	var err error
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyDomain"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("listen") {
+		update = true
 	}
-	request := map[string]interface{}{
-		"InstanceId": parts[0],
-		"Domain":     parts[1],
-		"RegionId":   client.RegionId,
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("listen"); v != nil {
+		enableTLSv31, _ := jsonpath.Get("$[0].enable_tlsv3", v)
+		if enableTLSv31 != nil && (d.HasChange("listen.0.enable_tlsv3") || enableTLSv31 != "") {
+			objectDataLocalMap["EnableTLSv3"] = enableTLSv31
+		}
+		cipherSuite1, _ := jsonpath.Get("$[0].cipher_suite", v)
+		if cipherSuite1 != nil && (d.HasChange("listen.0.cipher_suite") || cipherSuite1 != "") {
+			objectDataLocalMap["CipherSuite"] = cipherSuite1
+		}
+		exclusiveIp1, _ := jsonpath.Get("$[0].exclusive_ip", v)
+		if exclusiveIp1 != nil && (d.HasChange("listen.0.exclusive_ip") || exclusiveIp1 != "") {
+			objectDataLocalMap["ExclusiveIp"] = exclusiveIp1
+		}
+		xffHeaderMode1, _ := jsonpath.Get("$[0].xff_header_mode", v)
+		if xffHeaderMode1 != nil && (d.HasChange("listen.0.xff_header_mode") || xffHeaderMode1 != "") {
+			objectDataLocalMap["XffHeaderMode"] = xffHeaderMode1
+		}
+		http2Enabled1, _ := jsonpath.Get("$[0].http2_enabled", v)
+		if http2Enabled1 != nil && (d.HasChange("listen.0.http2_enabled") || http2Enabled1 != "") {
+			objectDataLocalMap["Http2Enabled"] = http2Enabled1
+		}
+		httpPorts1, _ := jsonpath.Get("$[0].http_ports", d.Get("listen"))
+		if httpPorts1 != nil && (d.HasChange("listen.0.http_ports") || httpPorts1 != "") {
+			objectDataLocalMap["HttpPorts"] = httpPorts1
+		}
+		xffHeaders1, _ := jsonpath.Get("$[0].xff_headers", d.Get("listen"))
+		if xffHeaders1 != nil && (d.HasChange("listen.0.xff_headers") || xffHeaders1 != "") {
+			objectDataLocalMap["XffHeaders"] = xffHeaders1
+		}
+		sm2Enabled, _ := jsonpath.Get("$[0].sm2_enabled", v)
+		if sm2Enabled != nil && (d.HasChange("listen.0.sm2_enabled") || sm2Enabled != "") {
+			objectDataLocalMap["SM2Enabled"] = sm2Enabled
+		}
+		iPv6Enabled1, _ := jsonpath.Get("$[0].ipv6_enabled", v)
+		if iPv6Enabled1 != nil && (d.HasChange("listen.0.ipv6_enabled") || iPv6Enabled1 != "") {
+			objectDataLocalMap["IPv6Enabled"] = iPv6Enabled1
+		}
+		sm2AccessOnly, _ := jsonpath.Get("$[0].sm2_access_only", v)
+		if sm2AccessOnly != nil && (d.HasChange("listen.0.sm2_access_only") || sm2AccessOnly != "") {
+			objectDataLocalMap["SM2AccessOnly"] = sm2AccessOnly
+		}
+		focusHttps1, _ := jsonpath.Get("$[0].focus_https", v)
+		if focusHttps1 != nil && (d.HasChange("listen.0.focus_https") || focusHttps1 != "") {
+			objectDataLocalMap["FocusHttps"] = focusHttps1
+		}
+		certId1, _ := jsonpath.Get("$[0].cert_id", v)
+		if certId1 != nil && (d.HasChange("listen.0.cert_id") || certId1 != "") {
+			objectDataLocalMap["CertId"] = certId1
+		}
+		tLSVersion1, _ := jsonpath.Get("$[0].tls_version", v)
+		if tLSVersion1 != nil && (d.HasChange("listen.0.tls_version") || tLSVersion1 != "") {
+			objectDataLocalMap["TLSVersion"] = tLSVersion1
+		}
+		customCiphers1, _ := jsonpath.Get("$[0].custom_ciphers", d.Get("listen"))
+		if customCiphers1 != nil && (d.HasChange("listen.0.custom_ciphers") || customCiphers1 != "") {
+			objectDataLocalMap["CustomCiphers"] = customCiphers1
+		}
+		protectionResource1, _ := jsonpath.Get("$[0].protection_resource", v)
+		if protectionResource1 != nil && (d.HasChange("listen.0.protection_resource") || protectionResource1 != "") {
+			objectDataLocalMap["ProtectionResource"] = protectionResource1
+		}
+		httpsPorts1, _ := jsonpath.Get("$[0].https_ports", d.Get("listen"))
+		if httpsPorts1 != nil && (d.HasChange("listen.0.https_ports") || httpsPorts1 != "") {
+			objectDataLocalMap["HttpsPorts"] = httpsPorts1
+		}
+		sm2CertId, _ := jsonpath.Get("$[0].sm2_cert_id", v)
+		if sm2CertId != nil && (d.HasChange("listen.0.sm2_cert_id") || sm2CertId != "") {
+			objectDataLocalMap["SM2CertId"] = sm2CertId
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Listen"] = string(objectDataLocalMapJson)
+	}
+
+	if !d.IsNewResource() && d.HasChange("redirect") {
+		update = true
+	}
+	objectDataLocalMap1 := make(map[string]interface{})
+
+	if v := d.Get("redirect"); v != nil {
+		sniEnabled1, _ := jsonpath.Get("$[0].sni_enabled", v)
+		if sniEnabled1 != nil && (d.HasChange("redirect.0.sni_enabled") || sniEnabled1 != "") {
+			objectDataLocalMap1["SniEnabled"] = sniEnabled1
+		}
+		if v, ok := d.GetOk("redirect"); ok {
+			localData, err := jsonpath.Get("$[0].request_headers", v)
+			if err != nil {
+				localData = make([]interface{}, 0)
+			}
+			localMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData.([]interface{}) {
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Key"] = dataLoopTmp["key"]
+				dataLoopMap["Value"] = dataLoopTmp["value"]
+				localMaps = append(localMaps, dataLoopMap)
+			}
+			objectDataLocalMap1["RequestHeaders"] = localMaps
+		}
+
+		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
+		if sniHost1 != nil && (d.HasChange("redirect.0.sni_host") || sniHost1 != "") {
+			objectDataLocalMap1["SniHost"] = sniHost1
+		}
+		xffProto1, _ := jsonpath.Get("$[0].xff_proto", v)
+		if xffProto1 != nil && (d.HasChange("redirect.0.xff_proto") || xffProto1 != "") {
+			objectDataLocalMap1["XffProto"] = xffProto1
+		}
+		keepaliveRequests1, _ := jsonpath.Get("$[0].keepalive_requests", v)
+		if keepaliveRequests1 != nil && (d.HasChange("redirect.0.keepalive_requests") || keepaliveRequests1 != "") && keepaliveRequests1.(int) > 0 {
+			objectDataLocalMap1["KeepaliveRequests"] = keepaliveRequests1
+		}
+		retry1, _ := jsonpath.Get("$[0].retry", v)
+		if retry1 != nil && (d.HasChange("redirect.0.retry") || retry1 != "") {
+			objectDataLocalMap1["Retry"] = retry1
+		}
+		connectTimeout1, _ := jsonpath.Get("$[0].connect_timeout", v)
+		if connectTimeout1 != nil && (d.HasChange("redirect.0.connect_timeout") || connectTimeout1 != "") && connectTimeout1.(int) > 0 {
+			objectDataLocalMap1["ConnectTimeout"] = connectTimeout1
+		}
+		keepalive1, _ := jsonpath.Get("$[0].keepalive", v)
+		if keepalive1 != nil && (d.HasChange("redirect.0.keepalive") || keepalive1 != "") {
+			objectDataLocalMap1["Keepalive"] = keepalive1
+		}
+		writeTimeout1, _ := jsonpath.Get("$[0].write_timeout", v)
+		if writeTimeout1 != nil && (d.HasChange("redirect.0.write_timeout") || writeTimeout1 != "") && writeTimeout1.(int) > 0 {
+			objectDataLocalMap1["WriteTimeout"] = writeTimeout1
+		}
+		focusHttpBackend1, _ := jsonpath.Get("$[0].focus_http_backend", v)
+		if focusHttpBackend1 != nil && (d.HasChange("redirect.0.focus_http_backend") || focusHttpBackend1 != "") {
+			objectDataLocalMap1["FocusHttpBackend"] = focusHttpBackend1
+		}
+		loadbalance1, _ := jsonpath.Get("$[0].loadbalance", v)
+		if loadbalance1 != nil && (d.HasChange("redirect.0.loadbalance") || loadbalance1 != "") {
+			objectDataLocalMap1["Loadbalance"] = loadbalance1
+		}
+		backends1, _ := jsonpath.Get("$[0].backends", d.Get("redirect"))
+		if backends1 != nil && (d.HasChange("redirect.0.backends") || backends1 != "") {
+			objectDataLocalMap1["Backends"] = backends1
+		}
+		keepaliveTimeout1, _ := jsonpath.Get("$[0].keepalive_timeout", v)
+		if keepaliveTimeout1 != nil && (d.HasChange("redirect.0.keepalive_timeout") || keepaliveTimeout1 != "") && keepaliveTimeout1.(int) > 0 {
+			objectDataLocalMap1["KeepaliveTimeout"] = keepaliveTimeout1
+		}
+		backupBackends1, _ := jsonpath.Get("$[0].backup_backends", d.Get("redirect"))
+		if backupBackends1 != nil && (d.HasChange("redirect.0.backup_backends") || backupBackends1 != "") {
+			objectDataLocalMap1["BackupBackends"] = backupBackends1
+		}
+		readTimeout1, _ := jsonpath.Get("$[0].read_timeout", v)
+		if readTimeout1 != nil && (d.HasChange("redirect.0.read_timeout") || readTimeout1 != "") && readTimeout1.(int) > 0 {
+			objectDataLocalMap1["ReadTimeout"] = readTimeout1
+		}
+
+		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Redirect"] = string(objectDataLocalMap1Json)
+	}
+
+	if d.HasChange("domain_id") {
+		update = true
+		request["DomainId"] = d.Get("domain_id")
 	}
 
 	if v, ok := d.GetOk("access_type"); ok {
 		request["AccessType"] = v
 	}
-
-	redirectMap := make(map[string]interface{}, 0)
-	for _, v := range d.Get("redirect").([]interface{}) {
-		redirectObj := v.(map[string]interface{})
-
-		redirectMap["Backends"] = redirectObj["backends"].([]interface{})
-		redirectMap["ConnectTimeout"] = redirectObj["connect_timeout"]
-		redirectMap["FocusHttpBackend"] = redirectObj["focus_http_backend"]
-		redirectMap["Keepalive"] = redirectObj["keepalive"]
-		redirectMap["KeepaliveRequests"] = redirectObj["keepalive_requests"]
-		redirectMap["KeepaliveTimeout"] = redirectObj["keepalive_timeout"]
-		redirectMap["Retry"] = redirectObj["retry"]
-		redirectMap["SniEnabled"] = redirectObj["sni_enabled"]
-		redirectMap["SniHost"] = redirectObj["sni_host"]
-		redirectMap["Loadbalance"] = redirectObj["loadbalance"]
-		redirectMap["WriteTimeout"] = redirectObj["write_timeout"]
-		redirectMap["ReadTimeout"] = redirectObj["read_timeout"]
-
-		requestHeaderMap := make([]map[string]interface{}, 0)
-		if v, ok := redirectObj["request_headers"]; ok {
-			for _, requestHeader := range v.(*schema.Set).List() {
-				requestHeaderObj := requestHeader.(map[string]interface{})
-				requestHeaderMap = append(requestHeaderMap, map[string]interface{}{
-					"Key":   requestHeaderObj["key"],
-					"Value": requestHeaderObj["value"],
-				})
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			redirectMap["RequestHeaders"] = requestHeaderMap
-		}
-	}
-	request["Redirect"], _ = convertMaptoJsonString(redirectMap)
-
-	listenMap := make(map[string]interface{}, 0)
-	for _, v := range d.Get("listen").([]interface{}) {
-		listenObj := v.(map[string]interface{})
-		listenMap["CertId"] = listenObj["cert_id"]
-		listenMap["CipherSuite"] = listenObj["cipher_suite"]
-		listenMap["CustomCiphers"] = listenObj["custom_ciphers"].([]interface{})
-		listenMap["EnableTLSv3"] = listenObj["enable_tlsv3"]
-		listenMap["ExclusiveIp"] = listenObj["exclusive_ip"]
-		listenMap["FocusHttps"] = listenObj["focus_https"]
-		listenMap["Http2Enabled"] = listenObj["http2_enabled"]
-		listenMap["HttpPorts"] = listenObj["http_ports"].([]interface{})
-		listenMap["HttpsPorts"] = listenObj["https_ports"].([]interface{})
-		listenMap["IPv6Enabled"] = listenObj["ipv6_enabled"]
-		listenMap["ProtectionResource"] = listenObj["protection_resource"]
-		listenMap["TLSVersion"] = listenObj["tls_version"]
-		listenMap["XffHeaderMode"] = listenObj["xff_header_mode"]
-		listenMap["XffHeaders"] = listenObj["xff_headers"]
-	}
-	request["Listen"], _ = convertMaptoJsonString(listenMap)
-
-	action := "ModifyDomain"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
-		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
+			return nil
+		})
 		addDebug(action, response, request)
-		return nil
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafOpenapiService.Wafv3DomainStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		wafv3ServiceV2 := Wafv3ServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
-	return resourceAlicloudWafv3DomainRead(d, meta)
+	if d.HasChange("tags") {
+		wafv3ServiceV2 := Wafv3ServiceV2{client}
+		if err := wafv3ServiceV2.SetResourceTags(d, "ALIYUN::WAF::DEFENSERESOURCE"); err != nil {
+			return WrapError(err)
+		}
+	}
+	return resourceAliCloudWafv3DomainRead(d, meta)
 }
 
-func resourceAlicloudWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"InstanceId": parts[0],
-		"Domain":     parts[1],
-		"RegionId":   client.RegionId,
-	}
+func resourceAliCloudWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
 
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
 	action := "DeleteDomain"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["Domain"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("domain_id"); ok {
+		request["DomainId"] = v
+	}
+	if v, ok := d.GetOk("access_type"); ok {
+		request["AccessType"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -519,18 +839,22 @@ func resourceAlicloudWafv3DomainDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafOpenapiService.Wafv3DomainStateRefreshFunc(d.Id(), []string{}))
+
+	wafv3ServiceV2 := Wafv3ServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
