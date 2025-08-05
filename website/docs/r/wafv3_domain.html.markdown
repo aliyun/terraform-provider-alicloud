@@ -91,7 +91,6 @@ share: CNAME record mode. This is the default value.
 The listen supports the following:
 * `cert_id` - (Optional) The ID of the certificate to be added. This parameter is used only if the value of `HttpsPorts` is not empty (indicating that the domain name uses the HTTPS protocol).
 * `cipher_suite` - (Optional, Int) The type of the cipher suites that you want to add. This parameter is available only if you specify `HttpsPorts`. Valid values:
-
   - `1`: all cipher suites.
   - `2`: strong cipher suites. This value is available only if you set `TLSVersion` to **tlsv1.2**.
   - `99`: custom cipher suites.
@@ -202,7 +201,8 @@ The redirect-request_headers supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<domain>`.
-* `status` - Domain Status
+* `domain_id` - The domain ID.
+* `status` - The status of the domain name. 
 
 ## Timeouts
 
