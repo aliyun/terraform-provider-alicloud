@@ -748,7 +748,8 @@ func TestAccAliCloudWafv3Domain_basic11009(t *testing.T) {
 }
 
 var AlicloudWafv3DomainMap11009 = map[string]string{
-	"status": CHECKSET,
+	"status":    CHECKSET,
+	"domain_id": CHECKSET,
 }
 
 func AlicloudWafv3DomainBasicDependence11009(name string) string {

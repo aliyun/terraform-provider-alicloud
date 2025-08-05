@@ -38,6 +38,10 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"domain_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -50,9 +54,10 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"protection_resource": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"share", "gslb"}, false),
 						},
 						"https_ports": {
 							Type:     schema.TypeList,
@@ -65,8 +70,9 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"tls_version": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"tlsv1", "tlsv1.1", "tlsv1.2"}, false),
 						},
 						"http2_enabled": {
 							Type:     schema.TypeBool,
@@ -77,8 +83,9 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Optional: true,
 						},
 						"cipher_suite": {
-							Type:     schema.TypeInt,
-							Optional: true,
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntInSlice([]int{0, 1, 2, 99}),
 						},
 						"enable_tlsv3": {
 							Type:     schema.TypeBool,
@@ -102,8 +109,9 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"xff_header_mode": {
-							Type:     schema.TypeInt,
-							Optional: true,
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntInSlice([]int{0, 1, 2}),
 						},
 						"sm2_cert_id": {
 							Type:     schema.TypeString,
@@ -210,8 +218,9 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Optional: true,
 						},
 						"loadbalance": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringInSlice([]string{"iphash", "roundRobin", "leastTime"}, false),
 						},
 					},
 				},
@@ -469,6 +478,7 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
+	d.Set("domain_id", objectRaw["DomainId"])
 	d.Set("resource_manager_resource_group_id", objectRaw["ResourceManagerResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("domain", objectRaw["Domain"])
