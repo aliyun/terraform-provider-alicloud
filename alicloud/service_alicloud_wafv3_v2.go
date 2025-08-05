@@ -26,12 +26,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeDefenseTemplate"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TemplateId"] = parts[1]
-	query["InstanceId"] = parts[0]
-	query["RegionId"] = client.RegionId
+	request["TemplateId"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	action := "DescribeDefenseTemplate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -44,12 +44,10 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -59,6 +57,46 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 	}
 
 	return v.(map[string]interface{}), nil
+}
+func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TemplateId"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "single"
+	action := "DescribeTemplateResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Defense.Control.DefenseTemplateNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
 }
 
 func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -73,6 +111,13 @@ func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFunc(id string, field s
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_wafv3_defense_template
 
-Provides a WAFV3 Defense Template resource. 
+Provides a WAFV3 Defense Template resource.
+
+
 
 For information about WAFV3 Defense Template and how to use it, see [What is Defense Template](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-waf-openapi-2021-10-01-createdefensetemplate).
 
@@ -17,12 +19,6 @@ For information about WAFV3 Defense Template and how to use it, see [What is Def
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_defense_template&exampleId=4885bb2d-ced3-0337-0228-cfd2963930d65749a9f7&activeTab=example&spm=docs.r.wafv3_defense_template.0.4885bb2dce&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -48,25 +44,28 @@ resource "alicloud_wafv3_defense_template" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `defense_scene` - (Required, ForceNew) The module to which the protection rule that you want to create belongs. Value:
-  - **waf_group**: the basic protection rule module.
-  - **antiscan**: the scan protection module.
-  - **ip_blacklist**: the IP address blacklist module.
-  - **custom_acl**: the custom rule module.
-  - **whitelist**: the whitelist module.
-  - **region_block**: the region blacklist module.
-  - **custom_response**: the custom response module.
-  - **cc**: the HTTP flood protection module.
-  - **tamperproof**: the website tamper-proofing module.
-  - **dlp**: the data leakage prevention module.
+* `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created. Valid values:
+  - `waf_group`: indicates basic protection.
+  - `antiscan`: indicates scan protection.
+  - `ip_blacklist`: indicates the IP address blacklist.
+  - `custom_acl`: indicates a custom rule.
+  - `whitelist`: indicates the whitelist.
+  - `region_block`: indicates that the region is blocked.
+  - `custom_response`: indicates a custom response.
+  - `cc`: indicates CC protection.
+  - `tamperproof`: Indicates that the web page is tamper-proof.
+  - `dlp`: Indicates information leakage protection.
+  - `spike_throttle`: indicates peak traffic throttling.
+
 * `defense_template_name` - (Required) The name of the protection rule template.
-* `description` - (Optional) The description of the protection rule template. .
-* `instance_id` - (Required, ForceNew) The ID of the Web Application Firewall (WAF) instance. .
-* `resource_manager_resource_group_id` - (Optional) The ID of the Alibaba Cloud resource group. .
+* `description` - (Optional) The description of the protection rule template.
+* `instance_id` - (Required, ForceNew) The ID of the Web Application Firewall (WAF) instance.
+* `resource_manager_resource_group_id` - (Optional) The ID of the Alibaba Cloud resource group.
+* `resources` - (Optional, Set, Available since v1.257.0) The list of protected objects to be bound. After a protection template resource is created, you can modify the bound protected objects.
 * `status` - (Required) The status of the protection rule template. Valid values:
-  - **0**: disabled.
-  - **1**: enabled.
-* `template_origin` - (Required, ForceNew) The origin of the protection rule template that you want to create. Set the value to **custom**. The value specifies that the protection rule template is a custom template. .
+  - `0`: disabled.
+  - `1`: enabled.
+* `template_origin` - (Required, ForceNew) The origin of the protection rule template that you want to create. Set the value to `custom`. The value specifies that the protection rule template is a custom template.
 * `template_type` - (Required, ForceNew) The type of the protection rule template. Valid values:
   - **user_default:** default template.
   - **user_custom:** custom template.
@@ -75,7 +74,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<defense_template_id>`.
-* `defense_template_id` - Template ID.
+* `defense_template_id` - Template ID
 
 ## Timeouts
 
