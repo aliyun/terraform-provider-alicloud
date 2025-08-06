@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_mse_cluster"
 sidebar_current: "docs-alicloud-resource-mse-cluster"
 description: |-
-    Provides an Alicloud MSE Cluster resource.
+  Provides an Alicloud MSE Cluster resource.
 ---
 
 # alicloud_mse_cluster
@@ -43,6 +43,7 @@ resource "alicloud_mse_cluster" "example" {
   cluster_specification = "MSE_SC_1_2_60_c"
   cluster_type          = "Nacos-Ans"
   cluster_version       = "NACOS_2_0_0"
+  version_code          = "NACOS_2_3_2_1"
   instance_count        = 3
   net_type              = "privatenet"
   pub_network_flow      = "1"
@@ -69,25 +70,26 @@ The following arguments are supported:
 * `cluster_alias_name` - (Optional, Computed) The alias of MSE Cluster.
 * `cluster_specification` - (Required) The engine specification of MSE Cluster. **NOTE:** From version 1.188.0, `cluster_specification` can be modified. If you were an international user, please use the specification version ending with `_200_c`.Valid values:
   - Professional Edition
-     - `MSE_SC_1_2_60_c`: 1C2G
-     - `MSE_SC_2_4_60_c`: 2C4G
-     - `MSE_SC_4_8_60_c`: 4C8G
-     - `MSE_SC_8_16_60_c`: 8C16G
-     - `MSE_SC_16_32_60_c`:16C32G
-     - `MSE_SC_1_2_200_c`: 1C2G
-     - `MSE_SC_2_4_200_c`: 2C4G
-     - `MSE_SC_4_8_200_c`: 4C8G
-     - `MSE_SC_8_16_200_c`: 8C16G
-     - `MSE_SC_16_32_200_c`:16C32G
+    - `MSE_SC_1_2_60_c`: 1C2G
+    - `MSE_SC_2_4_60_c`: 2C4G
+    - `MSE_SC_4_8_60_c`: 4C8G
+    - `MSE_SC_8_16_60_c`: 8C16G
+    - `MSE_SC_16_32_60_c`:16C32G
+    - `MSE_SC_1_2_200_c`: 1C2G
+    - `MSE_SC_2_4_200_c`: 2C4G
+    - `MSE_SC_4_8_200_c`: 4C8G
+    - `MSE_SC_8_16_200_c`: 8C16G
+    - `MSE_SC_16_32_200_c`:16C32G
   - Developer Edition
-     - `MSE_SC_1_2_60_c`: 1C2G
-     - `MSE_SC_2_4_60_c`: 2C4G
-     - `MSE_SC_1_2_200_c`: 1C2G
-     - `MSE_SC_2_4_200_c`: 2C4G
+    - `MSE_SC_1_2_60_c`: 1C2G
+    - `MSE_SC_2_4_60_c`: 2C4G
+    - `MSE_SC_1_2_200_c`: 1C2G
+    - `MSE_SC_2_4_200_c`: 2C4G
   - Serverless Edition
     - `MSE_SC_SERVERLESS`: Available since v1.232.0
-* `cluster_type` - (Required, ForceNew) The type of MSE Cluster. 
+* `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-createcluster)
+* `version_code` - (Optional) The version code of MSE Cluster. You can keep the instance version up to date by setting the value to `LATEST` (Available since v1.257.0).
 * `disk_type` - (Optional) The type of Disk.
 * `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: `privatenet` and `pubnet` and `both`(Available since v1.232.0).
@@ -99,7 +101,7 @@ The following arguments are supported:
 * `pub_slb_specification` - (Optional) The specification of public network SLB. Serverless Instance could ignore this parameter.
 * `vswitch_id` - (Optional) The id of VSwitch.
 * `mse_version` - (Optional, ForceNew, Computed, Available since v1.177.0) The version of MSE. Valid values: `mse_dev` or `mse_pro` or `mse_serverless`(Available since v1.232.0).
-* `connection_type` - (Optional, ForceNew, Available since v1.183.0) The connection type. Valid values: `slb`,`single_eni`(Available since v1.232.0). If your region is one of `ap-southeast-6、us-west-1、eu-central-1、us-east-1、ap-southeast-1`,and your cluster's mse_version is `mse_dev`,please use `single_eni`. 
+* `connection_type` - (Optional, ForceNew, Available since v1.183.0) The connection type. Valid values: `slb`,`single_eni`(Available since v1.232.0). If your region is one of `ap-southeast-6、us-west-1、eu-central-1、us-east-1、ap-southeast-1`,and your cluster's mse_version is `mse_dev`,please use `single_eni`.
 * `request_pars` - (Optional, Available since v1.183.0) The extended request parameters in the JSON format.
 * `vpc_id` - (Optional, Available since v1.185.0) The id of the VPC.
 

@@ -13,10 +13,11 @@ import (
 
 func resourceAlicloudMseCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMseClusterCreate,
-		Read:   resourceAlicloudMseClusterRead,
-		Update: resourceAlicloudMseClusterUpdate,
-		Delete: resourceAlicloudMseClusterDelete,
+		Create:        resourceAlicloudMseClusterCreate,
+		Read:          resourceAlicloudMseClusterRead,
+		Update:        resourceAlicloudMseClusterUpdate,
+		Delete:        resourceAlicloudMseClusterDelete,
+		CustomizeDiff: customizeMseClusterDiff,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -59,6 +60,11 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"version_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"connection_type": {
 				Type:         schema.TypeString,
@@ -248,6 +254,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("net_type", object["NetType"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("cluster_version", object["OrderClusterVersion"])
+	d.Set("version_code", object["ClusterVersion"])
 	d.Set("cluster_alias_name", object["ClusterAliasName"])
 	d.Set("connection_type", object["ConnectionType"])
 	d.Set("vpc_id", object["VpcId"])
@@ -497,6 +504,49 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("pub_network_flow")
 	}
 
+	if !d.IsNewResource() && d.HasChange("version_code") {
+		update = true
+		targetVersion := d.Get("version_code").(string)
+		currentVersion := object["ClusterVersion"].(string)
+
+		if currentVersion != targetVersion {
+			updateRequest := map[string]interface{}{
+				"ClusterId":   object["ClusterId"],
+				"VersionCode": targetVersion,
+			}
+
+			action := "UpdateImage"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateRequest, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, updateRequest)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+			d.SetPartial("version_code")
+		} else {
+			update = false
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudMseClusterRead(d, meta)
 }
@@ -541,6 +591,90 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 	stateConf := BuildStateConf([]string{}, []string{"DESTROY_SUCCESS"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"DESTROY_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func customizeMseClusterDiff(d *schema.ResourceDiff, meta interface{}) error {
+	if d.Id() == "" {
+		log.Printf("[DEBUG] This is a new resource")
+		return nil
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+
+	queryClusterInfoRequest := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	response, err := client.RpcPost("mse", "2019-05-31", "QueryClusterInfo", nil, queryClusterInfoRequest, false)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+	}
+	log.Printf("[DEBUG] QueryClusterInfo response: %#v", response)
+	data, ok := response["Data"].(map[string]interface{})
+	if !ok {
+		return WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+	}
+
+	canUpdate, ok := data["CanUpdate"].(bool)
+	if !ok {
+		return WrapErrorf(fmt.Errorf("failed to get canUpdate: %v", data), DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+	}
+	if !canUpdate {
+		oldValue, _ := d.GetChange("version_code")
+		d.SetNew("version_code", oldValue)
+		return nil
+	}
+
+	if d.Id() != "" && (d.HasChange("version_code") || d.Get("version_code").(string) == "LATEST") {
+		client := meta.(*connectivity.AliyunClient)
+		mseService := MseService{client}
+
+		object, err := mseService.DescribeMseCluster(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		log.Printf("[DEBUG] DescribeMseCluster response: %#v", object)
+
+		versionCode, ok := object["ClusterVersion"].(string)
+		if !ok || versionCode == "" {
+			return WrapErrorf(fmt.Errorf("failed to get current version, cluster info: %v", object), DefaultErrorMsg, d.Id(), "GetClusterInfo", AlibabaCloudSdkGoERROR)
+		}
+		log.Printf("[DEBUG] Current VersionCode: %s", versionCode)
+
+		getImageRequest := map[string]interface{}{
+			"VersionCode": versionCode,
+		}
+		log.Printf("[DEBUG] GetImage request: %#v", getImageRequest)
+
+		response, err := client.RpcPost("mse", "2019-05-31", "GetImage", nil, getImageRequest, false)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+		}
+		log.Printf("[DEBUG] GetImage response: %#v", response)
+
+		data, ok := response["Data"].(map[string]interface{})
+		if !ok {
+			return WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+		}
+
+		maxVersionCode, ok := data["MaxVersionCode"].(string)
+		if !ok {
+			return WrapErrorf(fmt.Errorf("failed to get maxVersionCode: %v", data), DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+		}
+		log.Printf("[DEBUG] MaxVersionCode: %s", maxVersionCode)
+
+		targetVersion := d.Get("version_code").(string)
+		if targetVersion == "LATEST" {
+			d.SetNew("version_code", maxVersionCode)
+		} else if d.HasChange("version_code") {
+			if targetVersion != maxVersionCode {
+				return WrapErrorf(fmt.Errorf("can only upgrade to the latest version %s, but got %s. "+
+					"You can also set version_code to 'LATEST' to always upgrade to the latest version",
+					maxVersionCode, targetVersion), DefaultErrorMsg, d.Id(), "ValidateVersion", AlibabaCloudSdkGoERROR)
+			}
+		}
 	}
 	return nil
 }
