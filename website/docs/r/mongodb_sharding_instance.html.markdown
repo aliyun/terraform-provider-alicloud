@@ -121,6 +121,7 @@ The following arguments are supported:
 * `backup_interval` - (Optional, Available since v1.253.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
+* `global_security_group_list` - (Optional, List, Available since v1.258.0) The list of Global Security Group Ids.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
 * `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
 * `config_server_list` - (Optional, ForceNew, Set, Available since v1.223.0) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
