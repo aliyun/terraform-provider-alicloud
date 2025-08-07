@@ -193,12 +193,11 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"spec":            "2000",
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
-					"renew_period":    "3",
 					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
-						"${alicloud_vswitch.vswitch-j.id}"},
+						"${alicloud_vswitch.vswitch.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -208,7 +207,6 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 						"spec":            "2000",
 						"renew_status":    "ManualRenewal",
 						"product_version": "3",
-						"renew_period":    "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
 						"vswitch_ids.#":   "1",
@@ -216,10 +214,24 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_status":        "AutoRenewal",
+					"renew_period":        "1",
+					"renewal_period_unit": "M",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_status":        "AutoRenewal",
+						"renew_period":        "1",
+						"renewal_period_unit": "M",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
+				ImportStateVerifyIgnore: []string{"period", "renewal_period_unit"},
 			},
 		},
 	})
@@ -395,7 +407,6 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 					"spec":            "2000",
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
-					"renew_period":    "3",
 					"log":             "1",
 					"log_storage":     "1000",
 					"period":          "2",
@@ -428,7 +439,6 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 						"spec":            "2000",
 						"renew_status":    "ManualRenewal",
 						"product_version": "3",
-						"renew_period":    "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
 						"vswitch_ids.#":   "1",
@@ -460,7 +470,7 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
+				ImportStateVerifyIgnore: []string{"period", "renewal_period_unit"},
 			},
 		},
 	})
@@ -571,7 +581,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup"},
+				ImportStateVerifyIgnore: []string{"period", "force_delete_without_backup", "renewal_period_unit"},
 			},
 		},
 	})
@@ -592,6 +602,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceIntlSupportRegions)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
@@ -619,19 +630,19 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 					"bind_vpcs": []map[string]interface{}{
 						{
 							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
-							"region_id":    defaultRegionToTest,
+							"region_id":    "ap-southeast-1",
 							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
 							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
-							"region_id":    defaultRegionToTest,
+							"region_id":    "ap-southeast-1",
 							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
 							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
 						{
 							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
-							"region_id":    defaultRegionToTest,
+							"region_id":    "ap-southeast-1",
 							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
 							"vpc_owner_id": "${data.alicloud_account.current.id}",
 						},
@@ -647,7 +658,7 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup"},
+				ImportStateVerifyIgnore: []string{"period", "force_delete_without_backup", "renewal_period_unit"},
 			},
 		},
 	})
@@ -682,7 +693,6 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 					"spec":            "1000",
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
-					"renew_period":    "3",
 					"vpc_id":          "${alicloud_vpc.default.id}",
 					"zone_ids": []string{
 						"ap-southeast-1a", "ap-southeast-1b"},
@@ -697,7 +707,6 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 						"spec":            "1000",
 						"renew_status":    "ManualRenewal",
 						"product_version": "3",
-						"renew_period":    "3",
 						"vpc_id":          CHECKSET,
 						"zone_ids.#":      "2",
 						"vswitch_ids.#":   "1",
@@ -748,7 +757,7 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
+				ImportStateVerifyIgnore: []string{"period", "renewal_period_unit"},
 			},
 		},
 	})
@@ -771,6 +780,7 @@ func TestAccAliCloudKmsInstance_basic5405(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceIntlSupportRegions)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
@@ -856,22 +866,38 @@ func TestAccAliCloudKmsInstance_basic5405(t *testing.T) {
 						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
 					"vswitch_ids": []string{
 						"${alicloud_vswitch.vswitch.id}"},
-					"period":       "1",
-					"renew_period": "1",
+					"period":              "1",
+					"renew_period":        "1",
+					"renewal_period_unit": "M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_num":         "5",
-						"key_num":         "100",
-						"secret_num":      "0",
-						"spec":            "200",
-						"renew_status":    "AutoRenewal",
-						"product_version": "5",
-						"vpc_id":          CHECKSET,
-						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "1",
-						"period":          "1",
-						"renew_period":    "1",
+						"vpc_num":             "5",
+						"key_num":             "100",
+						"secret_num":          "0",
+						"spec":                "200",
+						"renew_status":        "AutoRenewal",
+						"product_version":     "5",
+						"vpc_id":              CHECKSET,
+						"zone_ids.#":          "2",
+						"vswitch_ids.#":       "1",
+						"period":              "1",
+						"renew_period":        "1",
+						"renewal_period_unit": "M",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_version": "3",
+					"key_num":         "1000",
+					"spec":            "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_version": "3",
+						"key_num":         "1000",
+						"spec":            "1000",
 					}),
 				),
 			},
@@ -879,7 +905,7 @@ func TestAccAliCloudKmsInstance_basic5405(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "product_version", "renew_period", "renew_status"},
+				ImportStateVerifyIgnore: []string{"period", "renewal_period_unit"},
 			},
 		},
 	})
@@ -975,6 +1001,7 @@ func TestAccAliCloudKmsInstance_basic5405_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceIntlSupportRegions)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
@@ -1021,7 +1048,7 @@ func TestAccAliCloudKmsInstance_basic5405_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "product_version", "renew_period", "renew_status"},
+				ImportStateVerifyIgnore: []string{"period", "renewal_period_unit"},
 			},
 		},
 	})
