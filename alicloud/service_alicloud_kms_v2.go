@@ -60,6 +60,71 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	return v.(map[string]interface{}), nil
 }
 
+func (s *KmsServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	id := d.Id()
+	request["InstanceIDs"] = id
+	request["Region"] = client.RegionId
+	var endpoint string
+
+	request["ProductCode"] = "kms"
+	request["ProductType"] = "kms_ddi_public_cn"
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "kms_ddi_public_intl"
+	}
+
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductType"] = "kms_ppi_public_cn"
+		if client.IsInternationalAccount() {
+			request["ProductType"] = "kms_ppi_public_intl"
+		}
+	}
+
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "kms_ddi_public_intl"
+				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductType"] = "kms_ppi_public_intl"
+				}
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
 func (s *KmsServiceV2) KmsInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeKmsInstance(id)

@@ -228,16 +228,19 @@ The following arguments are supported:
 * `key_num` - (Optional, Int) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `log` - (Optional, Computed) Instance Audit Log Switch. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `log_storage` - (Optional, Computed, Int) Instance log capacity. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `payment_type` - (Optional, ForceNew, Computed) Payment type,valid values:
+* `payment_type` - (Optional, ForceNew, Computed) Payment type, valid values:
   - `Subscription`: Prepaid.
   - `PayAsYouGo`: Postpaid.
 * `period` - (Optional, Int) Purchase cycle, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `product_version` - (Optional) KMS Instance commodity type (software/hardware)
 * `renew_period` - (Optional, Int) Automatic renewal period, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `renew_status` - (Optional) Renewal options. Valid values: `AutoRenewal`, `ManualRenewal`. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `renewal_period_unit` - (Optional, Available since v1.257.0) Automatic renewal period unit, valid value:
+  - `M`: Month.
+  - `Y`: Year.
 * `secret_num` - (Optional, Int) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `spec` - (Optional, Int) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `vpc_id` - (Required, ForceNew) Instance VPC id
+* `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) that is associated with the KMS instance.
 * `vpc_num` - (Optional, Int) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `vswitch_ids` - (Required, ForceNew, List) Instance bind vswitches
 * `zone_ids` - (Required, ForceNew, List) zone id
