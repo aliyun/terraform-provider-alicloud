@@ -116,7 +116,7 @@ The listen supports the following:
 
   - `true`
   - `false` (default)
-* `protection_resource` - (Optional) The type of the protection resource. Valid values:
+* `protection_resource` - (Optional, Computed) The type of the protection resource. Valid values:
 
   - `share` (default): a shared cluster.
   - `gslb`: shared cluster-based intelligent load balancing.
@@ -149,7 +149,7 @@ The redirect supports the following:
   - If you specify domain names, specify the value in the **\["domain"]** format. You can enter up to 20 domain names.
 * `backup_backends` - (Optional, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
 * `connect_timeout` - (Optional, Int) Connection timeout duration. Unit: seconds.
-Value range: 1~3600.
+Value range: 1~3600. Default value: 5.
 * `focus_http_backend` - (Optional) Specifies whether to enable force redirect from HTTPS to HTTP for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
 
   - `true`
@@ -158,11 +158,12 @@ Value range: 1~3600.
 
   - `true` (default)
   - `false`
-* `keepalive_requests` - (Optional, Int) The number of reused persistent connections. Valid values: 60 to 1000.
+* `keepalive_requests` - (Optional, Int) The number of reused persistent connections. Valid values: 60 to 1000. Default value: 1000
+
 
 -> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
 
-* `keepalive_timeout` - (Optional, Int) Idle long connection timeout, value range: 1~60, default 15, unit: seconds.
+* `keepalive_timeout` - (Optional, Computed, Int) Idle long connection timeout, value range: 1~60, default 15, unit: seconds.
 
 -> **NOTE:**  How long the multiplexed long connection is idle and then released.
 
@@ -171,7 +172,7 @@ Value range: 1~3600.
   - `iphash`
   - `roundRobin`
   - `leastTime`: This value is available only if you set `ProtectionResource` to `gslb`.
-* `read_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600.
+* `read_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600. Default value: 120.
 * `request_headers` - (Optional, List) The traffic marking field and value of the domain name, which is used to mark the traffic processed by WAF.
 By specifying custom request header fields and corresponding values, when the access traffic of the domain name passes through WAF, WAF automatically adds the set custom field value to the request header as a traffic mark, which facilitates the statistics of back-end services. See [`request_headers`](#redirect-request_headers) below.
 * `retry` - (Optional) Specifies whether WAF retries if WAF fails to forward requests to the origin server. Valid values:
@@ -186,7 +187,7 @@ By specifying custom request header fields and corresponding values, when the ac
 
 -> **NOTE:**   This parameter is required only if you set `SniEnabled` to true.
 
-* `write_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600.
+* `write_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600. Default value: 120.
 * `xff_proto` - (Optional, Available since v1.257.0) Specifies whether to use the X-Forward-For-Proto header field to pass the protocol used by WAF to forward requests to the origin server. Valid values:
   - `true`  (default)
   - `false`

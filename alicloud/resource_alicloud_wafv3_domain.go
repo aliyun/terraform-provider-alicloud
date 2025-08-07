@@ -176,6 +176,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"backends": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"focus_http_backend": {
@@ -553,11 +554,18 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 		redirectMap["write_timeout"] = redirectRaw["WriteTimeout"]
 		redirectMap["xff_proto"] = redirectRaw["XffProto"]
 
-		backendsRaw := redirectRaw["AllBackends"]
-		if backendsRaw != nil {
-			redirectMap["backends"] = backendsRaw
+		backendListRaw := make([]interface{}, 0)
+		if redirectRaw["BackendList"] != nil {
+			backendListRaw = redirectRaw["BackendList"].([]interface{})
 		}
 
+		redirectMap["backends"] = backendListRaw
+		backUpBackendListRaw := make([]interface{}, 0)
+		if redirectRaw["BackUpBackendList"] != nil {
+			backUpBackendListRaw = redirectRaw["BackUpBackendList"].([]interface{})
+		}
+
+		redirectMap["backup_backends"] = backUpBackendListRaw
 		requestHeadersRaw := redirectRaw["RequestHeaders"]
 		requestHeadersMaps := make([]map[string]interface{}, 0)
 		if requestHeadersRaw != nil {
