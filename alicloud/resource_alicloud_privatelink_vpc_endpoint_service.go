@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -116,8 +115,8 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	action := "CreateVpcEndpointService"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -138,6 +137,9 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	}
 	if v, ok := d.GetOkExists("zone_affinity_enabled"); ok {
 		request["ZoneAffinityEnabled"] = v
+	}
+	if v, ok := d.GetOk("address_ip_version"); ok {
+		request["AddressIpVersion"] = v
 	}
 	if v, ok := d.GetOk("service_description"); ok {
 		request["ServiceDescription"] = v
@@ -172,7 +174,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	d.SetId(fmt.Sprint(response["ServiceId"]))
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -194,51 +196,21 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
-	if objectRaw["AddressIpVersion"] != nil {
-		d.Set("address_ip_version", objectRaw["AddressIpVersion"])
-	}
-	if objectRaw["AutoAcceptEnabled"] != nil {
-		d.Set("auto_accept_connection", objectRaw["AutoAcceptEnabled"])
-	}
-	if objectRaw["ConnectBandwidth"] != nil {
-		d.Set("connect_bandwidth", objectRaw["ConnectBandwidth"])
-	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["Payer"] != nil {
-		d.Set("payer", objectRaw["Payer"])
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", objectRaw["RegionId"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["ServiceBusinessStatus"] != nil {
-		d.Set("service_business_status", objectRaw["ServiceBusinessStatus"])
-	}
-	if objectRaw["ServiceDescription"] != nil {
-		d.Set("service_description", objectRaw["ServiceDescription"])
-	}
-	if objectRaw["ServiceDomain"] != nil {
-		d.Set("service_domain", objectRaw["ServiceDomain"])
-	}
-	if objectRaw["ServiceResourceType"] != nil {
-		d.Set("service_resource_type", objectRaw["ServiceResourceType"])
-	}
-	if objectRaw["ServiceSupportIPv6"] != nil {
-		d.Set("service_support_ipv6", objectRaw["ServiceSupportIPv6"])
-	}
-	if objectRaw["ServiceStatus"] != nil {
-		d.Set("status", objectRaw["ServiceStatus"])
-	}
-	if objectRaw["ServiceName"] != nil {
-		d.Set("vpc_endpoint_service_name", objectRaw["ServiceName"])
-	}
-	if objectRaw["ZoneAffinityEnabled"] != nil {
-		d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
-	}
+	d.Set("address_ip_version", objectRaw["AddressIpVersion"])
+	d.Set("auto_accept_connection", objectRaw["AutoAcceptEnabled"])
+	d.Set("connect_bandwidth", objectRaw["ConnectBandwidth"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("payer", objectRaw["Payer"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("service_business_status", objectRaw["ServiceBusinessStatus"])
+	d.Set("service_description", objectRaw["ServiceDescription"])
+	d.Set("service_domain", objectRaw["ServiceDomain"])
+	d.Set("service_resource_type", objectRaw["ServiceResourceType"])
+	d.Set("service_support_ipv6", objectRaw["ServiceSupportIPv6"])
+	d.Set("status", objectRaw["ServiceStatus"])
+	d.Set("vpc_endpoint_service_name", objectRaw["ServiceName"])
+	d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
 
 	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointServiceListTagResources(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -255,11 +227,11 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 
+	var err error
 	action := "UpdateVpcEndpointServiceAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -294,14 +266,12 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	if d.HasChange("address_ip_version") {
+	if !d.IsNewResource() && d.HasChange("address_ip_version") {
 		update = true
 		request["AddressIpVersion"] = d.Get("address_ip_version")
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
@@ -336,8 +306,6 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 
 	request["ResourceType"] = "VpcEndpointService"
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
@@ -377,8 +345,8 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceDelete(d *schema.ResourceData,
 	action := "DeleteVpcEndpointService"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 	request["ServiceId"] = d.Id()
 	request["RegionId"] = client.RegionId

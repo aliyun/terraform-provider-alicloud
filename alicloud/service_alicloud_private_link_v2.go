@@ -22,11 +22,11 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointService(id string) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetVpcEndpointServiceAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "GetVpcEndpointServiceAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -56,14 +56,14 @@ func (s *PrivateLinkServiceV2) DescribeVpcEndpointServiceListTagResources(id str
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTagResources"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "VpcEndpointService"
+	action := "ListTagResources"
 	request["ClientToken"] = buildClientToken(action)
 
-	request["ResourceType"] = "VpcEndpointService"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
@@ -120,8 +120,8 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceStateRefreshFunc(id 
 // SetResourceTags <<< Encapsulated tag function for PrivateLink.
 func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
