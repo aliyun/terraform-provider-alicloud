@@ -1774,3 +1774,48 @@ func transferToMongoReplicaSets(objects map[string]interface{}, sortByRoleId boo
 	}
 	return nil
 }
+
+func (s *MongoDBService) DescribeMongoDBGlobalSecurityGroupIds(id string) (globalSecurityGroupIds []string, err error) {
+	var response map[string]interface{}
+	action := "DescribeGlobalSecurityIPGroupRelation"
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("Dds", "2015-12-01", action, request, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.GlobalSecurityIPGroupRel", response)
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GlobalSecurityIPGroupRel", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return globalSecurityGroupIds, nil
+	}
+
+	for _, v := range resp.([]interface{}) {
+		globalSecurityGroupIds = append(globalSecurityGroupIds, fmt.Sprint(v.(map[string]interface{})["GlobalSecurityGroupId"]))
+	}
+
+	return globalSecurityGroupIds, nil
+}

@@ -258,6 +258,36 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{"${alicloud_mongodb_global_security_ip_group.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ShardingInstance",
@@ -349,23 +379,24 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":       "4.2",
-					"storage_engine":       "WiredTiger",
-					"storage_type":         "local_ssd",
-					"protocol_type":        "mongodb",
-					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"zone_id":              "${data.alicloud_mongodb_zones.default.zones.0.id}",
-					"security_group_id":    "${alicloud_security_group.default.id}",
-					"network_type":         "VPC",
-					"name":                 name,
-					"instance_charge_type": "PostPaid",
-					"security_ip_list":     []string{"10.168.1.12"},
-					"account_password":     "YourPassword_123",
-					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"backup_time":          "11:00Z-12:00Z",
-					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
-					"tde_status":           "enabled",
+					"engine_version":             "4.2",
+					"storage_engine":             "WiredTiger",
+					"storage_type":               "local_ssd",
+					"protocol_type":              "mongodb",
+					"vpc_id":                     "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":                 "${alicloud_vswitch.default.id}",
+					"zone_id":                    "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"security_group_id":          "${alicloud_security_group.default.id}",
+					"network_type":               "VPC",
+					"name":                       name,
+					"instance_charge_type":       "PostPaid",
+					"security_ip_list":           []string{"10.168.1.12"},
+					"account_password":           "YourPassword_123",
+					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"backup_time":                "11:00Z-12:00Z",
+					"backup_period":              []string{"Monday", "Tuesday", "Wednesday"},
+					"tde_status":                 "enabled",
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "dds.mongos.mid",
@@ -392,28 +423,29 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"storage_engine":       "WiredTiger",
-						"storage_type":         "local_ssd",
-						"protocol_type":        "mongodb",
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"zone_id":              CHECKSET,
-						"security_group_id":    CHECKSET,
-						"network_type":         "VPC",
-						"name":                 name,
-						"instance_charge_type": "PostPaid",
-						"security_ip_list.#":   "1",
-						"account_password":     "YourPassword_123",
-						"resource_group_id":    CHECKSET,
-						"backup_time":          "11:00Z-12:00Z",
-						"backup_period.#":      "3",
-						"tde_status":           "enabled",
-						"mongo_list.#":         "2",
-						"shard_list.#":         "2",
-						"tags.%":               "2",
-						"tags.Created":         "TF",
-						"tags.For":             "ShardingInstance",
+						"engine_version":               "4.2",
+						"storage_engine":               "WiredTiger",
+						"storage_type":                 "local_ssd",
+						"protocol_type":                "mongodb",
+						"vpc_id":                       CHECKSET,
+						"vswitch_id":                   CHECKSET,
+						"zone_id":                      CHECKSET,
+						"security_group_id":            CHECKSET,
+						"network_type":                 "VPC",
+						"name":                         name,
+						"instance_charge_type":         "PostPaid",
+						"security_ip_list.#":           "1",
+						"account_password":             "YourPassword_123",
+						"resource_group_id":            CHECKSET,
+						"backup_time":                  "11:00Z-12:00Z",
+						"backup_period.#":              "3",
+						"tde_status":                   "enabled",
+						"global_security_group_list.#": "3",
+						"mongo_list.#":                 "2",
+						"shard_list.#":                 "2",
+						"tags.%":                       "2",
+						"tags.Created":                 "TF",
+						"tags.For":                     "ShardingInstance",
 					}),
 				),
 			},
@@ -636,6 +668,36 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{"${alicloud_mongodb_global_security_ip_group.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ShardingInstance",
@@ -751,6 +813,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"snapshot_backup_type":                        "Flash",
 					"backup_interval":                             "60",
 					"db_instance_release_protection":              "false",
+					"global_security_group_list":                  "${alicloud_mongodb_global_security_ip_group.default.*.id}",
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -806,6 +869,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"snapshot_backup_type":                        "Flash",
 						"backup_interval":                             "60",
 						"db_instance_release_protection":              "false",
+						"global_security_group_list.#":                "3",
 						"mongo_list.#":                                "2",
 						"shard_list.#":                                "2",
 						"config_server_list.#":                        "1",
@@ -867,6 +931,12 @@ func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {
   		vpc_id = data.alicloud_vpcs.default.ids.0
         security_group_name = var.name
 	}
+
+	resource "alicloud_mongodb_global_security_ip_group" "default" {
+  		count                   = 3
+  		global_ig_name          = "tfacc${count.index}"
+  		global_security_ip_list = "192.168.1.1"
+	}
 `, name)
 }
 
@@ -898,6 +968,12 @@ func AliCloudMongoDBShardingInstanceBasicDependence1(name string) string {
 	resource "alicloud_security_group" "default" {
   		name   = var.name
   		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_mongodb_global_security_ip_group" "default" {
+  		count                   = 3
+  		global_ig_name          = "tfacc${count.index}"
+  		global_security_ip_list = "192.168.1.1"
 	}
 `, name)
 }
