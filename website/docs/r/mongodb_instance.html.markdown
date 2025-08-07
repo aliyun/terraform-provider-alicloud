@@ -141,6 +141,7 @@ The following arguments are supported:
 * `role_arn` - (Optional, Available since v1.212.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `parameters` - (Optional, Set, Available since v1.203.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
+* `global_security_group_list` - (Optional, List, Available since v1.257.0) The list of Global Security Group Ids.
 * `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
 
 ### `parameters`

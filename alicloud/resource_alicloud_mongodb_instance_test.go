@@ -320,6 +320,36 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{"${alicloud_mongodb_global_security_ip_group.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -684,6 +714,36 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{"${alicloud_mongodb_global_security_ip_group.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -781,6 +841,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 					"maintain_start_time":                         "00:00Z",
 					"maintain_end_time":                           "03:00Z",
 					"db_instance_release_protection":              "false",
+					"global_security_group_list":                  "${alicloud_mongodb_global_security_ip_group.default.*.id}",
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "operationProfiling.slowOpThresholdMs",
@@ -827,6 +888,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 						"maintain_start_time":                         "00:00Z",
 						"maintain_end_time":                           "03:00Z",
 						"db_instance_release_protection":              "false",
+						"global_security_group_list.#":                "3",
 						"parameters.#":                                "1",
 						"tags.%":                                      "2",
 						"tags.Created":                                "TF",
@@ -915,6 +977,12 @@ func AliCloudMongoDBInstanceBasicDependence0(name string) string {
   		pending_window_in_days = 7
   		key_state              = "Enabled"
 	}
+
+	resource "alicloud_mongodb_global_security_ip_group" "default" {
+  		count                   = 3
+  		global_ig_name          = "tfacc${count.index}"
+  		global_security_ip_list = "192.168.1.1"
+	}
 `, name)
 }
 
@@ -952,6 +1020,12 @@ func AliCloudMongoDBInstanceBasicDependence1(name string) string {
   		description            = var.name
   		pending_window_in_days = 7
   		key_state              = "Enabled"
+	}
+
+	resource "alicloud_mongodb_global_security_ip_group" "default" {
+  		count                   = 3
+  		global_ig_name          = "tfacc${count.index}"
+  		global_security_ip_list = "192.168.1.1"
 	}
 `, name)
 }
