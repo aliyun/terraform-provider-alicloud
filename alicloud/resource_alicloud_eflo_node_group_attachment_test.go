@@ -120,7 +120,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11072(t *testing.T) {
 					"login_password": "G7f$2kL9@vQx3Zp5*",
 					"cluster_id":     "i116429021752634788999",
 					"node_group_id":  "i123439231752634789001",
-					"node_id":        "e01-cn-62l4ccwfx2i",
+					"node_id":        "e01-cn-62l4ccwfx2j",
 					"vpc_id":         "vpc-2ze9znsls3gm3xr17mnrv",
 					"user_data":      "ZWNobyAiaGVsbG8i",
 				}),
@@ -132,7 +132,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11072(t *testing.T) {
 						"login_password": "G7f$2kL9@vQx3Zp5*",
 						"cluster_id":     "i116429021752634788999",
 						"node_group_id":  "i123439231752634789001",
-						"node_id":        "e01-cn-62l4ccwfx2i",
+						"node_id":        "e01-cn-62l4ccwfx2j",
 						"vpc_id":         "vpc-2ze9znsls3gm3xr17mnrv",
 						"user_data":      "ZWNobyAiaGVsbG8i",
 					}),
@@ -158,12 +158,11 @@ variable "name" {
 
 resource "alicloud_eflo_node_group_attachment" "default0" {
   node_group_id = "i123439231752634789001"
-  user_data = "ZWNobyAiaGVsbG8i"
   login_password = "G7f$2kL9@vQx3Zp5*"
   vpc_id = "vpc-2ze9znsls3gm3xr17mnrv"
   hostname = "attachment-test-e01-cn-62l4ccwfx2j"
   cluster_id = "i116429021752634788999"
-  node_id = "e01-cn-62l4ccwfx2j"
+  node_id = "e01-cn-62l4ccwfx2k"
   data_disk {
     delete_with_node = "false"
     category = "cloud_essd"

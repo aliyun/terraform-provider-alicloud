@@ -942,7 +942,7 @@ func (s *EfloServiceV2) DescribeEfloNodeGroupAttachment(id string) (object map[s
 
 	v, err := jsonpath.Get("$.Nodes[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Nodes[*]", response)
+		return object, WrapErrorf(NotFoundErr("NodeGroupAttachment", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
