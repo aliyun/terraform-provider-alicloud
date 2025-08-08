@@ -190,7 +190,7 @@ func resourceAliCloudEfloNodeGroupAttachmentCreate(d *schema.ResourceData, meta 
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["ClusterId"], nodeGroup["NodeGroupId"], node["NodeId"]))
 
 	efloServiceV2 := EfloServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"execution_success"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, efloServiceV2.DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d, response, "$.TaskState", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"execution_success"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, efloServiceV2.DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d, response, "$.TaskState", []string{"execution_fail"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
@@ -284,7 +284,7 @@ func resourceAliCloudEfloNodeGroupAttachmentDelete(d *schema.ResourceData, meta 
 	}
 
 	efloServiceV2 := EfloServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"execution_success"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, efloServiceV2.DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d, response, "$.TaskState", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"execution_success"}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, efloServiceV2.DescribeAsyncEfloNodeGroupAttachmentStateRefreshFunc(d, response, "$.TaskState", []string{"execution_fail"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
