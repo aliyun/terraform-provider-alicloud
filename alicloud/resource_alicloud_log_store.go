@@ -10,6 +10,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -108,8 +109,8 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"logstore_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ExactlyOneOf: []string{"logstore_name", "name"},
+				Computed:     true,
 				ForceNew:     true,
 			},
 			"max_split_shard_count": {
@@ -136,8 +137,8 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"project_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ExactlyOneOf: []string{"project_name", "project"},
+				Computed:     true,
 				ForceNew:     true,
 			},
 			"retention_period": {
@@ -149,13 +150,13 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
+				Default:  2,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if old == "" {
 						return false
 					}
 					return true
 				},
-				Default: 2,
 			},
 			"telemetry_type": {
 				Type:     schema.TypeString,
@@ -253,7 +254,9 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	hostMap := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	request["logstoreName"] = d.Get("logstore_name")
+	if v, ok := d.GetOk("logstore_name"); ok {
+		request["logstoreName"] = v
+	}
 	hostMap["project"] = StringPointer(d.Get("project_name").(string))
 	if v, ok := d.GetOkExists("project"); ok {
 		hostMap["project"] = tea.String(v.(string))
@@ -266,16 +269,16 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOkExists("shard_count"); ok {
 		request["shardCount"] = v
 	}
-	if v, ok := d.GetOk("auto_split"); ok {
+	if v, ok := d.GetOkExists("auto_split"); ok {
 		request["autoSplit"] = v
 	}
-	if v, ok := d.GetOk("append_meta"); ok {
+	if v, ok := d.GetOkExists("append_meta"); ok {
 		request["appendMeta"] = v
 	}
 	if v, ok := d.GetOk("telemetry_type"); ok {
 		request["telemetryType"] = v
 	}
-	if v, ok := d.GetOk("hot_ttl"); ok {
+	if v, ok := d.GetOkExists("hot_ttl"); ok {
 		request["hot_ttl"] = v
 	}
 	if v, ok := d.GetOk("mode"); ok {
@@ -284,24 +287,24 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("encrypt_conf"); !IsNil(v) {
-		enable1, _ := jsonpath.Get("$[0].enable", d.Get("encrypt_conf"))
+		enable1, _ := jsonpath.Get("$[0].enable", v)
 		if enable1 != nil && enable1 != "" {
 			objectDataLocalMap["enable"] = enable1
 		}
-		encryptType, _ := jsonpath.Get("$[0].encrypt_type", d.Get("encrypt_conf"))
+		encryptType, _ := jsonpath.Get("$[0].encrypt_type", v)
 		if encryptType != nil && encryptType != "" {
 			objectDataLocalMap["encrypt_type"] = encryptType
 		}
 		user_cmk_info := make(map[string]interface{})
-		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
+		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
 		if cmkKeyId != nil && cmkKeyId != "" {
 			user_cmk_info["cmk_key_id"] = cmkKeyId
 		}
-		arn1, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
+		arn1, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
 		if arn1 != nil && arn1 != "" {
 			user_cmk_info["arn"] = arn1
 		}
-		regionId, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
+		regionId, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
 		if regionId != nil && regionId != "" {
 			user_cmk_info["region_id"] = regionId
 		}
@@ -318,13 +321,13 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("retention_period"); ok {
 		request["ttl"] = v
 	}
-	if v, ok := d.GetOk("max_split_shard_count"); ok {
+	if v, ok := d.GetOkExists("max_split_shard_count"); ok {
 		request["maxSplitShard"] = v
 	}
-	if v, ok := d.GetOk("enable_web_tracking"); ok {
+	if v, ok := d.GetOkExists("enable_web_tracking"); ok {
 		request["enable_tracking"] = v
 	}
-	if v, ok := d.GetOk("infrequent_access_ttl"); ok {
+	if v, ok := d.GetOkExists("infrequent_access_ttl"); ok {
 		request["infrequentAccessTTL"] = v
 	}
 
@@ -339,9 +342,9 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", action, AlibabaCloudSdkGoERROR)
@@ -366,87 +369,58 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if objectRaw["appendMeta"] != nil {
-		d.Set("append_meta", objectRaw["appendMeta"])
-	}
-	if objectRaw["autoSplit"] != nil {
-		d.Set("auto_split", objectRaw["autoSplit"])
-	}
-	if objectRaw["createTime"] != nil {
-		d.Set("create_time", objectRaw["createTime"])
-	}
-	if objectRaw["enable_tracking"] != nil {
-		d.Set("enable_web_tracking", objectRaw["enable_tracking"])
-	}
-	if objectRaw["hot_ttl"] != nil {
-		d.Set("hot_ttl", objectRaw["hot_ttl"])
-	}
-	if objectRaw["infrequentAccessTTL"] != nil {
-		d.Set("infrequent_access_ttl", objectRaw["infrequentAccessTTL"])
-	}
-	if objectRaw["maxSplitShard"] != nil {
-		d.Set("max_split_shard_count", objectRaw["maxSplitShard"])
-	}
-	if objectRaw["mode"] != nil {
-		d.Set("mode", objectRaw["mode"])
-	}
-	if objectRaw["ttl"] != nil {
-		d.Set("retention_period", objectRaw["ttl"])
-	}
-	if objectRaw["shardCount"] != nil {
-		d.Set("shard_count", objectRaw["shardCount"])
-	}
-	if objectRaw["telemetryType"] != nil {
-		d.Set("telemetry_type", objectRaw["telemetryType"])
-	}
-	if objectRaw["logstoreName"] != nil {
-		d.Set("logstore_name", objectRaw["logstoreName"])
-	}
+	d.Set("append_meta", objectRaw["appendMeta"])
+	d.Set("auto_split", objectRaw["autoSplit"])
+	d.Set("create_time", objectRaw["createTime"])
+	d.Set("enable_web_tracking", objectRaw["enable_tracking"])
+	d.Set("hot_ttl", objectRaw["hot_ttl"])
+	d.Set("infrequent_access_ttl", objectRaw["infrequentAccessTTL"])
+	d.Set("max_split_shard_count", objectRaw["maxSplitShard"])
+	d.Set("mode", objectRaw["mode"])
+	d.Set("retention_period", objectRaw["ttl"])
+	d.Set("shard_count", objectRaw["shardCount"])
+	d.Set("telemetry_type", objectRaw["telemetryType"])
+	d.Set("logstore_name", objectRaw["logstoreName"])
 
 	encryptConfMaps := make([]map[string]interface{}, 0)
 	encryptConfMap := make(map[string]interface{})
-	encrypt_conf1Raw := make(map[string]interface{})
+	encrypt_confRaw := make(map[string]interface{})
 	if objectRaw["encrypt_conf"] != nil {
-		encrypt_conf1Raw = objectRaw["encrypt_conf"].(map[string]interface{})
+		encrypt_confRaw = objectRaw["encrypt_conf"].(map[string]interface{})
 	}
-	if len(encrypt_conf1Raw) > 0 {
-		encryptConfMap["enable"] = encrypt_conf1Raw["enable"]
-		encryptConfMap["encrypt_type"] = encrypt_conf1Raw["encrypt_type"]
+	if len(encrypt_confRaw) > 0 {
+		encryptConfMap["enable"] = encrypt_confRaw["enable"]
+		encryptConfMap["encrypt_type"] = encrypt_confRaw["encrypt_type"]
 
 		userCmkInfoMaps := make([]map[string]interface{}, 0)
 		userCmkInfoMap := make(map[string]interface{})
-		user_cmk_info1Raw := make(map[string]interface{})
-		if encrypt_conf1Raw["user_cmk_info"] != nil {
-			user_cmk_info1Raw = encrypt_conf1Raw["user_cmk_info"].(map[string]interface{})
+		user_cmk_infoRaw := make(map[string]interface{})
+		if encrypt_confRaw["user_cmk_info"] != nil {
+			user_cmk_infoRaw = encrypt_confRaw["user_cmk_info"].(map[string]interface{})
 		}
-		if len(user_cmk_info1Raw) > 0 {
-			userCmkInfoMap["arn"] = user_cmk_info1Raw["arn"]
-			userCmkInfoMap["cmk_key_id"] = user_cmk_info1Raw["cmk_key_id"]
-			userCmkInfoMap["region_id"] = user_cmk_info1Raw["region_id"]
+		if len(user_cmk_infoRaw) > 0 {
+			userCmkInfoMap["arn"] = user_cmk_infoRaw["arn"]
+			userCmkInfoMap["cmk_key_id"] = user_cmk_infoRaw["cmk_key_id"]
+			userCmkInfoMap["region_id"] = user_cmk_infoRaw["region_id"]
 
 			userCmkInfoMaps = append(userCmkInfoMaps, userCmkInfoMap)
 		}
 		encryptConfMap["user_cmk_info"] = userCmkInfoMaps
 		encryptConfMaps = append(encryptConfMaps, encryptConfMap)
 	}
-	if objectRaw["encrypt_conf"] != nil {
-		if err := d.Set("encrypt_conf", encryptConfMaps); err != nil {
-			return err
-		}
+	if err := d.Set("encrypt_conf", encryptConfMaps); err != nil {
+		return err
 	}
 
-	objectRaw, err = slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
-	if err != nil {
+	objectRaw, err = slsServiceV2.DescribeLogStoreGetLogStoreMeteringMode(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	if objectRaw["meteringMode"] != nil {
-		d.Set("metering_mode", objectRaw["meteringMode"])
-	}
+	d.Set("metering_mode", objectRaw["meteringMode"])
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("project_name", parts[0])
-	d.Set("logstore_name", parts[1])
 
 	d.Set("project", d.Get("project_name"))
 	d.Set("name", d.Get("logstore_name"))
@@ -497,10 +471,11 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	var body map[string]interface{}
 	update := false
 	d.Partial(true)
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	logstore := parts[1]
 	action := fmt.Sprintf("/logstores/%s", logstore)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -550,42 +525,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("enable_web_tracking"); ok || d.HasChange("enable_web_tracking") {
 		request["enable_tracking"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("encrypt_conf") {
-		update = true
-	}
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v := d.Get("encrypt_conf"); !IsNil(v) || d.HasChange("encrypt_conf") {
-		enable1, _ := jsonpath.Get("$[0].enable", v)
-		if enable1 != nil && (d.HasChange("encrypt_conf.0.enable") || enable1 != "") {
-			objectDataLocalMap["enable"] = enable1
-		}
-		encryptType, _ := jsonpath.Get("$[0].encrypt_type", v)
-		if encryptType != nil && (d.HasChange("encrypt_conf.0.encrypt_type") || encryptType != "") {
-			objectDataLocalMap["encrypt_type"] = encryptType
-		}
-		user_cmk_info := make(map[string]interface{})
-		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
-		if cmkKeyId != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.cmk_key_id") || cmkKeyId != "") {
-			user_cmk_info["cmk_key_id"] = cmkKeyId
-		}
-		arn1, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
-		if arn1 != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.arn") || arn1 != "") {
-			user_cmk_info["arn"] = arn1
-		}
-		regionId, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
-		if regionId != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.region_id") || regionId != "") {
-			user_cmk_info["region_id"] = regionId
-		}
-
-		user_cmk_info_map, _ := jsonpath.Get("$[0].user_cmk_info[0]", v)
-		if !IsNil(user_cmk_info_map) {
-			objectDataLocalMap["user_cmk_info"] = user_cmk_info
-		}
-
-		request["encrypt_conf"] = objectDataLocalMap
-	}
-
 	if !d.IsNewResource() && d.HasChange("infrequent_access_ttl") {
 		update = true
 	}
@@ -602,7 +541,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return nil, slsClient.UpdateMetricStore(projectName, logstore)
 			})
@@ -637,9 +576,9 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -655,7 +594,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	hostMap["project"] = StringPointer(parts[0])
 
 	slsServiceV2 := SlsServiceV2{client}
-	objectRaw, _ := slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
+	objectRaw, _ := slsServiceV2.DescribeLogStoreGetLogStoreMeteringMode(d.Id())
 	if d.HasChange("metering_mode") && objectRaw["meteringMode"] != d.Get("metering_mode") {
 		update = true
 	}
@@ -673,9 +612,79 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	logstore = parts[1]
+	action = fmt.Sprintf("/logstores/%s/encryption", logstore)
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	hostMap = make(map[string]*string)
+	hostMap["project"] = StringPointer(parts[0])
+
+	if !d.IsNewResource() && d.HasChange("encrypt_conf.0.enable") {
+		update = true
+	}
+	jsonPathResult, err := jsonpath.Get("$[0].enable", d.Get("encrypt_conf"))
+	if err == nil {
+		request["enable"] = jsonPathResult
+	}
+
+	if !d.IsNewResource() && d.HasChange("encrypt_conf.0.encrypt_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("encrypt_conf"); ok || d.HasChange("encrypt_conf") {
+		jsonPathResult1, err := jsonpath.Get("$[0].encrypt_type", v)
+		if err == nil && jsonPathResult1 != "" {
+			request["encryptType"] = jsonPathResult1
+		}
+	}
+	if d.HasChange("encrypt_conf") {
+		update = true
+	}
+	objectDataLocalMap := make(map[string]interface{})
+
+	if v := d.Get("encrypt_conf"); v != nil {
+		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
+		if cmkKeyId != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.cmk_key_id") || cmkKeyId != "") {
+			objectDataLocalMap["keyId"] = cmkKeyId
+		}
+		arn, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
+		if arn != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.arn") || arn != "") {
+			objectDataLocalMap["roleArn"] = arn
+		}
+		regionId1, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
+		if regionId1 != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.region_id") || regionId1 != "") {
+			objectDataLocalMap["regionId"] = regionId1
+		}
+
+		if len(objectDataLocalMap) > 0 {
+			request["userCmkInfo"] = objectDataLocalMap
+		}
+	}
+
+	body = request
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogStoreEncryption", action), query, body, nil, hostMap, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -702,6 +711,7 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteLogStore", action), query, nil, nil, hostMap, false)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -709,11 +719,14 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

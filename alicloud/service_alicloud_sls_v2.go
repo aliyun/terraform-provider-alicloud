@@ -221,15 +221,17 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	logstore := parts[1]
-	action := fmt.Sprintf("/logstores/%s", logstore)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
+	action := fmt.Sprintf("/logstores/%s", logstore)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStore", action), query, nil, nil, hostMap, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -237,20 +239,19 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
 			return object, WrapErrorf(NotFoundErr("LogStore", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
-func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[string]interface{}, err error) {
+func (s *SlsServiceV2) DescribeLogStoreGetLogStoreMeteringMode(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -260,15 +261,17 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	logstore := parts[1]
-	action := fmt.Sprintf("/logstores/%s/meteringmode", logstore)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
+	action := fmt.Sprintf("/logstores/%s/meteringmode", logstore)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.Do("Sls", roaParam("GET", "2020-12-30", "GetLogStoreMeteringMode", action), query, nil, nil, hostMap, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -276,14 +279,13 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
 			return object, WrapErrorf(NotFoundErr("LogStore", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -302,6 +304,13 @@ func (s *SlsServiceV2) SlsLogStoreStateRefreshFunc(id string, field string, fail
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
