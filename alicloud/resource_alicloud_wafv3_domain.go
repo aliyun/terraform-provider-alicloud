@@ -156,6 +156,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"backup_backends": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"read_timeout": {
