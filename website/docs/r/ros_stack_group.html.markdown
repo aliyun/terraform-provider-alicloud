@@ -20,6 +20,12 @@ For information about ROS Stack Group and how to use it, see [What is Stack Grou
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ros_stack_group&exampleId=63f69414-5509-07dd-bf0d-9e271f7c5cdb5bbd0242&activeTab=example&spm=docs.r.ros_stack_group.0.63f6941455&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_ros_stack_group" "example" {
   stack_group_name = "example_value"

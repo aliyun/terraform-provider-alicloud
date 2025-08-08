@@ -20,6 +20,12 @@ For information about Mongodb Global Security IP Group and how to use it, see [W
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_mongodb_global_security_ip_group&exampleId=40bd106b-d109-80a0-71c2-7d4c699ac2e30abec869&activeTab=example&spm=docs.r.mongodb_global_security_ip_group.0.40bd106bd1&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraformexample"

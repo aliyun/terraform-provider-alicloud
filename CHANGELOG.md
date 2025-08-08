@@ -1,22 +1,26 @@
-## 1.257.0 (Unreleased)
+## 1.258.0 (Unreleased)
+## 1.257.0 (August 8, 2025)
 
-- **New Resource:** `alicloud_mongodb_global_security_ip_group` [GH-8879]
-- **New Resource:** `alicloud_threat_detection_attack_path_sensitive_asset_config` [GH-8883]
-- **New Resource:** `alicloud_wafv3_defense_rule` [GH-8885]
-- **New Resource:** `alicloud_ssl_certificates_service_pca_certificate` [GH-8896]
+- **New Resource:** `alicloud_mongodb_global_security_ip_group` ([#8879](https://github.com/aliyun/terraform-provider-alicloud/issues/8879))
+- **New Resource:** `alicloud_threat_detection_attack_path_sensitive_asset_config` ([#8883](https://github.com/aliyun/terraform-provider-alicloud/issues/8883))
+- **New Resource:** `alicloud_wafv3_defense_rule` ([#8885](https://github.com/aliyun/terraform-provider-alicloud/issues/8885))
+- **New Resource:** `alicloud_ssl_certificates_service_pca_certificate` ([#8896](https://github.com/aliyun/terraform-provider-alicloud/issues/8896))
 
 ENHANCEMENTS:
 
-- resource/alicloud_wafv3_domain: Added the field xff_proto; Improved alicloud_wafv3_domain testcase. [GH-8874]
-- resource/alicloud_wafv3_defense_template: Add new attribute resources. [GH-8880]
-- resource/alicloud_wafv3_domain: Add new attribute domain_id. [GH-8881]
-- resource/alicloud_mse_cluster: add resource version upgrade capability. [GH-8882]
-- resource/alicloud_wafv3_domain: add Computed label for backup_backends. [GH-8885]
-- resource/alicloud_mongodb_instance: Added the field global_security_group_list. [GH-8889]
-- resource/alicloud_kms_instance: Added the field renewal_period_unit; Supported for new action SetRenewal, QueryAvailableInstances. [GH-8890]
-- resource/alicloud_wafv3_domain: Optimized code implementation. [GH-8891]
-- resource/alicloud_privatelink_vpc_endpoint_service: Support configure address_ip_version while creating vpc_endpoint_service. [GH-8892]
-- testcase: Improved alicloud_cloud_monitor_service_metric_alarm_rules testcase. [GH-8884]
+- resource/alicloud_cs_autoscaling_config: Add new attibute priorities. ([#8859](https://github.com/aliyun/terraform-provider-alicloud/issues/8859))
+- resource/alicloud_wafv3_domain: Added the field xff_proto; Improved alicloud_wafv3_domain testcase. ([#8874](https://github.com/aliyun/terraform-provider-alicloud/issues/8874))
+- resource/alicloud_wafv3_defense_template: Add new attribute resources. ([#8880](https://github.com/aliyun/terraform-provider-alicloud/issues/8880))
+- resource/alicloud_wafv3_domain: Add new attribute domain_id. ([#8881](https://github.com/aliyun/terraform-provider-alicloud/issues/8881))
+- resource/alicloud_mse_cluster: add resource version upgrade capability. ([#8882](https://github.com/aliyun/terraform-provider-alicloud/issues/8882))
+- resource/alicloud_wafv3_domain: add Computed label for backup_backends. ([#8885](https://github.com/aliyun/terraform-provider-alicloud/issues/8885))
+- resource/alicloud_mongodb_instance: Added the field global_security_group_list. ([#8889](https://github.com/aliyun/terraform-provider-alicloud/issues/8889))
+- resource/alicloud_kms_instance: Added the field renewal_period_unit; Supported for new action SetRenewal, QueryAvailableInstances. ([#8890](https://github.com/aliyun/terraform-provider-alicloud/issues/8890))
+- resource/alicloud_wafv3_domain: Optimized code implementation. ([#8891](https://github.com/aliyun/terraform-provider-alicloud/issues/8891))
+- resource/alicloud_privatelink_vpc_endpoint_service: Support configure address_ip_version while creating vpc_endpoint_service. ([#8892](https://github.com/aliyun/terraform-provider-alicloud/issues/8892))
+- resource/alicloud_ros_stack_group: Add new attribute auto_deployment, capabilities, tags, template_id. ([#8893](https://github.com/aliyun/terraform-provider-alicloud/issues/8893))
+- resource/alicloud_eflo_node_group_attachment: Improves wait function while task failed. ([#8897](https://github.com/aliyun/terraform-provider-alicloud/issues/8897))
+- testcase: Improved alicloud_cloud_monitor_service_metric_alarm_rules testcase. ([#8884](https://github.com/aliyun/terraform-provider-alicloud/issues/8884))
 
 ## 1.256.0 (August 1, 2025)
 

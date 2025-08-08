@@ -494,7 +494,7 @@ Set bucket redundancy type
   </a>
 </div></div>
 
-```terraform
+```terraform0
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -516,7 +516,7 @@ Set bucket accelerate configuration
   </a>
 </div></div>
 
-```terraform
+```terraform1
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -535,6 +535,12 @@ Set bucket resource group id
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=5092ff58-0422-ce90-478a-1b7d6a4cf2e8545e3e5c&activeTab=example&spm=docs.r.oss_bucket.1.5092ff5804&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket&exampleId=c9a315e1-ba24-dc11-fd7e-f3de5840bceb09920aa6&activeTab=example&spm=docs.r.oss_bucket.2.c9a315e1ba&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -27,7 +27,7 @@ If you do not have an existing cluster, you need to create an ACK cluster throug
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_autoscaling_config&exampleId=f06fac94-c190-6f38-0551-c3c583cbd926f373bf60&activeTab=example&spm=docs.r.cs_autoscaling_config.0.f06fac94c1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_autoscaling_config&exampleId=580a36e2-202d-1eae-0cfa-f1b6c560ee5863927387&activeTab=example&spm=docs.r.cs_autoscaling_config.0.580a36e220&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
