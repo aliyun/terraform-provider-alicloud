@@ -186,6 +186,11 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"global_security_group_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"mongo_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -575,6 +580,13 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
+
+	globalSecurityGroupIds, err := ddsService.DescribeMongoDBGlobalSecurityGroupIds(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("global_security_group_list", globalSecurityGroupIds)
 
 	if MongosListMap, ok := object["MongosList"].(map[string]interface{}); ok && MongosListMap != nil {
 		if MongosList, ok := MongosListMap["MongosAttribute"]; ok && MongosList != nil {
@@ -1107,6 +1119,49 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("db_instance_release_protection")
+	}
+
+	update = false
+	modifyGlobalSecurityIPGroupRelationReq := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("global_security_group_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("global_security_group_list"); ok {
+		globalSecurityGroupList := v.(*schema.Set).List()
+
+		modifyGlobalSecurityIPGroupRelationReq["GlobalSecurityGroupId"] = convertListToCommaSeparate(globalSecurityGroupList)
+	}
+
+	if update {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		action := "ModifyGlobalSecurityIPGroupRelation"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyGlobalSecurityIPGroupRelationReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyGlobalSecurityIPGroupRelationReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("global_security_group_list")
 	}
 
 	if err := ddsService.setInstanceTags(d); err != nil {
