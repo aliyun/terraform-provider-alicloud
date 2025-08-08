@@ -1,4 +1,23 @@
 ## 1.257.0 (Unreleased)
+
+- **New Resource:** `alicloud_mongodb_global_security_ip_group` [GH-8879]
+- **New Resource:** `alicloud_threat_detection_attack_path_sensitive_asset_config` [GH-8883]
+- **New Resource:** `alicloud_wafv3_defense_rule` [GH-8885]
+- **New Resource:** `alicloud_ssl_certificates_service_pca_certificate` [GH-8896]
+
+ENHANCEMENTS:
+
+- resource/alicloud_wafv3_domain: Added the field xff_proto; Improved alicloud_wafv3_domain testcase. [GH-8874]
+- resource/alicloud_wafv3_defense_template: Add new attribute resources. [GH-8880]
+- resource/alicloud_wafv3_domain: Add new attribute domain_id. [GH-8881]
+- resource/alicloud_mse_cluster: add resource version upgrade capability. [GH-8882]
+- resource/alicloud_wafv3_domain: add Computed label for backup_backends. [GH-8885]
+- resource/alicloud_mongodb_instance: Added the field global_security_group_list. [GH-8889]
+- resource/alicloud_kms_instance: Added the field renewal_period_unit; Supported for new action SetRenewal, QueryAvailableInstances. [GH-8890]
+- resource/alicloud_wafv3_domain: Optimized code implementation. [GH-8891]
+- resource/alicloud_privatelink_vpc_endpoint_service: Support configure address_ip_version while creating vpc_endpoint_service. [GH-8892]
+- testcase: Improved alicloud_cloud_monitor_service_metric_alarm_rules testcase. [GH-8884]
+
 ## 1.256.0 (August 1, 2025)
 
 - **New Resource:** `alicloud_esa_site_origin_client_certificate` ([#8862](https://github.com/aliyun/terraform-provider-alicloud/issues/8862))
