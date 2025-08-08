@@ -331,3 +331,82 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeWafv3DefenseRule <<< Encapsulated get interface for Wafv3 DefenseRule.
+
+func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DefenseType"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RuleId"] = parts[2]
+	request["RegionId"] = client.RegionId
+	action := "DescribeDefenseRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("DefenseRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Rule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeWafv3DefenseRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeWafv3DefenseRule >>> Encapsulated.
