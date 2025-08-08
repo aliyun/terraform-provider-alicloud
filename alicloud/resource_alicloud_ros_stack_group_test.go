@@ -100,7 +100,7 @@ func testSweepRosStackGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSStackGroup_basic(t *testing.T) {
+func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap)
@@ -124,7 +124,7 @@ func TestAccAlicloudROSStackGroup_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"stack_group_name": name,
-					"template_body":    `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
+					"template_body":    `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
@@ -148,7 +148,7 @@ func TestAccAlicloudROSStackGroup_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_ids", "operation_description", "template_body", "operation_preferences", "region_ids", "template_url", "template_version"},
+				ImportStateVerifyIgnore: []string{"template_body", "template_url", "template_version"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -289,7 +289,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudRosStackGroupCreate(dInit, rawClient)
+	err = resourceAliCloudRosStackGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -312,7 +312,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudRosStackGroupCreate(dInit, rawClient)
+		err := resourceAliCloudRosStackGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -339,7 +339,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudRosStackGroupUpdate(dExisted, rawClient)
+	err = resourceAliCloudRosStackGroupUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -400,7 +400,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudRosStackGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudRosStackGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -439,7 +439,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudRosStackGroupRead(dExisted, rawClient)
+		err := resourceAliCloudRosStackGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -458,7 +458,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudRosStackGroupDelete(dExisted, rawClient)
+	err = resourceAliCloudRosStackGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	for index, errorCode := range errorCodes {
@@ -479,7 +479,7 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudRosStackGroupDelete(dExisted, rawClient)
+		err := resourceAliCloudRosStackGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -489,3 +489,811 @@ func TestUnitAlicloudRosStackGroup(t *testing.T) {
 		}
 	}
 }
+
+// Test Ros StackGroup. >>> Resource test cases, automatically generated.
+// Case 创建自助管理模式的资源栈组（简单）_副本1752666515413_副本1752667635487_副本1752668538043_副本1752669172114_副本1752670999021 11039
+func TestAccAliCloudRosStackGroup_basic11039(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap11039)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence11039)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stack_group_name": name,
+					"template_id":      "${alicloud_ros_template.example.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stack_group_name": name,
+						"template_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_id"},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap11039 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence11039(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_ros_template" "example" {
+  template_name = "example_value"
+  template_body = <<EOF
+    {
+    	"ROSTemplateFormatVersion": "2015-09-01"
+    }
+    EOF
+}
+`, name)
+}
+
+// Case 创建自助管理模式的资源栈组（简单）_副本1752666515413_副本1752667635487_副本1752668538043_副本1752669172114 11035
+func TestAccAliCloudRosStackGroup_basic11035(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap11035)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence11035)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stack_group_name": name,
+					"template_body":    `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stack_group_name": name,
+						"template_body":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap11035 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence11035(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 创建自助管理模式的资源栈组（简单） 11028
+func TestAccAliCloudRosStackGroup_basic11028(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap11028)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence11028)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stack_group_name": name,
+					"template_url":     "https://ros-template-test.oss-cn-hangzhou.aliyuncs.com/ros-templates/test_output_a.json",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stack_group_name": name,
+						"template_url":     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_url"},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap11028 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence11028(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 资源栈组：自助管理权限模式 11026
+func TestAccAliCloudRosStackGroup_basic11026(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap11026)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence11026)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "self-managed",
+					"parameters": []map[string]interface{}{
+						{
+							"parameter_value": "test",
+							"parameter_key":   "Name",
+						},
+					},
+					"stack_group_name":  name,
+					"template_body":     `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"Name\": {\"Type\": \"String\", \"Default\": \"default-name\"}}, \"Outputs\": {\"OutName\": {\"Value\": {\"Ref\": \"Name\"}}}}`,
+					"permission_model":  "SELF_MANAGED",
+					"capabilities":      []string{"ExpandModules"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "self-managed",
+						"parameters.#":      "1",
+						"stack_group_name":  name,
+						"template_body":     CHECKSET,
+						"permission_model":  "SELF_MANAGED",
+						"capabilities.#":    "1",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"description":       "self-managed-new",
+					"parameters": []map[string]interface{}{
+						{
+							"parameter_value": "test-new",
+							"parameter_key":   "Name",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+						"description":       "self-managed-new",
+						"parameters.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"capabilities"},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap11026 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence11026(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+`, name)
+}
+
+// Case StackGroup测试用例 823
+func TestAccAliCloudRosStackGroup_basic823(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap823)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence823)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "资源栈组描述2",
+					"stack_group_name": name,
+					"template_body":    `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "资源栈组描述2",
+						"stack_group_name": name,
+						"template_body":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap823 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence823(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case StackGroup测试用例_副本1663566976761 1206
+func TestAccAliCloudRosStackGroup_basic1206(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap1206)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence1206)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "资源栈组描述2",
+					"stack_group_name": name,
+					"template_body":    `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "资源栈组描述2",
+						"stack_group_name": name,
+						"template_body":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":         "修改资源栈组描述123",
+					"stack_group_name":    name + "_update",
+					"execution_role_name": "AliyunROSStackGroupExecutionRole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":         "修改资源栈组描述123",
+						"stack_group_name":    name + "_update",
+						"execution_role_name": "AliyunROSStackGroupExecutionRole",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap1206 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence1206(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case StackGroup测试用例全生命周期 1558
+func TestAccAliCloudRosStackGroup_basic1558(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_stack_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap1558)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosStackGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccros%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackGroupBasicDependence1558)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":              "资源栈组描述2",
+					"stack_group_name":         name,
+					"template_body":            `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"template_version":         "v1",
+					"administration_role_name": "AliyunROSStackGroupAdministrationRole",
+					"permission_model":         "SELF_MANAGED",
+					"execution_role_name":      "AliyunROSStackGroupExecutionRole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":              "资源栈组描述2",
+						"stack_group_name":         name,
+						"template_body":            CHECKSET,
+						"resource_group_id":        CHECKSET,
+						"template_version":         "v1",
+						"administration_role_name": "AliyunROSStackGroupAdministrationRole",
+						"permission_model":         "SELF_MANAGED",
+						"execution_role_name":      "AliyunROSStackGroupExecutionRole",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"administration_role_name": REMOVEKEY,
+					"execution_role_name":      REMOVEKEY,
+					"description":              "资源栈组描述11",
+					"stack_group_name":         name + "_update",
+					"permission_model":         "SERVICE_MANAGED",
+					"auto_deployment": []map[string]interface{}{
+						{
+							"retain_stacks_on_account_removal": "false",
+							"enabled":                          "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"administration_role_name": REMOVEKEY,
+						"execution_role_name":      REMOVEKEY,
+						"description":              "资源栈组描述11",
+						"stack_group_name":         name + "_update",
+						"permission_model":         "SERVICE_MANAGED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_body", "template_version"},
+			},
+		},
+	})
+}
+
+var AlicloudRosStackGroupMap1558 = map[string]string{
+	"status":         CHECKSET,
+	"stack_group_id": CHECKSET,
+}
+
+func AlicloudRosStackGroupBasicDependence1558(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+`, name)
+}
+
+// Test Ros StackGroup. <<< Resource test cases, automatically generated.

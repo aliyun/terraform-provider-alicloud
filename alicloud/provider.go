@@ -1506,7 +1506,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_schedule":                                          resourceAlicloudFnfSchedule(),
 			"alicloud_ros_change_set":                                        resourceAlicloudRosChangeSet(),
 			"alicloud_ros_stack":                                             resourceAlicloudRosStack(),
-			"alicloud_ros_stack_group":                                       resourceAlicloudRosStackGroup(),
+			"alicloud_ros_stack_group":                                       resourceAliCloudRosStackGroup(),
 			"alicloud_ros_template":                                          resourceAlicloudRosTemplate(),
 			"alicloud_privatelink_vpc_endpoint_service":                      resourceAliCloudPrivateLinkVpcEndpointService(),
 			"alicloud_privatelink_vpc_endpoint":                              resourceAliCloudPrivateLinkVpcEndpoint(),
