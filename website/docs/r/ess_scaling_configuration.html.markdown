@@ -162,6 +162,8 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, MapString, Available since v1.60.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `resource_group_id` - (Optional, Available since v1.135.0) ID of resource group.
 * `host_name` - (Optional, Available since v1.143.0) Hostname of an ECS instance.
+* `dedicated_host_cluster_id` - (Optional, Available since v1.256.0) The ID of the dedicated host cluster.
+* `http_endpoint` - (Optional, Available since v1.256.0) Specifies whether to enable the access channel for instance metadata. Valid values: enabled, disabled.
 * `spot_strategy` - (Optional, Available since v1.151.0) The spot strategy for a Pay-As-You-Go instance. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
 * `spot_price_limit` - (Optional, Available since v1.151.0) Sets the maximum price hourly for instance types. See [`spot_price_limit`](#spot_price_limit) below for details.
 
@@ -224,6 +226,16 @@ The instancePatternInfo mapping supports the following:
 * `burstable_performance` - (Optional, Available since v1.220.0) Specifies whether to include burstable instance types.  Valid values: Exclude, Include, Required.
 * `excluded_instance_types` - (Optional, Available since v1.220.0) Instance type N that you want to exclude. You can use wildcard characters, such as an asterisk (*), to exclude an instance type or an instance family.
 * `architectures` - (Optional, Available since v1.220.0) Architecture N of instance type N. Valid values: X86, Heterogeneous, BareMetal, Arm, SuperComputeCluster.
+* `minimum_cpu_core_count` - (Optional, Available since v1.256.0) The minimum number of vCPUs per instance type.
+* `maximum_cpu_core_count` - (Optional, Available since v1.256.0) The maximum number of vCPUs per instance type.
+* `minimum_memory_size` - (Optional, Available since v1.256.0) The minimum memory size per instance. Unit: GiB.
+* `maximum_memory_size` - (Optional, Available since v1.256.0) The maximum memory size per instance. Unit: GiB.
+* `minimum_eni_quantity` - (Optional, Available since v1.256.0) The minimum number of elastic network interfaces (ENIs) per instance.
+* `minimum_eni_private_ip_address_quantity` - (Optional, Available since v1.256.0) The minimum number of IPv4 addresses per ENI.
+* `minimum_eni_ipv6_address_quantity` - (Optional, Available since v1.256.0) The minimum number of IPv6 addresses per ENI.
+* `minimum_baseline_credit` - (Optional, Available since v1.256.0) The minimum baseline vCPU computing performance (overall baseline performance of all vCPUs) per t5 or t6 burstable instance.
+* `minimum_gpu_amount` - (Optional, Available since v1.256.0) The minimum number of GPUs per instance. The value must be a positive integer.
+* `maximum_gpu_amount` - (Optional, Available since v1.256.0) The maximum number of GPUs per instance. The value must be a positive integer.
 
 ### `instance_type_override`
 
