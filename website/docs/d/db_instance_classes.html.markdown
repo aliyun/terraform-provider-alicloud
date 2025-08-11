@@ -7,15 +7,15 @@ description: |-
     Provides a list of RDS instacne classes info.
 ---
 
-# alicloud\_db\_instance\_classes
+# alicloud_db_instance_classes
 
 This data source provides the RDS instance classes resource available info of Alibaba Cloud.
 
--> **NOTE:** Available in v1.46.0+
+-> **NOTE:** Available since v1.46.0
 
 ## Example Usage
 
-```tf
+```terraform
 data "alicloud_db_instance_classes" "resources" {
   instance_charge_type = "PostPaid"
   engine               = "MySQL"
@@ -32,14 +32,15 @@ output "first_db_instance_class" {
 
 The following arguments are supported:
 
-* `zone_id` - (Optional) The Zone to launch the DB instance.
-* `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid` and `Serverless`. Default to `PostPaid`.
-* `engine` - (Optional) Database type. Valid values:"MySQL", "SQLServer", "PostgreSQL", "MariaDB". If not set, it will match all of engines.
+* `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance.
+* `sorted_by` - (Optional, ForceNew) Sort the results by specified fields. The supported value is' Price '. Modifying this field will trigger resource reconstruction.
+* `instance_charge_type` - (Optional, ForceNew) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid` and `Serverless`. Default to `PostPaid`.
+* `engine` - (Optional, ForceNew) Database type. Valid values:"MySQL", "SQLServer", "PostgreSQL", "MariaDB". If not set, it will match all of engines.
 * `category` - (Optional) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`, `serverless_basic`, `serverless_standard`, `serverless_ha`, `cluster`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
-* `engine_version` - (Optional) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
+* `engine_version` - (Optional, ForceNew) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `db_instance_class` - (Optional, Available in 1.51.0+) The DB instance class type by the user.
 * `storage_type` - (Optional) It has been deprecated from version 1.134.0+ and using `db_instance_storage_type` instead.
-* `db_instance_storage_type` - (Optional, Available in 1.134.0+) The DB instance storage space required by the user. Valid values: "cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3".
+* `db_instance_storage_type` - (Optional, Available in 1.134.0+) The DB instance storage space required by the user. Valid values: "cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd".
 * `commodity_code` - (Optional, Available in 1.166.0+) The commodity code of the instance. Valid values:
   * **bards**: The instance is a pay-as-you-go primary instance. This value is available on the China site (aliyun.com).
   * **rds**: The instance is a subscription primary instance. This value is available on the China site (aliyun.com).
@@ -69,6 +70,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` - The Zone to launch the DB instance
     * `sub_zone_ids` - A list of sub zone ids which in the id - e.g If `id` is `cn-beijing-MAZ5(a,b)`, `sub_zone_ids` will be `["cn-beijing-a", "cn-beijing-b"]`.
   * `instance_class` - DB Instance available class.
+  * `price` - Unit price of instance specifications.
   * `storage_range` - DB Instance available storage range.
     * `min` - DB Instance available storage min value.
     * `max` - DB Instance available storage max value.
