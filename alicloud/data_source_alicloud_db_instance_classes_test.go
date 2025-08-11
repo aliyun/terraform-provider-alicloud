@@ -70,6 +70,18 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 		}),
 	}
 
+	GeneralEssdConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id":                  "cn-hangzhou-b",
+			"engine":                   "MySQL",
+			"engine_version":           "8.0",
+			"category":                 "HighAvailability",
+			"db_instance_storage_type": "general_essd",
+			"instance_charge_type":     "PostPaid",
+			"commodity_code":           "bards",
+		}),
+	}
+
 	ServerlessConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":                  "${data.alicloud_db_zones.serverless_zones.ids.1}",
@@ -128,7 +140,7 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 	}
 
 	DBInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, ZoneIDConf, EngineVersionConf, ChargeTypeConfPrepaid,
-		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, ServerlessConf, allConf)
+		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, GeneralEssdConf, ServerlessConf, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(name string) string {
