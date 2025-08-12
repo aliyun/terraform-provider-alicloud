@@ -920,43 +920,46 @@ func (s *EfloServiceV2) DescribeEfloNodeGroupAttachment(id string) (object map[s
 	request["ClusterId"] = parts[0]
 	request["NodeGroupId"] = parts[1]
 	request["RegionId"] = client.RegionId
+	request["MaxResults"] = PageSizeLarge
 	action := "ListClusterNodes"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
 
-	v, err := jsonpath.Get("$.Nodes[*]", response)
-	if err != nil {
-		return object, WrapErrorf(NotFoundErr("NodeGroupAttachment", id), NotFoundMsg, response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("NodeGroupAttachment", id), NotFoundMsg, response)
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["NodeId"]) != parts[2] {
-			continue
+		v, _ := jsonpath.Get("$.Nodes", response)
+		if nodes, ok := v.([]interface{}); ok {
+			for _, n := range nodes {
+				item := n.(map[string]interface{})
+				if fmt.Sprint(item["NodeId"]) == parts[2] {
+					return item, nil
+				}
+			}
 		}
-		return item, nil
+
+		// robust nextToken handling: accept any type and stringify
+		if v, exists := response["NextToken"]; !exists || v == nil || fmt.Sprint(v) == "" {
+			break
+		} else {
+			request["NextToken"] = fmt.Sprint(v)
+		}
 	}
+
 	return object, WrapErrorf(NotFoundErr("NodeGroupAttachment", id), NotFoundMsg, response)
 }
 
