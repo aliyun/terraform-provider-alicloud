@@ -91,6 +91,7 @@ The following arguments are supported:
   * **cloud_essd**: enhanced SSDs (ESSDs) of performance level 1 (PL1)
   * **cloud_essd2**: ESSDs of PL2
   * **cloud_essd3**: ESSDs of PL3
+  * **general_essd**: general ESSDS Available since v1.258.0
 * `payment_type` - (Required) The billing method of the new instance. Valid values: `PayAsYouGo` and `Subscription` and `Serverless`.
 * `db_instance_class` - (Optional, Computed) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 * `restore_time` - (Optional) The point in time to which you want to restore the data of the original instance. The point in time must fall within the specified log backup retention period. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
@@ -146,7 +147,7 @@ The following arguments are supported:
 * `client_cert_revocation_list` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version, which indicates that the client revokes the certificate file. If the value of client_crl_enabled is 1, this parameter must be configured.
 * `client_crl_enabled` - (Optional) The client crl enabled.
 * `connection_string_prefix` - (Optional) The connection string prefix.
-* `db_instance_description` - (Optional) The db instance description.
+* `db_instance_description` - (Optional, Computed) The db instance description.
 * `db_name` - (Optional) The name of the database for which you want to enable TDE. Up to 50 names can be entered in a single request. If you specify multiple names, separate these names with commas (,).
 
 -> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
