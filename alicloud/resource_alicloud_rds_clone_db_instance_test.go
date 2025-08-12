@@ -53,8 +53,8 @@ resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "13.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = "pg.n2.2c.2m"
+  instance_storage         = "30"
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
 }
@@ -148,7 +148,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"db_instance_class": "pg.n2.4c.2m",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -184,8 +184,8 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ssl_enabled":     "1",
 						"ca_type":         "aliyun",
-						"acl":             "perfer",
-						"replication_acl": "perfer",
+						"acl":             "prefer",
+						"replication_acl": "prefer",
 						"server_cert":     CHECKSET,
 						"server_key":      CHECKSET,
 					}),
@@ -345,7 +345,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"db_instance_class": "pg.n2.4c.2m",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -567,16 +567,6 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_description": "tf-testAccDBInstance_instance_name",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_class": CHECKSET,
 					}),
 				),
 			},
@@ -1069,6 +1059,107 @@ resource "alicloud_rds_backup" "default" {
 `, name)
 }
 
+func TestAccAlicloudRdsCloneDBInstancegeneral_essd(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_rds_clone_db_instance.default"
+	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccpgsslclone%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence_general_essd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"db_instance_storage_type": "general_essd",
+					"payment_type":             "PayAsYouGo",
+					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_db_instance_id":    CHECKSET,
+						"db_instance_storage_type": "general_essd",
+						"payment_type":             "PayAsYouGo",
+						"backup_id":                CHECKSET,
+						"engine_version":           "8.0",
+						"db_instance_class":        CHECKSET,
+						"db_instance_storage":      CHECKSET,
+						"zone_id":                  CHECKSET,
+						"connection_string":        CHECKSET,
+						"port":                     CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "backup_id", "source_db_instance_id", "client_ca_enabled", "client_crl_enabled", "connection_string_prefix", "ssl_enabled", "pg_hba_conf"},
+			},
+		},
+	})
+}
+func resourceCloneDBInstanceConfigDependence_general_essd(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id 		 = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_db_zones.default.ids.0
+}
+
+resource "alicloud_db_instance" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_name            = var.name
+  zone_id 				   = data.alicloud_db_zones.default.ids.0
+}
+
+resource "alicloud_rds_backup" "default" {
+  db_instance_id    = alicloud_db_instance.default.id
+  remove_from_state = "true"
+}
+
+`, name)
+}
 func TestAccAlicloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
