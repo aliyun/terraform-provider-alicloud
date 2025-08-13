@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRamPolicyDocumentDataSource0(t *testing.T) {
+func TestAccAliCloudRamPolicyDocumentDataSource0(t *testing.T) {
 	resourceId := "data.alicloud_ram_policy_document.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -17,7 +17,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource0(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig0(),
+				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig0(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"document": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\",\"acs:oss:*:*:myphotos/*\"]}],\"Version\":\"1\"}",
@@ -28,7 +28,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamPolicyDocumentDataSource1(t *testing.T) {
+func TestAccAliCloudRamPolicyDocumentDataSource1(t *testing.T) {
 	resourceId := "data.alicloud_ram_policy_document.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -38,10 +38,10 @@ func TestAccAlicloudRamPolicyDocumentDataSource1(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig1(),
+				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig1(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"document": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"oss:ListBuckets\",\"oss:GetBucketStat\",\"oss:GetBucketInfo\",\"oss:GetBucketTagging\",\"oss:GetBucketAcl\"],\"Resource\":\"acs:oss:*:*:*\"},{\"Effect\":\"Allow\",\"Action\":[\"oss:GetObject\",\"oss:GetObjectAcl\"],\"Resource\":\"acs:oss:*:*:myphotos/hangzhou/2015/*\"},{\"Effect\":\"Allow\",\"Action\":\"oss:ListObjects\",\"Resource\":\"acs:oss:*:*:myphotos\",\"Condition\":{\"StringLike\":{\"oss:Delimiter\":\"/\",\"oss:Prefix\":[\"\",\"hangzhou/\",\"hangzhou/2015/*\"]}}}],\"Version\":\"1\"}",
+						"document": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"oss:ListBuckets\",\"oss:GetBucketStat\",\"oss:GetBucketInfo\",\"oss:GetBucketTagging\",\"oss:GetBucketAcl\"],\"Resource\":\"acs:oss:*:*:*\"},{\"Effect\":\"Allow\",\"Action\":[\"oss:GetObject\",\"oss:GetObjectAcl\"],\"Resource\":\"acs:oss:*:*:myphotos/hangzhou/2015/*\"},{\"Effect\":\"Allow\",\"Action\":\"oss:ListObjects\",\"Resource\":\"acs:oss:*:*:myphotos\",\"Condition\":{\"StringLike\":{\"oss:Delimiter\":\"/\",\"oss:Prefix\":[\"hangzhou/\",\"hangzhou/2015/*\"]}}}],\"Version\":\"1\"}",
 					}),
 				),
 			},
@@ -49,7 +49,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamPolicyDocumentDataSource2(t *testing.T) {
+func TestAccAliCloudRamPolicyDocumentDataSource2(t *testing.T) {
 	resourceId := "data.alicloud_ram_policy_document.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -59,7 +59,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource2(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig2(),
+				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig2(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"document": CHECKSET,
@@ -70,7 +70,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamPolicyDocumentDataSource3(t *testing.T) {
+func TestAccAliCloudRamPolicyDocumentDataSource3(t *testing.T) {
 	resourceId := "data.alicloud_ram_policy_document.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -80,7 +80,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource3(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig3(),
+				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig3(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"document": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"Service\":[\"ecs.aliyuncs.com\"]}}],\"Version\":\"1\"}",
@@ -91,7 +91,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamPolicyDocumentDataSource4(t *testing.T) {
+func TestAccAliCloudRamPolicyDocumentDataSource4(t *testing.T) {
 	resourceId := "data.alicloud_ram_policy_document.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -101,7 +101,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource4(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig4(),
+				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig4(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"document": CHECKSET,
@@ -112,7 +112,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource4(t *testing.T) {
 	})
 }
 
-func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig0() string {
+func testAccCheckAliCloudRamPolicyDocumentDataSourceConfig0() string {
 	return fmt.Sprintf(`
 data "alicloud_ram_policy_document" "default" {
   version = "1"
@@ -131,7 +131,7 @@ resource "alicloud_ram_policy" "default" {
 	`)
 }
 
-func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig1() string {
+func testAccCheckAliCloudRamPolicyDocumentDataSourceConfig1() string {
 	return fmt.Sprintf(`
 data "alicloud_ram_policy_document" "default" {
   version = "1"
@@ -157,7 +157,7 @@ data "alicloud_ram_policy_document" "default" {
     condition {
       operator     = "StringLike"
       variable = "oss:Prefix"
-      values   = ["","hangzhou/","hangzhou/2015/*"]
+      values   = ["hangzhou/","hangzhou/2015/*"]
     }
   }
 }
@@ -170,7 +170,7 @@ resource "alicloud_ram_policy" "policy" {
 	`)
 }
 
-func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig2() string {
+func testAccCheckAliCloudRamPolicyDocumentDataSourceConfig2() string {
 	return fmt.Sprintf(`
 data "alicloud_account" "default" {}
 	
@@ -193,7 +193,7 @@ resource "alicloud_ram_role" "role" {
 	`)
 }
 
-func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig3() string {
+func testAccCheckAliCloudRamPolicyDocumentDataSourceConfig3() string {
 	return fmt.Sprintf(`
 data "alicloud_ram_policy_document" "default" {
   statement {
@@ -214,7 +214,7 @@ resource "alicloud_ram_role" "role" {
 	`)
 }
 
-func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig4() string {
+func testAccCheckAliCloudRamPolicyDocumentDataSourceConfig4() string {
 	return fmt.Sprintf(`
 data "alicloud_account" "default" {}
 

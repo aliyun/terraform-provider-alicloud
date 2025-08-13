@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
+func dataSourceAliCloudRamPolicyDocument() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudRamPolicyDocumentRead,
+		Read: dataSourceAliCloudRamPolicyDocumentRead,
 		Schema: map[string]*schema.Schema{
 			"version": {
 				Type:         schema.TypeString,
@@ -103,7 +103,7 @@ func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudRamPolicyDocumentRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudRamPolicyDocumentRead(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("statement"); ok {
 		doc, err := AssembleDataSourcePolicyDocument(v.([]interface{}), d.Get("version").(string))
@@ -128,14 +128,23 @@ func AssembleDataSourcePolicyDocument(statements []interface{}, version string) 
 	for _, v := range statements {
 		statementMap := v.(map[string]interface{})
 
-		actions := getOneStringOrAllStringSlice(statementMap["action"].([]interface{}))
+		actions, err := getOneStringOrAllStringSlice(statementMap["action"].([]interface{}), "action")
+		if err != nil {
+			return "", WrapError(err)
+		}
+
 		statement := PolicyDocumentStatement{
 			Effect: Effect(statementMap["effect"].(string)),
 			Action: actions,
 		}
 
 		if resources := statementMap["resource"].([]interface{}); len(resources) > 0 {
-			statement.Resource = getOneStringOrAllStringSlice(resources)
+			resource, err := getOneStringOrAllStringSlice(resources, "resource")
+			if err != nil {
+				return "", WrapError(err)
+			}
+
+			statement.Resource = resource
 		}
 
 		principalSlice := make(PolicyDocumentStatementPrincipalSet, 0)
@@ -160,9 +169,14 @@ func AssembleDataSourcePolicyDocument(statements []interface{}, version string) 
 			for _, condition := range conditions {
 				conditionArg := condition.(map[string]interface{})
 				conditionObject := PolicyDocumentStatementCondition{}
-				values := getOneStringOrAllStringSlice(conditionArg["values"].([]interface{}))
+
 				conditionObject.Operator = conditionArg["operator"].(string)
 				conditionObject.Variable = conditionArg["variable"].(string)
+				values, err := getOneStringOrAllStringSlice(conditionArg["values"].([]interface{}), "values")
+				if err != nil {
+					return "", WrapError(err)
+				}
+
 				conditionObject.Values = values
 				conditionSlice = append(conditionSlice, conditionObject)
 			}
@@ -236,7 +250,7 @@ func (s *PolicyDocumentStatementPrincipalSet) UnmarshalJSON(b []byte) error {
 			case string:
 				out = append(out, PolicyDocumentStatementPrincipal{Entity: key, Identifiers: value.(string)})
 			case []interface{}:
-				values := []string{}
+				var values []string
 				for _, v := range value.([]interface{}) {
 					values = append(values, v.(string))
 				}
