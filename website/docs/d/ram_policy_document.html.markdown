@@ -2,16 +2,15 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_policy_document"
-sidebar_current: "docs-alicloud-datasource-ram-policy-document"
 description: |-
-    Generates a RAM policy document to the user.
+  Generates a RAM policy document to the user.
 ---
 
 # alicloud_ram_policy_document
 
 This data source Generates a RAM policy document of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.184.0+.
+-> **NOTE:** Available since v1.184.0.
 
 ## Example Usage
 

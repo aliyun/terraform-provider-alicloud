@@ -1620,15 +1620,25 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	return reflect.DeepEqual(y1, y2), nil
 }
 
-func getOneStringOrAllStringSlice(stringSli []interface{}) interface{} {
+func getOneStringOrAllStringSlice(stringSli []interface{}, fieldName string) (interface{}, error) {
 	if len(stringSli) == 1 {
-		return stringSli[0].(string)
+		if Trim(fmt.Sprint(stringSli[0])) == "" || IsNil(stringSli[0]) {
+			return nil, WrapError(fmt.Errorf("[ERROR] Field \"%s\" cannot contain empty strings(\"\") ! ", fieldName))
+		}
+
+		return stringSli[0].(string), nil
 	}
+
 	sli := make([]string, len(stringSli))
 	for i, v := range stringSli {
+		if Trim(fmt.Sprint(v)) == "" || IsNil(v) {
+			return nil, WrapError(fmt.Errorf("[ERROR] Field \"%s\" cannot contain empty strings(\"\") ! ", fieldName))
+		}
+
 		sli[i] = v.(string)
 	}
-	return sli
+
+	return sli, nil
 }
 
 func Unique(strings []string) []string {

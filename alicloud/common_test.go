@@ -1563,3 +1563,59 @@ func TestUnitCommonInArray(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitGetOneStringOrAllStringSlice(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []interface{}
+		expected    interface{}
+		expectError bool
+	}{
+		{
+			"one string",
+			[]interface{}{"a"},
+			"a",
+			false,
+		},
+		{
+			"string slice",
+			[]interface{}{"a", "b", "c"},
+			[]string{"a", "b", "c"},
+			false,
+		},
+		{
+			"contain empty strings",
+			[]interface{}{""},
+			nil,
+			true,
+		},
+		{
+			"contain empty strings",
+			[]interface{}{"   "},
+			nil,
+			true,
+		},
+		{
+			"contain empty strings",
+			[]interface{}{"a", "", "c"},
+			nil,
+			true,
+		},
+		{
+			"contain empty strings",
+			[]interface{}{"a", "    ", "c"},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getOneStringOrAllStringSlice(tt.input, tt.name)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
