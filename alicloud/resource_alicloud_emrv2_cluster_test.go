@@ -735,6 +735,19 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					"deletion_protection":  "false",
 					"bootstrap_scripts": []map[string]interface{}{
 						{
+							"script_name":             "bssName01",
+							"script_path":             "oss://emr/tf-test/ts01.sh",
+							"script_args":             "--b=a",
+							"execution_moment":        "AFTER_STARTED",
+							"execution_fail_strategy": "FAILED_CONTINUE",
+							"node_selector": []map[string]interface{}{
+								{
+									"node_select_type": "NODE_GROUP",
+									"node_group_types": []string{"CORE"},
+								},
+							},
+						},
+						{
 							"script_name":             "bssName02",
 							"script_path":             "oss://emr/tf-test/ts2.sh",
 							"script_args":             "--b=a",
@@ -943,9 +956,9 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deletion_protection":                  "false",
 						"log_collect_strategy":                 "{\"open\":[\"\"],\"close\":[\"all\"]}",
-						"bootstrap_scripts.#":                  "1",
-						"bootstrap_scripts.0.script_name":      "bssName02",
-						"bootstrap_scripts.0.execution_moment": "BEFORE_INSTALL",
+						"bootstrap_scripts.#":                  "2",
+						"bootstrap_scripts.0.script_name":      "bssName01",
+						"bootstrap_scripts.0.execution_moment": "AFTER_STARTED",
 						"node_groups.#":                        "4",
 					}),
 				),
@@ -955,6 +968,19 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					"log_collect_strategy": "{\\\"open\\\":[\\\"\\\"],\\\"close\\\":[\\\"all\\\"]}",
 					"deletion_protection":  "false",
 					"bootstrap_scripts": []map[string]interface{}{
+						{
+							"script_name":             "bssName01",
+							"script_path":             "oss://emr/tf-test/ts01.sh",
+							"script_args":             "--b=a",
+							"execution_moment":        "AFTER_STARTED",
+							"execution_fail_strategy": "FAILED_CONTINUE",
+							"node_selector": []map[string]interface{}{
+								{
+									"node_select_type": "NODE_GROUP",
+									"node_group_types": []string{"CORE"},
+								},
+							},
+						},
 						{
 							"script_name":             "bssName02",
 							"script_path":             "oss://emr/tf-test/ts2.sh",
@@ -1181,9 +1207,9 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deletion_protection":                  "false",
 						"log_collect_strategy":                 "{\"open\":[\"\"],\"close\":[\"all\"]}",
-						"bootstrap_scripts.#":                  "1",
-						"bootstrap_scripts.0.script_name":      "bssName02",
-						"bootstrap_scripts.0.execution_moment": "BEFORE_INSTALL",
+						"bootstrap_scripts.#":                  "2",
+						"bootstrap_scripts.1.script_name":      "bssName02",
+						"bootstrap_scripts.1.execution_moment": "BEFORE_INSTALL",
 						"node_groups.#":                        "4",
 					}),
 				),
