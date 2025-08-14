@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
 			"alicloud_arms_env_features":                        dataSourceAliCloudArmsEnvFeatures(),
 			"alicloud_arms_env_custom_jobs":                     dataSourceAliCloudArmsEnvCustomJobs(),
 			"alicloud_arms_env_service_monitors":                dataSourceAliCloudArmsEnvServiceMonitors(),
