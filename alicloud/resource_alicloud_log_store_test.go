@@ -1217,8 +1217,8 @@ func resourceLogStoreConfigDependenceWithEncrypt(name string) string {
 	  product_version = "3"
 	  vpc_id          = data.alicloud_vpcs.default.ids.0
 	  zone_ids = [
-		data.alicloud_vswitches.default.vswitches.0.zone_id,
-        data.alicloud_vswitches.default.vswitches.1.zone_id
+		"cn-hangzhou-f",
+        "cn-hangzhou-h"
 	  ]
 	  vswitch_ids = [
 		data.alicloud_vswitches.default.ids.0
@@ -1627,8 +1627,8 @@ resource "alicloud_kms_instance" "default" {
   product_version = "3"
   vpc_id          = data.alicloud_vpcs.default.ids.0
   zone_ids = [
-	data.alicloud_vswitches.default.vswitches.0.zone_id,
-	data.alicloud_vswitches.default.vswitches.1.zone_id
+	"cn-hangzhou-f",
+	"cn-hangzhou-h"
   ]
   vswitch_ids = [
 	data.alicloud_vswitches.default.ids.0
@@ -1816,3 +1816,169 @@ func TestAccAliCloudSlsLogStore_basic5614_old_twin(t *testing.T) {
 		},
 	})
 }
+
+// Test Sls LogStore. >>> Resource test cases, automatically generated.
+// Case Logstore_terraform_覆盖度 5614
+func TestAccAliCloudSlsLogStore_basic5614(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap5614)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccsls%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence5614)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl":        "7",
+					"logstore_name":  name,
+					"project_name":   "${alicloud_log_project.defaultbRFbyS.id}",
+					"shard_count":    "2",
+					"auto_split":     "true",
+					"mode":           "query",
+					"telemetry_type": "None",
+					"append_meta":    "true",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "false",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]interface{}{
+								{
+									"cmk_key_id": "${alicloud_kms_key.default456YC6.id}",
+									"region_id":  "cn-hangzhou",
+									"arn":        "acs:ram::1511928242963727:role/aliyunlogdefaultrole",
+								},
+							},
+						},
+					},
+					"max_split_shard_count": "6",
+					"retention_period":      "200",
+					"enable_web_tracking":   "false",
+					"metering_mode":         "ChargeByFunction",
+					"infrequent_access_ttl": "40",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl":               "7",
+						"logstore_name":         name,
+						"project_name":          CHECKSET,
+						"shard_count":           "2",
+						"auto_split":            "true",
+						"mode":                  "query",
+						"telemetry_type":        "None",
+						"append_meta":           "true",
+						"max_split_shard_count": "6",
+						"retention_period":      "200",
+						"enable_web_tracking":   "false",
+						"metering_mode":         "ChargeByFunction",
+						"infrequent_access_ttl": "40",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl":     "10",
+					"auto_split":  "false",
+					"append_meta": "false",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]interface{}{
+								{
+									"cmk_key_id": "${alicloud_kms_key.default456YC6.id}",
+									"region_id":  "cn-hangzhou",
+									"arn":        "acs:ram::1511928242963727:role/aliyunlogdefaultrole",
+								},
+							},
+						},
+					},
+					"max_split_shard_count": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl":               "10",
+						"auto_split":            "false",
+						"append_meta":           "false",
+						"max_split_shard_count": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl":               "11",
+					"auto_split":            "true",
+					"mode":                  "standard",
+					"append_meta":           "true",
+					"max_split_shard_count": "20",
+					"retention_period":      "202",
+					"enable_web_tracking":   "true",
+					"metering_mode":         "ChargeByDataIngest",
+					"infrequent_access_ttl": "43",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl":               "11",
+						"auto_split":            "true",
+						"mode":                  "standard",
+						"append_meta":           "true",
+						"max_split_shard_count": "20",
+						"retention_period":      "202",
+						"enable_web_tracking":   "true",
+						"metering_mode":         "ChargeByDataIngest",
+						"infrequent_access_ttl": "43",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSlsLogStoreMap5614 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudSlsLogStoreBasicDependence5614(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_log_project" "defaultbRFbyS" {
+  description = "terraform-logstore-test-668"
+  name        = "terraform-logstore-test-119"
+}
+
+resource "alicloud_kms_key" "default456YC6" {
+  protection_level   = "SOFTWARE"
+  key_spec           = "Aliyun_AES_256"
+  key_usage          = "ENCRYPT/DECRYPT"
+  origin             = "Aliyun_KMS"
+  automatic_rotation = "Disabled"
+  status             = "Enabled"
+  pending_window_in_days = 7
+}
+
+
+`, name)
+}
+
+// Test Sls LogStore. <<< Resource test cases, automatically generated.
