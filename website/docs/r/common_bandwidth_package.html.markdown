@@ -22,6 +22,12 @@ For information about EIP Bandwidth Plan (CBWP) Common Bandwidth Package and how
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_common_bandwidth_package&exampleId=0717d382-6add-c02a-ca9f-711341f89416202c748f&activeTab=example&spm=docs.r.common_bandwidth_package.0.0717d3826a&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
