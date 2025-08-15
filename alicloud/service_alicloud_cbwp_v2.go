@@ -22,11 +22,11 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeCommonBandwidthPackages"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["BandwidthPackageId"] = id
-	query["RegionId"] = client.RegionId
+	request["BandwidthPackageId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeCommonBandwidthPackages"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -39,11 +39,10 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -58,18 +57,18 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *CbwpServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
+func (s *CbwpServiceV2) DescribeCommonBandwidthPackageListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTagResources"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
-	query["RegionId"] = client.RegionId
-
+	request["RegionId"] = client.RegionId
 	request["ResourceType"] = "COMMONBANDWIDTHPACKAGE"
+	action := "ListTagResources"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
@@ -81,11 +80,10 @@ func (s *CbwpServiceV2) DescribeListTagResources(id string) (object map[string]i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -105,6 +103,13 @@ func (s *CbwpServiceV2) CbwpCommonBandwidthPackageStateRefreshFunc(id string, fi
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -119,8 +124,8 @@ func (s *CbwpServiceV2) CbwpCommonBandwidthPackageStateRefreshFunc(id string, fi
 // SetResourceTags <<< Encapsulated tag function for Cbwp.
 func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -154,9 +159,9 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -187,9 +192,9 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}

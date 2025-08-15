@@ -12,6 +12,8 @@ Provides a EIP Bandwidth Plan (CBWP) Common Bandwidth Package resource.
 
 -> **NOTE:** Terraform will auto build common bandwidth package instance while it uses `alicloud_common_bandwidth_package` to build a common bandwidth package resource.
 
+For additional details, see the documentation[https://help.aliyun.com/zh/internet-shared-bandwidth/user-guide/internet-shared-bandwidth-overview?spm=a2c4g.11186623.help-menu-55092.d_1_0.492c69ffKLbVqS].
+
 For information about EIP Bandwidth Plan (CBWP) Common Bandwidth Package and how to use it, see [What is Common Bandwidth Package](https://www.alibabacloud.com/help/en/eip-bandwidth-plan).
 
 -> **NOTE:** Available since v1.23.0.
@@ -19,12 +21,6 @@ For information about EIP Bandwidth Plan (CBWP) Common Bandwidth Package and how
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_common_bandwidth_package&exampleId=0717d382-6add-c02a-ca9f-711341f89416202c748f&activeTab=example&spm=docs.r.common_bandwidth_package.0.0717d3826a&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -113,6 +109,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `payment_type` - The billing type of the Internet Shared Bandwidth instance. Valid values: `PayAsYouGo`, `Subscription`.
 * `create_time` - The creation time.
+* `region_id` - The pagination token that is used in the next request to retrieve a new page of results. 
 * `status` - The status of the Internet Shared Bandwidth instance. Default value: `Available`.
 
 ## Timeouts
