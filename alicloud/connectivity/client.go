@@ -1049,7 +1049,7 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	if client.logconn != nil && !client.config.needRefreshCredential() {
 		return do(client.logconn)
 	}
-	product := "sls"
+	product := "log"
 	endpoint, err := client.loadApiEndpoint(product)
 	if err != nil {
 		return nil, err
@@ -1058,6 +1058,11 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
 	}
+
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
+	}
+
 	accessKey, secretKey, securityToken := client.config.GetRefreshCredential()
 	client.logconn = &sls.Client{
 		AccessKeyID:     accessKey,
