@@ -178,6 +178,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
 			"alicloud_arms_env_features":                        dataSourceAliCloudArmsEnvFeatures(),
 			"alicloud_arms_env_custom_jobs":                     dataSourceAliCloudArmsEnvCustomJobs(),
+			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_env_service_monitors":                dataSourceAliCloudArmsEnvServiceMonitors(),
 			"alicloud_arms_env_pod_monitors":                    dataSourceAliCloudArmsEnvPodMonitors(),
 			"alicloud_arms_environments":                        dataSourceAliCloudArmsEnvironments(),
