@@ -1,4 +1,26 @@
 ## 1.258.0 (Unreleased)
+
+- **New Resource:** `alicloud_eflo_er` [GH-8906]
+- **New Data Source:** `alicloud_arms_environments` [GH-8900]
+- **New Data Source:** `alicloud_arms_env_pod_monitors` [GH-8904]
+- **New Data Source:** `alicloud_arms_env_service_monitors` [GH-8908]
+- **New Data Source:** `alicloud_arms_env_custom_jobs` [GH-8909]
+- **New Data Source:** `alicloud_arms_env_features` [GH-8910]
+- **New Data Source:** `alicloud_arms_addon_releases` [GH-8911]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: optimize_optimized_writes. [GH-8868]
+- resource/alicloud_mongodb_sharding_instance: Added the field global_security_group_list. [GH-8886]
+- resource/alicloud_rds_clone_db_instance: db_instance_storage_type insert general_essd. [GH-8898]
+- resource/alicloud_eflo_node_group_attachment: Optimize the page turning logic of the DescribeEfloNodeGroupAttachment; testcase: Improves test for eflo_node_group_attachment. [GH-8903]
+- data-source/alicloud_db_instance_classes: insert general_essd to db_instance_storage_type. [GH-8899]
+- testcase: remove time.Sleep for db_instance. [GH-8902]
+
+BUG FIXES:
+
+- data-source/alicloud_ram_policy_document: Fixed the panic error caused by action, resource, values; Improved the common function getOneStringOrAllStringSlice. [GH-8905]
+
 ## 1.257.0 (August 8, 2025)
 
 - **New Resource:** `alicloud_mongodb_global_security_ip_group` ([#8879](https://github.com/aliyun/terraform-provider-alicloud/issues/8879))
