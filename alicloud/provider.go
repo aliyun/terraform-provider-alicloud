@@ -175,10 +175,10 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
 			"alicloud_arms_env_features":                        dataSourceAliCloudArmsEnvFeatures(),
 			"alicloud_arms_env_custom_jobs":                     dataSourceAliCloudArmsEnvCustomJobs(),
-			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_env_service_monitors":                dataSourceAliCloudArmsEnvServiceMonitors(),
 			"alicloud_arms_env_pod_monitors":                    dataSourceAliCloudArmsEnvPodMonitors(),
 			"alicloud_arms_environments":                        dataSourceAliCloudArmsEnvironments(),
@@ -911,6 +911,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
+			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
 			"alicloud_ssl_certificates_service_pca_certificate":             resourceAliCloudSslCertificatesServicePcaCertificate(),
 			"alicloud_threat_detection_attack_path_sensitive_asset_config":  resourceAliCloudThreatDetectionAttackPathSensitiveAssetConfig(),
