@@ -4036,7 +4036,7 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	if ProfileKey == "region_id" {
 		return providerConfig["region_id"], nil
 	}
-	if mode == "ChainableRamRoleArn" {
+	if mode == "ChainableRamRoleArn" || mode == "CloudSSO" {
 		return nil, nil
 	}
 	switch ProfileKey {
