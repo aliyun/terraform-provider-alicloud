@@ -2,41 +2,35 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDdosbgpInstance() *schema.Resource {
+func resourceAliCloudDdosBgpInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDdosbgpInstanceCreate,
-		Read:   resourceAlicloudDdosbgpInstanceRead,
-		Update: resourceAlicloudDdosbgpInstanceUpdate,
-		Delete: resourceAlicloudDdosbgpInstanceDelete,
+		Create: resourceAliCloudDdosBgpInstanceCreate,
+		Read:   resourceAliCloudDdosBgpInstanceRead,
+		Update: resourceAliCloudDdosBgpInstanceUpdate,
+		Delete: resourceAliCloudDdosBgpInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(26 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Required:     false,
-				Default:      string(Enterprise),
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Enterprise", "Professional"}, false),
-			},
-			"name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Required:     false,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+			"bandwidth": {
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
 			},
 			"base_bandwidth": {
 				Type:     schema.TypeInt,
@@ -44,7 +38,12 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				ForceNew: true,
 				Default:  20,
 			},
-			"bandwidth": {
+			"instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ip_count": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
@@ -53,104 +52,119 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"IPv4", "IPv6"}, false),
-			},
-			"ip_count": {
-				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
-			},
-			"period": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
-				Optional:     true,
-				Default:      12,
+				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6"}, false),
 			},
 			"normal_bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
+			"period": {
+				Type:         schema.TypeInt,
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				Optional:     true,
+				Default:      12,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
+			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Enterprise", "Professional"}, false),
+			},
+			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field `name` has been deprecated from provider version 1.259.0. New field `instance_name` instead.",
+			},
 		},
 	}
 }
 
-func resourceAlicloudDdosbgpInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdosBgpInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
-	ddosbgpInstanceType := "1"
-	if d.Get("type").(string) == string(Professional) {
-		ddosbgpInstanceType = "0"
-	}
-
-	ddosbgpInstanceIpType := "v4"
-	if d.Get("ip_type").(string) == string(IPv6) {
-		ddosbgpInstanceIpType = "v6"
-	}
-
-	var response map[string]interface{}
-	var err error
-	var endpoint string
 	action := "CreateInstance"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
 
-	request["ProductCode"] = "ddos"
-	request["ProductType"] = "ddosbgp"
-	request["SubscriptionType"] = "Subscription"
+	request["ClientToken"] = buildClientToken(action)
 
 	parameterMapList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Type",
+			"Value": convertDdosBgpInstanceInstanceTypeRequest(v),
+		})
+	} else {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Type",
+			"Value": "1",
+		})
+	}
+	if v, ok := d.GetOk("ip_type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "IpType",
+			"Value": convertDdosBgpInstanceInstanceListIpTypeRequest(v),
+		})
+	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "Region",
 		"Value": client.RegionId,
 	})
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "Type",
-		"Value": ddosbgpInstanceType,
-	})
-
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "IpType",
-		"Value": ddosbgpInstanceIpType,
-	})
-
-	if v, ok := d.GetOk("base_bandwidth"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "BaseBandwidth",
-			"Value": v,
-		})
-	}
-
 	if v, ok := d.GetOk("normal_bandwidth"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "NormalBandwidth",
 			"Value": v,
 		})
 	}
-
-	if v, ok := d.GetOk("bandwidth"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Bandwidth",
-			"Value": v,
-		})
-	}
-
 	if v, ok := d.GetOk("ip_count"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "IpCount",
 			"Value": v,
 		})
 	}
-
+	if v, ok := d.GetOk("base_bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "BaseBandwidth",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Bandwidth",
+			"Value": v,
+		})
+	}
 	request["Parameter"] = parameterMapList
+
+	request["ProductCode"] = "ddos"
+	request["ProductType"] = "ddosbgp"
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
 	} else {
 		request["Period"] = 1
 	}
-
+	request["SubscriptionType"] = "Subscription"
+	var endpoint string
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -170,66 +184,85 @@ func resourceAlicloudDdosbgpInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddosbgp_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	response = response["Data"].(map[string]interface{})
-	d.SetId(fmt.Sprint(response["InstanceId"]))
+	id, _ := jsonpath.Get("$.Data.InstanceId", response)
+	d.SetId(fmt.Sprint(id))
 
-	return resourceAlicloudDdosbgpInstanceUpdate(d, meta)
+	ddosBgpServiceV2 := DdosBgpServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, ddosBgpServiceV2.DdosBgpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return resourceAliCloudDdosBgpInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudDdosbgpInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdosBgpInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddosbgpService := DdosbgpService{client}
-	object, err := ddosbgpService.DescribeDdosbgpInstance(d.Id())
+	ddosBgpServiceV2 := DdosBgpServiceV2{client}
+
+	objectRaw, err := ddosBgpServiceV2.DescribeDdosBgpInstance(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ddosbgp_instance DescribeInstanceList Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_ddosbgp_instance DescribeDdosBgpInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
 
-	specInfo, err := ddosbgpService.DescribeDdosbgpInstanceSpec(d.Id())
-	if err != nil {
+	d.Set("instance_name", objectRaw["Remark"])
+	d.Set("ip_type", convertDdosBgpInstanceInstanceListIpTypeResponse(objectRaw["IpType"]))
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("type", convertDdosBgpInstanceInstanceListInstanceTypeResponse(objectRaw["InstanceType"]))
+	d.Set("name", objectRaw["Remark"])
+
+	objectRaw, err = ddosBgpServiceV2.DescribeInstanceListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	ddosbgpInstanceType := string(Enterprise)
-	if fmt.Sprint(object["InstanceType"]) == "0" {
-		ddosbgpInstanceType = string(Professional)
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = ddosBgpServiceV2.DescribeInstanceDescribeInstanceSpecs(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
 	}
 
-	d.Set("name", object["Remark"])
-	d.Set("bandwidth", specInfo["PackConfig"].(map[string]interface{})["Bandwidth"])
-	d.Set("base_bandwidth", specInfo["PackConfig"].(map[string]interface{})["PackBasicThre"])
-	d.Set("normal_bandwidth", specInfo["PackConfig"].(map[string]interface{})["NormalBandwidth"])
-	d.Set("ip_type", object["IpType"])
-	d.Set("ip_count", specInfo["PackConfig"].(map[string]interface{})["IpSpec"])
-	d.Set("type", ddosbgpInstanceType)
+	d.Set("bandwidth", objectRaw["Bandwidth"])
+	d.Set("base_bandwidth", objectRaw["PackBasicThre"])
+	d.Set("ip_count", objectRaw["IpSpec"])
+	d.Set("normal_bandwidth", objectRaw["NormalBandwidth"])
 
 	return nil
 }
 
-func resourceAlicloudDdosbgpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdosBgpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
+	var query map[string]interface{}
 	update := false
-	action := "ModifyRemark"
-	request := map[string]interface{}{
-		"InstanceId": d.Id(),
-		"RegionId":   client.RegionId,
-		"Remark":     d.Get("name"),
-	}
+	d.Partial(true)
 
-	if d.HasChange("name") {
+	var err error
+	action := "MoveResourceGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["ResourceRegionId"] = client.RegionId
+	if d.HasChange("resource_group_id") {
 		update = true
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	request["ResourceType"] = "INSTANCE"
 	if update {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, nil, request, false)
+			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -237,18 +270,104 @@ func resourceAlicloudDdosbgpInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ModifyRemark"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("instance_name") {
+		update = true
+
+		request["Remark"] = d.Get("instance_name")
+	}
+
+	if d.HasChange("name") {
+		update = true
+
+		request["Remark"] = d.Get("name")
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudDdosbgpInstanceRead(d, meta)
+	if d.HasChange("tags") {
+		ddosBgpServiceV2 := DdosBgpServiceV2{client}
+		if err := ddosBgpServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceAliCloudDdosBgpInstanceRead(d, meta)
 }
 
-func resourceAlicloudDdosbgpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource AlicloudDdosbgpInstance. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudDdosBgpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Instance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
+}
+
+func convertDdosBgpInstanceInstanceListIpTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "v4":
+		return "IPv4"
+	case "v6":
+		return "IPv6"
+	}
+	return source
+}
+
+func convertDdosBgpInstanceInstanceListIpTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "IPv4":
+		return "v4"
+	case "IPv6":
+		return "v6"
+	}
+	return source
+}
+
+func convertDdosBgpInstanceInstanceListInstanceTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "0":
+		return "Professional"
+	case "1":
+		return "Enterprise"
+	}
+	return source
+}
+
+func convertDdosBgpInstanceInstanceTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "Enterprise":
+		return "1"
+	case "Professional":
+		return "0"
+	}
+	return source
 }
