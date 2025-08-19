@@ -1418,7 +1418,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_elasticsearch_instance":                                resourceAlicloudElasticsearch(),
 			"alicloud_cas_certificate":                                       resourceAliCloudSslCertificatesServiceCertificate(),
 			"alicloud_ddoscoo_instance":                                      resourceAliCloudDdoscooInstance(),
-			"alicloud_ddosbgp_instance":                                      resourceAlicloudDdosbgpInstance(),
+			"alicloud_ddosbgp_instance":                                      resourceAliCloudDdosBgpInstance(),
 			"alicloud_network_acl":                                           resourceAliCloudVpcNetworkAcl(),
 			"alicloud_network_acl_attachment":                                resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":                                   resourceAliyunNetworkAclEntries(),
