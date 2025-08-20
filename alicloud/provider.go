@@ -910,7 +910,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"alicloud_eflo_er": resourceAliCloudEfloEr(),
+			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
+			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
 			"alicloud_ssl_certificates_service_pca_certificate":             resourceAliCloudSslCertificatesServicePcaCertificate(),
 			"alicloud_threat_detection_attack_path_sensitive_asset_config":  resourceAliCloudThreatDetectionAttackPathSensitiveAssetConfig(),
 			"alicloud_mongodb_global_security_ip_group":                     resourceAliCloudMongodbGlobalSecurityIPGroup(),
