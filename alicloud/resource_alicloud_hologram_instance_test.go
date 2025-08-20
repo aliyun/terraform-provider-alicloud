@@ -59,16 +59,19 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 						"payment_type":  "PayAsYouGo",
 						"instance_type": "Warehouse",
 						"endpoints.#":   "2",
+						"cpu":           "32",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "32",
+					"cpu":        "64",
+					"scale_type": "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "32",
+						"cpu":        "64",
+						"scale_type": "UPGRADE",
 					}),
 				),
 			},
@@ -175,7 +178,7 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":       "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle": "Hour",
-					"cpu":           "32",
+					"cpu":           "64",
 					"duration":      "1",
 					"auto_pay":      "true",
 					"instance_name": name + "_update",
@@ -198,7 +201,7 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 					testAccCheck(map[string]string{
 						"zone_id":       CHECKSET,
 						"pricing_cycle": "Hour",
-						"cpu":           "32",
+						"cpu":           "64",
 						"duration":      "1",
 						"auto_pay":      "true",
 						"instance_name": name + "_update",
@@ -265,6 +268,7 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 var AlicloudHologramInstanceMap3920 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence3920(name string) string {
@@ -324,7 +328,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 					"instance_name": name,
 					"payment_type":  "PayAsYouGo",
 					"pricing_cycle": "Hour",
-					"cpu":           "8",
+					"cpu":           "32",
 					"endpoints": []map[string]interface{}{
 						{
 							"type": "Intranet",
@@ -339,7 +343,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_type": "Standard",
-						"cpu":           "8",
+						"cpu":           "32",
 						"zone_id":       CHECKSET,
 						"instance_name": name,
 						"payment_type":  "PayAsYouGo",
@@ -349,11 +353,13 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "8",
+					"cpu":        "64",
+					"scale_type": "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "8",
+						"cpu":        "64",
+						"scale_type": "UPGRADE",
 					}),
 				),
 			},
@@ -392,7 +398,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 					"instance_type": "Standard",
 					"zone_id":       "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle": "Hour",
-					"cpu":           "8",
+					"cpu":           "64",
 					"instance_name": name + "_update",
 					"payment_type":  "PayAsYouGo",
 					"endpoints": []map[string]interface{}{
@@ -412,7 +418,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 						"instance_type": "Standard",
 						"zone_id":       CHECKSET,
 						"pricing_cycle": "Hour",
-						"cpu":           "8",
+						"cpu":           "64",
 						"instance_name": name + "_update",
 						"payment_type":  "PayAsYouGo",
 						"endpoints.#":   "2",
@@ -474,6 +480,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 var AlicloudHologramInstanceMap4132 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence4132(name string) string {
@@ -571,11 +578,11 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "4",
+					"cpu": "32",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "4",
+						"cpu": "32",
 					}),
 				),
 			},
@@ -661,7 +668,7 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "4",
+					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -686,7 +693,7 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "4",
+						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -754,6 +761,7 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 var AlicloudHologramInstanceMap4785 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence4785(name string) string {
@@ -817,7 +825,7 @@ func TestAccAliCloudHologramInstance_basic3916(t *testing.T) {
 					"pricing_cycle": "Month",
 					"duration":      "1",
 					"auto_pay":      "true",
-					"cpu":           "8",
+					"cpu":           "32",
 					"endpoints": []map[string]interface{}{
 						{
 							"type": "Intranet",
@@ -975,6 +983,7 @@ func TestAccAliCloudHologramInstance_basic3916(t *testing.T) {
 var AlicloudHologramInstanceMap3916 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence3916(name string) string {
@@ -1028,7 +1037,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 					"payment_type":  "PayAsYouGo",
 					"instance_type": "Standard",
 					"pricing_cycle": "Hour",
-					"cpu":           "8",
+					"cpu":           "32",
 					"endpoints": []map[string]interface{}{
 						{
 							"type": "Intranet",
@@ -1044,7 +1053,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 					testAccCheck(map[string]string{
 						"zone_id":       CHECKSET,
 						"instance_name": name,
-						"cpu":           "8",
+						"cpu":           "32",
 						"payment_type":  "PayAsYouGo",
 						"instance_type": "Standard",
 						"endpoints.#":   "2",
@@ -1063,11 +1072,13 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "8",
+					"cpu":        "64",
+					"scale_type": "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "8",
+						"cpu":        "64",
+						"scale_type": "UPGRADE",
 					}),
 				),
 			},
@@ -1123,30 +1134,33 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cpu":        "32",
-					"scale_type": "UPGRADE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cpu":        "32",
-						"scale_type": "UPGRADE",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cpu":        "8",
 					"scale_type": "DOWNGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu":        "8",
+						"cpu":        "32",
 						"scale_type": "DOWNGRADE",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"cpu":        "64",
+					"scale_type": "UPGRADE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cpu":        "64",
+						"scale_type": "UPGRADE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"endpoints": []map[string]interface{}{
+						{
+							"type": "Intranet",
+						},
 						{
 							"type":       "VPCSingleTunnel",
 							"vswitch_id": "${alicloud_vswitch.defaultVSwitch.id}",
@@ -1156,7 +1170,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoints.#": "1",
+						"endpoints.#": "2",
 					}),
 				),
 			},
@@ -1165,7 +1179,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "8",
+					"cpu":               "64",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1190,7 +1204,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "8",
+						"cpu":               "64",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -1258,6 +1272,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 var AlicloudHologramInstanceMap4858 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence4858(name string) string {
@@ -1302,8 +1317,8 @@ resource "alicloud_vswitch" "defaultVSwitch2" {
 `, name)
 }
 
-// Case 4783
-func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
+// Case 4783 Deprecated Follower
+func SkipTestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hologram_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudHologramInstanceMap4783)
@@ -1335,6 +1350,9 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 					"leader_instance_id": "${alicloud_hologram_instance.leaderInstance.id}",
 					"endpoints": []map[string]interface{}{
 						{
+							"type": "Intranet",
+						},
+						{
 							"type":       "VPCSingleTunnel",
 							"vswitch_id": "${alicloud_vswitch.defaultVSwitch.id}",
 							"vpc_id":     "${alicloud_vswitch.defaultVSwitch.vpc_id}",
@@ -1347,7 +1365,7 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 						"instance_name": name,
 						"payment_type":  "PayAsYouGo",
 						"instance_type": "Follower",
-						"endpoints.#":   "1",
+						"endpoints.#":   "2",
 						"cpu":           "32",
 					}),
 				),
@@ -1364,11 +1382,13 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "32",
+					"cpu":        "64",
+					"scale_type": "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "32",
+						"cpu":        "64",
+						"scale_type": "UPGRADE",
 					}),
 				),
 			},
@@ -1463,7 +1483,7 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "32",
+					"cpu":               "64",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1485,7 +1505,7 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 						"cold_storage_size":  "0",
 						"zone_id":            CHECKSET,
 						"pricing_cycle":      "Hour",
-						"cpu":                "32",
+						"cpu":                "64",
 						"storage_size":       "0",
 						"duration":           "1",
 						"auto_pay":           "true",
@@ -1553,6 +1573,7 @@ func TestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 var AlicloudHologramInstanceMap4783 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
 func AlicloudHologramInstanceBasicDependence4783(name string) string {
@@ -1707,7 +1728,7 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 					"instance_type": "Standard",
 					"zone_id":       "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle": "Hour",
-					"cpu":           "8",
+					"cpu":           "32",
 					"instance_name": name,
 					"payment_type":  "PayAsYouGo",
 					"endpoints": []map[string]interface{}{
@@ -1736,7 +1757,7 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 						"instance_type": "Standard",
 						"zone_id":       "cn-hangzhou-j",
 						"pricing_cycle": "Hour",
-						"cpu":           "8",
+						"cpu":           "32",
 						"instance_name": name,
 						"payment_type":  "PayAsYouGo",
 						"endpoints.#":   "3",
@@ -1785,7 +1806,7 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "4",
+					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1815,7 +1836,7 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "4",
+						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -1867,7 +1888,7 @@ func SkipTestAccAliCloudHologramInstance_basic3916_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":           "cn-shenzhen-f",
 					"pricing_cycle":     "Month",
-					"cpu":               "8",
+					"cpu":               "32",
 					"storage_size":      "200",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1896,7 +1917,7 @@ func SkipTestAccAliCloudHologramInstance_basic3916_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"zone_id":           "cn-shenzhen-f",
 						"pricing_cycle":     "Month",
-						"cpu":               "8",
+						"cpu":               "32",
 						"storage_size":      "200",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -2007,8 +2028,8 @@ func TestAccAliCloudHologramInstance_basic4858_twin(t *testing.T) {
 	})
 }
 
-// Case 4783  twin
-func TestAccAliCloudHologramInstance_basic4783_twin(t *testing.T) {
+// Case 4783  twin Deprecated Follower
+func SkipTestAccAliCloudHologramInstance_basic4783_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hologram_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudHologramInstanceMap4783)
