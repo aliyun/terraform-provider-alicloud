@@ -3,14 +3,16 @@ subcategory: "Hologres (Hologram)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hologram_instance"
 description: |-
-  Provides a Alicloud Hologram Instance resource.
+  Provides a Alicloud Hologres (Hologram) Instance resource.
 ---
 
 # alicloud_hologram_instance
 
-Provides a Hologram Instance resource. 
+Provides a Hologres (Hologram) Instance resource.
 
-For information about Hologram Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/zh/hologres/developer-reference/api-hologram-2022-06-01-createinstance).
+
+
+For information about Hologres (Hologram) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/zh/hologres/developer-reference/api-hologram-2022-06-01-createinstance).
 
 -> **NOTE:** Available since v1.213.0.
 
@@ -48,7 +50,7 @@ resource "alicloud_vswitch" "defaultVSwitch" {
 resource "alicloud_hologram_instance" "default" {
   instance_type = "Standard"
   pricing_cycle = "Hour"
-  cpu           = "8"
+  cpu           = "32"
   endpoints {
     type = "Intranet"
   }
@@ -97,6 +99,7 @@ The following arguments are supported:
   - Follower: Read-only slave instance.
   - Warehouse: calculation group type.
   - Shared: Shared.
+  - Serverless: (Available since v1.259.0) Serverless.
 * `leader_instance_id` - (Optional, ForceNew) The ID of the primary instance.
 * `payment_type` - (Required, ForceNew) The payment type of the resource.
 * `pricing_cycle` - (Optional) Billing cycle. Value:
@@ -126,6 +129,7 @@ The endpoints supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
+* `region_id` - (Available since v1.259.0) The region ID.
 * `endpoints` - List of domain names.
   * `alternative_endpoints` - Some old instances have both AnyTunnel and SingleTunnel enabled. When switching from AnyTunnel to SingleTunnel, the endpoints of both are retained. Therefore, one more field is required to store the Endpoint.
   * `enabled` - Whether to turn on the network.
@@ -135,9 +139,9 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Instance.
+* `create` - (Defaults to 10 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.
-* `update` - (Defaults to 5 mins) Used when update the Instance.
+* `update` - (Defaults to 10 mins) Used when update the Instance.
 
 ## Import
 
