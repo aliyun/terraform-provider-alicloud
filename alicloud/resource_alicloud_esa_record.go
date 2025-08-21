@@ -308,7 +308,7 @@ func resourceAliCloudEsaRecordCreate(d *schema.ResourceData, meta interface{}) e
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -587,7 +587,7 @@ func resourceAliCloudEsaRecordUpdate(d *schema.ResourceData, meta interface{}) e
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Record.ServiceBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Record.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -621,7 +621,7 @@ func resourceAliCloudEsaRecordDelete(d *schema.ResourceData, meta interface{}) e
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Record.ServiceBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Record.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
