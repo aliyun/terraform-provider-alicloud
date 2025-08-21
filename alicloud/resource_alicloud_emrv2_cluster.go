@@ -1481,6 +1481,7 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 		"RegionId":   client.RegionId,
 		"ClusterId":  d.Id(),
 		"ScriptType": "BOOTSTRAP",
+		"MaxResults": PageSizeLarge,
 	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Emr", "2021-03-20", action, nil, listScriptsRequest, true)
@@ -2829,11 +2830,14 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if d.HasChange("bootstrap_scripts") {
-		_, newBootstrapScripts := d.GetChange("bootstrap_scripts")
+		remoteBsMap := map[string]map[string]interface{}{}
+		oldBsMap := map[string]map[string]interface{}{}
+		newBsMap := map[string]map[string]interface{}{}
 		listScriptsRequest := map[string]interface{}{
 			"ClusterId":  d.Id(),
 			"RegionId":   client.RegionId,
 			"ScriptType": "BOOTSTRAP",
+			"MaxResults": PageSizeLarge,
 		}
 		action := "ListScripts"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2857,95 +2861,67 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Scripts", response)
 		}
-
 		if resp != nil && len(resp.([]interface{})) > 0 {
-			deleteScriptRequest := map[string]interface{}{
-				"ClusterId":  d.Id(),
-				"RegionId":   client.RegionId,
-				"ScriptType": "BOOTSTRAP",
-			}
-			action = "DeleteScript"
 			for _, v := range resp.([]interface{}) {
-				scriptMap := v.(map[string]interface{})
-				deleteScriptRequest["ScriptId"] = scriptMap["ScriptId"]
+				bsMap := v.(map[string]interface{})
+				remoteBsMap[bsMap["ScriptName"].(string)] = bsMap
+			}
+		}
 
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Emr", "2021-03-20", action, nil, deleteScriptRequest, false)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
+		var toBeCreatedScripts []map[string]interface{}
+		var toBeUpdatedScripts []map[string]interface{}
+		var toBeDeletedScripts []string
+		oldBss, newBss := d.GetChange("bootstrap_scripts")
+		if newBss != nil && len(newBss.([]interface{})) > 0 {
+			for _, newBsItem := range newBss.([]interface{}) {
+				newBs := newBsItem.(map[string]interface{})
+				newBsMap[newBs["script_name"].(string)] = newBs
+			}
+		}
+		if oldBss != nil && len(oldBss.([]interface{})) > 0 {
+			for _, oldBsItem := range oldBss.([]interface{}) {
+				oldBs := oldBsItem.(map[string]interface{})
+				oldBsMap[oldBs["script_name"].(string)] = oldBs
+			}
+		}
+
+		if newBss != nil && len(newBss.([]interface{})) > 0 {
+			for _, newBsItem := range newBss.([]interface{}) {
+				newBs := newBsItem.(map[string]interface{})
+				if remoteBsValue, exists := remoteBsMap[newBs["script_name"].(string)]; exists {
+					if !reflect.DeepEqual(newBs, oldBsMap[newBs["script_name"].(string)]) {
+						updatedBs := adaptBootstrapScriptRequest(newBs)
+						updatedBs["ScriptId"] = remoteBsValue["ScriptId"]
+						toBeUpdatedScripts = append(toBeUpdatedScripts, updatedBs)
 					}
-					return nil
-				})
-				addDebug(action, response, deleteScriptRequest)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				} else {
+					toBeCreatedScripts = append(toBeCreatedScripts, adaptBootstrapScriptRequest(newBs))
 				}
 			}
 		}
 
-		if newBootstrapScripts != nil && len(newBootstrapScripts.([]interface{})) > 0 {
-			var newScripts []map[string]interface{}
+		if oldBss != nil && len(oldBss.([]interface{})) > 0 {
+			for _, oldBsItem := range oldBss.([]interface{}) {
+				var scriptId string
+				oldBs := oldBsItem.(map[string]interface{})
+				if remoteBsValue, ok := remoteBsMap[oldBs["script_name"].(string)]; !ok {
+					continue
+				} else {
+					scriptId = remoteBsValue["ScriptId"].(string)
+				}
+				if _, exists := newBsMap[oldBs["script_name"].(string)]; !exists {
+					toBeDeletedScripts = append(toBeDeletedScripts, scriptId)
+				}
+			}
+		}
+
+		if len(toBeCreatedScripts) > 0 {
 			createScriptRequest := map[string]interface{}{
 				"ClusterId":  d.Id(),
 				"RegionId":   client.RegionId,
 				"ScriptType": "BOOTSTRAP",
 			}
-			for _, bs := range newBootstrapScripts.([]interface{}) {
-				newScriptMap := bs.(map[string]interface{})
-				newScript := map[string]interface{}{
-					"ScriptName":            newScriptMap["script_name"],
-					"ScriptPath":            newScriptMap["script_path"],
-					"ScriptArgs":            newScriptMap["script_args"],
-					"ExecutionMoment":       newScriptMap["execution_moment"],
-					"ExecutionFailStrategy": newScriptMap["execution_fail_strategy"],
-				}
-				if value, exists := newScriptMap["priority"]; exists && value.(int) > 0 {
-					newScript["Priority"] = value.(int)
-				}
-				if value, exists := newScriptMap["node_selector"]; exists && len(value.(*schema.Set).List()) == 1 {
-					nodeSelectorMap := value.(*schema.Set).List()[0].(map[string]interface{})
-					nodeSelector := map[string]interface{}{
-						"NodeSelectType": nodeSelectorMap["node_select_type"],
-						"NodeGroupId":    nodeSelectorMap["node_group_id"],
-						"NodeGroupName":  nodeSelectorMap["node_group_name"],
-					}
-					if v, ok := nodeSelectorMap["node_names"]; ok && len(v.([]interface{})) > 0 {
-						var nodeNames []string
-						for _, nn := range v.([]interface{}) {
-							nodeNames = append(nodeNames, nn.(string))
-						}
-						nodeSelector["NodeNames"] = nodeNames
-					}
-					if v, ok := nodeSelectorMap["node_group_ids"]; ok && len(v.([]interface{})) > 0 {
-						var nodeGroupIds []string
-						for _, ngId := range v.([]interface{}) {
-							nodeGroupIds = append(nodeGroupIds, ngId.(string))
-						}
-						nodeSelector["NodeGroupIds"] = nodeGroupIds
-					}
-					if v, ok := nodeSelectorMap["node_group_types"]; ok && len(v.([]interface{})) > 0 {
-						var nodeGroupTypes []string
-						for _, ngType := range v.([]interface{}) {
-							nodeGroupTypes = append(nodeGroupTypes, ngType.(string))
-						}
-						nodeSelector["NodeGroupTypes"] = nodeGroupTypes
-					}
-					if v, ok := nodeSelectorMap["node_group_names"]; ok && len(v.([]interface{})) > 0 {
-						var nodeGroupNames []string
-						for _, ngName := range v.([]interface{}) {
-							nodeGroupNames = append(nodeGroupNames, ngName.(string))
-						}
-						nodeSelector["NodeGroupNames"] = nodeGroupNames
-					}
-					newScript["NodeSelector"] = nodeSelector
-				}
-				newScripts = append(newScripts, newScript)
-			}
-			createScriptRequest["Scripts"] = newScripts
+			createScriptRequest["Scripts"] = toBeCreatedScripts
 			action = "CreateScript"
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Emr", "2021-03-20", action, nil, createScriptRequest, false)
@@ -2961,6 +2937,62 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 			addDebug(action, response, createScriptRequest)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if len(toBeUpdatedScripts) > 0 {
+			for _, bs := range toBeUpdatedScripts {
+				updateScriptRequest := map[string]interface{}{
+					"ClusterId":  d.Id(),
+					"RegionId":   client.RegionId,
+					"ScriptType": "BOOTSTRAP",
+					"ScriptId":   bs["ScriptId"],
+				}
+				delete(bs, "ScriptId")
+				updateScriptRequest["Script"] = convertMapToJsonStringIgnoreError(bs)
+				action = "UpdateScript"
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Emr", "2021-03-20", action, nil, updateScriptRequest, false)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, updateScriptRequest)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if len(toBeDeletedScripts) > 0 {
+			for _, bsId := range toBeDeletedScripts {
+				deleteScriptRequest := map[string]interface{}{
+					"ClusterId":  d.Id(),
+					"RegionId":   client.RegionId,
+					"ScriptType": "BOOTSTRAP",
+					"ScriptId":   bsId,
+				}
+				action = "DeleteScript"
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Emr", "2021-03-20", action, nil, deleteScriptRequest, false)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, deleteScriptRequest)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
 			}
 		}
 	}
@@ -3422,4 +3454,56 @@ func adaptAckConfigRequest(r map[string]interface{}) map[string]interface{} {
 	}
 
 	return ackConfig
+}
+
+func adaptBootstrapScriptRequest(r map[string]interface{}) map[string]interface{} {
+	bsReq := map[string]interface{}{
+		"ScriptName":            r["script_name"],
+		"ScriptPath":            r["script_path"],
+		"ScriptArgs":            r["script_args"],
+		"ExecutionMoment":       r["execution_moment"],
+		"ExecutionFailStrategy": r["execution_fail_strategy"],
+	}
+	if value, exists := r["priority"]; exists && value.(int) > 0 {
+		bsReq["Priority"] = value.(int)
+	}
+	if value, exists := r["node_selector"]; exists && len(value.(*schema.Set).List()) == 1 {
+		nodeSelectorMap := value.(*schema.Set).List()[0].(map[string]interface{})
+		nodeSelector := map[string]interface{}{
+			"NodeSelectType": nodeSelectorMap["node_select_type"],
+			"NodeGroupId":    nodeSelectorMap["node_group_id"],
+			"NodeGroupName":  nodeSelectorMap["node_group_name"],
+		}
+		if v, ok := nodeSelectorMap["node_names"]; ok && len(v.([]interface{})) > 0 {
+			var nodeNames []string
+			for _, nn := range v.([]interface{}) {
+				nodeNames = append(nodeNames, nn.(string))
+			}
+			nodeSelector["NodeNames"] = nodeNames
+		}
+		if v, ok := nodeSelectorMap["node_group_ids"]; ok && len(v.([]interface{})) > 0 {
+			var nodeGroupIds []string
+			for _, ngId := range v.([]interface{}) {
+				nodeGroupIds = append(nodeGroupIds, ngId.(string))
+			}
+			nodeSelector["NodeGroupIds"] = nodeGroupIds
+		}
+		if v, ok := nodeSelectorMap["node_group_types"]; ok && len(v.([]interface{})) > 0 {
+			var nodeGroupTypes []string
+			for _, ngType := range v.([]interface{}) {
+				nodeGroupTypes = append(nodeGroupTypes, ngType.(string))
+			}
+			nodeSelector["NodeGroupTypes"] = nodeGroupTypes
+		}
+		if v, ok := nodeSelectorMap["node_group_names"]; ok && len(v.([]interface{})) > 0 {
+			var nodeGroupNames []string
+			for _, ngName := range v.([]interface{}) {
+				nodeGroupNames = append(nodeGroupNames, ngName.(string))
+			}
+			nodeSelector["NodeGroupNames"] = nodeGroupNames
+		}
+		bsReq["NodeSelector"] = nodeSelector
+	}
+
+	return bsReq
 }
