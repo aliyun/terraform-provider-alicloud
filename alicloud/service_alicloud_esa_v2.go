@@ -750,7 +750,7 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
