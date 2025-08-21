@@ -648,14 +648,18 @@ func resourceAliCloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 			serversMap := make(map[string]interface{})
 			serversChildRaw := serversChildRaw.(map[string]interface{})
 			serversMap["description"] = serversChildRaw["Description"]
-			serversMap["port"] = serversChildRaw["Port"]
 			serversMap["remote_ip_enabled"] = serversChildRaw["RemoteIpEnabled"]
 			serversMap["server_group_id"] = serversChildRaw["ServerGroupId"]
 			serversMap["server_id"] = serversChildRaw["ServerId"]
 			serversMap["server_ip"] = serversChildRaw["ServerIp"]
 			serversMap["server_type"] = serversChildRaw["ServerType"]
 			serversMap["status"] = serversChildRaw["Status"]
-			serversMap["weight"] = serversChildRaw["Weight"]
+
+			if fmt.Sprint(serversChildRaw["ServerType"]) != "Fc" {
+				serversMap["port"] = serversChildRaw["Port"]
+				serversMap["weight"] = serversChildRaw["Weight"]
+				serversMap["server_ip"] = serversChildRaw["ServerIp"]
+			}
 
 			serversMaps = append(serversMaps, serversMap)
 		}
@@ -982,17 +986,23 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
-				if dataLoopTmp["port"].(int) > 0 {
-					dataLoopMap["Port"] = dataLoopTmp["port"]
-				}
+
 				dataLoopMap["ServerId"] = dataLoopTmp["server_id"]
-				dataLoopMap["Weight"] = dataLoopTmp["weight"]
 				dataLoopMap["RemoteIpEnabled"] = dataLoopTmp["remote_ip_enabled"]
 				if dataLoopTmp["description"] != "" {
 					dataLoopMap["Description"] = dataLoopTmp["description"]
 				}
-				dataLoopMap["ServerIp"] = dataLoopTmp["server_ip"]
 				dataLoopMap["ServerType"] = dataLoopTmp["server_type"]
+
+				if fmt.Sprint(dataLoopMap["ServerType"]) != "Fc" {
+					if dataLoopTmp["port"].(int) > 0 {
+						dataLoopMap["Port"] = dataLoopTmp["port"]
+					}
+
+					dataLoopMap["Weight"] = dataLoopTmp["weight"]
+					dataLoopMap["ServerIp"] = dataLoopTmp["server_ip"]
+				}
+
 				serversMapsArray = append(serversMapsArray, dataLoopMap)
 			}
 			request["Servers"] = serversMapsArray

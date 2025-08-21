@@ -1164,3 +1164,88 @@ func AliCloudALBServerGroupBasicDependence3(name string) string {
 	}
 `, name)
 }
+
+func TestAccAliCloudALBServerGroup_basic4(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_server_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudALBServerGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbServerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbservergroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBServerGroupBasicDependence4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_name": name,
+					"server_group_type": "Fc",
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_enabled": "false",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "acs:fc:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:functions/${alicloud_fcv3_function.default.function_name}",
+							"server_type": "Fc",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_group_name":     name,
+						"server_group_type":     "Fc",
+						"servers.#":             "1",
+						"health_check_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func AliCloudALBServerGroupBasicDependence4(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	data "alicloud_regions" "default" {
+  		current = true
+	}
+
+	resource "alicloud_fcv3_function" "default" {
+  		memory_size = "512"
+  		cpu         = 0.5
+  		handler     = "index.Handler"
+  		code {
+    		zip_file = "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA="
+  		}
+  		function_name = var.name
+  		runtime       = "python3.9"
+  		disk_size     = "512"
+  		log_config {
+    		log_begin_rule = "None"
+  		}
+	}
+`, name)
+}
