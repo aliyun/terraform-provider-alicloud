@@ -311,6 +311,8 @@ var productCodeToLocationCode = map[string]string{
 	"cloudcontrol":         "cloudcontrol",    // CloudControl
 	"eflo_controller":      "efloctrl",        // Eflo
 	"eflo_cnp":             "eflocnp",         // Eflo-CNP
+
+	"resourcedirectorymaster": "resourcedirectory", // ResourceManager
 }
 
 // productCodeToConfigEndpoints records all products' code mapping to endpoints' subfield name
@@ -328,21 +330,22 @@ var productCodeToConfigEndpoints = map[string]string{
 var irregularProductEndpoint = map[string]string{
 	"tablestore": "tablestore.%s.aliyuncs.com",
 	//"ots":              "tablestore.%s.aliyuncs.com", // the old endpoint ots.%s.aliyuncs.com has been deprecated
-	"ram":              "ram.aliyuncs.com",
-	"brain_industrial": "brain-industrial.cn-hangzhou.aliyuncs.com",
-	"cassandra":        "cassandra.aliyuncs.com",
-	"cloudfw":          "cloudfw.aliyuncs.com",
-	"scdn":             "scdn.aliyuncs.com",
-	"vpcpeer":          "vpcpeer.aliyuncs.com",
-	"resourcecenter":   "resourcecenter.aliyuncs.com",
-	"market":           "market.aliyuncs.com",
-	"bssopenapi":       BssOpenAPIEndpointDomestic,
-	"esa":              "esa.cn-hangzhou.aliyuncs.com",
-	"cas":              "cas.aliyuncs.com",
-	"sas":              "tds.aliyuncs.com",
-	"ros":              "ros.aliyuncs.com",
-	"eds_aic":          "eds-aic.cn-shanghai.aliyuncs.com",
-	"alidns":           "alidns.aliyuncs.com",
+	"ram":                     "ram.aliyuncs.com",
+	"brain_industrial":        "brain-industrial.cn-hangzhou.aliyuncs.com",
+	"cassandra":               "cassandra.aliyuncs.com",
+	"cloudfw":                 "cloudfw.aliyuncs.com",
+	"scdn":                    "scdn.aliyuncs.com",
+	"vpcpeer":                 "vpcpeer.aliyuncs.com",
+	"resourcecenter":          "resourcecenter.aliyuncs.com",
+	"resourcedirectorymaster": "resourcedirectory.aliyuncs.com",
+	"market":                  "market.aliyuncs.com",
+	"bssopenapi":              BssOpenAPIEndpointDomestic,
+	"esa":                     "esa.cn-hangzhou.aliyuncs.com",
+	"cas":                     "cas.aliyuncs.com",
+	"sas":                     "tds.aliyuncs.com",
+	"ros":                     "ros.aliyuncs.com",
+	"eds_aic":                 "eds-aic.cn-shanghai.aliyuncs.com",
+	"alidns":                  "alidns.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
@@ -362,12 +365,13 @@ var irregularProductEndpointForIntlRegion = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpointForIntlAccount = map[string]string{
-	"cloudfw":        "cloudfw.ap-southeast-1.aliyuncs.com",
-	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
-	"bssopenapi":     BssOpenAPIEndpointInternational,
-	"esa":            "esa.ap-southeast-1.aliyuncs.com",
-	"eds_aic":        "eds-aic.ap-southeast-1.aliyuncs.com",
-	"ros":            "ros-intl.aliyuncs.com",
+	"cloudfw":                 "cloudfw.ap-southeast-1.aliyuncs.com",
+	"resourcecenter":          "resourcecenter-intl.aliyuncs.com",
+	"resourcedirectorymaster": "resourcedirectory-intl.aliyuncs.com",
+	"bssopenapi":              BssOpenAPIEndpointInternational,
+	"esa":                     "esa.ap-southeast-1.aliyuncs.com",
+	"eds_aic":                 "eds-aic.ap-southeast-1.aliyuncs.com",
+	"ros":                     "ros-intl.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlAccountIntlRegion specially records those product codes that

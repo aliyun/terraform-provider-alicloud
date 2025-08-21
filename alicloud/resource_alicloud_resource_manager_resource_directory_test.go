@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 
@@ -398,3 +400,166 @@ func TestUnitAliCloudResourceManagerResourceDirectory(t *testing.T) {
 	}
 
 }
+
+// Test ResourceManager ResourceDirectory. >>> Resource test cases, automatically generated.
+// Case resourcedirectory资源测试-create并开通CP 11239
+func TestAccAliCloudResourceManagerResourceDirectory_basic11239(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_resource_directory.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceDirectoryMap11239)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerResourceDirectory")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceDirectoryBasicDependence11239)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                 "Enabled",
+					"member_deletion_status": "Enabled",
+					"member_account_display_name_sync_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                 "Enabled",
+						"member_deletion_status": "Enabled",
+						"member_account_display_name_sync_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                 "Disabled",
+					"member_deletion_status": "Disabled",
+					"member_account_display_name_sync_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                 "Disabled",
+						"member_deletion_status": "Disabled",
+						"member_account_display_name_sync_status": "Disabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerResourceDirectoryMap11239 = map[string]string{
+	"create_time":         CHECKSET,
+	"master_account_name": CHECKSET,
+	"root_folder_id":      CHECKSET,
+	"master_account_id":   CHECKSET,
+}
+
+func AlicloudResourceManagerResourceDirectoryBasicDependence11239(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case resourcedirectory资源测试-create不带属性 11158
+func TestAccAliCloudResourceManagerResourceDirectory_basic11158(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_resource_directory.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceDirectoryMap11158)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerResourceDirectory")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceDirectoryBasicDependence11158)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                 "Enabled",
+					"member_deletion_status": "Enabled",
+					"member_account_display_name_sync_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                 "Enabled",
+						"member_deletion_status": "Enabled",
+						"member_account_display_name_sync_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                 "Disabled",
+					"member_deletion_status": "Disabled",
+					"member_account_display_name_sync_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                 "Disabled",
+						"member_deletion_status": "Disabled",
+						"member_account_display_name_sync_status": "Disabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerResourceDirectoryMap11158 = map[string]string{
+	"create_time":         CHECKSET,
+	"master_account_name": CHECKSET,
+	"root_folder_id":      CHECKSET,
+	"master_account_id":   CHECKSET,
+}
+
+func AlicloudResourceManagerResourceDirectoryBasicDependence11158(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager ResourceDirectory. <<< Resource test cases, automatically generated.
