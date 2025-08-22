@@ -19,10 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerDelegatedAdministrator_basic0(t *testing.T) {
+func TestAccAliCloudResourceManagerDelegatedAdministrator_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_delegated_administrator.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerDelegatedAdministratorMap0)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerDelegatedAdministratorMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourceManagerService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerDelegatedAdministrator")
@@ -30,7 +30,7 @@ func TestAccAlicloudResourceManagerDelegatedAdministrator_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sresourcemanagerdelegatedadministrator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerDelegatedAdministratorBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerDelegatedAdministratorBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -60,12 +60,12 @@ func TestAccAlicloudResourceManagerDelegatedAdministrator_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerDelegatedAdministratorMap0 = map[string]string{
+var AliCloudResourceManagerDelegatedAdministratorMap0 = map[string]string{
 	"account_id":        CHECKSET,
 	"service_principal": CHECKSET,
 }
 
-func AlicloudResourceManagerDelegatedAdministratorBasicDependence0(name string) string {
+func AliCloudResourceManagerDelegatedAdministratorBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -76,7 +76,7 @@ data "alicloud_resource_manager_accounts" "default" {
 `, name)
 }
 
-func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
+func TestUnitAccAliCloudResourceManagerDelegatedAdministrator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_delegated_administrator"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_delegated_administrator"].Schema).Data(nil, nil)
@@ -142,7 +142,7 @@ func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerDelegatedAdministratorCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerDelegatedAdministratorCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -165,7 +165,7 @@ func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerDelegatedAdministratorCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerDelegatedAdministratorCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -210,7 +210,7 @@ func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerDelegatedAdministratorRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerDelegatedAdministratorRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -229,7 +229,7 @@ func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerDelegatedAdministratorDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerDelegatedAdministratorDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -257,7 +257,7 @@ func TestUnitAccAlicloudResourceManagerDelegatedAdministrator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerDelegatedAdministratorDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerDelegatedAdministratorDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

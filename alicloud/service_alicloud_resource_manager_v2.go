@@ -289,7 +289,7 @@ func (s *ResourceManagerServiceV2) SetResourceTags(d *schema.ResourceData, resou
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -322,7 +322,7 @@ func (s *ResourceManagerServiceV2) SetResourceTags(d *schema.ResourceData, resou
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}

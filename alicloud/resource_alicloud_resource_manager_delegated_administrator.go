@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudResourceManagerDelegatedAdministrator() *schema.Resource {
+func resourceAliCloudResourceManagerDelegatedAdministrator() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudResourceManagerDelegatedAdministratorCreate,
-		Read:   resourceAlicloudResourceManagerDelegatedAdministratorRead,
-		Delete: resourceAlicloudResourceManagerDelegatedAdministratorDelete,
+		Create: resourceAliCloudResourceManagerDelegatedAdministratorCreate,
+		Read:   resourceAliCloudResourceManagerDelegatedAdministratorRead,
+		Delete: resourceAliCloudResourceManagerDelegatedAdministratorDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -37,7 +37,7 @@ func resourceAlicloudResourceManagerDelegatedAdministrator() *schema.Resource {
 	}
 }
 
-func resourceAlicloudResourceManagerDelegatedAdministratorCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerDelegatedAdministratorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "RegisterDelegatedAdministrator"
@@ -49,7 +49,7 @@ func resourceAlicloudResourceManagerDelegatedAdministratorCreate(d *schema.Resou
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -64,9 +64,9 @@ func resourceAlicloudResourceManagerDelegatedAdministratorCreate(d *schema.Resou
 
 	d.SetId(fmt.Sprint(request["AccountId"], ":", request["ServicePrincipal"]))
 
-	return resourceAlicloudResourceManagerDelegatedAdministratorRead(d, meta)
+	return resourceAliCloudResourceManagerDelegatedAdministratorRead(d, meta)
 }
-func resourceAlicloudResourceManagerDelegatedAdministratorRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerDelegatedAdministratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourceManagerService := ResourceManagerService{client}
 	_, err := resourceManagerService.DescribeResourceManagerDelegatedAdministrator(d.Id())
@@ -86,7 +86,7 @@ func resourceAlicloudResourceManagerDelegatedAdministratorRead(d *schema.Resourc
 	d.Set("service_principal", parts[1])
 	return nil
 }
-func resourceAlicloudResourceManagerDelegatedAdministratorDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerDelegatedAdministratorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -103,7 +103,7 @@ func resourceAlicloudResourceManagerDelegatedAdministratorDelete(d *schema.Resou
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
