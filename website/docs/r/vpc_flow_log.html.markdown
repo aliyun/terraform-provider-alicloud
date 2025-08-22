@@ -20,12 +20,6 @@ For information about VPC Flow Log and how to use it, see [What is Flow Log](htt
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_flow_log&exampleId=736bfeac-3fca-11b4-b45a-d933bca5c287ac089a4f&activeTab=example&spm=docs.r.vpc_flow_log.0.736bfeac3f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -70,21 +64,21 @@ resource "alicloud_vpc_flow_log" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `aggregation_interval` - (Optional, Available since v1.205.0) Data aggregation interval
+* `aggregation_interval` - (Optional, Computed, Available since v1.205.0) The sampling interval of the flow log. Unit: seconds. Valid values: 1, 5, and 10 (default).
 * `description` - (Optional) The Description of the VPC Flow Log.
 * `flow_log_name` - (Optional) The Name of the VPC Flow Log.
-* `ip_version` - (Optional, Available since v1.243.0) The IP address type of the collected traffic.
-* `log_store_name` - (Required, ForceNew) The name of the logstore.
-* `project_name` - (Required, ForceNew) The name of the project.
-* `resource_group_id` - (Optional, Available since v1.205.0) The ID of the resource group.
+* `ip_version` - (Optional, Computed, Available since v1.243.0) The IP address type of the collected traffic.
+* `log_store_name` - (Required, ForceNew) The Logstore that stores the captured traffic data. 
+* `project_name` - (Required, ForceNew) The project that manages the captured traffic data.
+* `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group.
 * `resource_id` - (Required, ForceNew) The ID of the resource.
 * `resource_type` - (Required, ForceNew) The resource type of the traffic captured by the flow log:
   - `NetworkInterface`: ENI.
   - `VSwitch`: All ENIs in the VSwitch.
   - `VPC`: All ENIs in the VPC.
-* `status` - (Optional) The status of the VPC Flow Log. Valid values: `Active` and `Inactive`.
+* `status` - (Optional, Computed) The status of the VPC Flow Log. Valid values: `Active` and `Inactive`.
 * `tags` - (Optional, Map, Available since v1.205.0) The tag of the current instance resource.
-* `traffic_path` - (Optional, ForceNew, List, Available since v1.205.0) The collected flow path. Value:
+* `traffic_path` - (Optional, ForceNew, Computed, List, Available since v1.205.0) The collected flow path. Value:
   - *all**: indicates full acquisition.
   - *internetGateway**: indicates public network traffic collection.
 * `traffic_type` - (Required, ForceNew) The type of traffic collected. Valid values:
@@ -99,14 +93,14 @@ The following attributes are exported:
 * `business_status` - Business status
 * `create_time` - Creation time
 * `flow_log_id` - The flow log ID.
-* `region_id` - (Available since v1.243.0) The region ID.
+* `region_id` - The region ID.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Flow Log.
-* `delete` - (Defaults to 5 mins) Used when delete the Flow Log.
-* `update` - (Defaults to 5 mins) Used when update the Flow Log.
+* `create` - (Defaults to 10 mins) Used when create the Flow Log.
+* `delete` - (Defaults to 10 mins) Used when delete the Flow Log.
+* `update` - (Defaults to 10 mins) Used when update the Flow Log.
 
 ## Import
 

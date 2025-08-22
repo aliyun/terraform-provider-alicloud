@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_network_acl
 
-Provides a VPC Network Acl resource. Network Access Control List (ACL) is a Network Access Control function in VPC. You can customize the network ACL rules and bind the network ACL to the switch to control the traffic of ECS instances in the switch.
+Provides a VPC Network Acl resource.
+
+Network Access Control List (ACL) is a Network Access Control function in VPC. You can customize the network ACL rules and bind the network ACL to the switch to control the traffic of ECS instances in the switch.
 
 For information about VPC Network Acl and how to use it, see [What is Network Acl](https://www.alibabacloud.com/help/en/ens/latest/createnetworkacl).
 
@@ -17,12 +19,6 @@ For information about VPC Network Acl and how to use it, see [What is Network Ac
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_network_acl&exampleId=aed0a736-863d-b32b-db8f-664f45fa028a7a80911a&activeTab=example&spm=docs.r.network_acl.0.aed0a73686&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -73,12 +69,13 @@ resource "alicloud_network_acl" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) The description of the network ACL.  The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `egress_acl_entries` - (Optional, Computed) Out direction rule information. See [`egress_acl_entries`](#egress_acl_entries) below.
-* `ingress_acl_entries` - (Optional, Computed) Inward direction rule information. See [`ingress_acl_entries`](#ingress_acl_entries) below.
-* `network_acl_name` - (Optional) The name of the network ACL.  The name must be 1 to 128 characters in length and cannot start with http:// or https.
-* `resources` - (Optional, Computed) The associated resource. See [`resources`](#resources) below.
-* `source_network_acl_id` - (Optional, Available since v1.220.0) SOURCE NetworkAcl specified by CopyNetworkAclEntries.
+* `description` - (Optional) The description of the network ACL. The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`. 
+* `egress_acl_entries` - (Optional, Computed, List) Out direction rule information. See [`egress_acl_entries`](#egress_acl_entries) below.
+* `ingress_acl_entries` - (Optional, Computed, List) Inward direction rule information. See [`ingress_acl_entries`](#ingress_acl_entries) below.
+* `network_acl_name` - (Optional, Computed) The name of the network ACL.
+The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `resources` - (Optional, Computed, Set) The associated resource. See [`resources`](#resources) below.
+* `source_network_acl_id` - (Optional, Available since v1.220.0) SOURCE NetworkAcl specified by CopyNetworkAclEntries
 * `tags` - (Optional, Map, Available since v1.206.0) The tags of this resource.
 * `vpc_id` - (Required, ForceNew) The ID of the associated VPC.
 
@@ -88,15 +85,22 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `egress_acl_entries`
 
 The egress_acl_entries supports the following:
-* `description` - (Optional) The description of the outbound rule.  The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `destination_cidr_ip` - (Optional) The network of the destination address.
-* `entry_type` - (Optional, Available since v1.220.0) The route entry type. The value can be `custom`, indicating custom.
-* `ip_version` - (Optional, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "IPV4" and "IPV4'.
-* `network_acl_entry_name` - (Optional) Name of the outbound rule entry.  The name must be 1 to 128 characters in length and cannot start with http:// or https.
-* `policy` - (Optional) Authorization policy. Value:
-  - accept: Allow.
-  - drop: Refused.
-* `port` - (Optional) The destination port range of the outbound rule.  When the Protocol type of the outbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted. When the Protocol type of the outbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
+* `description` - (Optional) The description of the outbound rule.
+The description must be 1 to 256 characters in length and cannot start with http:// or https.
+* `destination_cidr_ip` - (Optional) The destination CIDR block. 
+* `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
+custom custom rule
+system system rules
+service Cloud service rules
+* `ip_version` - (Optional, Computed, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "Ipv4" and "ipv6'
+* `network_acl_entry_name` - (Optional) Name of the outbound rule entry.
+The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `policy` - (Optional) The action to be performed on network traffic that matches the rule. Valid values:
+  - accept
+  - drop
+* `port` - (Optional) The destination port range of the outbound rule.
+When the Protocol type of the outbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted.
+When the Protocol type of the outbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
 * `protocol` - (Optional) The protocol type. Value:
   - icmp: Network Control Message Protocol.
   - gre: Generic Routing Encapsulation Protocol.
@@ -107,21 +111,28 @@ The egress_acl_entries supports the following:
 ### `ingress_acl_entries`
 
 The ingress_acl_entries supports the following:
-* `description` - (Optional) Description of the inbound rule.  The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `entry_type` - (Optional, Available since v1.220.0) The route entry type. The value can be `custom`, indicating custom.
-* `ip_version` - (Optional, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "IPV4" and "IPV6'.
-* `network_acl_entry_name` - (Optional) The name of the inbound rule entry.  The name must be 1 to 128 characters in length and cannot start with http:// or https.
-* `policy` - (Optional) Authorization policy. Value:
-  - accept: Allow.
-  - drop: Refused.
-* `port` - (Optional) The source port range of the inbound rule.  When the Protocol type of the inbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted. When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
+* `description` - (Optional) Description of the inbound rule.
+The description must be 1 to 256 characters in length and cannot start with http:// or https.
+* `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
+  - `custom` custom rule
+  - `system` system rules
+  - `service` Cloud service rules
+* `ip_version` - (Optional, Computed, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "Ipv4" and "ipv6'
+* `network_acl_entry_name` - (Optional) The name of the inbound rule entry.
+The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `policy` - (Optional) The action to be performed on network traffic that matches the rule. Valid values:
+  - accept
+  - drop
+* `port` - (Optional) The source port range of the inbound rule.
+When the Protocol type of the inbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted.
+When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
 * `protocol` - (Optional) The protocol type. Value:
   - icmp: Network Control Message Protocol.
   - gre: Generic Routing Encapsulation Protocol.
   - tcp: Transmission Control Protocol.
   - udp: User Datagram Protocol.
   - all: Supports all protocols.
-* `source_cidr_ip` - (Optional) Source address network segment.
+* `source_cidr_ip` - (Optional) The source CIDR block. 
 
 ### `resources`
 
@@ -135,15 +146,15 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `resources` - The associated resource.
-  * `status` - The state of the associated resource.
+  * `status` - The state of the associated resource
 * `status` - The state of the network ACL.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Network Acl.
-* `delete` - (Defaults to 5 mins) Used when delete the Network Acl.
-* `update` - (Defaults to 5 mins) Used when update the Network Acl.
+* `create` - (Defaults to 10 mins) Used when create the Network Acl.
+* `delete` - (Defaults to 10 mins) Used when delete the Network Acl.
+* `update` - (Defaults to 10 mins) Used when update the Network Acl.
 
 ## Import
 
