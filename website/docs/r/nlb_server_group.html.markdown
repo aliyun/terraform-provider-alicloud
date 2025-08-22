@@ -10,6 +10,8 @@ description: |-
 
 Provides a Network Load Balancer (NLB) Server Group resource.
 
+
+
 For information about Network Load Balancer (NLB) Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createservergroup-nlb).
 
 -> **NOTE:** Available since v1.186.0.
@@ -17,12 +19,6 @@ For information about Network Load Balancer (NLB) Server Group and how to use it
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_server_group&exampleId=17064786-ee99-c7b2-1199-9e6b9966c75ef373983e&activeTab=example&spm=docs.r.nlb_server_group.0.17064786ee&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -80,9 +76,8 @@ The following arguments are supported:
 * `health_check` - (Optional, Computed, List) Health check configuration information. See [`health_check`](#health_check) below.
 * `preserve_client_ip_enabled` - (Optional, Computed) Specifies whether to enable client IP preservation. Valid values:
 
-  - `true` (default)
-  - `false`
-  -> **NOTE:** If you set the value to true and `protocol` to TCP, the server group cannot be associated with TCPSSL listeners.
+  - `true`
+  - `false` (default)
 * `protocol` - (Optional, ForceNew, Computed) The protocol used to forward requests to the backend servers. Valid values:
 
   - `TCP` (default)
@@ -93,10 +88,10 @@ You can log on to the [Resource Management console](https://resourcemanager.cons
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values:
 
   - **Wrr:** The weighted round-robin algorithm is used. Backend servers with higher weights receive more requests than backend servers with lower weights. This is the default value.
-  - **rr:** The round-robin algorithm is used. Requests are forwarded to backend servers in sequence.
-  - **sch:** Source IP hashing is used. Requests from the same source IP address are forwarded to the same backend server.
-  - **tch:** Four-element hashing is used. It specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are forwarded to the same backend server.
-  - `qch`: QUIC ID hashing. Requests that contain the same QUIC ID are forwarded to the same backend server.
+  - **Rr:** The round-robin algorithm is used. Requests are forwarded to backend servers in sequence.
+  - **Sch:** Source IP hashing is used. Requests from the same source IP address are forwarded to the same backend server.
+  - **Tch:** Four-element hashing is used. It specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are forwarded to the same backend server.
+  - `Qch`: QUIC ID hashing. Requests that contain the same QUIC ID are forwarded to the same backend server.
 * `server_group_name` - (Required) The new name of the server group.
 The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
 * `server_group_type` - (Optional, ForceNew, Computed) The type of server group. Valid values:
