@@ -1,4 +1,26 @@
 ## 1.259.0 (Unreleased)
+
+- **New Resource:** `alicloud_dms_enterprise_workspace` [GH-8918]
+- **New Resource:** `alicloud_cloud_sso_delegate_account` [GH-8922]
+
+ENHANCEMENTS:
+
+- client: Fixes the credential bug when using CloudSSO profile. [GH-8919]
+- resource/alicloud_ddosbgp_instance: Refactored the resource alicloud_ddosbgp_instance; Added the field instance_name, resource_group_id, tags, status; Deprecated the field name. [GH-8920]
+- resource/alicloud_hologram_instance: Refactored the resource alicloud_hologram_instance; Added the field region_id; Supported instance_type set to Serverless. [GH-8921]
+- resource/alicloud_resource_manager_resource_directory: Add new attribute member_account_display_name_sync_status. [GH-8925]
+- resource/alicloud_esa_record: Added retry strategy for error code Site.ServiceBusy, TooManyRequests. [GH-8928]
+- resource/alicloud_resource_manager_account: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_delegated_administrator: Added retry strategy for error code ConcurrentCallNotSupported. [GH-8930]
+- resource/alicloud_nlb_server_group_server_attachment: Add retry codes. [GH-8931]
+- data-source/alicloud_resource_manager_accounts: Added the field tags; Improved alicloud_resource_manager_accounts testcase and document. [GH-8923]
+- docs: Improves document for vpc_dhcp_options_set, havip_attachment, network_acl, etc. [GH-8929]
+- docs: Improves description for nlb_server_group. [GH-8932]
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: fix ip array diff crash issue. [GH-8876]
+- resource/alicloud_alb_server_group: Fixed the diff error caused by setting server_group_type to Fc. [GH-8924]
+
 ## 1.258.0 (August 15, 2025)
 
 - **New Resource:** `alicloud_eflo_er` ([#8906](https://github.com/aliyun/terraform-provider-alicloud/issues/8906))
