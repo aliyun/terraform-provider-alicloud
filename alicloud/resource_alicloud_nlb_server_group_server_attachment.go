@@ -134,7 +134,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup", "Conflict.Lock"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup", "OperationFailed.ResourceIsConfiguring", "Conflict.Lock"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -277,7 +277,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup", "Conflict.Lock", "SystemBusy"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -337,7 +337,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup", "Conflict.Lock"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
