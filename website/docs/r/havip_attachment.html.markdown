@@ -8,21 +8,17 @@ description: |-
 
 # alicloud_havip_attachment
 
-Provides a VPC Ha Vip Attachment resource. Attaching ECS instance to Havip.
+Provides a VPC Ha Vip Attachment resource.
 
--> **NOTE:** Terraform will auto build havip attachment while it uses `alicloud_havip_attachment` to build a havip attachment resource.
+Attaching ECS instance to Havip.
+
+For information about VPC Ha Vip Attachment and how to use it, see [What is Ha Vip Attachment](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/AssociateHaVip).
 
 -> **NOTE:** Available since v1.18.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_havip_attachment&exampleId=cecc4d2a-58ce-bba9-6f2f-e03b832212d0d331f5e3&activeTab=example&spm=docs.r.havip_attachment.0.cecc4d2a58&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -89,22 +85,17 @@ resource "alicloud_havip_attachment" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `force` - (Optional, Available since v1.18.0) Whether to force the ECS instance or Eni instance bound to AVIP to be unbound. The value is:
-  - **True**: Force unbinding.
-  - **False** (default): unbinding is not forced.
--> **NOTE:**  If the value of this parameter is **False**, the Master instance bound to HaVip cannot be unbound.
 * `ha_vip_id` - (Optional, ForceNew, Available since v1.211.0) The ID of the HaVip instance.
-* `instance_id` - (Required, ForceNew, Available since v1.18.0) The ID of the ECS instance bound to the HaVip instance.
-* `instance_type` - (Optional, ForceNew, Available since v1.18.0) The type of the instance associated with the VIIP.
-
-The following arguments will be discarded. Please use new fields as soon as possible:
-* `havip_id` - (Deprecated since v1.211.0). Field 'havip_id' has been deprecated from provider version 1.211.0. New field 'ha_vip_id' instead.
+* `instance_id` - (Required, ForceNew) The ID of the ECS instance bound to the HaVip instance.
+* `instance_type` - (Optional, ForceNew, Computed) The type of the instance to be associated with the HAVIP. Valid values: * `EcsInstance`: an ECS instance * `NetworkInterface`: an ENI. If you want to associate the HAVIP with an ENI, this parameter is required.
+* `havip_id` - (Deprecated since v1.259.0). Field 'havip_id' has been deprecated from provider version 1.259.0. New field 'ha_vip_id' instead.
+* `force` - (Optional, Bool) Specifies whether to force delete the snapshot.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<ha_vip_id>:<instance_id>`.
-* `status` - The status of the resource.
+* `status` - The status of the resource
 
 ## Timeouts
 
