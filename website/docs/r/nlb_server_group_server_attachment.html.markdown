@@ -20,12 +20,6 @@ For information about Network Load Balancer (NLB) Server Group Server Attachment
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nlb_server_group_server_attachment&exampleId=ffa2f87b-bb7e-88db-35f8-c60fb4ceb528baba2e78&activeTab=example&spm=docs.r.nlb_server_group_server_attachment.0.ffa2f87bbb&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -80,7 +74,6 @@ The description must be 2 to 256 characters in length, and can contain letters, 
   - `Eci`: an elastic container instance
   - `Ip`: an IP address
 * `weight` - (Optional, Computed, Int) The weight of the backend server. Valid values: `0` to `100`. Default value: `100`. If the weight of a backend server is set to `0`, no requests are forwarded to the backend server.
-
 
 ## Attributes Reference
 
