@@ -1845,7 +1845,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_layer_version":                                      resourceAlicloudFcLayerVersion(),
 			"alicloud_ddosbgp_ip":                                            resourceAlicloudDdosbgpIp(),
 			"alicloud_vpn_gateway_vpn_attachment":                            resourceAliCloudVpnGatewayVpnAttachment(),
-			"alicloud_resource_manager_delegated_administrator":              resourceAlicloudResourceManagerDelegatedAdministrator(),
+			"alicloud_resource_manager_delegated_administrator":              resourceAliCloudResourceManagerDelegatedAdministrator(),
 			"alicloud_polardb_global_database_network":                       resourceAlicloudPolarDBGlobalDatabaseNetwork(),
 			"alicloud_vpc_ipv4_gateway":                                      resourceAliCloudVpcIpv4Gateway(),
 			"alicloud_api_gateway_backend":                                   resourceAlicloudApiGatewayBackend(),
