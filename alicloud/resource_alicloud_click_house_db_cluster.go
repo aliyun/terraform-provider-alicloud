@@ -68,7 +68,7 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"19.15.2.2", "20.3.10.75", "20.8.7.15", "21.8.10.19", "22.8.5.29", "23.8"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"19.15.2.2", "20.3.10.75", "20.8.7.15", "21.8.10.19", "22.8.5.29", "23.8", "25.3"}, false),
 			},
 			"db_node_storage": {
 				Type:     schema.TypeString,
