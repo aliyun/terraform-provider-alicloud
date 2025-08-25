@@ -536,7 +536,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_exchanges":                                   dataSourceAlicloudAmqpExchanges(),
 			"alicloud_cassandra_backup_plans":                           dataSourceAlicloudCassandraBackupPlans(),
 			"alicloud_cen_transit_router_peer_attachments":              dataSourceAlicloudCenTransitRouterPeerAttachments(),
-			"alicloud_amqp_instances":                                   dataSourceAlicloudAmqpInstances(),
+			"alicloud_amqp_instances":                                   dataSourceAliCloudAmqpInstances(),
 			"alicloud_hbr_vaults":                                       dataSourceAlicloudHbrVaults(),
 			"alicloud_ssl_certificates_service_certificates":            dataSourceAliCloudSslCertificatesServiceCertificates(),
 			"alicloud_arms_alert_contacts":                              dataSourceAlicloudArmsAlertContacts(),

@@ -7,60 +7,70 @@ description: |-
   Provides a list of Amqp Instances to the user.
 ---
 
-# alicloud\_amqp\_instances
+# alicloud_amqp_instances
 
 This data source provides the Amqp Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.128.0+.
+-> **NOTE:** Available since v1.128.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_amqp_instances" "ids" {
-  ids = ["amqp-abc12345", "amqp-abc34567"]
+variable "name" {
+  default = "terraform-example"
 }
-output "amqp_instance_id_1" {
+
+resource "alicloud_amqp_instance" "default" {
+  instance_name         = var.name
+  instance_type         = "enterprise"
+  max_tps               = 3000
+  max_connections       = 2000
+  queue_capacity        = 200
+  payment_type          = "Subscription"
+  renewal_status        = "AutoRenewal"
+  renewal_duration      = 1
+  renewal_duration_unit = "Year"
+  support_eip           = true
+}
+
+data "alicloud_amqp_instances" "ids" {
+  ids = [alicloud_amqp_instance.default.id]
+}
+
+output "amqp_instance_id_0" {
   value = data.alicloud_amqp_instances.ids.instances.0.id
 }
-
-data "alicloud_amqp_instances" "nameRegex" {
-  name_regex = "^my-Instance"
-}
-output "amqp_instance_id_2" {
-  value = data.alicloud_amqp_instances.nameRegex.instances.0.id
-}
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Instance IDs.
+* `ids` - (Optional, ForceNew, List) A list of Instance IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Instance name.
+* `status` - (Optional, ForceNew) The status of the resource. Valid values: `DEPLOYING`, `SERVING`, `EXPIRED`, `RELEASED`.
+* `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: "DEPLOYING", "EXPIRED", "RELEASED", "SERVING".
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Instance names.
 * `instances` - A list of Amqp Instances. Each element contains the following attributes:
-	* `create_time` - OrderCreateTime.
-	* `expire_time` - ExpireTime.
-	* `id` - The ID of the Instance.
-	* `instance_id` - THe instance Id.
-	* `instance_name` - THe instance name.
-	* `instance_type` - The instance type.
-	* `payment_type` - The Pay-as-You-Type Values Include: the Subscription of a Pre-Paid.
-	* `private_end_point` - The private endPoint.
-	* `public_endpoint` - The public dndpoint.
-	* `renewal_duration` - Renewal duration.
-	* `renewal_duration_unit` - Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.
-	* `renewal_status` - Renew status.
-	* `status` - The status of the resource.
-	* `support_eip` - Whether to support eip.
+  * `id` - The ID of the Instance.
+  * `instance_id` - THe instance Id.
+  * `instance_type` - The instance type.
+  * `instance_name` - THe instance name.
+  * `public_endpoint` - The public endpoint of the instance.
+  * `private_end_point` - The virtual private cloud (VPC) endpoint of the instance.
+  * `support_eip` - Indicates whether the instance supports elastic IP addresses (EIPs).
+  * `payment_type` - The billing method of the instance. **Note:** `payment_type` takes effect only if `enable_details` is set to `true`.
+  * `renewal_status` - Whether to renew an instance automatically or not. **Note:** `renewal_status` takes effect only if `enable_details` is set to `true`.
+  * `renewal_duration` - Auto renewal period of an instance. **Note:** `renewal_duration` takes effect only if `enable_details` is set to `true`.
+  * `renewal_duration_unit` - Automatic renewal period unit. **Note:** `renewal_duration_unit` takes effect only if `enable_details` is set to `true`.
+  * `status` - The status of the instance.
+  * `create_time` - The timestamp that indicates when the order was created.
+  * `expire_time` - The timestamp that indicates when the instance expires.
