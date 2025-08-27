@@ -2,12 +2,13 @@
 subcategory: "RabbitMQ (AMQP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_amqp_virtual_host"
-sidebar_current: "docs-alicloud-resource-amqp-virtual-host"
 description: |-
   Provides a Alicloud RabbitMQ (AMQP) Virtual Host resource.
 ---
 
 # alicloud_amqp_virtual_host
+
+Amqp Virtual Host.
 
 Provides a RabbitMQ (AMQP) Virtual Host resource.
 
@@ -26,38 +27,52 @@ Basic Usage
 </div></div>
 
 ```terraform
-provider "alicloud" {
-  region = "cn-shanghai"
+variable "name" {
+  default = "terraform-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_amqp_instance" "default" {
-  instance_type  = "professional"
-  max_tps        = 1000
-  queue_capacity = 50
-  support_eip    = true
-  max_eip_tps    = 128
-  payment_type   = "Subscription"
-  period         = 1
+  instance_name         = "${var.name}-${random_integer.default.result}"
+  instance_type         = "enterprise"
+  max_tps               = 3000
+  max_connections       = 2000
+  queue_capacity        = 200
+  payment_type          = "Subscription"
+  renewal_status        = "AutoRenewal"
+  renewal_duration      = 1
+  renewal_duration_unit = "Year"
+  support_eip           = true
 }
 
 resource "alicloud_amqp_virtual_host" "default" {
   instance_id       = alicloud_amqp_instance.default.id
-  virtual_host_name = "tf-example"
+  virtual_host_name = "${var.name}-${random_integer.default.result}"
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
 * `instance_id` - (Required, ForceNew) InstanceId.
 * `virtual_host_name` - (Required, ForceNew) VirtualHostName.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The resource ID in terraform of Sasl User. It formats as `<instance_id>:<virtual_host_name>`.
 
-* `id` - The resource ID of Virtual Host. The value is formatted `<instance_id>:<virtual_host_name>`.
+## Timeouts
+
+-> **NOTE:** Available since v1.259.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Virtual Host.
+* `delete` - (Defaults to 5 mins) Used when delete the Virtual Host.
 
 ## Import
 
