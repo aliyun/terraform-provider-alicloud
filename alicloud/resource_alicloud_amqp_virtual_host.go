@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,13 +12,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudAmqpVirtualHost() *schema.Resource {
+func resourceAliCloudAmqpVirtualHost() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAmqpVirtualHostCreate,
-		Read:   resourceAlicloudAmqpVirtualHostRead,
-		Delete: resourceAlicloudAmqpVirtualHostDelete,
+		Create: resourceAliCloudAmqpVirtualHostCreate,
+		Read:   resourceAliCloudAmqpVirtualHostRead,
+		Delete: resourceAliCloudAmqpVirtualHostDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -33,17 +39,23 @@ func resourceAlicloudAmqpVirtualHost() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAmqpVirtualHostCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAmqpVirtualHostCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateVirtualHost"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
 	request["InstanceId"] = d.Get("instance_id")
 	request["VirtualHost"] = d.Get("virtual_host_name")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, false)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -54,50 +66,56 @@ func resourceAlicloudAmqpVirtualHostCreate(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_amqp_virtual_host", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["VirtualHost"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], request["VirtualHost"]))
 
-	return resourceAlicloudAmqpVirtualHostRead(d, meta)
+	return resourceAliCloudAmqpVirtualHostRead(d, meta)
 }
-func resourceAlicloudAmqpVirtualHostRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudAmqpVirtualHostRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	amqpOpenService := AmqpOpenService{client}
-	_, err := amqpOpenService.DescribeAmqpVirtualHost(d.Id())
+	amqpServiceV2 := AmqpServiceV2{client}
+
+	objectRaw, err := amqpServiceV2.DescribeAmqpVirtualHost(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_amqp_virtual_host amqpOpenService.DescribeAmqpVirtualHost Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_amqp_virtual_host DescribeAmqpVirtualHost Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+
+	d.Set("virtual_host_name", objectRaw["Name"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[0])
-	d.Set("virtual_host_name", parts[1])
+
 	return nil
 }
-func resourceAlicloudAmqpVirtualHostDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeleteVirtualHost"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"InstanceId":  parts[0],
-		"VirtualHost": parts[1],
-	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+func resourceAliCloudAmqpVirtualHostDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteVirtualHost"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["VirtualHost"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, false)
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -108,8 +126,13 @@ func resourceAlicloudAmqpVirtualHostDelete(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
