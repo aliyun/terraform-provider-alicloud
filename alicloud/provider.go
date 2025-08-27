@@ -910,6 +910,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_lindorm_instance_v2":                                  resourceAliCloudLindormInstanceV2(),
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
 			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
@@ -1554,7 +1555,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_auto_snapshot_policy":                              resourceAliCloudEcsAutoSnapshotPolicy(),
 			"alicloud_rds_parameter_group":                                   resourceAlicloudRdsParameterGroup(),
 			"alicloud_ecs_launch_template":                                   resourceAliCloudEcsLaunchTemplate(),
-			"alicloud_resource_manager_control_policy":                       resourceAlicloudResourceManagerControlPolicy(),
+			"alicloud_resource_manager_control_policy":                       resourceAliCloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment":            resourceAliCloudResourceManagerControlPolicyAttachment(),
 			"alicloud_rds_account":                                           resourceAlicloudRdsAccount(),
 			"alicloud_rds_db_node":                                           resourceAlicloudRdsDBNode(),
