@@ -350,7 +350,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
 			},
 		},
 	})
@@ -453,7 +453,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
 			},
 		},
 	})
@@ -626,11 +626,43 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_period": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_period": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"backup_retention_policy_on_cluster_deletion": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_retention_policy_on_cluster_deletion": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_backup_retention_period": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup_retention_period": "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_backup_log":           "1",
+					"log_backup_retention_period": "120",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_backup_log":           "1",
+						"log_backup_retention_period": "120",
 					}),
 				),
 			},
@@ -643,6 +675,46 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"snapshot_backup_type": "Flash",
 						"backup_interval":      "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_status": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_status": "Closed",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "00:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_end_time": "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_end_time": "03:00Z",
 					}),
 				),
 			},
@@ -761,7 +833,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
 			},
 		},
 	})
@@ -790,28 +862,34 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":       "4.4",
-					"storage_engine":       "WiredTiger",
-					"storage_type":         "cloud_auto",
-					"provisioned_iops":     "2000",
-					"protocol_type":        "mongodb",
-					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"zone_id":              "${data.alicloud_mongodb_zones.default.zones.0.id}",
-					"secondary_zone_id":    "${data.alicloud_mongodb_zones.default.zones.1.id}",
-					"hidden_zone_id":       "${data.alicloud_mongodb_zones.default.zones.2.id}",
-					"security_group_id":    "${alicloud_security_group.default.id}",
-					"network_type":         "VPC",
-					"name":                 name,
-					"instance_charge_type": "PostPaid",
-					"security_ip_list":     []string{"10.168.1.12"},
-					"account_password":     "YourPassword_123",
-					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"backup_time":          "11:00Z-12:00Z",
-					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
+					"engine_version":          "4.4",
+					"storage_engine":          "WiredTiger",
+					"storage_type":            "cloud_auto",
+					"provisioned_iops":        "2000",
+					"protocol_type":           "mongodb",
+					"vpc_id":                  "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"zone_id":                 "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"secondary_zone_id":       "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"hidden_zone_id":          "${data.alicloud_mongodb_zones.default.zones.2.id}",
+					"security_group_id":       "${alicloud_security_group.default.id}",
+					"network_type":            "VPC",
+					"name":                    name,
+					"instance_charge_type":    "PostPaid",
+					"security_ip_list":        []string{"10.168.1.12"},
+					"account_password":        "YourPassword_123",
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"backup_time":             "11:00Z-12:00Z",
+					"backup_period":           []string{"Monday", "Tuesday", "Wednesday"},
+					"backup_retention_period": "7",
 					"backup_retention_policy_on_cluster_deletion": "1",
+					"enable_backup_log":                           "1",
+					"log_backup_retention_period":                 "120",
 					"snapshot_backup_type":                        "Flash",
 					"backup_interval":                             "60",
+					"ssl_action":                                  "Open",
+					"maintain_start_time":                         "00:00Z",
+					"maintain_end_time":                           "03:00Z",
 					"db_instance_release_protection":              "false",
 					"global_security_group_list":                  "${alicloud_mongodb_global_security_ip_group.default.*.id}",
 					"mongo_list": []map[string]interface{}{
@@ -846,28 +924,34 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.4",
-						"storage_engine":       "WiredTiger",
-						"storage_type":         "cloud_auto",
-						"provisioned_iops":     "2000",
-						"protocol_type":        "mongodb",
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"zone_id":              CHECKSET,
-						"secondary_zone_id":    CHECKSET,
-						"hidden_zone_id":       CHECKSET,
-						"security_group_id":    CHECKSET,
-						"network_type":         "VPC",
-						"name":                 name,
-						"instance_charge_type": "PostPaid",
-						"security_ip_list.#":   "1",
-						"account_password":     "YourPassword_123",
-						"resource_group_id":    CHECKSET,
-						"backup_time":          "11:00Z-12:00Z",
-						"backup_period.#":      "3",
+						"engine_version":          "4.4",
+						"storage_engine":          "WiredTiger",
+						"storage_type":            "cloud_auto",
+						"provisioned_iops":        "2000",
+						"protocol_type":           "mongodb",
+						"vpc_id":                  CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"zone_id":                 CHECKSET,
+						"secondary_zone_id":       CHECKSET,
+						"hidden_zone_id":          CHECKSET,
+						"security_group_id":       CHECKSET,
+						"network_type":            "VPC",
+						"name":                    name,
+						"instance_charge_type":    "PostPaid",
+						"security_ip_list.#":      "1",
+						"account_password":        "YourPassword_123",
+						"resource_group_id":       CHECKSET,
+						"backup_time":             "11:00Z-12:00Z",
+						"backup_period.#":         "3",
+						"backup_retention_period": "7",
 						"backup_retention_policy_on_cluster_deletion": "1",
+						"enable_backup_log":                           "1",
+						"log_backup_retention_period":                 "120",
 						"snapshot_backup_type":                        "Flash",
 						"backup_interval":                             "60",
+						"ssl_status":                                  "Open",
+						"maintain_start_time":                         "00:00Z",
+						"maintain_end_time":                           "03:00Z",
 						"db_instance_release_protection":              "false",
 						"global_security_group_list.#":                "3",
 						"mongo_list.#":                                "2",
@@ -883,7 +967,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
 			},
 		},
 	})
@@ -900,9 +984,12 @@ var AliCloudMongoDBShardingInstanceMap0 = map[string]string{
 	"instance_charge_type": CHECKSET,
 	"security_ip_list.#":   CHECKSET,
 	"resource_group_id":    CHECKSET,
+	"maintain_start_time":  CHECKSET,
+	"maintain_end_time":    CHECKSET,
 	"backup_time":          CHECKSET,
 	"config_server_list.#": CHECKSET,
 	"retention_period":     CHECKSET,
+	"ssl_status":           CHECKSET,
 }
 
 func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {

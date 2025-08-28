@@ -111,14 +111,24 @@ The following arguments are supported:
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+* `backup_retention_period` - (Optional, Int, Available since v1.259.0) The retention period of full backups.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Int, Available since v1.235.0) The backup retention policy configured for the instance. Valid values:
   - `0`: All backup sets are immediately deleted when the instance is released.
   - `1 `: Automatic backup is performed when the instance is released and the backup set is retained for a long period of time.
   - `2 `: Automatic backup is performed when the instance is released and all backup sets are retained for a long period of time.
+* `enable_backup_log` - (Optional, Int, Available since v1.259.0) Specifies whether to enable the log backup feature. Valid values:
+  - `1 `: The log backup feature is enabled.
+* `log_backup_retention_period` - (Optional, Int, Available since v1.259.0) The number of days for which log backups are retained. Valid values: `7` to `730`. **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
 * `snapshot_backup_type` - (Optional, Available since v1.253.0) The snapshot backup type. Default value: `Standard`. Valid values:
   - `Standard`: Standard backup.
   - `Flash `: Single-digit second backup.
 * `backup_interval` - (Optional, Available since v1.253.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
+* `ssl_action` - (Optional, Available since v1.259.0) Actions performed on SSL functions. Valid values:
+  - `Open`: turn on SSL encryption.
+  - `Close`: turn off SSL encryption.
+  - `Update`: update SSL certificate.
+* `maintain_start_time` - (Optional, Available since v1.259.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `maintain_end_time` - (Optional, Available since v1.259.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `global_security_group_list` - (Optional, List, Available since v1.258.0) The list of Global Security Group Ids.
@@ -160,6 +170,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Sharding Instance.
 * `retention_period` - (Available since v1.42.0) Instance data backup retention days.
+* `ssl_status` - (Available since v1.259.0) The status of the SSL feature.
 * `mongo_list` - The mongo nodes of the instance.
   * `node_id` - The ID of the mongo node.
   * `connect_string` - The endpoint of the mongo node.
