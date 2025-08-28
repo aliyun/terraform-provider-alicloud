@@ -68,8 +68,15 @@ resource "alicloud_alikafka_instance" "default" {
   disk_size      = 500
   deploy_type    = 5
   io_max         = 20
+  spec_type      = "professional"
   vswitch_id     = alicloud_vswitch.default.id
   security_group = alicloud_security_group.default.id
+  config = jsonencode(
+    {
+      "kafka.log.retention.hours" : "96",
+      "kafka.message.max.bytes" : "1048576"
+    }
+  )
 }
 ```
 
@@ -117,16 +124,8 @@ The following arguments are supported:
   - If `instance_type` is set to `alikafka`. Default value: `2.2.0`. Valid values: `2.2.0`, `2.6.2`.
   - If `instance_type` is set to `alikafka_serverless`. Default value: `3.3.1`. Valid values: `3.3.1`.
   - If `instance_type` is set to `alikafka_confluent`. Default value: `7.4.0`. Valid values: `7.4.0`.
-* `config` - (Optional, Available since v1.112.0) The initial configurations of the ApsaraMQ for Kafka instance. The values must be valid JSON strings. The `config` supports the following parameters:
-  * `enable.vpc_sasl_ssl`: Specifies whether to enable VPC transmission encryption. Default value: `false`. Valid values:
-    - `true`: Enables VPC transmission encryption. If you enable VPC transmission encryption, you must also enable access control list (ACL).
-    - `false`: Disables VPC transmission encryption. This is the default value.
-  * `enable.acl`: Specifies whether to enable ACL. Default value: `false`. Valid values:
-    - `true`: Enables the ACL feature.
-    - `false`: Disables the ACL feature.
-  * `kafka.log.retention.hours`: The maximum message retention period when the disk capacity is sufficient. Unit: hours. Default value: `72`. Valid values: `24` to `480`.
-  * `kafka.message.max.bytes`: The maximum size of a message that can be sent and received by ApsaraMQ for Kafka. Unit: bytes. Default value: `1048576`. Valid values: `1048576` to `10485760`.
-* `kms_key_id` - (Optional, ForceNew, Available since v1.180.0) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance.
+* `config` - (Optional, Available since v1.112.0) The initial configurations of the ApsaraMQ for Kafka instance. The values must be valid JSON strings.
+* `kms_key_id` - (Optional, ForceNew, Available since v1.180.0) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance. For more information, see [How to use it](https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/developer-reference/api-alikafka-2019-09-16-updateinstanceconfig).
 * `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format. **NOTE**: When the available zone is insufficient, another availability zone may be deployed.
@@ -139,7 +138,8 @@ The following arguments are supported:
 * `default_topic_partition_num` - (Optional, Int, Available since v1.241.0) The number of partitions in a topic that is automatically created.
 * `password` - (Optional, Available since v1.253.0) The instance password. **NOTE:** If `instance_type` is set to `alikafka_confluent`, `password` is required.
 * `vswitch_ids` - (Optional, ForceNew, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
-* `selected_zones` - (Optional, List, Available since v1.195.0) The zones among which you want to deploy the instance.
+-> **NOTE:** If `instance_type` is set to `alikafka` or `alikafka_serverless`, `vswitch_ids` is required. When `instance_type` is set to `alikafka_confluent`, you must specify at least one of the `vswitch_id` and `vswitch_ids`, and if you specify both `vswitch_id` and `vswitch_ids`, only the `vswitch_ids` takes effect.
+* `selected_zones` - (Optional, List, Available since v1.195.0) The zones among which you want to deploy the instance. For more information, see [How to use it](https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/developer-reference/api-alikafka-2019-09-16-startinstance).
 * `serverless_config` - (Optional, Set, Available since v1.253.0) The parameters configured for the serverless ApsaraMQ for Kafka instance. See [`serverless_config`](#serverless_config) below.
 -> **NOTE:** If `instance_type` is set to `alikafka_serverless`, `serverless_config` is required.
 * `confluent_config` - (Optional, Set, Available since v1.253.0) The configurations of Confluent. See [`confluent_config`](#confluent_config) below.
