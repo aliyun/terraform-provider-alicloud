@@ -674,11 +674,34 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("status", object["ServiceStatus"])
 	// object.UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO[0].Current2OpenSourceVersion can guaranteed not to be null
 	d.Set("service_version", object["UpgradeServiceDetailInfo"].(map[string]interface{})["Current2OpenSourceVersion"])
-	d.Set("config", object["AllConfig"])
 	d.Set("kms_key_id", object["KmsKeyId"])
 	d.Set("enable_auto_group", object["AutoCreateGroupEnable"])
 	d.Set("enable_auto_topic", convertAliKafkaAutoCreateTopicEnableResponse(object["AutoCreateTopicEnable"]))
 	d.Set("default_topic_partition_num", formatInt(object["DefaultPartitionNum"]))
+
+	if allConfig, ok := object["AllConfig"]; ok && fmt.Sprint(allConfig) != "" {
+		allConfigMap, err := convertJsonStringToMap(fmt.Sprint(allConfig))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		configMap := make(map[string]interface{})
+
+		for k, v := range allConfigMap {
+			if k == "enable.tiered" || k == "cloud.maxTieredStoreSpace" || k == "enable.compact" {
+				continue
+			}
+
+			configMap[k] = v
+		}
+
+		configMapJson, err := convertMaptoJsonString(configMap)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.Set("config", configMapJson)
+	}
 
 	if vSwitchIds, ok := object["VSwitchIds"]; ok {
 		vSwitchIdsArg := vSwitchIds.(map[string]interface{})
