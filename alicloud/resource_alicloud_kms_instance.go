@@ -187,6 +187,7 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -459,6 +460,13 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("renew_period", objectRaw["RenewalDuration"])
 	d.Set("renew_status", objectRaw["RenewStatus"])
 
+	listTagResourcesObject, err := kmsServiceV2.ListTagResources(d.Id(), "instance")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -722,6 +730,13 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		kmsServiceV2 := KmsServiceV2{client}
+		if err := kmsServiceV2.SetResourceTags(d, "instance"); err != nil {
+			return WrapError(err)
 		}
 	}
 

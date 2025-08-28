@@ -240,6 +240,7 @@ The following arguments are supported:
   - `Y`: Year.
 * `secret_num` - (Optional, Int) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `spec` - (Optional, Int) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `tags` - (Optional, Map, Available since v1.259.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) that is associated with the KMS instance.
 * `vpc_num` - (Optional, Int) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `vswitch_ids` - (Required, ForceNew, List) Instance bind vswitches
