@@ -33,7 +33,7 @@ func init() {
 func testSweepAmqpVirtualHost(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "error getting Alicloud client.")
+		return WrapErrorf(err, "error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -154,68 +154,7 @@ func testSweepAmqpVirtualHost(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAmqpVirtualHost_basic(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_virtual_host.default"
-	ra := resourceAttrInit(resourceId, AmqpVirtualHostBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpVirtualHostbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpVirtualHostConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${data.alicloud_amqp_instances.default.ids.0}",
-					"virtual_host_name": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-					}),
-				),
-			},
-
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-
-}
-
-func resourceAmqpVirtualHostConfigDependence(name string) string {
-	return fmt.Sprintf(`
-		variable "name" {
- 			default = "%v"
-		}
-		data "alicloud_amqp_instances" "default" {
-			status = "SERVING"
-		}
-		`, name)
-}
-
-var AmqpVirtualHostBasicMap = map[string]string{}
-
-func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
+func TestUnitAliCloudAmqpVirtualHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)
@@ -295,7 +234,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpVirtualHostCreate(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -312,7 +251,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostCreate(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -329,7 +268,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostCreate(dCreate, rawClient)
+		err := resourceAliCloudAmqpVirtualHostCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -347,7 +286,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpVirtualHostDelete(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -364,7 +303,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostDelete(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -381,7 +320,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostDelete(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -398,7 +337,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostRead(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -414,7 +353,7 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostRead(d, rawClient)
+		err := resourceAliCloudAmqpVirtualHostRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
@@ -435,9 +374,79 @@ func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 		patcheDescribeAmqpVirtualHost := gomonkey.ApplyMethod(reflect.TypeOf(&AmqpOpenService{}), "DescribeAmqpVirtualHost", func(*AmqpOpenService, string) (map[string]interface{}, error) {
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpVirtualHostRead(resourceData1, rawClient)
+		err := resourceAliCloudAmqpVirtualHostRead(resourceData1, rawClient)
 		patcheDorequest.Reset()
 		patcheDescribeAmqpVirtualHost.Reset()
 		assert.Nil(t, err)
 	})
 }
+
+// Test Amqp VirtualHost. >>> Resource test cases, automatically generated.
+// Case VirtualHost_测试用例 7216
+func TestAccAliCloudAmqpVirtualHost_basic7216(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_virtual_host.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpVirtualHostMap7216)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpVirtualHost")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccamqp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpVirtualHostBasicDependence7216)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"virtual_host_name": name,
+					"instance_id":       "${alicloud_amqp_instance.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"virtual_host_name": name,
+						"instance_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudAmqpVirtualHostMap7216 = map[string]string{}
+
+func AliCloudAmqpVirtualHostBasicDependence7216(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	resource "alicloud_amqp_instance" "default" {
+  		instance_name         = var.name
+  		instance_type         = "enterprise"
+  		max_tps               = 3000
+  		max_connections       = 2000
+  		queue_capacity        = 200
+  		payment_type          = "Subscription"
+  		renewal_status        = "AutoRenewal"
+  		renewal_duration      = 1
+  		renewal_duration_unit = "Year"
+  		support_eip           = true
+	}
+`, name)
+}
+
+// Test Amqp VirtualHost. <<< Resource test cases, automatically generated.
