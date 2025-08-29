@@ -157,9 +157,25 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"backup_retention_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"backup_retention_policy_on_cluster_deletion": {
 				Type:     schema.TypeInt,
 				Optional: true,
+			},
+			"enable_backup_log": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{1}),
+			},
+			"log_backup_retention_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"snapshot_backup_type": {
 				Type:         schema.TypeString,
@@ -172,6 +188,21 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"-1", "15", "30", "60", "120", "180", "240", "360", "480", "720"}, false),
+			},
+			"ssl_action": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Open", "Close", "Update"}, false),
+			},
+			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"maintain_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"tde_status": {
 				Type:     schema.TypeString,
@@ -294,6 +325,10 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 			},
 			"retention_period": {
 				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"ssl_status": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"order_type": {
@@ -529,6 +564,8 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("name", object["DBInstanceDescription"])
 	d.Set("instance_charge_type", object["ChargeType"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("maintain_start_time", object["MaintainStartTime"])
+	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("db_instance_release_protection", object["DBInstanceReleaseProtection"])
 
 	groupIp, err := ddsService.DescribeMongoDBShardingSecurityGroupId(d.Id())
@@ -566,7 +603,10 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
+	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
+	d.Set("enable_backup_log", formatInt(backupPolicy["EnableBackupLog"]))
+	d.Set("log_backup_retention_period", formatInt(backupPolicy["LogBackupRetentionPeriod"]))
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 
@@ -576,6 +616,15 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("tde_status", tdeInfo["TDEStatus"])
+
+	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
+	if err != nil {
+		if !IsExpectedErrors(err, []string{"StorageTypeOrInstanceTypeNotSupported", "SingleNodeNotSupport"}) {
+			return WrapError(err)
+		}
+	} else {
+		d.Set("ssl_status", sslAction["SSLStatus"])
+	}
 
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
@@ -1036,16 +1085,93 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("resource_group_id")
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
 		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
 
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
+		d.SetPartial("backup_retention_period")
 		d.SetPartial("backup_retention_policy_on_cluster_deletion")
+		d.SetPartial("enable_backup_log")
+		d.SetPartial("log_backup_retention_period")
 		d.SetPartial("snapshot_backup_type")
 		d.SetPartial("backup_interval")
+	}
+
+	if d.HasChange("ssl_action") {
+		action := "ModifyDBInstanceSSL"
+
+		modifyDBInstanceSSLReq := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("ssl_action"); ok {
+			modifyDBInstanceSSLReq["SSLAction"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceSSLReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceSSLReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("ssl_action")
+	}
+
+	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
+		action := "ModifyDBInstanceMaintainTime"
+
+		modifyDBInstanceMaintainTimeReq := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("maintain_start_time"); ok {
+			modifyDBInstanceMaintainTimeReq["MaintainStartTime"] = v
+		}
+
+		if v, ok := d.GetOk("maintain_end_time"); ok {
+			modifyDBInstanceMaintainTimeReq["MaintainEndTime"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyDBInstanceMaintainTimeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceMaintainTimeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("maintain_start_time")
+		d.SetPartial("maintain_end_time")
 	}
 
 	if d.HasChange("tde_status") {
@@ -1137,7 +1263,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	}
 
 	if update {
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
