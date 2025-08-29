@@ -337,6 +337,7 @@ The following arguments are supported:
   - `ContainerOS` : container-optimized image.
   - `Ubuntu`: Ubuntu image.
   - `AliyunLinux3ContainerOptimized`: Alinux3 container-optimized image.
+  - `Custom`: Custom image.
 * `install_cloud_monitor` - (Optional) Whether to install cloud monitoring on the ECS node. After installation, you can view the monitoring information of the created ECS instance in the cloud monitoring console and recommend enable it. Default value: `false`. Valid values:
   - `true` : install cloud monitoring on the ECS node.
   - `false` : does not install cloud monitoring on the ECS node.
