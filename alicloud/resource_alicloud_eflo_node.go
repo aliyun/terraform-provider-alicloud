@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -84,6 +83,10 @@ func resourceAliCloudEfloNode() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"install_pai": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -108,6 +111,10 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
+	installPai := false
+	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+		installPai = true
+	}
 
 	request["ClientToken"] = buildClientToken(action)
 
@@ -146,21 +153,34 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			"Value": v,
 		})
 	}
+	discountlevelCode := "discountlevel"
+	if installPai {
+		discountlevelCode = "DiscountLevel"
+	}
 	if v, ok := d.GetOk("discount_level"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "discountlevel",
+			"Code":  discountlevelCode,
 			"Value": v,
 		})
 	}
 	if v, ok := d.GetOk("billing_cycle"); ok {
+		if v.(string) == "1month" && installPai {
+			v = "1m"
+		}
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "BillingCycle",
 			"Value": v,
 		})
 	}
+	computingServerCode := "computing_server"
+	if installPai {
+		computingServerCode = "ComputingServer"
+	} else {
+		computingServerCode = "computingserver"
+	}
 	if v, ok := d.GetOk("computing_server"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "computingserver",
+			"Code":  computingServerCode,
 			"Value": v,
 		})
 	}
@@ -191,8 +211,17 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	var endpoint string
 	request["ProductCode"] = "bccluster"
 	request["ProductType"] = "bccluster_eflocomputing_public_cn"
+	if installPai {
+		request["ProductCode"] = "learn"
+		request["ProductType"] = "learn_eflocomputing_public_cn"
+	}
 	if client.IsInternationalAccount() {
+		request["ProductCode"] = "bccluster"
 		request["ProductType"] = "bccluster_eflocomputing_public_intl"
+		if installPai {
+			request["ProductCode"] = "learn"
+			request["ProductType"] = "learn_eflocomputing_public_intl"
+		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -205,6 +234,10 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "bccluster"
 				request["ProductType"] = "bccluster_eflocomputing_public_intl"
+				if installPai {
+					request["ProductCode"] = "learn"
+					request["ProductType"] = "learn_eflocomputing_public_intl"
+				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
@@ -317,13 +350,26 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 	request["InstanceId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
+	installPai := false
+	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+		installPai = true
+	}
 
 	request["ImmediatelyRelease"] = "1"
 	var endpoint string
 	request["ProductCode"] = "bccluster"
 	request["ProductType"] = "bccluster_eflocomputing_public_cn"
+	if installPai {
+		request["ProductCode"] = "learn"
+		request["ProductType"] = "learn_eflocomputing_public_cn"
+	}
 	if client.IsInternationalAccount() {
+		request["ProductCode"] = "bccluster"
 		request["ProductType"] = "bccluster_eflocomputing_public_intl"
+		if installPai {
+			request["ProductCode"] = "learn"
+			request["ProductType"] = "learn_eflocomputing_public_intl"
+		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -338,6 +384,10 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "bccluster"
 				request["ProductType"] = "bccluster_eflocomputing_public_intl"
+				if installPai {
+					request["ProductCode"] = "learn"
+					request["ProductType"] = "learn_eflocomputing_public_intl"
+				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
