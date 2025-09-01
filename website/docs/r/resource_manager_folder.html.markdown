@@ -2,19 +2,19 @@
 subcategory: "Resource Manager"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_resource_manager_folder"
-sidebar_current: "docs-alicloud-resource-resource-manager-folder"
 description: |-
   Provides a Alicloud Resource Manager Folder resource.
 ---
 
 # alicloud_resource_manager_folder
 
-Provides a Resource Manager Folder resource. A folder is an organizational unit in a resource directory. You can use folders to build an organizational structure for resources.
-For information about Resource Manager Foler and how to use it, see [What is Resource Manager Folder](https://www.alibabacloud.com/help/en/doc-detail/111221.htm).
+Provides a Resource Manager Folder resource.
+
+The management unit of the organization account in the resource directory.
+
+For information about Resource Manager Folder and how to use it, see [What is Folder](https://www.alibabacloud.com/help/en/resource-management/resource-directory/developer-reference/api-resourcedirectorymaster-2022-04-19-createfolder).
 
 -> **NOTE:** Available since v1.82.0.
-
--> **NOTE:** A maximum of five levels of folders can be created under the root folder.
 
 ## Example Usage
 
@@ -28,7 +28,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
@@ -40,21 +40,33 @@ resource "alicloud_resource_manager_folder" "example" {
   folder_name = "${var.name}-${random_integer.default.result}"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
+* `folder_name` - (Required) The name of the folder.
+* `parent_folder_id` - (Optional, ForceNew) The ID of the parent folder.
+* `tags` - (Optional, Map, Available since v1.259.0) The tag of the resource.
 
-* `folder_name` - (Required) The name of the folder. The name must be 1 to 24 characters in length and can contain letters, digits, underscores (_), periods (.), and hyphens (-).
-* `parent_folder_id` (Optional, ForceNew) The ID of the parent folder. If not set, the system default value will be used.
-                                         
 ## Attributes Reference
 
-* `id` - The ID of the folder.
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - (Available since v1.259.0) The time when the folder was created.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.259.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Folder.
+* `delete` - (Defaults to 5 mins) Used when delete the Folder.
+* `update` - (Defaults to 5 mins) Used when update the Folder.
 
 ## Import
 
 Resource Manager Folder can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_resource_manager_folder.example fd-u8B321****	
+$ terraform import alicloud_resource_manager_folder.example <id>
 ```

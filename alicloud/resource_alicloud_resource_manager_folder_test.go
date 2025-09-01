@@ -33,7 +33,7 @@ func init() {
 func testSweepResourceManagerFolder(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -110,66 +110,7 @@ func testSweepResourceManagerFolder(region string) error {
 	return nil
 }
 
-func TestAccAlicloudResourceManagerFolder_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_resource_manager_folder.default"
-	ra := resourceAttrInit(resourceId, ResourceManagerFolderMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ResourcemanagerService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeResourceManagerFolder")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerFolderBasicdependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"folder_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"folder_name": name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"folder_name": "tf-testAccFolder-change",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"folder_name": "tf-testAccFolder-change",
-					}),
-				),
-			},
-		},
-	})
-}
-
-var ResourceManagerFolderMap = map[string]string{
-	"parent_folder_id": CHECKSET,
-}
-
-func ResourceManagerFolderBasicdependence(name string) string {
-	return ""
-}
-
-func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
+func TestUnitAliCloudResourceManagerFolder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_folder"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_folder"].Schema).Data(nil, nil)
@@ -238,7 +179,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudResourceManagerFolderCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerFolderCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{}
@@ -261,7 +202,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerFolderCreate(dInit, rawClient)
+			err := resourceAliCloudResourceManagerFolderCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -289,7 +230,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudResourceManagerFolderUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerFolderUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		// UpdateFolder
@@ -325,7 +266,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerFolderUpdate(dExisted, rawClient)
+			err := resourceAliCloudResourceManagerFolderUpdate(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -366,7 +307,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerFolderRead(dExisted, rawClient)
+			err := resourceAliCloudResourceManagerFolderRead(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -386,7 +327,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudResourceManagerFolderDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerFolderDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}
@@ -408,7 +349,7 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerFolderDelete(dExisted, rawClient)
+			err := resourceAliCloudResourceManagerFolderDelete(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -419,3 +360,167 @@ func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 		}
 	})
 }
+
+// Test ResourceManager Folder. >>> Resource test cases, automatically generated.
+// Case Folder资源用例_副本1755660214218 11250
+func TestAccAliCloudResourceManagerFolder_basic11250(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_folder.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerFolderMap11250)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerFolder")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerFolderBasicDependence11250)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"folder_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"folder_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"folder_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"folder_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudResourceManagerFolder_basic11250_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_folder.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerFolderMap11250)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerFolder")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerFolderBasicDependence11250)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"folder_name":      name,
+					"parent_folder_id": "${alicloud_resource_manager_folder.super.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"folder_name":      name,
+						"parent_folder_id": CHECKSET,
+						"tags.%":           "2",
+						"tags.Created":     "TF",
+						"tags.For":         "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudResourceManagerFolderMap11250 = map[string]string{
+	"create_time":      CHECKSET,
+	"parent_folder_id": CHECKSET,
+}
+
+func AliCloudResourceManagerFolderBasicDependence11250(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+	resource "alicloud_resource_manager_folder" "super" {
+  		folder_name = "${var.name}-super"
+	}
+`, name)
+}
+
+// Test ResourceManager Folder. <<< Resource test cases, automatically generated.
