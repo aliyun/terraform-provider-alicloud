@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -19,8 +21,8 @@ func resourceAliCloudResourceManagerDelegatedAdministrator() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"account_id": {
@@ -38,16 +40,21 @@ func resourceAliCloudResourceManagerDelegatedAdministrator() *schema.Resource {
 }
 
 func resourceAliCloudResourceManagerDelegatedAdministratorCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "RegisterDelegatedAdministrator"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	request["AccountId"] = d.Get("account_id")
+	request = make(map[string]interface{})
 	request["ServicePrincipal"] = d.Get("service_principal")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["AccountId"] = d.Get("account_id")
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
@@ -58,52 +65,55 @@ func resourceAliCloudResourceManagerDelegatedAdministratorCreate(d *schema.Resou
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_delegated_administrator", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["AccountId"], ":", request["ServicePrincipal"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["AccountId"], request["ServicePrincipal"]))
 
 	return resourceAliCloudResourceManagerDelegatedAdministratorRead(d, meta)
 }
+
 func resourceAliCloudResourceManagerDelegatedAdministratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resourceManagerService := ResourceManagerService{client}
-	_, err := resourceManagerService.DescribeResourceManagerDelegatedAdministrator(d.Id())
+	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
+
+	objectRaw, err := resourceManagerServiceV2.DescribeResourceManagerDelegatedAdministrator(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_resource_manager_delegated_administrator resourceManagerService.DescribeResourceManagerDelegatedAdministrator Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_delegated_administrator DescribeResourceManagerDelegatedAdministrator Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("account_id", parts[0])
-	d.Set("service_principal", parts[1])
+
+	d.Set("account_id", objectRaw["AccountId"])
+	d.Set("service_principal", objectRaw["ServicePrincipal"])
+
 	return nil
 }
-func resourceAliCloudResourceManagerDelegatedAdministratorDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeregisterDelegatedAdministrator"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"AccountId":        parts[0],
-		"ServicePrincipal": parts[1],
-	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+func resourceAliCloudResourceManagerDelegatedAdministratorDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeregisterDelegatedAdministrator"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["ServicePrincipal"] = parts[1]
+	request["AccountId"] = parts[0]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "RegisterDelegatedAdministrator"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -112,8 +122,13 @@ func resourceAliCloudResourceManagerDelegatedAdministratorDelete(d *schema.Resou
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

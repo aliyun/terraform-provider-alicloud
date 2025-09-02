@@ -19,63 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudResourceManagerDelegatedAdministrator_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_resource_manager_delegated_administrator.default"
-	ra := resourceAttrInit(resourceId, AliCloudResourceManagerDelegatedAdministratorMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ResourceManagerService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeResourceManagerDelegatedAdministrator")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sresourcemanagerdelegatedadministrator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerDelegatedAdministratorBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_id":        "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
-					"service_principal": "cloudfw.aliyuncs.com",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_id":        CHECKSET,
-						"service_principal": "cloudfw.aliyuncs.com",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AliCloudResourceManagerDelegatedAdministratorMap0 = map[string]string{
-	"account_id":        CHECKSET,
-	"service_principal": CHECKSET,
-}
-
-func AliCloudResourceManagerDelegatedAdministratorBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_resource_manager_accounts" "default" {
-  status  = "CreateSuccess"
-}
-`, name)
-}
-
 func TestUnitAccAliCloudResourceManagerDelegatedAdministrator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_delegated_administrator"].Schema).Data(nil, nil)
@@ -267,3 +210,66 @@ func TestUnitAccAliCloudResourceManagerDelegatedAdministrator(t *testing.T) {
 		}
 	}
 }
+
+// Test ResourceManager DelegatedAdministrator. >>> Resource test cases, automatically generated.
+// Case DelegatedAdministrator-全生命周期 1427
+func TestAccAliCloudResourceManagerDelegatedAdministrator_basic1427(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_delegated_administrator.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerDelegatedAdministratorMap1427)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerDelegatedAdministrator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerDelegatedAdministratorBasicDependence1427)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_id":        "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
+					"service_principal": "config.aliyuncs.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_id":        CHECKSET,
+						"service_principal": "config.aliyuncs.com",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudResourceManagerDelegatedAdministratorMap1427 = map[string]string{}
+
+func AliCloudResourceManagerDelegatedAdministratorBasicDependence1427(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager DelegatedAdministrator. <<< Resource test cases, automatically generated.
