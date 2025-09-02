@@ -2,7 +2,6 @@
 subcategory: "Resource Manager"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_resource_manager_delegated_administrator"
-sidebar_current: "docs-alicloud-resource-resource-manager-delegated-administrator"
 description: |-
   Provides a Alicloud Resource Manager Delegated Administrator resource.
 ---
@@ -10,6 +9,8 @@ description: |-
 # alicloud_resource_manager_delegated_administrator
 
 Provides a Resource Manager Delegated Administrator resource.
+
+
 
 For information about Resource Manager Delegated Administrator and how to use it, see [What is Delegated Administrator](https://www.alibabacloud.com/help/en/resource-management/latest/registerdelegatedadministrator#doc-api-ResourceManager-RegisterDelegatedAdministrator).
 
@@ -26,29 +27,12 @@ Basic Usage
 </div></div>
 
 ```terraform
-variable "name" {
-  default = "tf-example"
-}
-variable "display_name" {
-  default = "EAccount"
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
-data "alicloud_resource_manager_folders" "example" {
-
-}
-
-resource "alicloud_resource_manager_account" "example" {
-  display_name = "${var.display_name}-${random_integer.default.result}"
-  folder_id    = data.alicloud_resource_manager_folders.example.ids.0
-}
-
-resource "alicloud_resource_manager_delegated_administrator" "example" {
-  account_id        = alicloud_resource_manager_account.example.id
+resource "alicloud_resource_manager_delegated_administrator" "default" {
+  account_id        = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
   service_principal = "cloudfw.aliyuncs.com"
 }
 ```
@@ -56,22 +40,19 @@ resource "alicloud_resource_manager_delegated_administrator" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `account_id` - (Required, ForceNew) The ID of the member account in the resource directory.
-* `service_principal` - (Required, ForceNew) The identification of the trusted service. **NOTE:** Only some trusted services support delegated administrator accounts. For more information, see [Supported trusted services](https://www.alibabacloud.com/help/en/resource-management/latest/manage-trusted-services-overview).
+* `account_id` - (Required, ForceNew) The Alibaba Cloud account ID of the member in the resource directory.
+* `service_principal` - (Required, ForceNew) The identifier of the trusted service.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Delegated Administrator. The value formats as `<account_id>:<service_principal>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<account_id>:<service_principal>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when creating the Delegated Administrator.
-* `delete` - (Defaults to 1 mins) Used when deleting the Delegated Administrator.
+* `create` - (Defaults to 5 mins) Used when create the Delegated Administrator.
+* `delete` - (Defaults to 5 mins) Used when delete the Delegated Administrator.
 
 
 ## Import

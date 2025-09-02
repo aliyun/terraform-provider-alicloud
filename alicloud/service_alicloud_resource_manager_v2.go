@@ -378,6 +378,7 @@ func (s *ResourceManagerServiceV2) DescribeAsyncGetAccountDeletionStatus(d *sche
 }
 
 // DescribeAsyncGetAccountDeletionStatus >>> Encapsulated.
+
 // DescribeResourceManagerResourceDirectory <<< Encapsulated get interface for ResourceManager ResourceDirectory.
 
 func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectory(id string) (object map[string]interface{}, err error) {
@@ -571,3 +572,103 @@ func (s *ResourceManagerServiceV2) ResourceManagerFolderStateRefreshFunc(id stri
 }
 
 // DescribeResourceManagerFolder >>> Encapsulated.
+
+// DescribeResourceManagerDelegatedAdministrator <<< Encapsulated get interface for ResourceManager DelegatedAdministrator.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerDelegatedAdministrator(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ServicePrincipal"] = parts[1]
+	request["PageNumber"] = 1
+	request["PageSize"] = PageSizeLarge
+
+	action := "ListDelegatedAdministrators"
+
+	idExist := false
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.Accounts.Account", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.Account", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("DelegatedAdministrator", id), NotFoundMsg, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["AccountId"]) == parts[0] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("DelegatedAdministrator", id), NotFoundMsg, response)
+	}
+
+	return object, nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerDelegatedAdministratorStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerDelegatedAdministrator(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerDelegatedAdministrator >>> Encapsulated.
