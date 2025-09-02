@@ -2,7 +2,6 @@
 subcategory: "Resource Manager"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_resource_manager_shared_target"
-sidebar_current: "docs-alicloud-resource-resource-manager-shared-target"
 description: |-
   Provides a Alicloud Resource Manager Shared Target resource.
 ---
@@ -11,7 +10,9 @@ description: |-
 
 Provides a Resource Manager Shared Target resource.
 
-For information about Resource Manager Shared Target and how to use it, see [What is Shared Target](https://www.alibabacloud.com/help/en/doc-detail/94475.htm).
+
+
+For information about Resource Manager Shared Target and how to use it, see [What is Shared Target](https://www.alibabacloud.com/help/en/resource-management/resource-sharing/developer-reference/api-resourcesharing-2020-01-10-associateresourceshare).
 
 -> **NOTE:** Available since v1.111.0.
 
@@ -27,16 +28,23 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tfexample"
-}
-data "alicloud_resource_manager_accounts" "default" {}
-
-resource "alicloud_resource_manager_resource_share" "example" {
-  resource_share_name = var.name
+  default = "terraform-example"
 }
 
-resource "alicloud_resource_manager_shared_target" "example" {
-  resource_share_id = alicloud_resource_manager_resource_share.example.id
+data "alicloud_resource_manager_accounts" "default" {
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_resource_manager_resource_share" "default" {
+  resource_share_name = "${var.name}-${random_integer.default.result}"
+}
+
+resource "alicloud_resource_manager_shared_target" "default" {
+  resource_share_id = alicloud_resource_manager_resource_share.default.id
   target_id         = data.alicloud_resource_manager_accounts.default.ids.0
 }
 ```
@@ -44,23 +52,21 @@ resource "alicloud_resource_manager_shared_target" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `resource_share_id` - (Required, ForceNew) The resource share ID of resource manager.
-* `target_id` - (Required, ForceNew) The member account ID in resource directory.
+* `resource_share_id` - (Required, ForceNew) The ID of the resource share.
+* `target_id` - (Required, ForceNew) The ID of the principal.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Shared Target. The value is formatted `<resource_share_id>:<target_id>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<resource_share_id>:<target_id>`.
+* `create_time` - (Available since v1.259.0) The time when the association of the entity was created.
 * `status` - The status of shared target.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 11 mins) Used when create the Shared Target.
-* `delete` - (Defaults to 11 mins) Used when delete the Shared Target.
+* `create` - (Defaults to 10 mins) Used when create the Shared Target.
+* `delete` - (Defaults to 10 mins) Used when delete the Shared Target.
 
 ## Import
 

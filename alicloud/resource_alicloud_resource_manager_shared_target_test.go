@@ -19,69 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerSharedTarget_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_resource_manager_shared_target.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedTargetMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeResourceManagerSharedTarget")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccResourceManagerSharedTarget%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedTargetBasicDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_share_id": "${alicloud_resource_manager_resource_share.default.id}",
-					"target_id":         "${data.alicloud_resource_manager_accounts.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_share_id": CHECKSET,
-						"target_id":         CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudResourceManagerSharedTargetMap = map[string]string{
-	"status": "Associated",
-}
-
-func AlicloudResourceManagerSharedTargetBasicDependence(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-
-data "alicloud_resource_manager_accounts" "default" {}
-
-resource "alicloud_resource_manager_resource_share" "default" {
-	resource_share_name = var.name
-}
-
-`, name)
-}
-
-func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
+func TestUnitAliCloudResourceManagerSharedTarget(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_shared_target"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_shared_target"].Schema).Data(nil, nil)
@@ -152,7 +90,7 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerSharedTargetCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerSharedTargetCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -183,7 +121,7 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedTargetCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerSharedTargetCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -228,7 +166,7 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedTargetRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerSharedTargetRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -247,7 +185,7 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerSharedTargetDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerSharedTargetDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -283,7 +221,7 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerSharedTargetDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerSharedTargetDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -294,3 +232,73 @@ func TestUniAlicloudResourceManagerSharedTarget(t *testing.T) {
 	}
 
 }
+
+// Test ResourceManager SharedTarget. >>> Resource test cases, automatically generated.
+// Case ResourceManager下SharedTarget测试用例_20240820 7561
+func TestAccAliCloudResourceManagerSharedTarget_basic7561(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_shared_target.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedTargetMap7561)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerSharedTarget")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedTargetBasicDependence7561)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_id": "${alicloud_resource_manager_resource_share.default.id}",
+					"target_id":         "${alicloud_resource_manager_folder.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_id": CHECKSET,
+						"target_id":         CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudResourceManagerSharedTargetMap7561 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AliCloudResourceManagerSharedTargetBasicDependence7561(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_folder" "default" {
+  folder_name = var.name
+}
+
+resource "alicloud_resource_manager_resource_share" "default" {
+  resource_share_name = var.name
+}
+
+
+`, name)
+}
+
+// Test ResourceManager SharedTarget. <<< Resource test cases, automatically generated.

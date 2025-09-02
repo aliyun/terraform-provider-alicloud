@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_logtail_configs":                      dataSourceAliCloudSlsLogtailConfigs(),
 			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
 			"alicloud_arms_env_features":                        dataSourceAliCloudArmsEnvFeatures(),
@@ -910,6 +911,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_resource_manager_message_contact":                     resourceAliCloudResourceManagerMessageContact(),
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
 			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
@@ -924,6 +926,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_origin_client_certificate":                        resourceAliCloudEsaOriginClientCertificate(),
 			"alicloud_actiontrail_advanced_query_template":                  resourceAliCloudActiontrailAdvancedQueryTemplate(),
 			"alicloud_eflo_node_group_attachment":                           resourceAliCloudEfloNodeGroupAttachment(),
+			"alicloud_sls_logtail_config":                                   resourceAliCloudSlsLogtailConfig(),
 			"alicloud_message_service_event_rule":                           resourceAliCloudMessageServiceEventRule(),
 			"alicloud_esa_custom_scene_policy":                              resourceAliCloudEsaCustomScenePolicy(),
 			"alicloud_esa_version":                                          resourceAliCloudEsaVersion(),
@@ -1528,7 +1531,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_accelerator":                                        resourceAliCloudGaAccelerator(),
 			"alicloud_eci_container_group":                                   resourceAlicloudEciContainerGroup(),
 			"alicloud_resource_manager_shared_resource":                      resourceAliCloudResourceManagerSharedResource(),
-			"alicloud_resource_manager_shared_target":                        resourceAlicloudResourceManagerSharedTarget(),
+			"alicloud_resource_manager_shared_target":                        resourceAliCloudResourceManagerSharedTarget(),
 			"alicloud_ga_listener":                                           resourceAliCloudGaListener(),
 			"alicloud_tsdb_instance":                                         resourceAlicloudTsdbInstance(),
 			"alicloud_ga_bandwidth_package":                                  resourceAliCloudGaBandwidthPackage(),
