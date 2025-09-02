@@ -451,6 +451,241 @@ func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectoryStateRefreshF
 
 // DescribeResourceManagerResourceDirectory >>> Encapsulated.
 
+// DescribeResourceManagerMessageContact <<< Encapsulated get interface for ResourceManager MessageContact.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerMessageContact(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ContactId"] = id
+
+	action := "GetMessageContact"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Contact"}) {
+			return object, WrapErrorf(NotFoundErr("MessageContact", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Contact", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Contact", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerMessageContactStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerMessageContact(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerMessageContact >>> Encapsulated.
+// DescribeResourceManagerHandshake <<< Encapsulated get interface for ResourceManager Handshake.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshake(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["HandshakeId"] = id
+
+	action := "GetHandshake"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
+			return object, WrapErrorf(NotFoundErr("Handshake", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Handshake", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Handshake", response)
+	}
+
+	currentStatus := v.(map[string]interface{})["Status"]
+	if fmt.Sprint(currentStatus) == "Cancelled" {
+		return object, WrapErrorf(NotFoundErr("Handshake", id), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerHandshake(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerHandshake >>> Encapsulated.
+// DescribeResourceManagerControlPolicyAttachment <<< Encapsulated get interface for ResourceManager ControlPolicyAttachment.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerControlPolicyAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TargetId"] = parts[1]
+
+	action := "ListControlPolicyAttachmentsForTarget"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ControlPolicyAttachments.ControlPolicyAttachment[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ControlPolicyAttachments.ControlPolicyAttachment[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("ControlPolicyAttachment", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["PolicyId"]) != parts[0] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("ControlPolicyAttachment", id), NotFoundMsg, response)
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerControlPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerControlPolicyAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerControlPolicyAttachment >>> Encapsulated.
+
 // DescribeResourceManagerFolder <<< Encapsulated get interface for ResourceManager Folder.
 
 func (s *ResourceManagerServiceV2) DescribeResourceManagerFolder(id string) (object map[string]interface{}, err error) {
