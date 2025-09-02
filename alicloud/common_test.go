@@ -1619,3 +1619,125 @@ func TestUnitGetOneStringOrAllStringSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonNormalizeAndMarshal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected map[string]interface{}
+	}{
+		{
+			name: "basic conversion",
+			input: map[string]interface{}{
+				"name":   "john",
+				"age":    "25",
+				"active": "true",
+				"admin":  "false",
+			},
+			expected: map[string]interface{}{
+				"name":   "john",
+				"age":    25,
+				"active": true,
+				"admin":  false,
+			},
+		},
+		{
+			name: "with nested map",
+			input: map[string]interface{}{
+				"user": map[string]interface{}{
+					"name":   "alice",
+					"age":    "30",
+					"active": "true",
+				},
+				"id": "123",
+			},
+			expected: map[string]interface{}{
+				"user": map[string]interface{}{
+					"name":   "alice",
+					"age":    30,
+					"active": true,
+				},
+				"id": 123,
+			},
+		},
+		{
+			name: "with array",
+			input: map[string]interface{}{
+				"tags":  []interface{}{"true", "false", "42", "hello"},
+				"count": "10",
+			},
+			expected: map[string]interface{}{
+				"tags":  []interface{}{true, false, 42, "hello"},
+				"count": 10,
+			},
+		},
+		{
+			name: "mixed types",
+			input: map[string]interface{}{
+				"name":     "bob",
+				"age":      25,   // already int
+				"active":   true, // already bool
+				"score":    "95",
+				"premium":  "true",
+				"balance":  "0",
+				"nickname": "bobby",
+			},
+			expected: map[string]interface{}{
+				"name":     "bob",
+				"age":      25,
+				"active":   true,
+				"score":    95,
+				"premium":  true,
+				"balance":  0,
+				"nickname": "bobby",
+			},
+		},
+		{
+			name: "non-convertible strings",
+			input: map[string]interface{}{
+				"description": "this is a test",
+				"version":     "1.2.3",
+				"code":        "ABC123",
+			},
+			expected: map[string]interface{}{
+				"description": "this is a test",
+				"version":     "1.2.3",
+				"code":        "ABC123",
+			},
+		},
+		{
+			name:     "empty map",
+			input:    map[string]interface{}{},
+			expected: map[string]interface{}{},
+		},
+		{
+			name:     "nil map",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name: "zero values",
+			input: map[string]interface{}{
+				"zero_str":   "0",
+				"zero_int":   0,
+				"false_str":  "false",
+				"false_bool": false,
+			},
+			expected: map[string]interface{}{
+				"zero_str":   0,
+				"zero_int":   0,
+				"false_str":  false,
+				"false_bool": false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeMap(tt.input)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("NormalizeMap() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
