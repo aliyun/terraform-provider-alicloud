@@ -113,7 +113,7 @@ func resourceAliCloudResourceManagerDelegatedAdministratorDelete(d *schema.Resou
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "RegisterDelegatedAdministrator"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
