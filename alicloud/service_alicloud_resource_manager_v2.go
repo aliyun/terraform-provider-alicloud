@@ -672,3 +672,105 @@ func (s *ResourceManagerServiceV2) ResourceManagerDelegatedAdministratorStateRef
 }
 
 // DescribeResourceManagerDelegatedAdministrator >>> Encapsulated.
+
+// DescribeResourceManagerSharedTarget <<< Encapsulated get interface for ResourceManager SharedTarget.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedTarget(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Target"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["AssociationType"] = "Target"
+	request["ResourceShareIds"] = []string{parts[0]}
+	request["MaxResults"] = PageSizeLarge
+
+	action := "ListResourceShareAssociations"
+
+	idExist := false
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.ResourceShareAssociations", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceShareAssociations", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("SharedTarget", id), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ResourceShareId"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["EntityId"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("SharedTarget", id), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerSharedTargetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerSharedTarget(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerSharedTarget >>> Encapsulated.

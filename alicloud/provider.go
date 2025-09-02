@@ -1528,7 +1528,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_accelerator":                                        resourceAliCloudGaAccelerator(),
 			"alicloud_eci_container_group":                                   resourceAlicloudEciContainerGroup(),
 			"alicloud_resource_manager_shared_resource":                      resourceAliCloudResourceManagerSharedResource(),
-			"alicloud_resource_manager_shared_target":                        resourceAlicloudResourceManagerSharedTarget(),
+			"alicloud_resource_manager_shared_target":                        resourceAliCloudResourceManagerSharedTarget(),
 			"alicloud_ga_listener":                                           resourceAliCloudGaListener(),
 			"alicloud_tsdb_instance":                                         resourceAlicloudTsdbInstance(),
 			"alicloud_ga_bandwidth_package":                                  resourceAliCloudGaBandwidthPackage(),
