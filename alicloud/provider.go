@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_logtail_configs":                      dataSourceAliCloudSlsLogtailConfigs(),
 			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
 			"alicloud_arms_env_features":                        dataSourceAliCloudArmsEnvFeatures(),
@@ -924,6 +925,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_origin_client_certificate":                        resourceAliCloudEsaOriginClientCertificate(),
 			"alicloud_actiontrail_advanced_query_template":                  resourceAliCloudActiontrailAdvancedQueryTemplate(),
 			"alicloud_eflo_node_group_attachment":                           resourceAliCloudEfloNodeGroupAttachment(),
+			"alicloud_sls_logtail_config":                                   resourceAliCloudSlsLogtailConfig(),
 			"alicloud_message_service_event_rule":                           resourceAliCloudMessageServiceEventRule(),
 			"alicloud_esa_custom_scene_policy":                              resourceAliCloudEsaCustomScenePolicy(),
 			"alicloud_esa_version":                                          resourceAliCloudEsaVersion(),
