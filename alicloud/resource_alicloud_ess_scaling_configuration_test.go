@@ -14,6 +14,7 @@ func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -44,7 +45,7 @@ func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_name":        "${data.alicloud_images.default1.images.0.name}",
+					"image_name":        "${data.alicloud_images.default2.images.0.name}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -82,6 +83,7 @@ func TestAccAliCloudEssScalingConfiguration_other(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -112,7 +114,7 @@ func TestAccAliCloudEssScalingConfiguration_other(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_name":        "${data.alicloud_images.default1.images.0.name}",
+					"image_name":        "${data.alicloud_images.default2.images.0.name}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -155,7 +157,7 @@ func TestAccAliCloudEssScalingConfiguration_credit_specification(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
-	checkoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -186,7 +188,7 @@ func TestAccAliCloudEssScalingConfiguration_credit_specification(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_name":        "${data.alicloud_images.default2.images.0.name}",
+					"image_name":        "${data.alicloud_images.default1.images.0.name}",
 					"instance_type":     "${data.alicloud_instance_types.t5.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -233,6 +235,7 @@ func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -262,7 +265,7 @@ func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -273,7 +276,7 @@ func TestAccAliCloudEssScalingConfiguration_imageName(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id": "${data.alicloud_images.default1.images.0.id}",
+					"image_id": "${data.alicloud_images.default2.images.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -295,6 +298,7 @@ func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -325,7 +329,7 @@ func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -339,7 +343,7 @@ func TestAccAliCloudEssScalingConfiguration_imageId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":   "${data.alicloud_images.default1.images.0.id}",
+					"image_id":   "${data.alicloud_images.default2.images.0.id}",
 					"image_name": "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -363,6 +367,7 @@ func TestAccAliCloudEssScalingConfiguration_kms(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -393,7 +398,7 @@ func TestAccAliCloudEssScalingConfiguration_kms(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_name":        "${data.alicloud_images.default1.images.0.name}",
+					"image_name":        "${data.alicloud_images.default2.images.0.name}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -430,6 +435,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -460,7 +466,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
-					"image_name":                "${data.alicloud_images.default1.images.0.name}",
+					"image_name":                "${data.alicloud_images.default2.images.0.name}",
 					"instance_type":             "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"force_delete":              "true",
@@ -759,11 +765,12 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -789,7 +796,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -935,11 +942,12 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -965,7 +973,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -1006,11 +1014,12 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1036,7 +1045,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -1085,6 +1094,7 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -1122,8 +1132,8 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 					"force_delete":                    "true",
 					"instance_description":            "test",
 					"spot_duration":                   "0",
+					"spot_strategy":                   "SpotWithPriceLimit",
 					"image_options_login_as_non_root": "true",
-					"deletion_protection":             "true",
 					"system_disk_encrypt_algorithm":   "AES-256",
 					"system_disk_provisioned_iops":    "10",
 					"system_disk_encrypted":           "true",
@@ -1155,7 +1165,6 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 						"instance_description":             "test",
 						"spot_duration":                    "0",
 						"image_options_login_as_non_root":  "true",
-						"deletion_protection":              "true",
 						"system_disk_encrypt_algorithm":    "AES-256",
 						"system_disk_provisioned_iops":     "10",
 						"system_disk_encrypted":            "true",
@@ -1190,6 +1199,7 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -1225,6 +1235,7 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 					"spot_duration":     "0",
+					"spot_strategy":     "SpotWithPriceLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1259,12 +1270,10 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection": "false",
-					"spot_strategy":       "SpotWithPriceLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection": "false",
-						"spot_strategy":       "SpotWithPriceLimit",
 					}),
 				),
 			},
@@ -1412,11 +1421,12 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default.9"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1606,7 +1616,7 @@ func resourceEssScalingConfigurationConfigMutilDependence(name string) string {
 	}
 
 	data "alicloud_images" "default1" {
-		name_regex  = "^centos.*_64"
+		name_regex  = "^aliyun"
   		most_recent = true
   		owners      = "system"
 	}
@@ -1626,11 +1636,12 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1656,7 +1667,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default1.images.0.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
@@ -1822,7 +1833,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
-
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
@@ -1931,11 +1942,12 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^centos.*_64",
+		"image_id":          REGEXMATCH + "^aliyun",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1962,7 +1974,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"system_disk_category": "cloud_efficiency",
-					"image_id":             "${data.alicloud_images.default1.images.0.id}",
+					"image_id":             "${data.alicloud_images.default2.images.0.id}",
 					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default.id}",
 					"force_delete":         "true",
