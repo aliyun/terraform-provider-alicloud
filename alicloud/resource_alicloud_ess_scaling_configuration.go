@@ -562,7 +562,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request["InternetChargeType"] = d.Get("internet_charge_type")
 	}
 
-	if v, ok := d.GetOk("spot_duration"); ok {
+	if v, ok := d.GetOkExists("spot_duration"); ok {
 		request["SpotDuration"] = v
 	}
 
