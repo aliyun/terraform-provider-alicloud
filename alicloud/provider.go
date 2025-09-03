@@ -916,6 +916,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_kv_account":                                       resourceAliCloudEsaKvAccount(),
 			"alicloud_esa_routine_related_record":                           resourceAliCloudEsaRoutineRelatedRecord(),
 			"alicloud_sls_machine_group":                                    resourceAliCloudSlsMachineGroup(),
+			"alicloud_resource_manager_message_contact":                     resourceAliCloudResourceManagerMessageContact(),
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
 			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
