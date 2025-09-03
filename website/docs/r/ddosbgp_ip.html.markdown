@@ -2,16 +2,17 @@
 subcategory: "Anti-DDoS Pro (DdosBgp)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddosbgp_ip"
-sidebar_current: "docs-alicloud-resource-ddos-bgp-ip"
 description: |-
-  Provides a Alicloud Ddos Bgp Ip resource.
+  Provides a Alicloud Anti-DDoS Pro (DdosBgp) Ip resource.
 ---
 
 # alicloud_ddosbgp_ip
 
-Provides a Ddos Bgp Ip resource.
+Provides a Anti-DDoS Pro (DdosBgp) Ip resource.
 
-For information about Ddos Bgp Ip and how to use it, see [What is Ip](https://www.alibabacloud.com/help/en/ddos-protection/latest/addip).
+
+
+For information about Anti-DDoS Pro (DdosBgp) Ip and how to use it, see [What is Ip](https://www.alibabacloud.com/help/en/ddos-protection/latest/addip).
 
 -> **NOTE:** Available since v1.180.0.
 
@@ -27,14 +28,17 @@ Basic Usage
 
 ```terraform
 provider "alicloud" {
-  region = "cn-beijing"
+  region = "cn-hangzhou"
 }
 
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-resource "alicloud_ddosbgp_instance" "instance" {
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_ddosbgp_instance" "default" {
   name             = var.name
   base_bandwidth   = 20
   bandwidth        = -1
@@ -49,38 +53,35 @@ resource "alicloud_eip_address" "default" {
 }
 
 resource "alicloud_ddosbgp_ip" "default" {
-  instance_id       = alicloud_ddosbgp_instance.instance.id
-  ip                = alicloud_eip_address.default.ip_address
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  instance_id = alicloud_ddosbgp_instance.default.id
+  ip          = alicloud_eip_address.default.ip_address
+  member_uid  = data.alicloud_account.default.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_id` - (Required, ForceNew) The ID of the native protection enterprise instance to be operated.
-* `ip` - (Required, ForceNew) The IP address.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `member_uid` - (Optional, ForceNew, Available since v1.225.1) The member account id of the IP address.
+* `instance_id` - (Required, ForceNew) The ID of the Anti-DDoS Origin instance.
+* `ip` - (Required, ForceNew) The IP address that you want to add.
+* `member_uid` - (Optional, ForceNew, Available since v1.225.1) The member to which the asset belongs.
+* `resource_group_id` - (Deprecated since v1.259.0) Field `resource_group_id` has been deprecated from provider version 1.259.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Ip. The value formats as `<instance_id>:<ip>`.
-* `status` - The current state of the IP address. Valid Value: `normal`, `hole_begin`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<ip>`.
+* `status` - The status of the IP address.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when creating the Ddos Bgp Ip.
-* `delete` - (Defaults to 1 mins) Used when deleting the Ddos Bgp Ip.
+* `create` - (Defaults to 5 mins) Used when create the Ip.
+* `delete` - (Defaults to 5 mins) Used when delete the Ip.
 
 ## Import
 
-Ddos Bgp Ip can be imported using the id, e.g.
+Anti-DDoS Pro (DdosBgp) Ip can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ddosbgp_ip.example <instance_id>:<ip>
