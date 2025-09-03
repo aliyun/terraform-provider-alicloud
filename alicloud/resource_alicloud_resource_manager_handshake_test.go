@@ -97,7 +97,7 @@ func testSweepResourceManagerHandshake(region string) error {
 	return nil
 }
 
-func TestAccAlicloudResourceManagerHandshake_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerHandshake_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_handshake.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerHandshakeMap)
@@ -227,7 +227,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudResourceManagerHandshakeCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerHandshakeCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{}
@@ -250,7 +250,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerHandshakeCreate(dInit, rawClient)
+			err := resourceAliCloudResourceManagerHandshakeCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -291,7 +291,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerHandshakeRead(dExisted, rawClient)
+			err := resourceAliCloudResourceManagerHandshakeRead(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -311,7 +311,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudResourceManagerHandshakeDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerHandshakeDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "EntityNotExists.Handshake", "HandshakeStatusMismatch"}
@@ -333,7 +333,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudResourceManagerHandshakeDelete(dExisted, rawClient)
+			err := resourceAliCloudResourceManagerHandshakeDelete(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -344,3 +344,72 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 		}
 	})
 }
+
+// Test ResourceManager Handshake. >>> Resource test cases, automatically generated.
+// Case Handshake-资源测试用例 11272
+func TestAccAliCloudResourceManagerHandshake_basic11272(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_handshake.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerHandshakeMap11272)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerHandshake")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerHandshakeBasicDependence11272)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"note":          "test",
+					"target_type":   "Account",
+					"target_entity": "1382956792949863",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"note":          "test",
+						"target_type":   "Account",
+						"target_entity": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerHandshakeMap11272 = map[string]string{
+	"status":                CHECKSET,
+	"modify_time":           CHECKSET,
+	"resource_directory_id": CHECKSET,
+	"create_time":           CHECKSET,
+	"master_account_name":   CHECKSET,
+	"master_account_id":     CHECKSET,
+	"expire_time":           CHECKSET,
+}
+
+func AlicloudResourceManagerHandshakeBasicDependence11272(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager Handshake. <<< Resource test cases, automatically generated.
